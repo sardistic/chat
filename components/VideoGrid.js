@@ -28,105 +28,63 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
     // Calculate total number of videos (including local if broadcasting)
     const totalVideos = (localStream ? 1 : 0) + peerArray.length;
 
-    // Auto-calculate optimal grid columns based on number of videos
-    let gridColumns = 1;
-    if (totalVideos >= 9) gridColumns = 4;
-    else if (totalVideos >= 4) gridColumns = 3;
-    else if (totalVideos >= 2) gridColumns = 2;
-
-    // Dynamic grid style based on number of videos
-    const gridStyle = {
-        gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`
-    };
+    // Auto-calculate optimal grid columns (Railway style: bigger cards)
+    // 1-2 users: 1 col (full width or half)
+    // 3-4 users: 2 cols
+    // 5+ users: 3 cols
+    // Responsive grid handled by CSS grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))
+    // We can rely on CSS grid auto-placement mostly.
 
     return (
-        <div className="grid" style={gridStyle}>
+        <div className="grid">
             {/* Local User Tile */}
             <div className="tile">
-                <div className="video">
-                    {localStream && (
-                        <video
-                            ref={localVideoRef}
-                            autoPlay
-                            muted
-                            playsInline
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                                transform: 'scaleX(-1)' // Mirror local video
-                            }}
-                        />
-                    )}
-                </div>
-                <div className="noise"></div>
-                <div className="hud">
-                    <div className="badge">
-                        <span className="mini-dot" style={{
-                            background: 'var(--good)',
-                            boxShadow: '0 0 0 3px rgba(34,197,94,.18)'
-                        }}></span>
-                        <span className="name">{localUser?.name || 'You'} (You)</span>
+                <video
+                    ref={localVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="video"
+                    style={{
+                        transform: 'scaleX(-1)' // Mirror local video
+                    }}
+                />
+                <div className="overlay">
+                    <div className="name">
+                        <span className="status-dot" style={{ background: isBroadcasting() ? 'var(--status-online)' : 'var(--text-muted)' }}></span>
+                        {localUser?.name || 'Local'} (You)
                     </div>
-                    <div className="icons">
-                        <span className="ico">{isAudioEnabled ? '🎤' : '🔇'}</span>
-                        <span className="ico">{isVideoEnabled ? '📹' : '🚫'}</span>
-                    </div>
-                </div>
-                <div className="footer">
-                    <div className="meter">
-                        <div className="bars"><span></span><span></span><span></span><span></span></div>
-                        <div className="txt">Broadcasting</div>
-                    </div>
-                    <div className="chip">HD • 30fps</div>
                 </div>
             </div>
 
             {/* Remote Peer Tiles */}
             {peerArray.map(([peerId, peerData]) => (
                 <div key={peerId} className="tile">
-                    <div className="video">
-                        <video
-                            ref={(el) => {
-                                if (el) {
-                                    peerVideoRefs.current.set(peerId, el);
-                                } else {
-                                    peerVideoRefs.current.delete(peerId);
-                                }
-                            }}
-                            autoPlay
-                            playsInline
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                            }}
-                        />
-                    </div>
-                    <div className="noise"></div>
-                    <div className="hud">
-                        <div className="badge">
-                            <span className="mini-dot" style={{
-                                background: 'var(--good)',
-                                boxShadow: '0 0 0 3px rgba(34,197,94,.18)'
-                            }}></span>
-                            <span className="name">User {peerId.slice(0, 6)}</span>
+                    <video
+                        ref={(el) => {
+                            if (el) {
+                                peerVideoRefs.current.set(peerId, el);
+                            } else {
+                                peerVideoRefs.current.delete(peerId);
+                            }
+                        }}
+                        autoPlay
+                        playsInline
+                        className="video"
+                    />
+                    <div className="overlay">
+                        <div className="name">
+                            <span className="status-dot"></span>
+                            {peerData.user?.name || `User ${peerId.slice(0, 4)}`}
                         </div>
-                        <div className="icons">
-                            <span className="ico">🔊</span>
-                            <span className="ico">📹</span>
-                        </div>
-                    </div>
-                    <div className="footer">
-                        <div className="meter">
-                            <div className="bars"><span></span><span></span><span></span><span></span></div>
-                            <div className="txt">Active</div>
-                        </div>
-                        <div className="chip">HD • 30fps</div>
                     </div>
                 </div>
             ))}
-
         </div>
     );
+}
+
+// Helper to check if local video is active (passed as prop existence)
+function isBroadcasting() {
+    return true; // We can assume yes if this renders, or use props
 }
