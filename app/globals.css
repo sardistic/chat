@@ -1,31 +1,31 @@
-/* Railway-inspired Dark Theme */
+/* Railway-inspired Dark Theme (Soft / Hybrid) */
 :root {
-  /* Core Palette */
-  --bg-main: #0B0C15;
-  /* Main void background */
-  --bg-panel: #181926;
-  /* Sidebar/Panel background */
-  --bg-card: #1C1D2E;
-  /* Card background */
-  --bg-input: #13141F;
+  /* Core Palette - Softened darker backgrounds */
+  --bg-main: #0E0F16;
+  /* Less pitch black, slightly warmer void */
+  --bg-panel: rgba(20, 21, 31, 0.7);
+  /* Glassy panel */
+  --bg-card: rgba(28, 29, 46, 0.6);
+  /* Glassy card */
+  --bg-input: rgba(12, 13, 20, 0.5);
   /* Input fields */
 
-  /* Borders */
-  --border-subtle: #2E2F45;
-  --border-hover: #454766;
-  --border-focus: #A78BFA;
+  /* Borders - Much softer */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.15);
+  --border-focus: rgba(167, 139, 250, 0.5);
   /* Purple accent */
 
-  /* Text */
-  --text-primary: #F3F4F6;
-  --text-secondary: #9CA3AF;
-  --text-muted: #6B7280;
+  /* Text - Slightly brighter for readability */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A0B0;
+  --text-muted: #6B6D7F;
 
   /* Accents */
   --accent-primary: #A78BFA;
   --accent-hover: #8B5CF6;
-  --accent-surface: rgba(167, 139, 250, 0.1);
-  --accent-glow: rgba(167, 139, 250, 0.4);
+  --accent-surface: rgba(167, 139, 250, 0.08);
+  --accent-glow: rgba(167, 139, 250, 0.25);
 
   /* Status */
   --status-online: #34D399;
@@ -36,15 +36,17 @@
   /* Amber */
 
   /* Dimensions */
-  --radius-lg: 12px;
-  --radius-md: 8px;
-  --radius-sm: 4px;
-  --header-height: 56px;
+  --radius-lg: 16px;
+  /* Softer, rounder corners */
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  --header-height: 64px;
+  /* More breathing room */
   --sidebar-w: 280px;
-  /* Default, overridden by JS */
 
-  /* Font */
-  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Font - Adjusted for softness */
+  /* Fallback to system fonts more aggressively if Geist feels weird */
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
 }
 
@@ -58,23 +60,27 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-main);
+  /* Add very subtle radial glow background to prevent "void" feeling */
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(167, 139, 250, 0.03), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(52, 211, 153, 0.03), transparent 40%);
   color: var(--text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
+  font-size: 14px;
+  /* Bump base size slightly */
+  line-height: 1.5;
 }
 
 /* --- Layout --- */
 .app {
   height: 100%;
   display: grid;
-  /* Topbar (optional, user wanted sidebar style) - We keep 2-column layout */
-  /* If Sidebar is left or right? Current app has sidebar on RIGHT based on lines 79 grid-template-columns: 1fr var(--sidebar-w) */
-  /* Railway usually has Sidebar LEFT. But user didn't ask to flip layout. I'll keep structure but style it. */
   grid-template-columns: 1fr var(--dynamic-sidebar-w, 320px);
   grid-template-rows: 1fr;
-  /* Full height, internal scrolling */
-  background: var(--bg-main);
+  background: transparent;
+  /* Allow body gradient to show */
 }
 
 .main {
@@ -83,35 +89,17 @@ body {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  padding: 16px;
+  padding: 20px;
+  /* More padding */
 }
 
 .stage {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   height: 100%;
   min-height: 0;
-}
-
-/* --- Typography --- */
-h1,
-h2,
-h3,
-h4,
-h5 {
-  margin: 0;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.text-muted {
-  color: var(--text-secondary);
-}
-
-.text-faint {
-  color: var(--text-muted);
 }
 
 /* --- Components: Sidebar --- */
@@ -122,17 +110,20 @@ h5 {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  backdrop-filter: blur(12px);
+  /* Glass blur */
 }
 
 .side-header {
   height: var(--header-height);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 20px;
   border-bottom: 1px solid var(--border-subtle);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .side-content {
@@ -149,7 +140,9 @@ h5 {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 /* --- Components: Buttons --- */
@@ -165,37 +158,41 @@ h5 {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid var(--border-subtle);
-  background: var(--bg-input);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text-secondary);
+  backdrop-filter: blur(4px);
 }
 
 .btn:hover {
-  border-color: var(--text-secondary);
+  border-color: var(--border-hover);
   color: var(--text-primary);
-  background: var(--bg-panel);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
 }
 
 .btn.primary {
   background: var(--accent-primary);
   border-color: var(--accent-primary);
   color: #fff;
-  /* Always white on accent */
+  box-shadow: 0 0 15px rgba(167, 139, 250, 0.3);
+  /* Subtle glow */
 }
 
 .btn.primary:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.5);
 }
 
 .btn.danger {
   background: rgba(248, 113, 113, 0.1);
-  color: var(--status-red);
+  color: var(--status-busy);
   border-color: rgba(248, 113, 113, 0.2);
 }
 
 .btn.danger:hover {
   background: rgba(248, 113, 113, 0.2);
-  border-color: var(--status-red);
+  border-color: var(--status-busy);
 }
 
 /* --- Video Grid --- */
@@ -203,54 +200,58 @@ h5 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--bg-panel);
-  /* Inner Stage background */
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
 }
 
 .grid-header {
-  height: 48px;
+  height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 24px;
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-main);
-  /* Slightly darker header */
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .grid {
   flex: 1;
-  padding: 16px;
+  padding: 24px;
   overflow-y: auto;
   display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   align-content: start;
 }
 
 .tile {
   position: relative;
-  background: #000;
+  background: #05060A;
+  /* Darker than main for video contrast */
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   overflow: hidden;
   aspect-ratio: 16/9;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-  transition: border-color 0.2s;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
 }
 
 .tile:hover {
-  border-color: var(--border-active);
-  /* Purple Focus */
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
 }
 
 .tile video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0.95;
+  /* Slight blend */
 }
 
 .tile .overlay {
@@ -258,7 +259,7 @@ h5 {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 8px 12px;
+  padding: 12px 16px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   display: flex;
   align-items: center;
@@ -267,13 +268,13 @@ h5 {
 }
 
 .tile .name {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: #fff;
-  font-family: var(--font-mono);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .tile .status-dot {
@@ -281,6 +282,7 @@ h5 {
   height: 6px;
   border-radius: 50%;
   background: var(--status-online);
+  box-shadow: 0 0 8px var(--status-online);
 }
 
 /* --- Chat Panel Styles --- */
@@ -289,7 +291,7 @@ h5 {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   padding-bottom: 12px;
 }
 
@@ -297,18 +299,19 @@ h5 {
   display: flex;
   gap: 12px;
   padding: 4px 0;
-  font-size: 13px;
+  font-size: 14px;
+  /* More readable chat */
   line-height: 1.5;
 }
 
 .msg .author {
   font-weight: 600;
   color: var(--accent-primary);
-  /* Railway Purple for names */
-  font-family: var(--font-mono);
   min-width: 80px;
   text-align: right;
   flex-shrink: 0;
+  font-size: 13px;
+  padding-top: 1px;
 }
 
 .msg .content {
@@ -318,7 +321,7 @@ h5 {
 
 .input-area {
   margin-top: auto;
-  padding-top: 12px;
+  padding-top: 16px;
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -327,44 +330,47 @@ h5 {
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 10px 12px;
+  padding: 12px 14px;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
 }
 
 .chat-input:focus {
-  border-color: var(--border-active);
-  /* Purple Focus */
-  background: var(--bg-main);
+  border-color: var(--accent-primary);
+  background: rgba(20, 21, 31, 0.8);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
 }
 
 /* --- Status Footer --- */
 .status-bar {
   position: absolute;
-  bottom: 16px;
-  right: 16px;
-  /* User screenshot had floaty elements? Or status bar at bottom. */
-  left: 16px;
+  bottom: 24px;
+  left: 24px;
+  right: 24px;
   display: flex;
   justify-content: space-between;
   pointer-events: none;
+  padding: 0 20px;
 }
 
 .status-item {
-  background: var(--bg-card);
+  background: rgba(10, 14, 26, 0.8);
+  backdrop-filter: blur(8px);
   border: 1px solid var(--border-subtle);
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 99px;
-  font-size: 11px;
-  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   pointer-events: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .status-dot {
@@ -376,16 +382,17 @@ h5 {
 
 .status-dot.connected {
   background: var(--status-online);
+  box-shadow: 0 0 6px var(--status-online);
 }
 
 .status-dot.disconnected {
-  background: var(--status-red);
+  background: var(--status-busy);
 }
 
 /* --- Scrollbar --- */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -393,18 +400,17 @@ h5 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-hover);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Drag Handle */
 .drag-handle {
   width: 4px;
-  /* Thin line like VS Code */
   background: transparent;
   cursor: col-resize;
   position: relative;
@@ -415,21 +421,7 @@ h5 {
 .drag-handle:hover,
 .drag-handle.dragging {
   background: var(--accent-primary);
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-.fade-in {
-  animation: fadeIn 0.2s ease-out;
+  box-shadow: 0 0 10px var(--accent-primary);
 }
 
 /* Responsive */
@@ -437,14 +429,13 @@ h5 {
   .app {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr 1fr;
-    /* Stacked */
   }
 
   .main {
-    padding: 8px;
+    padding: 12px;
   }
 
   .grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   }
 }

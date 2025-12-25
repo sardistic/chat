@@ -114,7 +114,7 @@ function MainApp({ user, onLeaveRoom }) {
             {isConnected ? 'Connected' : 'Reconnecting...'}
           </div>
           <div className="status-item">
-            v3.3 (Railway Theme)
+            v3.4 (Soft Design)
           </div>
           <div className="status-item" style={{ marginLeft: 'auto', cursor: 'pointer' }} onClick={onLeaveRoom}>
             Log Out
