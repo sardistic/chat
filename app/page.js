@@ -145,7 +145,7 @@ function MainApp({ user, onLeaveRoom }) {
           {isConnected ? 'Socket Connected' : 'Disconnected'}
         </div>
         <div className="status-item">
-          Build: v3.1 (Reset Fix)
+          Build: v3.2 (Simple P2P)
         </div>
       </div>
       <main className="main">

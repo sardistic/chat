@@ -229,9 +229,8 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 return newPeers;
             });
 
-            // Always connect to new joiners
-            const pm = getOrCreatePeerManager();
-            pm.createPeer(socketId, true); // Initiator
+            // REVERT: Don't connect proactively. Wait for broadcast.
+            // if (peerManagerRef.current) ...
         };
 
         const handleExistingUsers = ({ users }) => {
@@ -248,13 +247,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 return newPeers;
             });
 
-            // Always connect to existing users
-            const pm = getOrCreatePeerManager();
-            users.forEach(({ socketId }) => {
-                if (socketId !== socket.id) {
-                    pm.createPeer(socketId, false); // Receiver
-                }
-            });
+            // REVERT: Don't connect proactively.
         };
 
         const handleSignal = ({ sender, payload }) => {
