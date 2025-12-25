@@ -12,6 +12,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [error, setError] = useState(null);
     const [iceConfig, setIceConfig] = useState(null); // Store ICE config
+    const [isIceLoaded, setIsIceLoaded] = useState(false); // Wait for ICE fetch
 
     const peerManagerRef = useRef(null);
     const localStreamRef = useRef(null);
@@ -59,6 +60,8 @@ export function useWebRTC(roomId, user, autoStart = true) {
             } catch (err) {
                 console.warn('⚠️ Failed to load TURN servers, connectivity on mobile may fail:', err);
                 // Fallback to default STUN provided in PeerManager
+            } finally {
+                setIsIceLoaded(true);
             }
         };
         fetchIceServers();
@@ -199,9 +202,9 @@ export function useWebRTC(roomId, user, autoStart = true) {
             hasJoined: hasJoinedRoom.current
         });
 
-        if (!socket || !isConnected || !roomId || !userRef.current || hasJoinedRoom.current) {
+        if (!socket || !isConnected || !roomId || !userRef.current || hasJoinedRoom.current || !isIceLoaded) {
             console.log('⏭️ Skipping room join:', {
-                reason: !socket ? 'no socket' : !isConnected ? 'not connected' : !roomId ? 'no roomId' : !userRef.current ? 'no user' : 'already joined'
+                reason: !socket ? 'no socket' : !isConnected ? 'not connected' : !roomId ? 'no roomId' : !userRef.current ? 'no user' : !isIceLoaded ? 'waiting for ICE config' : 'already joined'
             });
             return;
         }
@@ -324,7 +327,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             // We generally want to stay in room if just re-rendering, but strict mode unmounts.
             // If we leave, we must rejoin. 
         };
-    }, [socket, isConnected, roomId]);
+    }, [socket, isConnected, roomId, isIceLoaded]);
 
     // Auto-start camera if enabled
     useEffect(() => {
