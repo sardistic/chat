@@ -11,8 +11,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [error, setError] = useState(null);
-    const [iceConfig, setIceConfig] = useState(null); // Store ICE config
-    const [isIceLoaded, setIsIceLoaded] = useState(false); // Wait for ICE fetch
 
     const peerManagerRef = useRef(null);
     const localStreamRef = useRef(null);
@@ -46,27 +44,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
         }
     }, []);
 
-    // Fetch ICE servers from Metered.ca
-    useEffect(() => {
-        const fetchIceServers = async () => {
-            try {
-                // Using the API key provided in the screenshot
-                const apiKey = "fafec8b0be0282c0d3e36562d8b94b576488";
-                const response = await fetch(`https://sardistic.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`);
-                if (!response.ok) throw new Error('Failed to fetch TURN credentials');
-                const iceServers = await response.json();
-                console.log('✅ Loaded TURN credentials from Metered.ca');
-                setIceConfig({ iceServers });
-            } catch (err) {
-                console.warn('⚠️ Failed to load TURN servers, connectivity on mobile may fail:', err);
-                // Fallback to default STUN provided in PeerManager
-            } finally {
-                setIsIceLoaded(true);
-            }
-        };
-        fetchIceServers();
-    }, []);
-
     // Start broadcasting
     const startBroadcast = useCallback(async () => {
         try {
@@ -91,9 +68,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             } else {
                 console.log('🆕 Creating new PeerManager');
                 // Create peer manager
-                console.log('🆕 Creating new PeerManager');
-                // Create peer manager
-                const peerManager = new PeerManager(socket, stream, iceConfig);
+                const peerManager = new PeerManager(socket, stream);
                 peerManagerRef.current = peerManager;
 
                 // Handle new peer streams
@@ -202,9 +177,9 @@ export function useWebRTC(roomId, user, autoStart = true) {
             hasJoined: hasJoinedRoom.current
         });
 
-        if (!socket || !isConnected || !roomId || !userRef.current || hasJoinedRoom.current || !isIceLoaded) {
+        if (!socket || !isConnected || !roomId || !userRef.current || hasJoinedRoom.current) {
             console.log('⏭️ Skipping room join:', {
-                reason: !socket ? 'no socket' : !isConnected ? 'not connected' : !roomId ? 'no roomId' : !userRef.current ? 'no user' : !isIceLoaded ? 'waiting for ICE config' : 'already joined'
+                reason: !socket ? 'no socket' : !isConnected ? 'not connected' : !roomId ? 'no roomId' : !userRef.current ? 'no user' : 'already joined'
             });
             return;
         }
@@ -258,7 +233,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             // This allows us to receive streams even if we're not broadcasting
             if (!peerManagerRef.current) {
                 console.log('  🆕 Creating PeerManager to receive stream (not broadcasting)');
-                const peerManager = new PeerManager(socket, null, iceConfig);
+                const peerManager = new PeerManager(socket, null);
                 peerManagerRef.current = peerManager;
 
                 // Handle incoming streams
@@ -327,7 +302,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             // We generally want to stay in room if just re-rendering, but strict mode unmounts.
             // If we leave, we must rejoin. 
         };
-    }, [socket, isConnected, roomId, isIceLoaded]);
+    }, [socket, isConnected, roomId]);
 
     // Auto-start camera if enabled
     useEffect(() => {
