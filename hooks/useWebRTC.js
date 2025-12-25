@@ -184,6 +184,37 @@ export function useWebRTC(roomId, user, autoStart = true) {
             return;
         }
 
+        // Helper to get or create PeerManager with listeners attached
+        const getOrCreatePeerManager = () => {
+            if (peerManagerRef.current) return peerManagerRef.current;
+
+            console.log('🆕 Creating PeerManager (Passive/Active)');
+            const peerManager = new PeerManager(socket, localStreamRef.current || null); // Use current stream if any
+            peerManagerRef.current = peerManager;
+
+            // Handle new peer streams
+            peerManager.onStream((peerId, stream) => {
+                console.log('📺 Received stream from peer:', peerId);
+                setPeers(prev => {
+                    const newPeers = new Map(prev);
+                    const existingPeer = prev.get(peerId) || {};
+                    newPeers.set(peerId, { ...existingPeer, stream, userId: peerId });
+                    return newPeers;
+                });
+            });
+
+            // Handle peer leaving
+            peerManager.onPeerLeft((peerId) => {
+                setPeers(prev => {
+                    const newPeers = new Map(prev);
+                    newPeers.delete(peerId);
+                    return newPeers;
+                });
+            });
+
+            return peerManager;
+        };
+
         const currentUser = userRef.current;
         console.log('🚀 Joining room:', roomId, 'as', currentUser.name);
 
@@ -198,9 +229,9 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 return newPeers;
             });
 
-            if (peerManagerRef.current) {
-                peerManagerRef.current.createPeer(socketId, true);
-            }
+            // Always connect to new joiners
+            const pm = getOrCreatePeerManager();
+            pm.createPeer(socketId, true); // Initiator
         };
 
         const handleExistingUsers = ({ users }) => {
@@ -217,47 +248,19 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 return newPeers;
             });
 
-            if (peerManagerRef.current) {
-                users.forEach(({ socketId }) => {
-                    if (socketId !== socket.id) {
-                        peerManagerRef.current.createPeer(socketId, false);
-                    }
-                });
-            }
+            // Always connect to existing users
+            const pm = getOrCreatePeerManager();
+            users.forEach(({ socketId }) => {
+                if (socketId !== socket.id) {
+                    pm.createPeer(socketId, false); // Receiver
+                }
+            });
         };
 
         const handleSignal = ({ sender, payload }) => {
             console.log('📶 Received signal from:', sender);
-
-            // If we don't have a PeerManager yet, create one (without local stream)
-            // This allows us to receive streams even if we're not broadcasting
-            if (!peerManagerRef.current) {
-                console.log('  🆕 Creating PeerManager to receive stream (not broadcasting)');
-                const peerManager = new PeerManager(socket, null);
-                peerManagerRef.current = peerManager;
-
-                // Handle incoming streams
-                peerManager.onStream((peerId, stream) => {
-                    console.log('📺 Received stream from peer:', peerId);
-                    setPeers(prev => {
-                        const newPeers = new Map(prev);
-                        const existingPeer = prev.get(peerId) || {};
-                        newPeers.set(peerId, { ...existingPeer, stream, userId: peerId });
-                        return newPeers;
-                    });
-                });
-
-                // Handle peer leaving
-                peerManager.onPeerLeft((peerId) => {
-                    setPeers(prev => {
-                        const newPeers = new Map(prev);
-                        newPeers.delete(peerId);
-                        return newPeers;
-                    });
-                });
-            }
-
-            peerManagerRef.current.handleSignal(sender, payload);
+            const pm = getOrCreatePeerManager();
+            pm.handleSignal(sender, payload);
         };
 
         const handleUserLeft = ({ socketId }) => {
@@ -274,7 +277,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 peerManagerRef.current.destroyPeer(socketId);
             }
         };
-
         // Register all event listeners
         console.log('📡 Registering socket event listeners...');
         socket.on('user-joined', handleUserJoined);
