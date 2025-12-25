@@ -56,6 +56,15 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 console.log('🔄 Updating existing peer connections with new stream');
                 // Update existing peer connections with new stream
                 peerManagerRef.current.updateLocalStream(stream);
+
+                // Check for any peers we aren't connected to yet and connect
+                const activePeers = peerManagerRef.current.getPeerIds();
+                peers.forEach((peerData, peerId) => {
+                    if (!activePeers.includes(peerId)) {
+                        console.log('➕ Connecting to new peer during broadcast:', peerId);
+                        peerManagerRef.current.createPeer(peerId, true);
+                    }
+                });
             } else {
                 console.log('🆕 Creating new PeerManager');
                 // Create peer manager
