@@ -311,7 +311,19 @@ export function useWebRTC(roomId, user, autoStart = true) {
         hasJoinedRoom.current = true;
         console.log('✅ join-room event emitted');
 
-        // NO cleanup function - listeners persist for component lifetime
+        // Cleanup listeners on unmount or re-run
+        return () => {
+            console.log('🧹 Cleaning up socket listeners');
+            socket.off('user-joined', handleUserJoined);
+            socket.off('existing-users', handleExistingUsers);
+            socket.off('signal', handleSignal);
+            socket.off('user-left', handleUserLeft);
+
+            // Optionally leave room?
+            // socket.emit('leave-room', roomId); 
+            // We generally want to stay in room if just re-rendering, but strict mode unmounts.
+            // If we leave, we must rejoin. 
+        };
     }, [socket, isConnected, roomId]);
 
     // Auto-start camera if enabled
