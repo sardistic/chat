@@ -11,6 +11,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [error, setError] = useState(null);
+    const [iceConfig, setIceConfig] = useState(null); // Store ICE config
 
     const peerManagerRef = useRef(null);
     const localStreamRef = useRef(null);
@@ -44,6 +45,25 @@ export function useWebRTC(roomId, user, autoStart = true) {
         }
     }, []);
 
+    // Fetch ICE servers from Metered.ca
+    useEffect(() => {
+        const fetchIceServers = async () => {
+            try {
+                // Using the API key provided in the screenshot
+                const apiKey = "fafec8b0be0282c0d3e36562d8b94b576488";
+                const response = await fetch(`https://sardistic.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`);
+                if (!response.ok) throw new Error('Failed to fetch TURN credentials');
+                const iceServers = await response.json();
+                console.log('✅ Loaded TURN credentials from Metered.ca');
+                setIceConfig({ iceServers });
+            } catch (err) {
+                console.warn('⚠️ Failed to load TURN servers, connectivity on mobile may fail:', err);
+                // Fallback to default STUN provided in PeerManager
+            }
+        };
+        fetchIceServers();
+    }, []);
+
     // Start broadcasting
     const startBroadcast = useCallback(async () => {
         try {
@@ -68,7 +88,9 @@ export function useWebRTC(roomId, user, autoStart = true) {
             } else {
                 console.log('🆕 Creating new PeerManager');
                 // Create peer manager
-                const peerManager = new PeerManager(socket, stream);
+                console.log('🆕 Creating new PeerManager');
+                // Create peer manager
+                const peerManager = new PeerManager(socket, stream, iceConfig);
                 peerManagerRef.current = peerManager;
 
                 // Handle new peer streams
@@ -233,7 +255,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             // This allows us to receive streams even if we're not broadcasting
             if (!peerManagerRef.current) {
                 console.log('  🆕 Creating PeerManager to receive stream (not broadcasting)');
-                const peerManager = new PeerManager(socket, null);
+                const peerManager = new PeerManager(socket, null, iceConfig);
                 peerManagerRef.current = peerManager;
 
                 // Handle incoming streams
