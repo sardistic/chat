@@ -139,6 +139,15 @@ function MainApp({ user, onLeaveRoom }) {
       </header>
 
       {/* -- MAIN STAGE -- */}
+      <div className="status-bar">
+        <div className="status-item">
+          <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
+          {isConnected ? 'Socket Connected' : 'Disconnected'}
+        </div>
+        <div className="status-item">
+          Build: v2.0 (Mobile Fix)
+        </div>
+      </div>
       <main className="main">
         <div className="stage">
           <div className="stage-header" style={{ padding: '12px', minHeight: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
