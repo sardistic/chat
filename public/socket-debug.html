@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Socket.IO Debug</title>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+    <h1>Socket.IO Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="logs"></div>
+
+    <script>
+        const logs = document.getElementById('logs');
+        const status = document.getElementById('status');
+
+        function log(msg) {
+            const p = document.createElement('p');
+            p.textContent = new Date().toLocaleTimeString() + ': ' + msg;
+            logs.appendChild(p);
+            console.log(msg);
+        }
+
+        const socket = io('http://localhost:3000', {
+            path: '/api/socket/io',
+            addTrailingSlash: false
+        });
+
+        socket.on('connect', () => {
+            status.textContent = '✅ Connected: ' + socket.id;
+            log('Socket connected: ' + socket.id);
+
+            // Try to join room
+            const testUser = { name: 'TestUser', color: '#00ff00' };
+            log('Emitting join-room event...');
+            socket.emit('join-room', { roomId: 'test-room', user: testUser });
+        });
+
+        socket.on('disconnect', () => {
+            status.textContent = '❌ Disconnected';
+            log('Socket disconnected');
+        });
+
+        socket.on('connect_error', (error) => {
+            status.textContent = '🔴 Connection Error';
+            log('Connection error: ' + error.message);
+        });
+
+        socket.on('existing-users', ({ users }) => {
+            log('📋 Received existing-users: ' + users.length + ' users');
+            users.forEach(u => log('  - ' + u.user.name));
+        });
+
+        socket.on('user-joined', ({ socketId, user }) => {
+            log('👋 User joined: ' + user.name + ' (' + socketId + ')');
+        });
+
+        socket.on('user-left', ({ socketId }) => {
+            log('👋 User left: ' + socketId);
+        });
+    </script>
+</body>
+
+</html>
