@@ -90,7 +90,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   return (
     <div className="app" style={{
-      gridTemplateColumns: `1fr ${sidebarWidth}px`
+      '--dynamic-sidebar-w': `${sidebarWidth}px`
     }}>
       {/* -- CONDENSED TOPBAR -- */}
       <header className="topbar" style={{ padding: '0 20px', height: '48px' }}>

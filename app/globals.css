@@ -76,7 +76,7 @@ body {
 .app {
   height: 100%;
   display: grid;
-  grid-template-columns: 1fr var(--sidebar-w);
+  grid-template-columns: 1fr var(--dynamic-sidebar-w, 420px);
   grid-template-rows: var(--topbar-h) 1fr;
   gap: 0;
 }
@@ -1099,20 +1099,29 @@ body {
 
   .app {
     grid-template-columns: 1fr;
-    grid-template-rows: var(--topbar-h) 1fr auto;
+    grid-template-rows: var(--topbar-h) 35vh 1fr;
+    /* Mobile: Header, Video (35%), Chat (Rest) */
   }
 
   .main {
     grid-column: 1;
     grid-row: 2;
+    padding: 0;
+    /* Remove padding on mobile for edge-to-edge video */
   }
 
   .sidebar {
     grid-column: 1;
     grid-row: 3;
-    height: 520px;
+    height: auto;
+    width: 100% !important;
     border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, .08);
+    border-top: 1px solid rgba(255, 255, 255, .15);
+  }
+
+  /* Make drag handle hidden on mobile */
+  .sidebar>div[style*="cursor: ew-resize"] {
+    display: none !important;
   }
 
   .grid {
