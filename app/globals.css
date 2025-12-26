@@ -119,12 +119,19 @@ body {
   padding: 0 24px;
   z-index: 100;
 
-  /* Standard Glass Effect (Robust) */
-  background: rgba(11, 12, 14, 0.7);
-  /* Dark & visible */
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  /* "Super Glass" Effect - Multiplied Intensity */
+  background: rgba(11, 12, 14, 0.3);
+  /* Low opacity to let effect show */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+
+  /* The "Magnifying / Thick" Look */
+  backdrop-filter: blur(32px) saturate(220%) contrast(120%) brightness(110%);
+  -webkit-backdrop-filter: blur(32px) saturate(220%) contrast(120%) brightness(110%);
+
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(255, 255, 255, 0.05);
+  /* Inner glow */
 }
 
 .app-content {
