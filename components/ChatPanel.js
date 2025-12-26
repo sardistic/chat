@@ -334,38 +334,10 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
                 )}
 
                 <div style={{
-                    display: 'flex',
-                    gap: '8px',
                     background: 'var(--bg-tertiary)',
                     borderRadius: '8px',
                     padding: '8px 12px',
                 }}>
-                    {/* GIF Button */}
-                    <button
-                        onClick={() => {
-                            if (showGifPicker) {
-                                setShowGifPicker(false);
-                                setInputValue('');
-                            } else {
-                                setInputValue('/gif ');
-                                setShowGifPicker(true);
-                                inputRef.current?.focus();
-                            }
-                        }}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: '4px 8px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            color: showGifPicker ? '#5865F2' : 'var(--text-muted)',
-                            borderRadius: '4px',
-                        }}
-                        title="GIF picker"
-                    >
-                        GIF
-                    </button>
-
                     <input
                         ref={inputRef}
                         className="chat-input"
@@ -374,7 +346,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
                         style={{
-                            flex: 1,
+                            width: '100%',
                             background: 'transparent',
                             border: 'none',
                             outline: 'none',
