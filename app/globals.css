@@ -117,12 +117,22 @@ body {
   justify-content: space-between;
   padding: 0 24px;
   z-index: 100;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-  background: rgba(5, 5, 10, 0.4);
-  /* Slightly Darker but Translucent */
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  /* Glass effect moved to ::before to ensure proper layering */
+}
+
+/* Glass Backdrop Layer */
+.app-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(10, 11, 14, 0.2);
+  /* Very translucent */
+  backdrop-filter: blur(12px);
+  /* Moderate blur to keep dots visible but frosted */
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
 }
 
 .app-content {
