@@ -121,14 +121,26 @@ export function useWebRTC(roomId, user, autoStart = true) {
 
     // Stop broadcasting
     const stopBroadcast = useCallback(() => {
+        console.log('🛑 Stopping broadcast...');
+
         // 1. Notify peers to remove the stream
-        if (peerManagerRef.current) {
-            peerManagerRef.current.stopLocalStream();
+        try {
+            if (peerManagerRef.current) {
+                peerManagerRef.current.stopLocalStream();
+            }
+        } catch (err) {
+            console.error("Error stopping local stream on peers:", err);
         }
 
-        // 2. Stop all local tracks physically
+        // 2. Stop all local tracks physically (Turns off camera light)
         if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current.getTracks().forEach(track => {
+                try {
+                    track.stop();
+                } catch (e) {
+                    console.warn('Error stopping track:', e);
+                }
+            });
             localStreamRef.current = null;
             setLocalStream(null);
         }
