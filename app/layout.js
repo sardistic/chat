@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -8,15 +9,17 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "Chat v3.4",
-  description: "Soft Railway Theme",
+  title: "CamRooms",
+  description: "Video chat with friends",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.variable} suppressHydrationWarning>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
