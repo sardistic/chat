@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "node server.js",
-    "build": "prisma generate && prisma db push && next build",
-    "start": "node server.js",
+    "build": "prisma generate && next build",
+    "start": "prisma db push --skip-generate && node server.js",
     "lint": "eslint",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio"
