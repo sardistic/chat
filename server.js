@@ -122,6 +122,28 @@ app.prepare().then(() => {
       console.log(`✅ ${user.name} joined room. Total users: ${room.size}`);
     });
 
+    // Request streams from broadcasters (new user wants to receive existing broadcasts)
+    socket.on("request-streams", ({ roomId }) => {
+      const room = rooms.get(roomId);
+      if (!room) return;
+
+      // Find all users who are currently broadcasting video
+      const broadcasters = [];
+      room.forEach((userData, socketId) => {
+        if (socketId !== socket.id && userData.isVideoEnabled) {
+          broadcasters.push(socketId);
+        }
+      });
+
+      if (broadcasters.length > 0) {
+        console.log(`📡 ${socket.id} requesting streams from ${broadcasters.length} broadcasters`);
+        // Tell each broadcaster to initiate a peer connection to the new user
+        broadcasters.forEach(broadcasterId => {
+          io.to(broadcasterId).emit("connect-to-peer", { peerId: socket.id });
+        });
+      }
+    });
+
     // Handle Leave
     socket.on("leave-room", (roomId) => {
       socket.leave(roomId);

@@ -354,12 +354,29 @@ export function useWebRTC(roomId, user, autoStart = true) {
         socket.emit('join-room', { roomId, user: userWithState, ircConfig });
         hasJoinedRoom.current = true;
 
+        // Request streams from any existing broadcasters after a short delay
+        setTimeout(() => {
+            socket.emit('request-streams', { roomId });
+        }, 500);
+
+        // Handle broadcasters being asked to connect to new users
+        const handleConnectToPeer = ({ peerId }) => {
+            console.log(`📡 Broadcaster: Connecting to new peer ${peerId}`);
+            if (peerManagerRef.current && localStreamRef.current) {
+                // Create peer connection as initiator (we have the stream, they want it)
+                peerManagerRef.current.createPeer(peerId, true);
+            }
+        };
+
+        socket.on('connect-to-peer', handleConnectToPeer);
+
         return () => {
             socket.off('user-joined', handleUserJoined);
             socket.off('existing-users', handleExistingUsers);
             socket.off('signal', handleSignal);
             socket.off('user-left', handleUserLeft);
             socket.off('user-updated', handleUserUpdated);
+            socket.off('connect-to-peer', handleConnectToPeer);
         };
     }, [socket, isConnected, roomId]);
 

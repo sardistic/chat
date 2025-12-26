@@ -84,27 +84,8 @@ export default function EntryScreen({ onJoin }) {
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, []);
 
-    // Auto-join if user is already logged in with Discord
-    useEffect(() => {
-        if (status === 'authenticated' && session?.user) {
-            // User is logged in with Discord - auto join
-            onJoin({
-                name: session.user.displayName || session.user.name,
-                avatar: session.user.image || session.user.avatarUrl,
-                userId: session.user.id,
-                role: session.user.role,
-                isGuest: false,
-                ircConfig: {
-                    useIRC: true,
-                    host: 'irc.gamesurge.net',
-                    port: 6667,
-                    nick: session.user.displayName || session.user.name,
-                    channel: '#camsrooms',
-                    username: session.user.displayName || session.user.name
-                }
-            });
-        }
-    }, [status, session, onJoin]);
+    // Don't auto-join - always show entry screen with options
+    // This allows users to choose between Discord login, switch accounts, or guest
 
     // Update seed effect
     useEffect(() => {
@@ -234,7 +215,68 @@ export default function EntryScreen({ onJoin }) {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '24px' }}>
-                    {/* Discord Login Button */}
+                    {/* Continue as Discord (if already logged in) */}
+                    {status === 'authenticated' && session?.user && (
+                        <>
+                            <button
+                                className="btn"
+                                style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    fontSize: '14px',
+                                    justifyContent: 'center',
+                                    background: 'linear-gradient(135deg, #5865F2, #7289DA)',
+                                    border: 'none',
+                                    color: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    fontWeight: '600'
+                                }}
+                                onClick={() => onJoin({
+                                    name: session.user.globalName || session.user.displayName || session.user.name,
+                                    avatar: session.user.image || session.user.avatarUrl,
+                                    image: session.user.image,
+                                    userId: session.user.id,
+                                    discordId: session.user.discordId,
+                                    globalName: session.user.globalName,
+                                    username: session.user.username,
+                                    banner: session.user.banner,
+                                    accentColor: session.user.accentColor,
+                                    premiumType: session.user.premiumType,
+                                    publicFlags: session.user.publicFlags,
+                                    email: session.user.email,
+                                    verified: session.user.verified,
+                                    role: session.user.role,
+                                    isGuest: false,
+                                    ircConfig: {
+                                        useIRC: true,
+                                        host: 'irc.gamesurge.net',
+                                        port: 6667,
+                                        nick: session.user.globalName || session.user.displayName || session.user.name,
+                                        channel: '#camsrooms',
+                                        username: session.user.globalName || session.user.displayName || session.user.name
+                                    }
+                                })}
+                            >
+                                <img
+                                    src={session.user.image}
+                                    alt=""
+                                    style={{ width: '24px', height: '24px', borderRadius: '50%' }}
+                                />
+                                Continue as {session.user.globalName || session.user.name}
+                            </button>
+
+                            {/* Divider */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '4px 0' }}>
+                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+                                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>or</span>
+                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Discord Login Button (for new login or switch account) */}
                     <button
                         className="btn"
                         style={{
@@ -242,8 +284,8 @@ export default function EntryScreen({ onJoin }) {
                             padding: '12px',
                             fontSize: '14px',
                             justifyContent: 'center',
-                            background: '#5865F2',
-                            border: 'none',
+                            background: status === 'authenticated' ? 'rgba(88, 101, 242, 0.2)' : '#5865F2',
+                            border: status === 'authenticated' ? '1px solid rgba(88, 101, 242, 0.4)' : 'none',
                             color: 'white',
                             display: 'flex',
                             alignItems: 'center',
@@ -254,7 +296,7 @@ export default function EntryScreen({ onJoin }) {
                         <svg width="20" height="20" viewBox="0 0 71 55" fill="currentColor">
                             <path d="M60.1 4.9A58.5 58.5 0 0045.4.5a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.6a.2.2 0 00-.2-.1 58.4 58.4 0 00-14.7 4.4.2.2 0 00-.1.1C1.5 18.2-.9 31 .3 43.7a.2.2 0 00.1.1 58.8 58.8 0 0017.7 8.9.2.2 0 00.2 0 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.6.2.2 0 010-.4l1.1-.9a.2.2 0 01.2 0 42 42 0 0035.6 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.2 0 58.6 58.6 0 0017.7-8.9.2.2 0 00.1-.1c1.4-14.5-2.4-27.1-10-38.3a.2.2 0 00-.1-.1zM23.7 35.8c-3.3 0-6-3-6-6.7s2.7-6.7 6-6.7c3.4 0 6.1 3 6 6.7 0 3.7-2.6 6.7-6 6.7zm22.2 0c-3.3 0-6-3-6-6.7s2.6-6.7 6-6.7c3.3 0 6 3 6 6.7 0 3.7-2.7 6.7-6 6.7z" />
                         </svg>
-                        Login with Discord
+                        {status === 'authenticated' ? '🔄 Switch Discord Account' : 'Login with Discord'}
                     </button>
 
                     {/* Divider */}
