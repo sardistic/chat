@@ -91,6 +91,7 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                                 }}
                                 autoPlay
                                 playsInline
+                                muted={isDeafened}
                                 className="video"
                             />
                         ) : (
