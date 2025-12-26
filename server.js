@@ -224,6 +224,19 @@ app.prepare().then(() => {
     });
 
     historyBridge.connect();
+
+    // Auto-Reconnect Logic for History Bot
+    historyBridge.client.on('close', () => {
+      console.warn('[HistoryBot] 🔴 Disconnected. Reconnecting in 10s...');
+      setTimeout(() => {
+        console.log('[HistoryBot] 🔄 Reconnecting...');
+        historyBridge.connect();
+      }, 10000);
+    });
+
+    historyBridge.client.on('error', (err) => {
+      console.error('[HistoryBot] ⚠️ Error:', err);
+    });
   });
 });
 
