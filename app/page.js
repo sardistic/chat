@@ -88,9 +88,42 @@ function MainApp({ user, onLeaveRoom }) {
 
         {/* Right Header Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+          {/* Broadcast Controls */}
+          {isBroadcasting && (
+            <div style={{ display: 'flex', gap: '8px', marginRight: '8px' }}>
+              <button className="btn icon-btn" onClick={toggleAudio} title={isAudioEnabled ? 'Mute Mic' : 'Unmute Mic'}>
+                {isAudioEnabled ? '🎤' : '🔇'}
+              </button>
+              <button className="btn icon-btn" onClick={toggleVideo} title={isVideoEnabled ? 'Disable Camera' : 'Enable Camera'}>
+                {isVideoEnabled ? '📹' : '🚫'}
+              </button>
+            </div>
+          )}
+
+          <button
+            className={`btn ${isBroadcasting ? 'danger' : 'primary'}`}
+            style={{ padding: '6px 12px', fontSize: '12px', height: '32px' }}
+            onClick={handleToggleBroadcast}
+          >
+            {isBroadcasting ? 'Stop Stream' : 'Start Stream'}
+          </button>
+
+          <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+
+          {/* Profile / Settings */}
+          <button className="btn icon-btn" onClick={() => { }} title="Settings">
+            ⚙️
+          </button>
+          <button className="btn icon-btn" onClick={() => { }} title="Profile" style={{ padding: 0, width: '32px', height: '32px', overflow: 'hidden', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <img src={`/api/avatar/${user.name}`} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </button>
+
+          <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
+
           <div className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} title={isConnected ? 'Connected' : 'Disconnected'} />
 
-          <button className="btn" onClick={onLeaveRoom} style={{ padding: '6px 12px', fontSize: '12px' }}>
+          <button className="btn" onClick={onLeaveRoom} style={{ padding: '6px 12px', fontSize: '12px', height: '32px' }}>
             Disconnect
           </button>
         </div>
@@ -109,24 +142,7 @@ function MainApp({ user, onLeaveRoom }) {
             isAudioEnabled={isAudioEnabled}
           />
 
-          <div style={{ position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '12px', zIndex: 10 }}>
-            {isBroadcasting && (
-              <>
-                <button className="btn" onClick={toggleAudio}>
-                  {isAudioEnabled ? '🎤' : '🔇'}
-                </button>
-                <button className="btn" onClick={toggleVideo}>
-                  {isVideoEnabled ? '📹' : '🚫'}
-                </button>
-              </>
-            )}
-            <button
-              className={`btn ${isBroadcasting ? 'danger' : 'primary'}`}
-              onClick={handleToggleBroadcast}
-            >
-              {isBroadcasting ? 'Stop Stream' : 'Start Stream'}
-            </button>
-          </div>
+
         </div>
 
         {/* Floating Right Sidebar (Chat) */}
