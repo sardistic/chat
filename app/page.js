@@ -284,10 +284,10 @@ function MainApp({ user, onLeaveRoom }) {
             {/* Collect & Deduplicate Users */}
             {(() => {
               const uniqueMap = new Map();
-              // Priority: Local -> Peer -> IRC
+              // Priority: Local -> Peer -> IRC (don't overwrite existing entries)
               if (user && user.name) uniqueMap.set(user.name, user);
-              peers.forEach(p => { if (p.user && p.user.name) uniqueMap.set(p.user.name, p.user); });
-              ircUsers.forEach(u => { if (u && u.name) uniqueMap.set(u.name, u); });
+              peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
+              ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
 
               return Array.from(uniqueMap.values())
                 .filter(u => u.name.toLowerCase() !== 'camroomslogbot') // Hide Bot from Aquarium
