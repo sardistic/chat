@@ -155,7 +155,7 @@ body {
   padding: 2px;
 }
 
-/* Floating Right Panel (Chat/Deployments) */
+/* Docked Right Panel (Chat/Deployments) */
 .floating-sidebar {
   width: var(--dynamic-sidebar-w, 320px);
   /* Darker blurred background */
@@ -163,17 +163,15 @@ body {
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
 
-  /* Floated look */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  /* 6px gap from header (top), 16px from right/bottom */
-  margin: 6px 16px 16px 0;
+  /* Docked look - Flush edges */
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  margin: 0;
 
   display: flex;
   flex-direction: column;
   position: relative;
   z-index: 50;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
