@@ -336,7 +336,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
                 <div style={{
                     background: 'var(--bg-tertiary)',
                     borderRadius: '8px',
-                    padding: '8px 12px',
+                    padding: '12px 16px',
                 }}>
                     <input
                         ref={inputRef}
@@ -351,7 +351,8 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
                             border: 'none',
                             outline: 'none',
                             color: 'var(--text-primary)',
-                            fontSize: '14px',
+                            fontSize: '15px',
+                            padding: '4px 0',
                         }}
                     />
                 </div>
