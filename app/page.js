@@ -69,7 +69,10 @@ function MainApp({ user, onLeaveRoom }) {
   const handleMouseMove = useCallback((e) => {
     if (!isResizing) return;
     const newWidth = window.innerWidth - e.clientX;
-    const constrained = Math.max(280, Math.min(600, newWidth));
+    // Max width: 50% of screen or 800px, whichever is smaller (to avoid breaking on huge screens? or larger?)
+    // User asked for "like half the screen".
+    const maxWidth = window.innerWidth * 0.5;
+    const constrained = Math.max(280, Math.min(maxWidth, newWidth));
     setSidebarWidth(constrained);
   }, [isResizing]);
 
