@@ -67,6 +67,7 @@ function MainApp({ user, onLeaveRoom }) {
     if (!socket) return;
 
     const handleMessage = (msg) => {
+      console.log("BUBBLE: Received", msg);
       // msg = { author, content, ... }
       if (!msg || !msg.author || !msg.content) return;
 
