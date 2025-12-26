@@ -118,7 +118,15 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
             setGifQuery('');
             setShowMentions(false);
         } else {
-            setShowGifPicker(false);
+            // Check for :word pattern (like Discord emoji picker)
+            const colonMatch = value.match(/:(\w+)$/);
+            if (colonMatch && colonMatch[1].length >= 1) {
+                setShowGifPicker(true);
+                setGifQuery(colonMatch[1]);
+                setShowMentions(false);
+            } else {
+                setShowGifPicker(false);
+            }
         }
 
         // Check for @ mentions (only if not in gif mode)
