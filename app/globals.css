@@ -124,12 +124,15 @@ body {
   padding: 0 24px;
   z-index: 100;
 
-  /* Standard Robust Glass */
-  background: rgba(10, 11, 14, 0.6);
-  /* Visible dark tint */
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  /* "Heavy Frost" - Obscures background details */
+  background: rgba(10, 11, 14, 0.75);
+  /* Mostly opaque */
+  backdrop-filter: blur(40px) saturate(160%);
+  /* Heavy smear */
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .app-content {
