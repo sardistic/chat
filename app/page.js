@@ -29,6 +29,14 @@ function MainApp({ user, onLeaveRoom }) {
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const closeMenu = () => setShowProfileMenu(false);
+    if (showProfileMenu) window.addEventListener('click', closeMenu);
+    return () => window.removeEventListener('click', closeMenu);
+  }, [showProfileMenu]);
 
   const handleToggleBroadcast = async () => {
     if (isBroadcasting) {
@@ -123,21 +131,34 @@ function MainApp({ user, onLeaveRoom }) {
 
           <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
-          {/* Profile / Settings */}
-          <button className="btn icon-btn" onClick={() => { }} title="Settings">
-            ⚙️
-          </button>
-          <button className="btn icon-btn" onClick={() => { }} title="Profile" style={{ padding: 0, width: '32px', height: '32px', overflow: 'hidden', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <img src={`/api/avatar/${user.name}`} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </button>
-
-          <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
-
+          {/* Connection Status */}
           <div className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} title={isConnected ? 'Connected' : 'Disconnected'} />
 
-          <button className="btn" onClick={onLeaveRoom} style={{ padding: '6px 12px', fontSize: '12px', height: '32px' }}>
-            Disconnect
-          </button>
+          {/* Profile Dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              className="btn icon-btn pfp-trigger"
+              onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }}
+              title="Profile"
+              style={{ padding: 0, width: '36px', height: '36px', overflow: 'hidden', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
+            >
+              <img src={`/api/avatar/${user.name}`} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </button>
+
+            {showProfileMenu && (
+              <div
+                className="profile-menu"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{user.name}</div>
+                  <div style={{ fontSize: '11px', color: '#888' }}>Online</div>
+                </div>
+                <button className="menu-item disabled">Settings</button>
+                <button className="menu-item danger" onClick={onLeaveRoom}>Disconnect</button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -160,9 +181,9 @@ function MainApp({ user, onLeaveRoom }) {
             bottom: 0,
             left: 0,
             right: 0,
-            height: '140px',
+            height: '100px',
             pointerEvents: 'none',
-            overflow: 'hidden',
+            overflow: 'visible',
             zIndex: 5,
             display: 'flex',
             alignItems: 'flex-end',
@@ -172,20 +193,14 @@ function MainApp({ user, onLeaveRoom }) {
           }}>
             {/* Collect all users */}
             {[user, ...Array.from(peers.values()).map(p => p.user), ...Array.from(ircUsers.values())].filter(u => u && u.name).map((u, i) => (
-              <div key={u.name + i} className="floating-avatar" style={{
-                animationDelay: `${Math.random() * -5}s`,
-                animationDuration: `${3 + Math.random() * 2}s`
-              }}>
-                <div style={{ position: 'relative', width: '64px', height: '64px' }}>
+              <div key={u.name + i} className="aquarium-avatar">
+                <div style={{ position: 'relative', width: '56px', height: '56px' }}>
                   <img
                     src={`/api/avatar/${u.name}`}
                     alt={u.name}
                     style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
                   />
-                  <div style={{
-                    position: 'absolute', bottom: '-20px', left: '50%', transform: 'translateX(-50%)',
-                    fontSize: '10px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap', textShadow: '0 1px 2px black'
-                  }}>
+                  <div className="avatar-name">
                     {u.name}
                   </div>
                 </div>
