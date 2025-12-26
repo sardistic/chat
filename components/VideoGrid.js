@@ -107,11 +107,28 @@ function VideoTile({
             }
         }
 
-        // 4. Discord user premium indicator (subtle)
-        if (isDiscordUser && user?.premiumType) {
-            // Nitro users get a subtle shimmer
-            if (!animation) {
-                animation = 'nitro-shimmer';
+        // 5. Vibe/Mood Animation (User-specific personality)
+        // If no other strong signal is active, fall back to the user's inherent "vibe"
+        if (!mentionCount && chatActivity < 5 && !animation) {
+            // Determine vibe from username deterministically
+            const VIBES = ['hype', 'chill', 'happy', 'focused'];
+            // Use the same hash function as color
+            let hash = 0;
+            const name = user?.name || 'guest';
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                hash = hash & hash;
+            }
+            const vibe = VIBES[Math.abs(hash) % VIBES.length];
+
+            animation = `vibe-${vibe}`;
+
+            // Adjust colors based on vibe if not already set by camera
+            if (!isVideoEnabled || !dominantColor) {
+                if (vibe === 'hype') { borderColor = '#ff00ff'; glowColor = '#00ffff'; }
+                if (vibe === 'chill') { borderColor = '#6495ed'; glowColor = '#8a2be2'; }
+                if (vibe === 'happy') { borderColor = '#ffd700'; glowColor = '#ffa500'; }
+                if (vibe === 'focused') { borderColor = 'rgba(255,255,255,0.5)'; glowColor = 'rgba(255,255,255,0.2)'; }
             }
         }
 
