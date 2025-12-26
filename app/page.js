@@ -6,6 +6,7 @@ import VideoGrid from "@/components/VideoGrid";
 import EntryScreen from "@/components/EntryScreen";
 import ChatPanel from "@/components/ChatPanel";
 import { useWebRTC } from "@/hooks/useWebRTC";
+import { useIRC } from "@/hooks/useIRC";
 import { useSocket } from "@/lib/socket";
 
 function MainApp({ user, onLeaveRoom }) {
@@ -22,6 +23,7 @@ function MainApp({ user, onLeaveRoom }) {
     stopBroadcast,
     error
   } = useWebRTC(roomId, user, false);
+  const { ircUsers } = useIRC();
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
@@ -76,7 +78,7 @@ function MainApp({ user, onLeaveRoom }) {
           <header className="grid-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <h3>Production</h3>
-              <span className="text-muted" style={{ fontSize: '13px' }}>{peers.size + 1} Services Online</span>
+              <span className="text-muted" style={{ fontSize: '13px' }}>{peers.size + 1 + ircUsers.size} Services Online</span>
             </div>
 
             <div className="actions" style={{ display: 'flex', gap: '8px' }}>
@@ -147,7 +149,7 @@ function MainApp({ user, onLeaveRoom }) {
             style={{ flex: 1, fontSize: '12px', padding: '6px' }}
             onClick={() => setActiveTab('services')}
           >
-            Services ({peers.size + 1})
+            Services ({peers.size + 1 + ircUsers.size})
           </button>
         </div>
 
@@ -171,15 +173,29 @@ function MainApp({ user, onLeaveRoom }) {
                 </div>
               </div>
 
-              {/* Remote Users */}
+              {/* Remote Users (WebRTC) */}
               {Array.from(peers, ([socketId, p]) => (
                 <div key={socketId} className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'rgba(255,255,255,0.02)' }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: p.user?.color || '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    👤
+                    📹
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>{p.user?.name || 'Unknown'}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ID: {socketId.slice(0, 4)}...</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Video Client</div>
+                  </div>
+                </div>
+              ))}
+
+              {/* IRC Users */}
+              {ircUsers.size > 0 && <div style={{ marginTop: '8px', marginBottom: '4px', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>IRC USERS ({ircUsers.size})</div>}
+              {Array.from(ircUsers.values()).map((u) => (
+                <div key={u.name} className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--border-subtle)' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF' }}>
+                    #
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>{u.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>IRC {u.modes && u.modes.length > 0 ? `[${u.modes.join('')}]` : ''}</div>
                   </div>
                 </div>
               ))}

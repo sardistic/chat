@@ -17,6 +17,20 @@ let ircBridge = null; // IRC bridge instance
 // Store message history per room (limit 200)
 const messageHistory = new Map(); // roomId -> Array of messages
 
+// Helper to store messages
+const storeMessage = (roomId, message) => {
+  if (!messageHistory.has(roomId)) {
+    messageHistory.set(roomId, []);
+  }
+  const history = messageHistory.get(roomId);
+  history.push(message);
+
+  // Limit to last 200 messages
+  if (history.length > 200) {
+    history.shift(); // Remove oldest
+  }
+};
+
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
@@ -47,7 +61,7 @@ app.prepare().then(() => {
         rooms.set(roomId, new Map());
       }
 
-      // Initialize history if it doesn't exist
+      // Ensure history exists (handled by storeMessage, but good for empty rooms)
       if (!messageHistory.has(roomId)) {
         messageHistory.set(roomId, []);
       }
@@ -112,16 +126,7 @@ app.prepare().then(() => {
     // Chat messages
     socket.on("chat-message", (message) => {
       // Store in history
-      if (!messageHistory.has(message.roomId)) {
-        messageHistory.set(message.roomId, []);
-      }
-      const history = messageHistory.get(message.roomId);
-      history.push(message);
-
-      // Limit to last 200 messages
-      if (history.length > 200) {
-        history.shift(); // Remove oldest
-      }
+      storeMessage(message.roomId, message);
 
       // Broadcast to everyone in the room including sender
       io.to(message.roomId).emit("chat-message", message);
@@ -163,7 +168,7 @@ app.prepare().then(() => {
   });
 
   // Initialize IRC bridge
-  ircBridge = new IRCBridge(io);
+  ircBridge = new IRCBridge(io, storeMessage);
   ircBridge.connect();
   console.log('IRC bridge initialized');
 
