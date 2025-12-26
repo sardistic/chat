@@ -29,7 +29,10 @@ export function useChat(roomId, user) {
             timestamp: new Date().toISOString(),
         };
 
-        // Mark as seen immediately (we sent it)
+        // Add message to local state immediately (optimistic update)
+        setMessages(prev => [...prev, message]);
+
+        // Mark as seen so server echo doesn't duplicate
         seenIdsRef.current.add(messageId);
 
         socket.emit('chat-message', message);
