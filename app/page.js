@@ -142,14 +142,14 @@ function MainApp({ user, onLeaveRoom }) {
             style={{ flex: 1, fontSize: '12px', padding: '6px' }}
             onClick={() => setActiveTab('logs')}
           >
-            Logs
+            Chat
           </button>
           <button
             className={`btn ${activeTab === 'services' ? 'primary' : ''}`}
             style={{ flex: 1, fontSize: '12px', padding: '6px' }}
             onClick={() => setActiveTab('services')}
           >
-            Services ({peers.size + 1 + ircUsers.size})
+            Users ({peers.size + 1 + ircUsers.size})
           </button>
         </div>
 
@@ -161,42 +161,43 @@ function MainApp({ user, onLeaveRoom }) {
             </div>
           ) : (
             /* User List (Services) */
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {/* Local User */}
-              <div className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: user.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  👤
+              <div className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: user.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+                  {/* Initials or Icon */}
+                  {user.name.charAt(0).toUpperCase()}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{user.name} (You)</div>
-                  <div style={{ fontSize: '11px', color: 'var(--status-online)' }}>● Online</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
                 </div>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--status-online)', boxShadow: '0 0 4px var(--status-online)' }}></div>
               </div>
 
               {/* Remote Users (WebRTC) */}
               {Array.from(peers, ([socketId, p]) => (
-                <div key={socketId} className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'rgba(255,255,255,0.02)' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: p.user?.color || '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    📹
+                <div key={socketId} className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', border: '1px solid transparent' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: p.user?.color || '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
+                    {p.user?.name ? p.user.name.charAt(0).toUpperCase() : '?'}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>{p.user?.name || 'Unknown'}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Video Client</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
                   </div>
+                  <div title="Video Client" style={{ fontSize: '10px' }}>📹</div>
                 </div>
               ))}
 
               {/* IRC Users */}
-              {ircUsers.size > 0 && <div style={{ marginTop: '8px', marginBottom: '4px', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>IRC USERS ({ircUsers.size})</div>}
+              {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
               {Array.from(ircUsers.values()).map((u) => (
-                <div key={u.name} className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--border-subtle)' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF' }}>
+                <div key={u.name} className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '4px', background: '#2d3748', color: '#a0aec0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
                     #
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>{u.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>IRC {u.modes && u.modes.length > 0 ? `[${u.modes.join('')}]` : ''}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</div>
                   </div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>IRC</div>
                 </div>
               ))}
             </div>
