@@ -1,8 +1,39 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useChat } from '@/hooks/useChat';
 import MessageContent from './MessageContent';
+import GifPicker from './GifPicker';
+
+// Group messages from the same sender within 5 minutes
+function groupMessages(messages) {
+    const groups = [];
+    let currentGroup = null;
+
+    messages.forEach((msg, index) => {
+        const prevMsg = index > 0 ? messages[index - 1] : null;
+        const isSameSender = prevMsg && prevMsg.sender === msg.sender;
+        const isWithinTimeWindow = prevMsg &&
+            (new Date(msg.timestamp) - new Date(prevMsg.timestamp)) < 5 * 60 * 1000; // 5 minutes
+
+        if (isSameSender && isWithinTimeWindow && currentGroup) {
+            // Add to current group
+            currentGroup.messages.push(msg);
+        } else {
+            // Start new group
+            currentGroup = {
+                sender: msg.sender,
+                senderColor: msg.senderColor,
+                senderAvatar: msg.senderAvatar,
+                timestamp: msg.timestamp,
+                messages: [msg],
+            };
+            groups.push(currentGroup);
+        }
+    });
+
+    return groups;
+}
 
 export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
     const { messages, sendMessage, handleTyping, typingUsers } = useChat(roomId, user);
@@ -10,8 +41,13 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
     const [showMentions, setShowMentions] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
     const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
+    const [showGifPicker, setShowGifPicker] = useState(false);
+    const [gifQuery, setGifQuery] = useState('');
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+
+    // Group messages for Discord-style display
+    const messageGroups = useMemo(() => groupMessages(messages), [messages]);
 
     // Combine web users and IRC users for mentions
     const allUsers = [
@@ -39,16 +75,15 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
             sendMessage(inputValue);
             setInputValue('');
             setShowMentions(false);
+            setShowGifPicker(false);
         }
     };
 
     const insertMention = (username) => {
-        // Find the @ position and replace with mention
         const cursorPos = inputRef.current?.selectionStart || inputValue.length;
         const textBeforeCursor = inputValue.slice(0, cursorPos);
         const textAfterCursor = inputValue.slice(cursorPos);
 
-        // Find the last @ before cursor
         const lastAtIndex = textBeforeCursor.lastIndexOf('@');
         if (lastAtIndex !== -1) {
             const newValue = textBeforeCursor.slice(0, lastAtIndex) + `@${username} ` + textAfterCursor;
@@ -60,27 +95,49 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
         inputRef.current?.focus();
     };
 
+    const handleGifSelect = (gifUrl) => {
+        sendMessage(gifUrl);
+        setShowGifPicker(false);
+        setGifQuery('');
+        setInputValue('');
+    };
+
     const handleInputChange = (e) => {
         const value = e.target.value;
         setInputValue(value);
         handleTyping();
 
-        // Check for @ mentions
-        const cursorPos = e.target.selectionStart;
-        const textBeforeCursor = value.slice(0, cursorPos);
-        const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+        // Check for /gif command
+        const gifMatch = value.match(/^\/gif\s+(.+)$/i);
+        if (gifMatch) {
+            setShowGifPicker(true);
+            setGifQuery(gifMatch[1]);
+            setShowMentions(false);
+        } else if (value.startsWith('/gif')) {
+            setShowGifPicker(true);
+            setGifQuery('');
+            setShowMentions(false);
+        } else {
+            setShowGifPicker(false);
+        }
 
-        if (lastAtIndex !== -1) {
-            const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
-            // Show mentions if @ is at start or preceded by space, and no space after @
-            if ((lastAtIndex === 0 || textBeforeCursor[lastAtIndex - 1] === ' ') && !textAfterAt.includes(' ')) {
-                setShowMentions(true);
-                setMentionQuery(textAfterAt);
+        // Check for @ mentions (only if not in gif mode)
+        if (!value.startsWith('/gif')) {
+            const cursorPos = e.target.selectionStart;
+            const textBeforeCursor = value.slice(0, cursorPos);
+            const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+            if (lastAtIndex !== -1) {
+                const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
+                if ((lastAtIndex === 0 || textBeforeCursor[lastAtIndex - 1] === ' ') && !textAfterAt.includes(' ')) {
+                    setShowMentions(true);
+                    setMentionQuery(textAfterAt);
+                } else {
+                    setShowMentions(false);
+                }
             } else {
                 setShowMentions(false);
             }
-        } else {
-            setShowMentions(false);
         }
     };
 
@@ -98,75 +155,155 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
             } else if (e.key === 'Escape') {
                 setShowMentions(false);
             }
-        } else if (e.key === 'Enter' && !e.shiftKey) {
+        } else if (e.key === 'Escape' && showGifPicker) {
+            setShowGifPicker(false);
+            setInputValue('');
+        } else if (e.key === 'Enter' && !e.shiftKey && !showGifPicker) {
             e.preventDefault();
             handleSend();
         }
     };
 
     const formatTime = (timestamp) => {
-        return new Date(timestamp).toLocaleTimeString('en-US', {
-            hour: '2-digit', minute: '2-digit', hour12: false
+        const date = new Date(timestamp);
+        const today = new Date();
+        const isToday = date.toDateString() === today.toDateString();
+
+        if (isToday) {
+            return `Today at ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+        }
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
         });
     };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-            <div className="msgs">
+            <div className="msgs" style={{ padding: '16px' }}>
                 {messages.length === 0 && (
-                    <div className="msg" style={{ justifyContent: 'center', opacity: 0.5, fontStyle: 'italic' }}>
-                        <div className="content">
-                            No messages yet. Start the conversation!
-                        </div>
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '32px',
+                        color: 'var(--text-muted)',
+                        fontStyle: 'italic'
+                    }}>
+                        No messages yet. Start the conversation!
                     </div>
                 )}
 
-                {messages.map((msg) => (
-                    <div key={msg.id} className="msg">
-                        <div className="author" style={{ color: msg.senderColor }}>
-                            {msg.sender}
+                {messageGroups.map((group, groupIndex) => (
+                    <div
+                        key={`group-${groupIndex}`}
+                        className="message-group"
+                        style={{
+                            display: 'flex',
+                            gap: '12px',
+                            marginBottom: '16px',
+                            padding: '4px 0',
+                        }}
+                    >
+                        {/* Avatar */}
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            background: group.senderColor || '#5865F2',
+                            flexShrink: 0,
+                            overflow: 'hidden',
+                        }}>
+                            <img
+                                src={group.senderAvatar || `/api/avatar/${group.sender}`}
+                                alt={group.sender}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                }}
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentElement.innerHTML = `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:16px;font-weight:bold;color:white">${group.sender?.charAt(0)?.toUpperCase() || '?'}</span>`;
+                                }}
+                            />
                         </div>
-                        <div className="content">
-                            <MessageContent text={msg.text} />
-                            <span style={{
-                                fontSize: '10px',
-                                color: 'var(--text-muted)',
-                                marginLeft: '8px',
-                                opacity: 0.6
-                            }}>
-                                {formatTime(msg.timestamp)}
-                            </span>
+
+                        {/* Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            {/* Header: Username + Timestamp */}
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                                <span style={{
+                                    fontWeight: '600',
+                                    color: group.senderColor || 'var(--text-primary)',
+                                    fontSize: '15px'
+                                }}>
+                                    {group.sender}
+                                </span>
+                                <span style={{
+                                    fontSize: '11px',
+                                    color: 'var(--text-muted)',
+                                }}>
+                                    {formatTime(group.timestamp)}
+                                </span>
+                            </div>
+
+                            {/* Messages */}
+                            {group.messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    style={{
+                                        marginBottom: '4px',
+                                        lineHeight: '1.4',
+                                    }}
+                                >
+                                    <MessageContent text={msg.text} />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 ))}
 
                 {typingUsers.length > 0 && (
-                    <div className="msg">
-                        <div className="content" style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                            {typingUsers.join(', ')} is typing...
-                        </div>
+                    <div style={{
+                        fontSize: '13px',
+                        color: 'var(--text-muted)',
+                        fontStyle: 'italic',
+                        padding: '8px 0',
+                    }}>
+                        {typingUsers.join(', ')} is typing...
                     </div>
                 )}
 
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area with Mention Autocomplete */}
-            <div className="input-area" style={{ position: 'relative' }}>
+            {/* Input Area */}
+            <div className="input-area" style={{ position: 'relative', padding: '0 16px 16px' }}>
+                {/* GIF Picker */}
+                {showGifPicker && (
+                    <GifPicker
+                        query={gifQuery}
+                        onSelect={handleGifSelect}
+                        onClose={() => { setShowGifPicker(false); setInputValue(''); }}
+                    />
+                )}
+
                 {/* Mention Dropdown */}
                 {showMentions && filteredMentions.length > 0 && (
                     <div style={{
                         position: 'absolute',
                         bottom: '100%',
-                        left: 0,
-                        right: 0,
+                        left: '16px',
+                        right: '16px',
                         background: 'var(--bg-secondary)',
-                        borderRadius: '8px 8px 0 0',
+                        borderRadius: '8px',
                         border: '1px solid rgba(255,255,255,0.1)',
-                        borderBottom: 'none',
                         maxHeight: '200px',
                         overflow: 'auto',
                         zIndex: 100,
+                        marginBottom: '4px',
                     }}>
                         {filteredMentions.slice(0, 10).map((u, index) => (
                             <div
@@ -196,14 +333,56 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
                     </div>
                 )}
 
-                <input
-                    ref={inputRef}
-                    className="chat-input"
-                    placeholder="Type a message... (@ to mention)"
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                />
+                <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    background: 'var(--bg-tertiary)',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                }}>
+                    {/* GIF Button */}
+                    <button
+                        onClick={() => {
+                            if (showGifPicker) {
+                                setShowGifPicker(false);
+                                setInputValue('');
+                            } else {
+                                setInputValue('/gif ');
+                                setShowGifPicker(true);
+                                inputRef.current?.focus();
+                            }
+                        }}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: '4px 8px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: showGifPicker ? '#5865F2' : 'var(--text-muted)',
+                            borderRadius: '4px',
+                        }}
+                        title="GIF picker"
+                    >
+                        GIF
+                    </button>
+
+                    <input
+                        ref={inputRef}
+                        className="chat-input"
+                        placeholder="Message... (/gif to search GIFs, @ to mention)"
+                        value={inputValue}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                        style={{
+                            flex: 1,
+                            background: 'transparent',
+                            border: 'none',
+                            outline: 'none',
+                            color: 'var(--text-primary)',
+                            fontSize: '14px',
+                        }}
+                    />
+                </div>
             </div>
         </div>
     );

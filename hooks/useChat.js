@@ -10,18 +10,27 @@ export function useChat(roomId, user) {
     const [typingUsers, setTypingUsers] = useState(new Set());
     const typingTimeoutRef = useRef(null);
 
+    // Track seen message IDs to prevent duplicates
+    const seenIdsRef = useRef(new Set());
+
     // Send a message
     const sendMessage = useCallback((text) => {
         if (!socket || !text.trim() || !roomId || !user) return;
 
+        const messageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
         const message = {
-            id: Date.now() + Math.random(),
+            id: messageId,
             roomId,
             text: text.trim(),
             sender: user.name,
             senderColor: user.color,
+            senderAvatar: user.avatar || user.image || `/api/avatar/${user.name}`,
             timestamp: new Date().toISOString(),
         };
+
+        // Mark as seen immediately (we sent it)
+        seenIdsRef.current.add(messageId);
 
         socket.emit('chat-message', message);
 
@@ -32,6 +41,7 @@ export function useChat(roomId, user) {
         }
         socket.emit('stop-typing', { roomId });
     }, [socket, roomId, user]);
+
 
     // Handle typing indicator
     const handleTyping = useCallback(() => {
@@ -59,12 +69,16 @@ export function useChat(roomId, user) {
         if (!socket || !isConnected) return;
 
         const handleMessage = (message) => {
-            // Deduplicate - check if we already have this message
-            setMessages(prev => {
-                const isDuplicate = prev.some(m => m.id === message.id);
-                if (isDuplicate) return prev;
-                return [...prev, message];
-            });
+            // Check if we've already seen this message (fast Set lookup)
+            if (seenIdsRef.current.has(message.id)) {
+                return; // Skip duplicate
+            }
+
+            // Mark as seen
+            seenIdsRef.current.add(message.id);
+
+            // Add to messages
+            setMessages(prev => [...prev, message]);
         };
 
         const handleUserTyping = ({ user: typingUser }) => {
