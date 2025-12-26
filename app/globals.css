@@ -69,31 +69,26 @@ body {
   overflow: hidden;
 }
 
-/* Starmap Effect */
-.app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  position: relative;
-  overflow: hidden;
-  /* Ensure pseudo-element doesn't overflow */
-
-  /* Base Layer: Dim Stars (Always visible) */
+/* Starmap Effect moved to BODY to ensure backdrop-filter works */
+body {
+  /* Base Layer: Dim Stars */
   background-color: #0b0c0e;
   background-image: radial-gradient(#1F2937 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
+  position: relative;
+  /* Context for pseudo */
 }
 
 /* Highlight Layer: Bright Stars (Revealed by Mouse) */
-.app::before {
+body::before {
   content: "";
-  position: absolute;
+  position: fixed;
+  /* Fixed to viewport */
   inset: 0;
   pointer-events: none;
-  z-index: 0;
-  /* Sit just above base bg, below content */
+  z-index: -1;
+  /* Behind everything */
 
   /* Bright white/blueish stars */
   background-image: radial-gradient(#A78BFA 1.5px, transparent 1.5px);
@@ -103,6 +98,16 @@ body {
   /* The Flashlight Mask */
   -webkit-mask-image: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
   mask-image: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+  /* Removed background logic from here */
 }
 
 /* Fixed Header */
