@@ -244,31 +244,33 @@ function MainApp({ user, onLeaveRoom }) {
               peers.forEach(p => { if (p.user && p.user.name) uniqueMap.set(p.user.name, p.user); });
               ircUsers.forEach(u => { if (u && u.name) uniqueMap.set(u.name, u); });
 
-              return Array.from(uniqueMap.values()).map((u, i) => {
-                const bubble = chatBubbles[u.name];
-                return (
-                  <div key={u.name + i} className="aquarium-avatar" style={{ position: 'relative' }}>
+              return Array.from(uniqueMap.values())
+                .filter(u => u.name.toLowerCase() !== 'camroomslogbot') // Hide Bot from Aquarium
+                .map((u, i) => {
+                  const bubble = chatBubbles[u.name];
+                  return (
+                    <div key={u.name + i} className="aquarium-avatar" style={{ position: 'relative' }}>
 
-                    {/* Chat Bubble */}
-                    {bubble && (
-                      <div className="chat-bubble">
-                        {bubble}
-                      </div>
-                    )}
+                      {/* Chat Bubble */}
+                      {bubble && (
+                        <div className="chat-bubble">
+                          {bubble}
+                        </div>
+                      )}
 
-                    <div style={{ position: 'relative', width: '56px', height: '56px' }}>
-                      <img
-                        src={`/api/avatar/${u.name}`}
-                        alt={u.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
-                      />
-                      <div className="avatar-name">
-                        {u.name}
+                      <div style={{ position: 'relative', width: '56px', height: '56px' }}>
+                        <img
+                          src={`/api/avatar/${u.name}`}
+                          alt={u.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                        />
+                        <div className="avatar-name">
+                          {u.name}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              });
+                  );
+                });
             })()}
           </div>
         </div>
@@ -343,24 +345,48 @@ function MainApp({ user, onLeaveRoom }) {
 
                 {/* IRC Users */}
                 {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
-                {Array.from(ircUsers.values()).map((u) => (
-                  <div key={u.name} className="user-item">
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <img
-                        src={`/api/avatar/${u.name}`}
-                        alt={u.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
-                        <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
+                {/* IRC Users (Humans) */}
+                {Array.from(ircUsers.values())
+                  .filter(u => u.name.toLowerCase() !== 'camroomslogbot')
+                  .map((u) => (
+                    <div key={u.name} className="user-item">
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <img
+                          src={`/api/avatar/${u.name}`}
+                          alt={u.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.modes && u.modes.length > 0 ? `+${u.modes.join('')}` : 'Remote User'}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
+                          <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.modes && u.modes.length > 0 ? `+${u.modes.join('')}` : 'Remote User'}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+
+                {/* System Bots */}
+                <div style={{ marginTop: '16px', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '10px', fontWeight: '800', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  System
+                </div>
+                {Array.from(ircUsers.values())
+                  .filter(u => u.name.toLowerCase() === 'camroomslogbot')
+                  .map((u) => (
+                    <div key={u.name} className="user-item" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }}>
+                        <span style={{ fontSize: '18px' }}>🤖</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>LogBot</span>
+                          <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: 'white', color: 'var(--accent-primary)', fontWeight: 'bold' }}>OFFICIAL</span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--accent-primary)' }}>Archives & Logs</div>
+                      </div>
+                    </div>
+                  ))}
               </div>
             )}
           </div>
