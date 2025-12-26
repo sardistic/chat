@@ -63,52 +63,44 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   background-color: #0B0C0E;
-  /* Deep dark background */
   color: #E2E8F0;
   overflow: hidden;
-  /* App handles scrolling */
-
-  /* Railway-style Dot Pattern */
-  background-image: radial-gradient(#2A2A2A 1px, transparent 1px);
-  background-size: 24px 24px;
 }
 
-/* Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #444;
-}
-
+/* Starmap Effect */
 .app {
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100vw;
   position: relative;
-  /* Mouse Reactive Background */
+  overflow: hidden;
+  /* Ensure pseudo-element doesn't overflow */
+
+  /* Base Layer: Dim Stars (Always visible) */
   background-color: #0b0c0e;
-  background-image:
-    radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29, 78, 216, 0.15) 0%, transparent 50%),
-    /* Blue Glow Spot */
-    radial-gradient(#2A2A2A 1px, transparent 1px);
-  /* Dot Pattern from reference */
-  background-size: 100% 100%, 24px 24px;
-  background-position: 0 0, 0 0;
-  transition: background 0.1s ease;
-  /* Smooth movement? No, instant is better for mouse */
+  background-image: radial-gradient(#1F2937 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  background-position: 0 0;
+}
+
+/* Highlight Layer: Bright Stars (Revealed by Mouse) */
+.app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  /* Sit just above base bg, below content */
+
+  /* Bright white/blueish stars */
+  background-image: radial-gradient(#A78BFA 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  background-position: 0 0;
+
+  /* The Flashlight Mask */
+  -webkit-mask-image: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+  mask-image: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
 }
 
 /* Fixed Header */
