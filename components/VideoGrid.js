@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import ProfileModal from "./ProfileModal";
-import { useCameraEffects, SparkleOverlay } from "@/hooks/useCameraEffects";
+import { useCameraEffects } from "@/hooks/useCameraEffects";
 
 // Generate a deterministic color from a username (similar to avatar API)
 function getUserColor(name) {
@@ -25,15 +25,25 @@ function getFadedBackground(color) {
     return `radial-gradient(ellipse at center, ${color}30 0%, ${color}15 40%, #1a1a1a 100%)`;
 }
 
-// Individual video tile with effects
-function VideoTile({ videoRef, stream, user, isLocal, isVideoEnabled, isAudioEnabled, isDeafened, onClick }) {
+// Individual video tile with smart effects
+function VideoTile({
+    stream,
+    user,
+    isLocal,
+    isVideoEnabled,
+    isAudioEnabled,
+    isDeafened,
+    onClick,
+    mentionCount = 0,  // How many times this user was mentioned recently
+    chatActivity = 0,  // Recent chat message count (0-10+)
+    isDiscordUser = false
+}) {
     const tileVideoRef = useRef(null);
-    const [effectsEnabled, setEffectsEnabled] = useState(true);
 
-    // Camera effects hook
-    const { brightness, dominantColor, effectIntensity, effectStyles } = useCameraEffects(
+    // Camera effects hook - only for vibrancy/color analysis
+    const { brightness, dominantColor, effectIntensity } = useCameraEffects(
         tileVideoRef,
-        isVideoEnabled && effectsEnabled
+        isVideoEnabled
     );
 
     // Update video element
@@ -43,13 +53,6 @@ function VideoTile({ videoRef, stream, user, isLocal, isVideoEnabled, isAudioEna
         }
     }, [stream]);
 
-    // Sync with parent ref if provided
-    useEffect(() => {
-        if (videoRef) {
-            videoRef.current = tileVideoRef.current;
-        }
-    }, [videoRef]);
-
     const userColor = getUserColor(user?.name);
     const background = getFadedBackground(userColor);
 
@@ -58,9 +61,67 @@ function VideoTile({ videoRef, stream, user, isLocal, isVideoEnabled, isAudioEna
         ? `rgb(${dominantColor.r}, ${dominantColor.g}, ${dominantColor.b})`
         : userColor;
 
+    // Calculate smart border properties based on multiple signals
+    const getBorderStyle = () => {
+        // Base border from camera vibrancy
+        let borderWidth = 2;
+        let glowSize = 0;
+        let borderColor = 'rgba(255, 255, 255, 0.1)';
+        let glowColor = 'transparent';
+        let animation = '';
+
+        // 1. Camera vibrancy (when broadcasting)
+        if (isVideoEnabled && brightness) {
+            const vibrancy = brightness / 255;
+            borderWidth = 2 + Math.floor(vibrancy * 2); // 2-4px
+            glowSize = 8 + Math.floor(vibrancy * 24); // 8-32px
+
+            if (dominantColor) {
+                const { r, g, b } = dominantColor;
+                // Boost saturation
+                const boost = 1.4;
+                const br = Math.min(255, r * boost);
+                const bg = Math.min(255, g * boost);
+                const bb = Math.min(255, b * boost);
+                borderColor = `rgba(${br}, ${bg}, ${bb}, 0.7)`;
+                glowColor = `rgba(${br}, ${bg}, ${bb}, 0.5)`;
+            }
+        }
+
+        // 2. Mentions boost (someone said their name - makes border glow gold briefly)
+        if (mentionCount > 0) {
+            glowSize = Math.max(glowSize, 24 + mentionCount * 8);
+            glowColor = 'rgba(255, 215, 0, 0.6)'; // Gold
+            borderColor = '#FFD700';
+            animation = 'mention-pulse';
+        }
+
+        // 3. Chat activity (frequent chatters get a subtle pulsing border)
+        if (chatActivity >= 5 && !mentionCount) {
+            animation = 'activity-pulse';
+            if (!isVideoEnabled) {
+                borderColor = 'rgba(99, 102, 241, 0.6)'; // Indigo for active chatters
+                glowSize = 12;
+                glowColor = 'rgba(99, 102, 241, 0.3)';
+            }
+        }
+
+        // 4. Discord user premium indicator (subtle)
+        if (isDiscordUser && user?.premiumType) {
+            // Nitro users get a subtle shimmer
+            if (!animation) {
+                animation = 'nitro-shimmer';
+            }
+        }
+
+        return { borderWidth, glowSize, borderColor, glowColor, animation };
+    };
+
+    const borderStyle = getBorderStyle();
+
     return (
         <div
-            className={`tile effect-${effectIntensity}`}
+            className={`tile effect-${effectIntensity} ${borderStyle.animation}`}
             style={{ background }}
             onClick={onClick}
         >
@@ -70,20 +131,21 @@ function VideoTile({ videoRef, stream, user, isLocal, isVideoEnabled, isAudioEna
                     className="tile-ambient-glow"
                     style={{
                         background: ambientGlowColor,
-                        opacity: Math.min(0.7, brightness / 200), // More visible
+                        opacity: Math.min(0.6, brightness / 200),
                     }}
                 />
             )}
 
-            {/* Glow border */}
-            {isVideoEnabled && (
-                <div
-                    className={`tile-glow-border ${effectStyles.pulseAnimation ? 'pulse' : ''} ${effectStyles.rainbow ? 'rainbow' : ''}`}
-                    style={{
-                        boxShadow: `0 0 ${effectStyles.glowSize}px ${effectStyles.glowColor}, inset 0 0 0 2px ${effectStyles.borderColor}`,
-                    }}
-                />
-            )}
+            {/* Smart glow border */}
+            <div
+                className="tile-glow-border"
+                style={{
+                    boxShadow: borderStyle.glowSize > 0
+                        ? `0 0 ${borderStyle.glowSize}px ${borderStyle.glowColor}`
+                        : 'none',
+                    border: `${borderStyle.borderWidth}px solid ${borderStyle.borderColor}`,
+                }}
+            />
 
             {/* Video or avatar */}
             {isVideoEnabled && stream ? (
@@ -119,15 +181,6 @@ function VideoTile({ videoRef, stream, user, isLocal, isVideoEnabled, isAudioEna
                 </div>
             )}
 
-            {/* Sparkle overlay for broadcasting tiles */}
-            {isVideoEnabled && effectStyles.sparkleCount > 0 && (
-                <SparkleOverlay
-                    count={effectStyles.sparkleCount}
-                    speed={effectStyles.sparkleSpeed}
-                    active={brightness > 80}
-                />
-            )}
-
             {/* Name overlay */}
             <div className="overlay">
                 <div className="name">
@@ -136,10 +189,12 @@ function VideoTile({ videoRef, stream, user, isLocal, isVideoEnabled, isAudioEna
                         style={{ background: isVideoEnabled ? 'var(--status-online)' : 'var(--text-muted)' }}
                     />
                     {user?.name || 'User'} {isLocal && '(You)'}
+                    {isDiscordUser && <span style={{ marginLeft: '4px', opacity: 0.7 }}>🔗</span>}
                 </div>
                 <div className="status-icons">
                     {!isAudioEnabled && <span>🔇</span>}
                     {!isLocal && user?.isDeafened && <span>🙉</span>}
+                    {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}>💬</span>}
                 </div>
             </div>
         </div>
@@ -147,9 +202,6 @@ function VideoTile({ videoRef, stream, user, isLocal, isVideoEnabled, isAudioEna
 }
 
 export default function VideoGrid({ localStream, peers, localUser, isVideoEnabled, isAudioEnabled, isDeafened }) {
-    const localVideoRef = useRef(null);
-    const peerVideoRefs = useRef(new Map());
-
     // Profile modal state
     const [selectedUser, setSelectedUser] = useState(null);
     const [modalPosition, setModalPosition] = useState(null);
@@ -178,13 +230,13 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
             <div className="grid">
                 {/* Local User Tile */}
                 <VideoTile
-                    videoRef={localVideoRef}
                     stream={localStream}
                     user={localUser}
                     isLocal={true}
                     isVideoEnabled={isVideoEnabled}
                     isAudioEnabled={isAudioEnabled}
-                    isDeafened={true} // Always mute own audio
+                    isDeafened={true}
+                    isDiscordUser={!!localUser?.discordId}
                     onClick={(e) => handleTileClick(e, localUser)}
                 />
 
@@ -202,6 +254,7 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                             isVideoEnabled={isRemoteVideoActive}
                             isAudioEnabled={!isRemoteMuted}
                             isDeafened={isDeafened}
+                            isDiscordUser={!!peerData.user?.discordId}
                             onClick={(e) => handleTileClick(e, peerData.user)}
                         />
                     );

@@ -938,52 +938,61 @@ body {
   }
 }
 
-/* Sparkle overlay container */
-.sparkle-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 10;
-  overflow: hidden;
-  border-radius: inherit;
+/* ========================================
+   Smart Border Animations
+   ======================================== */
+
+/* Mention pulse - gold glow when someone mentions this user */
+.tile.mention-pulse .tile-glow-border {
+  animation: mentionPulse 1.5s ease-in-out infinite;
 }
 
-/* Individual sparkle */
-.sparkle {
-  position: absolute;
-  background: white;
-  border-radius: 50%;
-  animation: sparkleAnim 2s ease-in-out infinite;
-  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.8);
-}
-
-@keyframes sparkleAnim {
+@keyframes mentionPulse {
 
   0%,
   100% {
-    opacity: 0;
-    transform: scale(0) rotate(0deg);
+    box-shadow: 0 0 24px rgba(255, 215, 0, 0.6);
+    border-color: #FFD700;
   }
 
   50% {
-    opacity: 1;
-    transform: scale(1) rotate(180deg);
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.9);
+    border-color: #FFEC8B;
   }
 }
 
-/* Star-shaped sparkles for intense mode */
-.sparkle.star {
-  background: transparent;
-  box-shadow: none;
+/* Activity pulse - subtle pulse for active chatters */
+.tile.activity-pulse .tile-glow-border {
+  animation: activityPulse 3s ease-in-out infinite;
 }
 
-.sparkle.star::before,
-.sparkle.star::after {
-  content: '✦';
-  position: absolute;
-  font-size: 12px;
-  color: gold;
-  text-shadow: 0 0 8px gold;
+@keyframes activityPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Nitro shimmer - subtle color shift for premium Discord users */
+.tile.nitro-shimmer .tile-glow-border {
+  animation: nitroShimmer 4s ease-in-out infinite;
+}
+
+@keyframes nitroShimmer {
+
+  0%,
+  100% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+
+  50% {
+    filter: hue-rotate(15deg) brightness(1.1);
+  }
 }
 
 /* Intensity-based tile effects */
