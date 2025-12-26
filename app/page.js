@@ -154,7 +154,44 @@ function MainApp({ user, onLeaveRoom }) {
             isAudioEnabled={isAudioEnabled}
           />
 
-
+          {/* Avatar Aquarium */}
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '140px',
+            pointerEvents: 'none',
+            overflow: 'hidden',
+            zIndex: 5,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            gap: '24px',
+            paddingBottom: '20px'
+          }}>
+            {/* Collect all users */}
+            {[user, ...Array.from(peers.values()).map(p => p.user), ...Array.from(ircUsers.values())].filter(u => u && u.name).map((u, i) => (
+              <div key={u.name + i} className="floating-avatar" style={{
+                animationDelay: `${Math.random() * -5}s`,
+                animationDuration: `${3 + Math.random() * 2}s`
+              }}>
+                <div style={{ position: 'relative', width: '64px', height: '64px' }}>
+                  <img
+                    src={`/api/avatar/${u.name}`}
+                    alt={u.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                  />
+                  <div style={{
+                    position: 'absolute', bottom: '-20px', left: '50%', transform: 'translateX(-50%)',
+                    fontSize: '10px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap', textShadow: '0 1px 2px black'
+                  }}>
+                    {u.name}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Floating Right Sidebar (Chat) */}
