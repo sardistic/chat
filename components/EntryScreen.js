@@ -97,80 +97,82 @@ export default function EntryScreen({ onJoin }) {
     }, [color, characterSeed]);
 
     const handleJoin = () => {
-        onJoin({ name: username, color, avatar: spriteImage });
+        onJoin({
+            name: username,
+            color,
+            avatar: spriteImage,
+            ircConfig: {
+                useIRC: true,
+                host: 'irc.gamesurge.net',
+                port: 6667,
+                nick: username,
+                channel: '#camsrooms',
+                username: username
+            }
+        });
     };
 
     return (
-        <div style={{
-            position: 'fixed', inset: 0,
-            background: 'var(--bg-main)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 9999
-        }}>
-            <div className="panel-card" style={{
-                width: '100%', maxWidth: '400px',
-                padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px',
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
-            }}>
-                <div style={{ textAlign: 'center' }}>
-                    <h2 style={{ fontSize: '20px', marginBottom: '8px' }}>Join Session</h2>
-                    <p className="text-muted" style={{ fontSize: '14px', margin: 0 }}>
-                        Configure your identity
-                    </p>
+        <div className="entry-screen">
+            <div className="entry-card">
+                <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                    <h1 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '8px' }}>CamRooms</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Join the channel</p>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                    <div style={{
-                        width: '96px', height: '96px',
-                        background: 'var(--bg-input)',
-                        borderRadius: '12px', overflow: 'hidden',
-                        border: '1px solid var(--border-subtle)'
-                    }}>
-                        {spriteImage && <img src={spriteImage} style={{ width: '100%', height: '100%' }} />}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
+                    {/* Sprite Preview */}
+                    <div style={{ width: '96px', height: '96px', background: color, borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 20px 40px ${color}40` }}>
+                        {spriteImage && <img src={spriteImage} alt="Avatar" style={{ width: '64px', height: '64px', imageRendering: 'pixelated' }} />}
+                    </div>
+
+                    {/* Controls */}
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button className="btn" onClick={() => setCharacterSeed(Date.now())} title="Randomize Avatar">🎲</button>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                            {colors.map(c => (
+                                <div
+                                    key={c.hex}
+                                    style={{ width: '24px', height: '24px', borderRadius: '50%', background: c.hex, cursor: 'pointer', border: color === c.hex ? '2px solid white' : '2px solid transparent', boxShadow: color === c.hex ? '0 0 0 2px var(--accent-primary)' : 'none' }}
+                                    onClick={() => setColor(c.hex)}
+                                    title={c.name}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                {/* Name Input */}
-                <div>
-                    <label className="text-secondary" style={{ fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
-                        DISPLAY NAME
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Display Name</label>
+                    <div style={{ position: 'relative' }}>
                         <input
+                            type="text"
                             className="chat-input"
+                            style={{ paddingRight: '40px', fontSize: '16px', fontWeight: '500' }}
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Enter name..."
+                            maxLength={16}
                         />
-                        <button className="btn" onClick={() => setCharacterSeed(Math.random())} title="Randomize">
-                            🎲
+                        <button
+                            className="btn"
+                            style={{ position: 'absolute', right: '4px', top: '4px', padding: '4px 8px', height: 'auto', background: 'transparent', border: 'none', color: 'var(--text-muted)' }}
+                            onClick={() => setUsername(generateName(Date.now()))}
+                            title="Random Name"
+                        >
+                            ↺
                         </button>
                     </div>
                 </div>
 
-                {/* Color Picker */}
-                <div>
-                    <label className="text-secondary" style={{ fontSize: '12px', fontWeight: '600', display: 'block', marginBottom: '8px' }}>
-                        ACCENT COLOR
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
-                        {colors.map(c => (
-                            <button
-                                key={c.hex}
-                                onClick={() => setColor(c.hex)}
-                                style={{
-                                    width: '24px', height: '24px', borderRadius: '50%',
-                                    background: c.hex, border: 'none', cursor: 'pointer',
-                                    outline: color === c.hex ? '2px solid white' : 'none',
-                                    outlineOffset: '2px'
-                                }}
-                            />
-                        ))}
+                <div style={{ marginTop: 'auto' }}>
+                    <button className="btn primary" style={{ width: '100%', padding: '12px', fontSize: '14px', justifyContent: 'center' }} onClick={handleJoin}>
+                        Join Room
+                    </button>
+                    <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Joining #camsrooms on irc.gamesurge.net
                     </div>
                 </div>
-
-                <button className="btn primary" style={{ padding: '12px', fontSize: '14px' }} onClick={handleJoin}>
-                    Connect to Server
-                </button>
             </div>
         </div>
     );

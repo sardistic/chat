@@ -280,7 +280,11 @@ export function useWebRTC(roomId, user, autoStart = true) {
 
         // NOW join the room (after listeners are set up)
         console.log('📤 Emitting join-room event with:', { roomId, user: currentUser });
-        socket.emit('join-room', { roomId, user: currentUser });
+
+        // Extract ircConfig to send separately (don't leak to other peers)
+        const { ircConfig, ...safeUser } = currentUser;
+
+        socket.emit('join-room', { roomId, user: safeUser, ircConfig });
         hasJoinedRoom.current = true;
         console.log('✅ join-room event emitted');
 

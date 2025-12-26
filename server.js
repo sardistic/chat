@@ -90,66 +90,107 @@ app.prepare().then(() => {
       socket.to(roomId).emit("user-joined", { socketId: socket.id, user });
 
       console.log(`✅ ${user.name} joined room. Total users in room: ${room.size}`);
+      // Handle room joining
+      socket.on('join-room', ({ roomId, user, ircConfig }) => { // Expect ircConfig
+        socket.join(roomId);
 
-      // Store current room in socket data
-      socket.data.roomId = roomId;
-      socket.data.user = user;
-    });
+        // Store user data on socket for easy access
+        socket.data.user = user;
+        socket.data.roomId = roomId;
 
-    // Leave room
-    socket.on("leave-room", (roomId) => {
-      socket.leave(roomId);
-      console.log(`User ${socket.id} left room ${roomId}`);
-
-      const room = rooms.get(roomId);
-      if (room) {
-        room.delete(socket.id);
-        if (room.size === 0) {
-          rooms.delete(roomId);
-          // Optional: clear history when room is empty? 
-          // Keeping it for now so re-joining persistence works comfortably.
+        // Initialize per-user IRC bridge if config provided
+        if (ircConfig && ircConfig.useIRC) {
+          try {
+            console.log(`[Server] Initializing IRC Bridge for ${user.name}`);
+            // Pass the socket directly to the IRCBridge for per-user communication
+            const bridge = new IRCBridge(socket, ircConfig);
+            bridge.connect();
+            socket.data.ircBridge = bridge;
+          } catch (err) {
+            console.error('[Server] Failed to init IRC bridge:', err);
+            socket.emit('irc-error', { message: 'Failed to initialize bridge' });
+          }
         }
-      }
 
-      socket.to(roomId).emit("user-left", { socketId: socket.id });
-    });
+        // Initialize room history if needed
+        if (!messageHistory.has(roomId)) {
+          messageHistory.set(roomId, []);
+        }
 
-    // WebRTC signaling
-    socket.on("signal", (data) => {
-      // data = { target: socketId, payload: ... }
-      io.to(data.target).emit("signal", {
-        sender: socket.id,
-        payload: data.payload
+        // Send existing chat history to the joining user
+        const history = messageHistory.get(roomId);
+        socket.emit('chat-history', history);
+
+        // Initial sync of IRC users (if any bridges are active in this room? Difficult to sync global state with personal bridges)
+        // Ideally, we'd aggregated IRC users if we wanted a shared list, but for "personal bouncer", the client gets its own list from its bridge.
+        // However, for other WebRTC users to know about IRC users, we might need a shared state?
+        // Let's rely on the personal bridge emitting 'irc-userlist' to THIS socket.
+
+        // Notify others in room
+        socket.to(roomId).emit('user-connected', {
+          socketId: socket.id,
+          user
+        });
+
+        console.log(`User joined room ${roomId}:`, user.name);
       });
-    });
 
-    // Chat messages
-    socket.on("chat-message", (message) => {
-      // Store in history
-      storeMessage(message.roomId, message);
+      // Leave room
+      socket.on("leave-room", (roomId) => {
+        socket.leave(roomId);
+        console.log(`User ${socket.id} left room ${roomId}`);
 
-      // Broadcast to everyone in the room including sender
-      io.to(message.roomId).emit("chat-message", message);
+        const room = rooms.get(roomId);
+        if (room) {
+          room.delete(socket.id);
+          if (room.size === 0) {
+            rooms.delete(roomId);
+            // Optional: clear history when room is empty? 
+            // Keeping it for now so re-joining persistence works comfortably.
+          }
+        }
 
-      // Relay to IRC if bridge is connected and message is not from IRC
-      if (ircBridge && !message.source) {
-        ircBridge.sendToIRC(message);
-      }
-    });
+        socket.to(roomId).emit("user-left", { socketId: socket.id });
+      });
 
-    // Typing indicators
-    socket.on("typing", ({ roomId, user }) => {
-      socket.to(roomId).emit("user-typing", { user });
-    });
+      // WebRTC signaling
+      socket.on("signal", (data) => {
+        // data = { target: socketId, payload: ... }
+        io.to(data.target).emit("signal", {
+          sender: socket.id,
+          payload: data.payload
+        });
+      });
 
-    socket.on("stop-typing", ({ roomId }) => {
-      socket.to(roomId).emit("user-stop-typing", { user: socket.data.user?.name });
-    });
+      // Handle chat messages
+      socket.on('chat-message', (message) => {
+        // Add server-side timestamp if missing
+        if (!message.timestamp) {
+          message.timestamp = new Date().toISOString();
+        }
 
-    // Handle disconnect
-    socket.on("disconnect", () => {
-      console.log("Client disconnected:", socket.id);
+        // Store in history
+        storeMessage(message.roomId, message);
 
+        // Broadcast to WebRTC room
+        io.to(message.roomId).emit('chat-message', message);
+
+        // If user has an IRC bridge, send it there too
+        if (socket.data.ircBridge) {
+          socket.data.ircBridge.sendToIRC(message);
+        }
+      });
+
+      // Typing indicators
+      socket.on("typing", ({ roomId, user }) => {
+        socket.to(roomId).emit("user-typing", { user });
+      });
+
+      socket.on("stop-typing", ({ roomId }) => {
+        socket.to(roomId).emit("user-stop-typing", { user: socket.data.user?.name });
+      });
+
+      // Handle disconnect
       // Remove from all rooms
       const roomId = socket.data.roomId;
       if (roomId) {
