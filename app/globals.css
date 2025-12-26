@@ -71,6 +71,7 @@ body {
 
 /* Starmap Effect moved to BODY to ensure backdrop-filter works */
 body {
+  min-height: 100vh;
   /* Base Layer: Dim Stars */
   background-color: #0b0c0e;
   background-image: radial-gradient(#1F2937 1.5px, transparent 1.5px);
@@ -124,19 +125,16 @@ body::before {
   padding: 0 24px;
   z-index: 100;
 
-  /* "Super Glass" Effect - Multiplied Intensity */
-  background: rgba(11, 12, 14, 0.3);
-  /* Low opacity to let effect show */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  /* "Bloom Glass" - Brightens content behind to make dots glow */
+  background: rgba(11, 12, 14, 0.4);
+  /* Translucent for backdrop interaction */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
-  /* The "Magnifying / Thick" Look */
-  backdrop-filter: blur(32px) saturate(220%) contrast(120%) brightness(110%);
-  -webkit-backdrop-filter: blur(32px) saturate(220%) contrast(120%) brightness(110%);
+  /* Blur + Brightness = Glow/Bloom Effect */
+  backdrop-filter: blur(10px) brightness(150%) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) brightness(150%) saturate(150%);
 
-  box-shadow:
-    0 4px 30px rgba(0, 0, 0, 0.5),
-    inset 0 0 20px rgba(255, 255, 255, 0.05);
-  /* Inner glow */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
 .app-content {
