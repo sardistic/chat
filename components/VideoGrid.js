@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import ProfileModal from "./ProfileModal";
 
 // Generate a deterministic color from a username (similar to avatar API)
 function getUserColor(name) {
@@ -27,6 +28,10 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
     const localVideoRef = useRef(null);
     const peerVideoRefs = useRef(new Map());
 
+    // Profile modal state
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [modalPosition, setModalPosition] = useState(null);
+
     // Update local video element
     useEffect(() => {
         if (localVideoRef.current && localStream) {
@@ -50,105 +55,141 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
     const localColor = getUserColor(localUser?.name);
     const localBackground = getFadedBackground(localColor);
 
+    // Handle tile click to show profile
+    const handleTileClick = (e, user) => {
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        setSelectedUser(user);
+        setModalPosition({
+            x: rect.right + 10,
+            y: rect.top,
+        });
+    };
+
+    // Close modal
+    const handleCloseModal = () => {
+        setSelectedUser(null);
+        setModalPosition(null);
+    };
+
     return (
-        <div className="grid">
-            {/* Local User Tile */}
-            <div className="tile" style={{ background: localBackground }}>
-                {isVideoEnabled && localStream ? (
-                    <video
-                        ref={localVideoRef}
-                        autoPlay
-                        muted
-                        playsInline
-                        className="video"
-                        style={{
-                            transform: 'scaleX(-1)' // Mirror local video
-                        }}
-                    />
-                ) : (
-                    <div style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'transparent'
-                    }}>
-                        <img
-                            src={localUser?.avatar || `/api/avatar/${localUser?.name}`}
-                            alt={localUser?.name}
-                            style={{ width: '80px', height: '80px', opacity: 0.9 }}
+        <>
+            <div className="grid">
+                {/* Local User Tile */}
+                <div
+                    className="tile"
+                    style={{ background: localBackground }}
+                    onClick={(e) => handleTileClick(e, localUser)}
+                >
+                    {isVideoEnabled && localStream ? (
+                        <video
+                            ref={localVideoRef}
+                            autoPlay
+                            muted
+                            playsInline
+                            className="video"
+                            style={{
+                                transform: 'scaleX(-1)' // Mirror local video
+                            }}
                         />
-                    </div>
-                )}
-
-                <div className="overlay">
-                    <div className="name">
-                        <span className="status-dot" style={{ background: 'var(--status-online)' }}></span>
-                        {localUser?.name || 'Local'} (You)
-                    </div>
-                    <div className="status-icons">
-                        {!isAudioEnabled && <span>🔇</span>}
-                    </div>
-                </div>
-            </div>
-
-            {/* Remote Peer Tiles */}
-            {peerArray.map(([peerId, peerData]) => {
-                const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
-                const isRemoteMuted = peerData.user?.isAudioEnabled === false;
-
-                // Get remote user's background color
-                const remoteColor = getUserColor(peerData.user?.name);
-                const remoteBackground = getFadedBackground(remoteColor);
-
-                return (
-                    <div key={peerId} className="tile" style={{ background: remoteBackground }}>
-                        {isRemoteVideoActive ? (
-                            <video
-                                ref={(el) => {
-                                    if (el) {
-                                        peerVideoRefs.current.set(peerId, el);
-                                        if (peerData.stream) el.srcObject = peerData.stream;
-                                    } else {
-                                        peerVideoRefs.current.delete(peerId);
-                                    }
-                                }}
-                                autoPlay
-                                playsInline
-                                muted={isDeafened}
-                                className="video"
+                    ) : (
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'transparent'
+                        }}>
+                            <img
+                                src={localUser?.avatar || localUser?.image || `/api/avatar/${localUser?.name}`}
+                                alt={localUser?.name}
+                                style={{ width: '80px', height: '80px', opacity: 0.9 }}
                             />
-                        ) : (
-                            <div style={{
-                                width: '100%',
-                                height: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'transparent'
-                            }}>
-                                <img
-                                    src={peerData.user?.avatar || `/api/avatar/${peerData.user?.name || 'User'}`}
-                                    alt={peerData.user?.name}
-                                    style={{ width: '80px', height: '80px', opacity: 0.7, filter: 'grayscale(50%)' }}
-                                />
-                            </div>
-                        )}
+                        </div>
+                    )}
 
-                        <div className="overlay">
-                            <div className="name">
-                                <span className="status-dot" style={{ background: isRemoteVideoActive ? 'var(--status-online)' : 'var(--text-muted)' }}></span>
-                                {peerData.user?.name || `User ${peerId.slice(0, 4)}`}
-                            </div>
-                            <div className="status-icons">
-                                {isRemoteMuted && <span>🔇</span>}
-                                {peerData.user?.isDeafened && <span>🙉</span>}
-                            </div>
+                    <div className="overlay">
+                        <div className="name">
+                            <span className="status-dot" style={{ background: 'var(--status-online)' }}></span>
+                            {localUser?.name || 'Local'} (You)
+                        </div>
+                        <div className="status-icons">
+                            {!isAudioEnabled && <span>🔇</span>}
                         </div>
                     </div>
-                );
-            })}
-        </div>
+                </div>
+
+                {/* Remote Peer Tiles */}
+                {peerArray.map(([peerId, peerData]) => {
+                    const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
+                    const isRemoteMuted = peerData.user?.isAudioEnabled === false;
+
+                    // Get remote user's background color
+                    const remoteColor = getUserColor(peerData.user?.name);
+                    const remoteBackground = getFadedBackground(remoteColor);
+
+                    return (
+                        <div
+                            key={peerId}
+                            className="tile"
+                            style={{ background: remoteBackground }}
+                            onClick={(e) => handleTileClick(e, peerData.user)}
+                        >
+                            {isRemoteVideoActive ? (
+                                <video
+                                    ref={(el) => {
+                                        if (el) {
+                                            peerVideoRefs.current.set(peerId, el);
+                                            if (peerData.stream) el.srcObject = peerData.stream;
+                                        } else {
+                                            peerVideoRefs.current.delete(peerId);
+                                        }
+                                    }}
+                                    autoPlay
+                                    playsInline
+                                    muted={isDeafened}
+                                    className="video"
+                                />
+                            ) : (
+                                <div style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'transparent'
+                                }}>
+                                    <img
+                                        src={peerData.user?.avatar || peerData.user?.image || `/api/avatar/${peerData.user?.name || 'User'}`}
+                                        alt={peerData.user?.name}
+                                        style={{ width: '80px', height: '80px', opacity: 0.7, filter: 'grayscale(50%)' }}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="overlay">
+                                <div className="name">
+                                    <span className="status-dot" style={{ background: isRemoteVideoActive ? 'var(--status-online)' : 'var(--text-muted)' }}></span>
+                                    {peerData.user?.name || `User ${peerId.slice(0, 4)}`}
+                                </div>
+                                <div className="status-icons">
+                                    {isRemoteMuted && <span>🔇</span>}
+                                    {peerData.user?.isDeafened && <span>🙉</span>}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Profile Modal */}
+            <ProfileModal
+                user={selectedUser}
+                isOpen={!!selectedUser}
+                onClose={handleCloseModal}
+                position={modalPosition}
+            />
+        </>
     );
 }
