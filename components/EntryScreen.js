@@ -149,7 +149,8 @@ export default function EntryScreen({ onJoin }) {
     };
 
     const handleDiscordLogin = () => {
-        signIn('discord');
+        // Use a clean callback URL to prevent parameter accumulation
+        signIn('discord', { callbackUrl: '/' });
     };
 
     const handleRandomize = () => {
