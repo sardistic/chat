@@ -76,12 +76,18 @@ export function useChat(roomId, user) {
             });
         };
 
+        const handleHistory = (history) => {
+            setMessages(history);
+        };
+
         socket.on('chat-message', handleMessage);
+        socket.on('chat-history', handleHistory);
         socket.on('user-typing', handleUserTyping);
         socket.on('user-stop-typing', handleUserStopTyping);
 
         return () => {
             socket.off('chat-message', handleMessage);
+            socket.off('chat-history', handleHistory);
             socket.off('user-typing', handleUserTyping);
             socket.off('user-stop-typing', handleUserStopTyping);
 

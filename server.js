@@ -14,6 +14,9 @@ const handle = app.getRequestHandler();
 const rooms = new Map(); // roomId -> Set of { socketId, user }
 let ircBridge = null; // IRC bridge instance
 
+// Store message history per room (limit 200)
+const messageHistory = new Map(); // roomId -> Array of messages
+
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
@@ -44,6 +47,11 @@ app.prepare().then(() => {
         rooms.set(roomId, new Map());
       }
 
+      // Initialize history if it doesn't exist
+      if (!messageHistory.has(roomId)) {
+        messageHistory.set(roomId, []);
+      }
+
       const room = rooms.get(roomId);
 
       // Get existing users in room before adding new user
@@ -59,6 +67,10 @@ app.prepare().then(() => {
 
       // Send existing users to the new user
       socket.emit("existing-users", { users: existingUsers });
+
+      // Send chat history to the new user
+      const history = messageHistory.get(roomId) || [];
+      socket.emit("chat-history", history);
 
       // Notify existing users about new user
       socket.to(roomId).emit("user-joined", { socketId: socket.id, user });
@@ -80,6 +92,8 @@ app.prepare().then(() => {
         room.delete(socket.id);
         if (room.size === 0) {
           rooms.delete(roomId);
+          // Optional: clear history when room is empty? 
+          // Keeping it for now so re-joining persistence works comfortably.
         }
       }
 
@@ -97,6 +111,18 @@ app.prepare().then(() => {
 
     // Chat messages
     socket.on("chat-message", (message) => {
+      // Store in history
+      if (!messageHistory.has(message.roomId)) {
+        messageHistory.set(message.roomId, []);
+      }
+      const history = messageHistory.get(message.roomId);
+      history.push(message);
+
+      // Limit to last 200 messages
+      if (history.length > 200) {
+        history.shift(); // Remove oldest
+      }
+
       // Broadcast to everyone in the room including sender
       io.to(message.roomId).emit("chat-message", message);
 
