@@ -121,11 +121,23 @@ export function useWebRTC(roomId, user, autoStart = true) {
 
     // Stop broadcasting
     const stopBroadcast = useCallback(() => {
+        // 1. Notify peers to remove the stream
+        if (peerManagerRef.current) {
+            peerManagerRef.current.stopLocalStream();
+        }
+
+        // 2. Stop all local tracks physically
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
             setLocalStream(null);
         }
+
+        // 3. Reset State & Broadcast Status
+        setIsVideoEnabled(false);
+        setIsAudioEnabled(false);
+        broadcastStatus({ isVideoEnabled: false, isAudioEnabled: false });
+
     }, []);
 
     // Toggle audio

@@ -15,7 +15,6 @@ function MainApp({ user, onLeaveRoom }) {
   const {
     localStream,
     peers,
-    peers,
     isAudioEnabled,
     isVideoEnabled,
     isDeafened,
