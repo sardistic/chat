@@ -2,7 +2,28 @@
 
 import { useEffect, useRef } from "react";
 
-export default function VideoGrid({ localStream, peers, localUser, isVideoEnabled, isAudioEnabled }) {
+// Generate a deterministic color from a username (similar to avatar API)
+function getUserColor(name) {
+    if (!name) return '#6366F1';
+
+    // Simple hash function
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash;
+    }
+
+    // Generate HSL color with good saturation and lightness
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 70%, 50%)`;
+}
+
+// Create a faded gradient background from a color
+function getFadedBackground(color) {
+    return `radial-gradient(ellipse at center, ${color}30 0%, ${color}15 40%, #1a1a1a 100%)`;
+}
+
+export default function VideoGrid({ localStream, peers, localUser, isVideoEnabled, isAudioEnabled, isDeafened }) {
     const localVideoRef = useRef(null);
     const peerVideoRefs = useRef(new Map());
 
@@ -25,20 +46,14 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
 
     const peerArray = Array.from(peers.entries());
 
-    // Calculate total number of videos (including local if broadcasting)
-    const totalVideos = (localStream ? 1 : 0) + peerArray.length;
-
-    // Auto-calculate optimal grid columns (Railway style: bigger cards)
-    // 1-2 users: 1 col (full width or half)
-    // 3-4 users: 2 cols
-    // 5+ users: 3 cols
-    // Responsive grid handled by CSS grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))
-    // We can rely on CSS grid auto-placement mostly.
+    // Get local user's background color
+    const localColor = getUserColor(localUser?.name);
+    const localBackground = getFadedBackground(localColor);
 
     return (
         <div className="grid">
             {/* Local User Tile */}
-            <div className="tile">
+            <div className="tile" style={{ background: localBackground }}>
                 {isVideoEnabled && localStream ? (
                     <video
                         ref={localVideoRef}
@@ -51,11 +66,18 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                         }}
                     />
                 ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#242424' }}>
+                    <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent'
+                    }}>
                         <img
                             src={localUser?.avatar || `/api/avatar/${localUser?.name}`}
                             alt={localUser?.name}
-                            style={{ width: '80px', height: '80px', opacity: 0.8 }}
+                            style={{ width: '80px', height: '80px', opacity: 0.9 }}
                         />
                     </div>
                 )}
@@ -76,14 +98,17 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                 const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
                 const isRemoteMuted = peerData.user?.isAudioEnabled === false;
 
+                // Get remote user's background color
+                const remoteColor = getUserColor(peerData.user?.name);
+                const remoteBackground = getFadedBackground(remoteColor);
+
                 return (
-                    <div key={peerId} className="tile">
+                    <div key={peerId} className="tile" style={{ background: remoteBackground }}>
                         {isRemoteVideoActive ? (
                             <video
                                 ref={(el) => {
                                     if (el) {
                                         peerVideoRefs.current.set(peerId, el);
-                                        // Ensure stream is set when mounting
                                         if (peerData.stream) el.srcObject = peerData.stream;
                                     } else {
                                         peerVideoRefs.current.delete(peerId);
@@ -95,11 +120,18 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                                 className="video"
                             />
                         ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#242424' }}>
+                            <div style={{
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'transparent'
+                            }}>
                                 <img
                                     src={peerData.user?.avatar || `/api/avatar/${peerData.user?.name || 'User'}`}
                                     alt={peerData.user?.name}
-                                    style={{ width: '80px', height: '80px', opacity: 0.5, filter: 'grayscale(100%)' }}
+                                    style={{ width: '80px', height: '80px', opacity: 0.7, filter: 'grayscale(50%)' }}
                                 />
                             </div>
                         )}
@@ -119,9 +151,4 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
             })}
         </div>
     );
-}
-
-// Helper to check if local video is active (passed as prop existence)
-function isBroadcasting() {
-    return true; // We can assume yes if this renders, or use props
 }
