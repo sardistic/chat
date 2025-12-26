@@ -34,43 +34,45 @@ export default function ChatPanel({ roomId, user }) {
     };
 
     return (
-        <div className="msgs">
-            {messages.length === 0 && (
-                <div className="msg" style={{ justifyContent: 'center', opacity: 0.5, fontStyle: 'italic' }}>
-                    <div className="content">
-                        No messages yet. Start the conversation!
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <div className="msgs">
+                {messages.length === 0 && (
+                    <div className="msg" style={{ justifyContent: 'center', opacity: 0.5, fontStyle: 'italic' }}>
+                        <div className="content">
+                            No messages yet. Start the conversation!
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {messages.map((msg) => (
-                <div key={msg.id} className="msg">
-                    <div className="author" style={{ color: msg.senderColor }}>
-                        {msg.sender}
+                {messages.map((msg) => (
+                    <div key={msg.id} className="msg">
+                        <div className="author" style={{ color: msg.senderColor }}>
+                            {msg.sender}
+                        </div>
+                        <div className="content">
+                            {msg.text}
+                            <span style={{
+                                fontSize: '10px',
+                                color: 'var(--text-muted)',
+                                marginLeft: '8px',
+                                opacity: 0.6
+                            }}>
+                                {formatTime(msg.timestamp)}
+                            </span>
+                        </div>
                     </div>
-                    <div className="content">
-                        {msg.text}
-                        <span style={{
-                            fontSize: '10px',
-                            color: 'var(--text-muted)',
-                            marginLeft: '8px',
-                            opacity: 0.6
-                        }}>
-                            {formatTime(msg.timestamp)}
-                        </span>
-                    </div>
-                </div>
-            ))}
+                ))}
 
-            {typingUsers.length > 0 && (
-                <div className="msg">
-                    <div className="content" style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                        {typingUsers.join(', ')} is typing...
+                {typingUsers.length > 0 && (
+                    <div className="msg">
+                        <div className="content" style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                            {typingUsers.join(', ')} is typing...
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} />
+            </div>
 
             {/* Input Area */}
             <div className="input-area">
