@@ -5,7 +5,7 @@ const { Server } = require("socket.io");
 const IRCBridge = require("./lib/ircBridge");
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOSTNAME || (dev ? "localhost" : "0.0.0.0");
+const hostname = "localhost"; // Keep simple for Next.js internal use
 const port = parseInt(process.env.PORT || "3000", 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -239,61 +239,59 @@ app.prepare().then(() => {
 
     // --- History Bot Implementation ---
     // Connects to IRC to log messages for history buffering.
-    // Does NOT broadcast to users (they have their own bridges).
-    // Filters out messages from Web Users to prevent history duplication.
+    // Wrapped in try-catch to prevent crashes if IRC is unreachable.
+    try {
+      console.log('[HistoryBot] Initializing...');
+      const historyConfig = {
+        nick: 'CamRoomsLogBot',
+        username: 'cr_logger',
+        channel: '#camsrooms',
+        useIRC: true
+      };
 
-    console.log('[HistoryBot] Initializing...');
-    const historyConfig = {
-      nick: 'CamRoomsLogBot',
-      username: 'cr_logger',
-      channel: '#camsrooms', // Hardcoded as per simplified requirement
-      useIRC: true
-    };
-
-    const historyBridge = new IRCBridge(null, historyConfig, {
-      onMessage: (message) => {
-        // console.log(`[HistoryBot] RAW Message received: ${message.sender}: ${message.text}`);
-
-        // DUPLICATE CHECK:
-        let isWebUser = false;
-        // Iterate all active rooms and users to see if this message came from a Web User.
-        for (const room of rooms.values()) {
-          for (const userData of room.values()) {
-            if (userData.name === message.sender) {
-              isWebUser = true;
-              break;
+      const historyBridge = new IRCBridge(null, historyConfig, {
+        onMessage: (message) => {
+          let isWebUser = false;
+          for (const room of rooms.values()) {
+            for (const userData of room.values()) {
+              if (userData.name === message.sender) {
+                isWebUser = true;
+                break;
+              }
             }
+            if (isWebUser) break;
           }
-          if (isWebUser) break;
+
+          if (isWebUser) {
+            console.log(`[HistoryBot] 🛑 Filtered duplicate from Web User: ${message.sender}`);
+            return;
+          }
+
+          if (!message.timestamp) message.timestamp = new Date().toISOString();
+          console.log(`[HistoryBot] 💾 STORING IRC message from ${message.sender}: ${message.text}`);
+          storeMessage('default-room', message);
         }
+      });
 
-        if (isWebUser) {
-          console.log(`[HistoryBot] 🛑 Filtered duplicate from Web User: ${message.sender}`);
-          return;
-        }
+      historyBridge.connect();
 
-        // It's a message from a "Pure" IRC user. Store it in default history.
-        if (!message.timestamp) message.timestamp = new Date().toISOString();
+      // Auto-Reconnect Logic for History Bot (only if client exists)
+      if (historyBridge.client) {
+        historyBridge.client.on('close', () => {
+          console.warn('[HistoryBot] 🔴 Disconnected. Reconnecting in 10s...');
+          setTimeout(() => {
+            console.log('[HistoryBot] 🔄 Reconnecting...');
+            try { historyBridge.connect(); } catch (e) { console.error('[HistoryBot] Reconnect failed:', e); }
+          }, 10000);
+        });
 
-        console.log(`[HistoryBot] 💾 STORING IRC message from ${message.sender}: ${message.text}`);
-        storeMessage('default-room', message);
+        historyBridge.client.on('error', (err) => {
+          console.error('[HistoryBot] ⚠️ Error:', err);
+        });
       }
-    });
-
-    historyBridge.connect();
-
-    // Auto-Reconnect Logic for History Bot
-    historyBridge.client.on('close', () => {
-      console.warn('[HistoryBot] 🔴 Disconnected. Reconnecting in 10s...');
-      setTimeout(() => {
-        console.log('[HistoryBot] 🔄 Reconnecting...');
-        historyBridge.connect();
-      }, 10000);
-    });
-
-    historyBridge.client.on('error', (err) => {
-      console.error('[HistoryBot] ⚠️ Error:', err);
-    });
+    } catch (err) {
+      console.error('[HistoryBot] ❌ Failed to initialize (non-fatal):', err);
+    }
   });
 });
 
