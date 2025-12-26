@@ -111,31 +111,31 @@ export function useCameraEffects(videoRef, enabled = true) {
         const { r, g, b } = dominantColor;
 
         // Boost saturation for more vibrant effects
-        const boostFactor = 1.3;
+        const boostFactor = 1.5;
         const boostedR = Math.min(255, Math.round(r * boostFactor));
         const boostedG = Math.min(255, Math.round(g * boostFactor));
         const boostedB = Math.min(255, Math.round(b * boostFactor));
 
         const baseColor = `rgb(${boostedR}, ${boostedG}, ${boostedB})`;
-        const glowColor = `rgba(${boostedR}, ${boostedG}, ${boostedB}, 0.6)`;
+        const glowColor = `rgba(${boostedR}, ${boostedG}, ${boostedB}, 0.8)`;
 
         // Different effects based on intensity
         switch (effectIntensity) {
             case 'dark':
                 return {
-                    borderColor: `rgba(100, 100, 255, 0.3)`,
-                    glowColor: `rgba(100, 100, 255, 0.2)`,
-                    glowSize: 8,
-                    sparkleCount: 2,
+                    borderColor: `rgba(100, 150, 255, 0.5)`,
+                    glowColor: `rgba(100, 150, 255, 0.4)`,
+                    glowSize: 20,
+                    sparkleCount: 6,
                     sparkleSpeed: 'slow',
                     pulseAnimation: false,
                 };
             case 'dim':
                 return {
-                    borderColor: `rgba(${boostedR}, ${boostedG}, ${boostedB}, 0.4)`,
-                    glowColor: `rgba(${boostedR}, ${boostedG}, ${boostedB}, 0.25)`,
-                    glowSize: 12,
-                    sparkleCount: 4,
+                    borderColor: `rgba(${boostedR}, ${boostedG}, ${boostedB}, 0.6)`,
+                    glowColor: `rgba(${boostedR}, ${boostedG}, ${boostedB}, 0.5)`,
+                    glowSize: 28,
+                    sparkleCount: 8,
                     sparkleSpeed: 'normal',
                     pulseAnimation: false,
                 };
@@ -143,26 +143,26 @@ export function useCameraEffects(videoRef, enabled = true) {
                 return {
                     borderColor: baseColor,
                     glowColor: glowColor,
-                    glowSize: 16,
-                    sparkleCount: 6,
+                    glowSize: 36,
+                    sparkleCount: 12,
                     sparkleSpeed: 'normal',
-                    pulseAnimation: false,
+                    pulseAnimation: true,
                 };
             case 'bright':
                 return {
                     borderColor: baseColor,
                     glowColor: glowColor,
-                    glowSize: 24,
-                    sparkleCount: 10,
+                    glowSize: 48,
+                    sparkleCount: 18,
                     sparkleSpeed: 'fast',
                     pulseAnimation: true,
                 };
             case 'intense':
                 return {
                     borderColor: '#FFD700', // Gold
-                    glowColor: 'rgba(255, 215, 0, 0.5)',
-                    glowSize: 32,
-                    sparkleCount: 15,
+                    glowColor: 'rgba(255, 215, 0, 0.7)',
+                    glowSize: 60,
+                    sparkleCount: 25,
                     sparkleSpeed: 'fast',
                     pulseAnimation: true,
                     rainbow: true,
@@ -204,7 +204,7 @@ export function SparkleOverlay({ count = 6, speed = 'normal', active = true }) {
             id: i,
             x: Math.random() * 100,
             y: Math.random() * 100,
-            size: Math.random() * 6 + 4,
+            size: Math.random() * 8 + 8, // 8-16px (was 4-10px)
             delay: Math.random() * 2,
             duration: speed === 'fast' ? 1 : speed === 'slow' ? 3 : 2,
         }));

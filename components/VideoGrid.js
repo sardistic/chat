@@ -70,7 +70,7 @@ function VideoTile({ videoRef, stream, user, isLocal, isVideoEnabled, isAudioEna
                     className="tile-ambient-glow"
                     style={{
                         background: ambientGlowColor,
-                        opacity: Math.min(0.5, brightness / 300),
+                        opacity: Math.min(0.7, brightness / 200), // More visible
                     }}
                 />
             )}
