@@ -195,10 +195,11 @@ app.prepare().then(() => {
 
     const historyBridge = new IRCBridge(null, historyConfig, {
       onMessage: (message) => {
+        // console.log(`[HistoryBot] RAW Message received: ${message.sender}: ${message.text}`);
+
         // DUPLICATE CHECK:
-        // Iterate all active rooms and users to see if this message came from a Web User.
-        // If it did, it was already stored by the 'chat-message' handler.
         let isWebUser = false;
+        // Iterate all active rooms and users to see if this message came from a Web User.
         for (const room of rooms.values()) {
           for (const userData of room.values()) {
             if (userData.name === message.sender) {
@@ -210,16 +211,14 @@ app.prepare().then(() => {
         }
 
         if (isWebUser) {
-          // console.log(`[HistoryBot] Ignoring message from Web User: ${message.sender}`);
+          console.log(`[HistoryBot] 🛑 Filtered duplicate from Web User: ${message.sender}`);
           return;
         }
 
         // It's a message from a "Pure" IRC user. Store it in default history.
-        // Assuming single room 'default-room' for now as IRC is hardcoded.
-        // Ensure timestamp match format
         if (!message.timestamp) message.timestamp = new Date().toISOString();
 
-        console.log(`[HistoryBot] Logging IRC message from ${message.sender}: ${message.text}`);
+        console.log(`[HistoryBot] 💾 STORING IRC message from ${message.sender}: ${message.text}`);
         storeMessage('default-room', message);
       }
     });
