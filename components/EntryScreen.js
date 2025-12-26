@@ -72,6 +72,18 @@ export default function EntryScreen({ onJoin }) {
         setIsLoading(false);
     }, []);
 
+    // Mouse tracking for starmap background highlight
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            document.documentElement.style.setProperty('--mouse-x', `${x}%`);
+            document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
     // Auto-join if user is already logged in with Discord
     useEffect(() => {
         if (status === 'authenticated' && session?.user) {
@@ -162,6 +174,7 @@ export default function EntryScreen({ onJoin }) {
     if (isLoading || status === 'loading') {
         return (
             <div className="entry-screen">
+                <div className="starmap-bg" />
                 <div className="entry-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
@@ -174,6 +187,7 @@ export default function EntryScreen({ onJoin }) {
 
     return (
         <div className="entry-screen">
+            <div className="starmap-bg" />
             <div className="entry-card">
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                     <h1 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '8px' }}>CamRooms</h1>

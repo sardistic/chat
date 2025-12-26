@@ -111,6 +111,37 @@ body {
   /* Content sits above bg */
 }
 
+/* Entry Screen (Login Page) */
+.entry-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0b0c0e;
+  z-index: 100;
+}
+
+.entry-card {
+  position: relative;
+  z-index: 2;
+  background: var(--bg-panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  min-width: 360px;
+  max-width: 420px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+}
+
+.entry-card:hover {
+  border-color: var(--border-hover);
+}
+
 /* Fixed Header */
 .app-header {
   position: fixed;
