@@ -6,10 +6,20 @@ import { useState, useEffect, useRef, useCallback } from 'react';
  * Animated dot matrix grid that reacts to camera video colors
  * Renders a grid of dots behind video tiles that shift color based on the camera feed
  */
-export default function CameraReactiveGrid({ videoRef, isActive = false }) {
+export default function CameraReactiveGrid({ videoRef, isActive = false, reactionTimestamp = 0 }) {
     const canvasRef = useRef(null);
     const animationRef = useRef(null);
     const [dominantColor, setDominantColor] = useState({ r: 99, g: 102, b: 241 });
+    const reactionIntensityRef = useRef(0);
+    const lastReactionTimeRef = useRef(0);
+
+    // Detect new reaction
+    useEffect(() => {
+        if (reactionTimestamp > lastReactionTimeRef.current) {
+            reactionIntensityRef.current = 1.0;
+            lastReactionTimeRef.current = reactionTimestamp;
+        }
+    }, [reactionTimestamp]);
 
     // Config
     const DOT_SIZE = 4;
@@ -85,7 +95,9 @@ export default function CameraReactiveGrid({ videoRef, isActive = false }) {
             const cols = Math.ceil(canvas.width / DOT_SPACING) + 1;
             const rows = Math.ceil(canvas.height / DOT_SPACING) + 1;
 
-            time += WAVE_SPEED;
+            // Decay reaction intensity
+            reactionIntensityRef.current *= 0.92;
+            if (reactionIntensityRef.current < 0.01) reactionIntensityRef.current = 0;
 
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
@@ -107,9 +119,13 @@ export default function CameraReactiveGrid({ videoRef, isActive = false }) {
 
                     // Pulse opacity
                     const pulse = 0.3 + Math.sin(time + row * 0.2) * 0.15;
-                    const opacity = isActive
+                    const baseOpacity = isActive
                         ? pulse * (1 - normalizedDist * 0.5)
                         : 0.15 * (1 - normalizedDist * 0.5);
+
+                    // Add reaction burst
+                    const opacity = Math.min(1.0, baseOpacity + reactionIntensityRef.current * 0.5);
+                    const currentDotSize = DOT_SIZE + (reactionIntensityRef.current * 3); // Grow dots on reaction
 
                     // Color (blend with camera color when active)
                     const dotR = isActive ? r : 99;
@@ -117,7 +133,7 @@ export default function CameraReactiveGrid({ videoRef, isActive = false }) {
                     const dotB = isActive ? b : 241;
 
                     ctx.beginPath();
-                    ctx.arc(x, y, DOT_SIZE / 2, 0, Math.PI * 2);
+                    ctx.arc(x, y, currentDotSize / 2, 0, Math.PI * 2);
                     ctx.fillStyle = `rgba(${dotR}, ${dotG}, ${dotB}, ${opacity})`;
                     ctx.fill();
                 }

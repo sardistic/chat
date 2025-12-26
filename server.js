@@ -225,6 +225,17 @@ app.prepare().then(() => {
       socket.to(roomId).emit("user-stop-typing", { user: socket.data.user?.name });
     });
 
+    // Reactions
+    socket.on("reaction", ({ roomId, targetId, emoji }) => {
+      // Broadcast to everyone in the room (including sender, simplifies logic)
+      io.to(roomId).emit("reaction", {
+        senderId: socket.id,
+        targetId, // If null, it's a general room reaction? For now, we assume user-specific.
+        emoji,
+        timestamp: Date.now()
+      });
+    });
+
     // Disconnect
     socket.on("disconnect", () => {
       console.log("Client disconnected:", socket.id);

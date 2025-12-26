@@ -273,6 +273,7 @@ function MainApp({ user, onLeaveRoom }) {
             isVideoEnabled={isVideoEnabled}
             isAudioEnabled={isAudioEnabled}
             isDeafened={isDeafened}
+            roomId={roomId}
           />
 
           {/* Avatar Aquarium */}

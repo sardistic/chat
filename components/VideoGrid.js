@@ -4,6 +4,27 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import ProfileModal from "./ProfileModal";
 import CameraReactiveGrid from "./CameraReactiveGrid";
 import { useCameraEffects } from "@/hooks/useCameraEffects";
+import { useSocket } from "@/lib/socket";
+
+// Floating emoji animation component
+function FloatingReaction({ emoji, onComplete }) {
+    useEffect(() => {
+        const timer = setTimeout(onComplete, 2000);
+        return () => clearTimeout(timer);
+    }, [onComplete]);
+
+    // Randomize path slightly
+    const [style] = useState(() => ({
+        left: `${50 + (Math.random() * 40 - 20)}%`, // Center +/- 20%
+        animationDuration: `${1.5 + Math.random()}s`,
+    }));
+
+    return (
+        <div className="floating-reaction" style={style}>
+            {emoji}
+        </div>
+    );
+}
 
 // Generate a deterministic color from a username (similar to avatar API)
 function getUserColor(name) {
@@ -35,11 +56,38 @@ function VideoTile({
     isAudioEnabled,
     isDeafened,
     onClick,
-    mentionCount = 0,  // How many times this user was mentioned recently
-    chatActivity = 0,  // Recent chat message count (0-10+)
+    onReaction,
+    incomingReactions = [],
+    mentionCount = 0,
+    chatActivity = 0,
     isDiscordUser = false
 }) {
     const tileVideoRef = useRef(null);
+    const [showPicker, setShowPicker] = useState(false);
+
+    // Internal state for reactions to render (cleans itself up)
+    const [activeReactions, setActiveReactions] = useState([]);
+
+    // Track latest reaction for grid effect
+    const latestReactionTime = useRef(0);
+
+    // Sync incoming reactions to local state for animation
+    useEffect(() => {
+        if (incomingReactions.length > 0) {
+            // Add new reactions to active list
+            const newReactions = incomingReactions.map(r => ({
+                id: r.id || Date.now() + Math.random(),
+                emoji: r.emoji
+            }));
+            setActiveReactions(prev => [...prev, ...newReactions]);
+            latestReactionTime.current = Date.now();
+        }
+    }, [incomingReactions]);
+
+    // Cleanup helper
+    const removeReaction = useCallback((id) => {
+        setActiveReactions(prev => prev.filter(r => r.id !== id));
+    }, []);
 
     // Camera effects hook - only for vibrancy/color analysis
     const { brightness, dominantColor, effectIntensity } = useCameraEffects(
@@ -137,13 +185,30 @@ function VideoTile({
 
     const borderStyle = getBorderStyle();
 
+    const handleReactionClick = (e, emoji) => {
+        e.stopPropagation();
+        onReaction(emoji);
+        setShowPicker(false);
+    };
+
     return (
         <div
             className={`tile effect-${effectIntensity} ${borderStyle.animation}`}
             style={{ background }}
             onClick={onClick}
+            onMouseLeave={() => setShowPicker(false)}
         >
-            {/* Ambient diffused glow behind the tile (reflects camera colors) */}
+            {/* Reaction Overlay */}
+            <div className="reaction-layer">
+                {activeReactions.map(r => (
+                    <FloatingReaction
+                        key={r.id}
+                        emoji={r.emoji}
+                        onComplete={() => removeReaction(r.id)}
+                    />
+                ))}
+            </div>
+
             {isVideoEnabled && (
                 <div
                     className="tile-ambient-glow"
@@ -154,7 +219,6 @@ function VideoTile({
                 />
             )}
 
-            {/* Smart glow border */}
             <div
                 className="tile-glow-border"
                 style={{
@@ -165,10 +229,12 @@ function VideoTile({
                 }}
             />
 
-            {/* Animated dot grid background (reacts to camera colors) */}
-            <CameraReactiveGrid videoRef={tileVideoRef} isActive={isVideoEnabled && !!stream} />
+            <CameraReactiveGrid
+                videoRef={tileVideoRef}
+                isActive={isVideoEnabled && !!stream}
+                reactionTimestamp={latestReactionTime.current}
+            />
 
-            {/* Video or avatar */}
             {isVideoEnabled && stream ? (
                 <video
                     ref={tileVideoRef}
@@ -202,16 +268,45 @@ function VideoTile({
                 </div>
             )}
 
-            {/* Name overlay */}
+            {/* Name & Controls Overlay */}
             <div className="overlay">
-                <div className="name">
-                    <span
-                        className="status-dot"
-                        style={{ background: isVideoEnabled ? 'var(--status-online)' : 'var(--text-muted)' }}
-                    />
-                    {user?.name || 'User'} {isLocal && '(You)'}
-                    {isDiscordUser && <span style={{ marginLeft: '4px', opacity: 0.7 }}>🔗</span>}
+                <div className="name-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <div className="name">
+                        <span
+                            className="status-dot"
+                            style={{ background: isVideoEnabled ? 'var(--status-online)' : 'var(--text-muted)' }}
+                        />
+                        {user?.name || 'User'} {isLocal && '(You)'}
+                        {isDiscordUser && <span style={{ marginLeft: '4px', opacity: 0.7 }}>🔗</span>}
+                    </div>
+
+                    {/* Reaction Button */}
+                    <div className="reaction-control" style={{ position: 'relative', pointerEvents: 'auto' }}>
+                        <button
+                            className="reaction-btn"
+                            onClick={(e) => handleReactionClick(e, '❤️')}
+                            onMouseEnter={() => setShowPicker(true)}
+                            title="React"
+                        >
+                            ❤️
+                        </button>
+
+                        {/* Mini Emoji Picker */}
+                        {showPicker && (
+                            <div className="emoji-picker-mini" onClick={e => e.stopPropagation()}>
+                                {['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+                                    <button
+                                        key={emoji}
+                                        onClick={(e) => handleReactionClick(e, emoji)}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
+
                 <div className="status-icons">
                     {!isAudioEnabled && <span>🔇</span>}
                     {!isLocal && user?.isDeafened && <span>🙉</span>}
@@ -222,15 +317,66 @@ function VideoTile({
     );
 }
 
-export default function VideoGrid({ localStream, peers, localUser, isVideoEnabled, isAudioEnabled, isDeafened }) {
+export default function VideoGrid({ localStream, peers, localUser, isVideoEnabled, isAudioEnabled, isDeafened, roomId }) {
+    const { socket } = useSocket();
     // Profile modal state
     const [selectedUser, setSelectedUser] = useState(null);
     const [modalPosition, setModalPosition] = useState(null);
+    const [incomingReactions, setIncomingReactions] = useState(new Map());
+
+    // Listen for reactions
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleReaction = ({ senderId, targetId, emoji, timestamp }) => {
+            if (targetId) {
+                setIncomingReactions(prev => {
+                    const newMap = new Map(prev);
+                    const current = newMap.get(targetId) || [];
+                    // Keep last 5 reactions to avoid overflow
+                    const updated = [...current, { id: timestamp + Math.random(), emoji }].slice(-5);
+                    newMap.set(targetId, updated);
+                    return newMap;
+                });
+
+                // Cleanup after animation (3s)
+                setTimeout(() => {
+                    setIncomingReactions(prev => {
+                        const newMap = new Map(prev);
+                        const current = newMap.get(targetId) || [];
+                        if (current.length > 0) {
+                            newMap.set(targetId, current.slice(1));
+                        }
+                        return newMap;
+                    });
+                }, 3000);
+            }
+        };
+
+        socket.on('reaction', handleReaction);
+        return () => socket.off('reaction', handleReaction);
+    }, [socket]);
+
+    const sendReaction = (targetId, emoji) => {
+        if (socket && roomId) {
+            socket.emit('reaction', { roomId, targetId, emoji });
+
+            // Optimistic update for self
+            setIncomingReactions(prev => {
+                const newMap = new Map(prev);
+                const current = newMap.get(targetId) || [];
+                const updated = [...current, { id: Date.now(), emoji }].slice(-5);
+                newMap.set(targetId, updated);
+                return newMap;
+            });
+        }
+    };
 
     const peerArray = Array.from(peers.entries());
 
     // Handle tile click to show profile
     const handleTileClick = (e, user) => {
+        if (e.target.closest('.reaction-control')) return;
         e.stopPropagation();
         const rect = e.currentTarget.getBoundingClientRect();
         setSelectedUser(user);
@@ -259,12 +405,15 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                     isDeafened={true}
                     isDiscordUser={!!localUser?.discordId}
                     onClick={(e) => handleTileClick(e, localUser)}
+                    onReaction={(emoji) => sendReaction(localUser?.id || socket?.id, emoji)}
+                    incomingReactions={incomingReactions.get(localUser?.id || socket?.id) || []}
                 />
 
                 {/* Remote Peer Tiles */}
                 {peerArray.map(([peerId, peerData]) => {
                     const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
                     const isRemoteMuted = peerData.user?.isAudioEnabled === false;
+                    const userId = peerData.user?.id || peerId;
 
                     return (
                         <VideoTile
@@ -277,6 +426,8 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                             isDeafened={isDeafened}
                             isDiscordUser={!!peerData.user?.discordId}
                             onClick={(e) => handleTileClick(e, peerData.user)}
+                            onReaction={(emoji) => sendReaction(userId, emoji)}
+                            incomingReactions={incomingReactions.get(userId) || []}
                         />
                     );
                 })}
