@@ -94,6 +94,9 @@ function MainApp({ user, onLeaveRoom }) {
   return (
     <div className="app" style={{ '--dynamic-sidebar-w': `${sidebarWidth}px` }}>
 
+      {/* Background Layer (Explicit) */}
+      <div className="starmap-bg" />
+
       {/* Fixed Header */}
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

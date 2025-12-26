@@ -59,6 +59,7 @@
   box-sizing: border-box;
 }
 
+/* Body: Reset */
 body {
   margin: 0;
   padding: 0;
@@ -69,27 +70,25 @@ body {
   overflow: hidden;
 }
 
-/* Starmap Effect moved to BODY to ensure backdrop-filter works */
-body {
-  min-height: 100vh;
+/* Base Starmap Layer (Explicit Element) */
+.starmap-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
   /* Base Layer: Dim Stars */
   background-color: #0b0c0e;
   background-image: radial-gradient(#1F2937 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
-  position: relative;
-  /* Context for pseudo */
 }
 
-/* Highlight Layer: Bright Stars (Revealed by Mouse) */
-body::before {
+/* Highlight Layer (Pseudo of Starmap) */
+.starmap-bg::before {
   content: "";
-  position: fixed;
-  /* Fixed to viewport */
+  position: absolute;
   inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  /* Behind everything */
 
   /* Bright white/blueish stars */
   background-image: radial-gradient(#A78BFA 1.5px, transparent 1.5px);
@@ -108,10 +107,10 @@ body::before {
   width: 100vw;
   position: relative;
   overflow: hidden;
-  /* Removed background logic from here */
+  z-index: 1;
+  /* Content sits above bg */
 }
 
-/* Fixed Header */
 /* Fixed Header */
 .app-header {
   position: fixed;
@@ -125,16 +124,12 @@ body::before {
   padding: 0 24px;
   z-index: 100;
 
-  /* "Bloom Glass" - Brightens content behind to make dots glow */
-  background: rgba(11, 12, 14, 0.4);
-  /* Translucent for backdrop interaction */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-
-  /* Blur + Brightness = Glow/Bloom Effect */
-  backdrop-filter: blur(10px) brightness(150%) saturate(150%);
-  -webkit-backdrop-filter: blur(10px) brightness(150%) saturate(150%);
-
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  /* Standard Robust Glass */
+  background: rgba(10, 11, 14, 0.6);
+  /* Visible dark tint */
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .app-content {
