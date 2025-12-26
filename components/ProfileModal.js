@@ -180,6 +180,15 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                     <div className="profile-divider" />
 
                     {/* Info sections */}
+                    {user.customStatus && (
+                        <div className="profile-section">
+                            <h3 className="profile-section-title">STATUS</h3>
+                            <p className="profile-section-content" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                💬 {user.customStatus}
+                            </p>
+                        </div>
+                    )}
+
                     <div className="profile-section">
                         <h3 className="profile-section-title">ABOUT ME</h3>
                         <p className="profile-section-content">

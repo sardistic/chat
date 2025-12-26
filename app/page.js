@@ -5,6 +5,7 @@ import { SocketProvider } from "@/lib/socket";
 import VideoGrid from "@/components/VideoGrid";
 import EntryScreen from "@/components/EntryScreen";
 import ChatPanel from "@/components/ChatPanel";
+import ProfileModal from "@/components/ProfileModal";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useIRC } from "@/hooks/useIRC";
 import { useSocket } from "@/lib/socket";
@@ -32,6 +33,9 @@ function MainApp({ user, onLeaveRoom }) {
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showOwnProfile, setShowOwnProfile] = useState(false);
+  const [showStatusInput, setShowStatusInput] = useState(false);
+  const [customStatus, setCustomStatus] = useState('');
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -231,7 +235,7 @@ function MainApp({ user, onLeaveRoom }) {
               title="Profile"
               style={{ padding: 0, width: '36px', height: '36px', overflow: 'hidden', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
             >
-              <img src={user.avatar || `/api/avatar/${user.name}`} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={user.avatar || user.image || `/api/avatar/${user.name}`} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </button>
 
             {showProfileMenu && (
@@ -240,11 +244,17 @@ function MainApp({ user, onLeaveRoom }) {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{user.name}</div>
-                  <div style={{ fontSize: '11px', color: '#888' }}>Online</div>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{user.globalName || user.name}</div>
+                  <div style={{ fontSize: '11px', color: '#3ba55d', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', background: '#3ba55d', borderRadius: '50%', display: 'inline-block' }}></span>
+                    {customStatus || 'Online'}
+                  </div>
                 </div>
-                <button className="menu-item disabled">Settings</button>
-                <button className="menu-item danger" onClick={onLeaveRoom}>Disconnect</button>
+                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowOwnProfile(true); }}>👤 View Profile</button>
+                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>💬 Set Status</button>
+                <button className="menu-item disabled">⚙️ Settings</button>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+                <button className="menu-item danger" onClick={onLeaveRoom}>🚪 Disconnect</button>
               </div>
             )}
           </div>
@@ -460,6 +470,61 @@ function MainApp({ user, onLeaveRoom }) {
           fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 9999
         }}>
           {error}
+        </div>
+      )}
+
+      {/* Own Profile Modal */}
+      <ProfileModal
+        user={{ ...user, customStatus }}
+        isOpen={showOwnProfile}
+        onClose={() => setShowOwnProfile(false)}
+      />
+
+      {/* Status Input Dialog */}
+      {showStatusInput && (
+        <div className="profile-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="profile-modal" style={{ padding: '20px', width: '300px' }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Set Custom Status</h3>
+            <input
+              type="text"
+              placeholder="What's on your mind?"
+              value={customStatus}
+              onChange={(e) => setCustomStatus(e.target.value)}
+              maxLength={50}
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                color: 'white',
+                fontSize: '14px',
+                marginBottom: '12px',
+                outline: 'none',
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') setShowStatusInput(false);
+                if (e.key === 'Escape') { setCustomStatus(''); setShowStatusInput(false); }
+              }}
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                className="btn"
+                onClick={() => { setCustomStatus(''); setShowStatusInput(false); }}
+                style={{ padding: '8px 16px' }}
+              >
+                Clear
+              </button>
+              <button
+                className="btn primary"
+                onClick={() => setShowStatusInput(false)}
+                style={{ padding: '8px 16px' }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
