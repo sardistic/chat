@@ -4,6 +4,14 @@ const next = require("next");
 const { Server } = require("socket.io");
 const IRCBridge = require("./lib/ircBridge");
 
+// Global error handlers to prevent silent crashes
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled Rejection:', reason);
+});
+
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost"; // Keep simple for Next.js internal use
 const port = parseInt(process.env.PORT || "3000", 10);
@@ -234,8 +242,8 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(port, () => {
-    console.log(`> Ready on http://${hostname}:${port}`);
+  httpServer.listen(port, "0.0.0.0", () => {
+    console.log(`> Ready on http://0.0.0.0:${port}`);
 
     // --- History Bot Implementation ---
     // Connects to IRC to log messages for history buffering.
