@@ -875,10 +875,130 @@ body {
 /* Clickable user tiles */
 .tile {
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
 }
 
-.tile:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+/* ========================================
+   Camera Lighting Effects
+   ======================================== */
+
+/* Ambient diffused background reflection */
+.tile-ambient-glow {
+  position: absolute;
+  inset: -30px;
+  z-index: -1;
+  border-radius: 24px;
+  filter: blur(40px);
+  opacity: 0.4;
+  pointer-events: none;
+  transition: background 0.5s ease, opacity 0.3s ease;
+}
+
+/* Dynamic glow border wrapper */
+.tile-glow-border {
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* Pulse animation for bright lighting */
+.tile-glow-border.pulse {
+  animation: borderPulse 2s ease-in-out infinite;
+}
+
+@keyframes borderPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.02);
+  }
+}
+
+/* Rainbow effect for intense lighting */
+.tile-glow-border.rainbow {
+  animation: rainbowBorder 3s linear infinite;
+}
+
+@keyframes rainbowBorder {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+/* Sparkle overlay container */
+.sparkle-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+/* Individual sparkle */
+.sparkle {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: sparkleAnim 2s ease-in-out infinite;
+  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.8);
+}
+
+@keyframes sparkleAnim {
+
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+/* Star-shaped sparkles for intense mode */
+.sparkle.star {
+  background: transparent;
+  box-shadow: none;
+}
+
+.sparkle.star::before,
+.sparkle.star::after {
+  content: '✦';
+  position: absolute;
+  font-size: 12px;
+  color: gold;
+  text-shadow: 0 0 8px gold;
+}
+
+/* Intensity-based tile effects */
+.tile.effect-dark .video {
+  filter: brightness(1.1) contrast(1.05);
+}
+
+.tile.effect-dim .video {
+  filter: brightness(1.05);
+}
+
+.tile.effect-bright .video {
+  filter: brightness(0.95) saturate(1.1);
+}
+
+.tile.effect-intense .video {
+  filter: brightness(0.9) saturate(1.2);
 }
