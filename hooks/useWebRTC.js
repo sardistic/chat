@@ -284,6 +284,12 @@ export function useWebRTC(roomId, user, autoStart = true) {
         // Extract ircConfig to send separately (don't leak to other peers)
         const { ircConfig, ...safeUser } = currentUser;
 
+        if (ircConfig) {
+            console.log('🔌 Attaching IRC Config to join request:', ircConfig);
+        } else {
+            console.warn('⚠️ No IRC Config found in currentUser!');
+        }
+
         socket.emit('join-room', { roomId, user: safeUser, ircConfig });
         hasJoinedRoom.current = true;
         console.log('✅ join-room event emitted');

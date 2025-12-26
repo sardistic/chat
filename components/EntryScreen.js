@@ -70,7 +70,7 @@ function drawSprite(sprite, color) {
 function generateName(seed) {
     const prefixes = ['Pixel', 'Byte', 'Net', 'Cyber', 'Data', 'Web', 'Tech', 'Code', 'Soft', 'Hard'];
     const suffixes = ['User', 'Dev', 'Ops', 'Bot', 'Admin', 'Guest', 'Mancer', 'Runner', 'Surfer', 'Glider'];
-    const random = (min, max) => min + Math.floor((Math.sin(seed++) * 10000 % 1) * (max - min));
+    const random = (min, max) => min + Math.floor(Math.abs((Math.sin(seed++) * 10000 % 1)) * (max - min));
     return prefixes[random(0, prefixes.length)] + suffixes[random(0, suffixes.length)] + Math.floor(random(10, 99));
 }
 
