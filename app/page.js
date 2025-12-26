@@ -25,6 +25,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
 
   const handleToggleBroadcast = async () => {
@@ -123,6 +124,7 @@ function MainApp({ user, onLeaveRoom }) {
       </main>
 
       {/* Sidebar (Chat) */}
+      {/* Sidebar (Chat & Users) */}
       <aside className="sidebar" style={{ position: 'relative' }}>
         {/* Resize Handle */}
         <div
@@ -131,15 +133,58 @@ function MainApp({ user, onLeaveRoom }) {
           style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
         />
 
-        <div className="side-header">
-          logs
+        {/* Sidebar Header / Tabs */}
+        <div className="side-header" style={{ padding: '0 12px', gap: '8px' }}>
+          <button
+            className={`btn ${activeTab === 'logs' ? 'primary' : ''}`}
+            style={{ flex: 1, fontSize: '12px', padding: '6px' }}
+            onClick={() => setActiveTab('logs')}
+          >
+            Logs
+          </button>
+          <button
+            className={`btn ${activeTab === 'services' ? 'primary' : ''}`}
+            style={{ flex: 1, fontSize: '12px', padding: '6px' }}
+            onClick={() => setActiveTab('services')}
+          >
+            Services ({peers.size + 1})
+          </button>
         </div>
 
         <div className="side-content" style={{ padding: 0 }}>
-          {/* Pass minimal props to ChatPanel, assume it fills space */}
-          <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <ChatPanel roomId={roomId} user={user} />
-          </div>
+          {activeTab === 'logs' ? (
+            /* Chat Panel */
+            <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <ChatPanel roomId={roomId} user={user} />
+            </div>
+          ) : (
+            /* User List (Services) */
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Local User */}
+              <div className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: user.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  👤
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{user.name} (You)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--status-online)' }}>● Online</div>
+                </div>
+              </div>
+
+              {/* Remote Users */}
+              {Array.from(peers, ([socketId, p]) => (
+                <div key={socketId} className="panel-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'rgba(255,255,255,0.02)' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: p.user?.color || '#555', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    👤
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>{p.user?.name || 'Unknown'}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>ID: {socketId.slice(0, 4)}...</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </aside>
 

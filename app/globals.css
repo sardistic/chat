@@ -60,10 +60,12 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-main);
-  /* Add very subtle radial glow background to prevent "void" feeling */
   background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
     radial-gradient(circle at 10% 20%, rgba(167, 139, 250, 0.03), transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(52, 211, 153, 0.03), transparent 40%);
+  background-size: 40px 40px, 40px 40px, 100% 100%, 100% 100%;
   color: var(--text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
