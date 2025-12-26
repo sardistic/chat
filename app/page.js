@@ -164,8 +164,12 @@ function MainApp({ user, onLeaveRoom }) {
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {/* Local User */}
               <div className="user-item">
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: user.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
-                  {user.name.charAt(0).toUpperCase()}
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <img
+                    src={`/api/avatar/${user.name}`}
+                    alt={user.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
@@ -176,8 +180,12 @@ function MainApp({ user, onLeaveRoom }) {
               {/* Remote Users (WebRTC) */}
               {Array.from(peers, ([socketId, p]) => (
                 <div key={socketId} className="user-item">
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: p.user?.color || '#555', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
-                    {p.user?.name ? p.user.name.charAt(0).toUpperCase() : '?'}
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <img
+                      src={`/api/avatar/${p.user?.name || 'Guest'}`}
+                      alt={p.user?.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
@@ -190,12 +198,19 @@ function MainApp({ user, onLeaveRoom }) {
               {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
               {Array.from(ircUsers.values()).map((u) => (
                 <div key={u.name} className="user-item">
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#2d3748', color: '#a0aec0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>
-                    #
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <img
+                      src={`/api/avatar/${u.name}`}
+                      alt={u.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>IRC {u.modes && u.modes.length > 0 ? `[${u.modes.join('')}]` : ''}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
+                      <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.modes && u.modes.length > 0 ? `+${u.modes.join('')}` : 'Remote User'}</div>
                   </div>
                 </div>
               ))}

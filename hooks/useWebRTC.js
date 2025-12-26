@@ -8,7 +8,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
     const { socket, isConnected } = useSocket();
     const [localStream, setLocalStream] = useState(null);
     const [peers, setPeers] = useState(new Map());
-    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    const [isAudioEnabled, setIsAudioEnabled] = useState(false); // Default mute
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [error, setError] = useState(null);
 
@@ -31,6 +31,11 @@ export function useWebRTC(roomId, user, autoStart = true) {
                     noiseSuppression: true,
                     autoGainControl: true,
                 },
+            });
+
+            // Enforce initial mute state
+            stream.getAudioTracks().forEach(track => {
+                track.enabled = false;
             });
 
             localStreamRef.current = stream;

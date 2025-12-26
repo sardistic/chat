@@ -2,71 +2,6 @@
 
 import { useState, useEffect } from "react";
 
-// Procedural sprite generator - creates unique characters from parts
-function generateProceduralSprite(seed) {
-    const random = (min = 0, max = 1) => {
-        const x = Math.sin(seed++) * 10000;
-        return min + (x - Math.floor(x)) * (max - min);
-    };
-    const randInt = (min, max) => Math.floor(random(min, max + 1));
-    const choice = (arr) => arr[randInt(0, arr.length - 1)];
-
-    const bodyShapes = ['round', 'tall', 'wide', 'blob', 'triangle', 'square', 'diamond', 'star'];
-    const eyeStyles = ['dots', 'happy', 'sleepy', 'angry', 'sparkle', 'heart', 'star', 'spiral', 'robot', 'cat'];
-    const mouthStyles = ['smile', 'grin', 'frown', 'fangs', 'tiny', 'wavy', 'zigzag', 'heart', 'none'];
-    const accessories = ['none', 'hat', 'bow', 'horns', 'halo', 'antenna', 'crown', 'flower', 'headphones', 'wings'];
-    const patterns = ['solid', 'spots', 'stripes', 'gradient', 'sparkles', 'checkers'];
-
-    return {
-        bodyShape: choice(bodyShapes),
-        eyeStyle: choice(eyeStyles),
-        mouthStyle: choice(mouthStyles),
-        accessory: choice(accessories),
-        pattern: choice(patterns),
-        size: random(0.8, 1.2),
-        rotation: randInt(-5, 5),
-        seed
-    };
-}
-
-// Draw sprite on canvas (Simplified for brevity)
-function drawSprite(sprite, color) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 240;
-    canvas.height = 240;
-    const ctx = canvas.getContext('2d');
-    const centerX = 120;
-    const centerY = 120;
-    const baseSize = 80 * sprite.size;
-
-    const hexToRgb = (hex) => {
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 0, g: 0, b: 0 };
-    };
-    const rgb = hexToRgb(color);
-    const primaryColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.rotate((sprite.rotation * Math.PI) / 180);
-
-    // Draw simple shape
-    ctx.fillStyle = primaryColor;
-    ctx.beginPath();
-    ctx.arc(0, 0, baseSize, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eyes
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.beginPath();
-    ctx.arc(-20, -10, 8, 0, Math.PI * 2);
-    ctx.arc(20, -10, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-    return canvas.toDataURL();
-}
-
 function generateName(seed) {
     const prefixes = ['Pixel', 'Byte', 'Net', 'Cyber', 'Data', 'Web', 'Tech', 'Code', 'Soft', 'Hard'];
     const suffixes = ['User', 'Dev', 'Ops', 'Bot', 'Admin', 'Guest', 'Mancer', 'Runner', 'Surfer', 'Glider'];
@@ -90,17 +25,27 @@ export default function EntryScreen({ onJoin }) {
     ];
 
     useEffect(() => {
-        const newSprite = generateProceduralSprite(characterSeed);
-        const img = drawSprite(newSprite, color);
-        setSpriteImage(img);
-        setUsername(generateName(characterSeed));
-    }, [color, characterSeed]);
+        // When seed changes, just update name. Image updates via URL.
+        // We only generate a name if the user hasn't typed a custom one (or maybe we just always sync them for 'randomize' button?)
+        // The 'Randomize' button updates 'characterSeed'.
+        if (characterSeed) {
+            // Optional: If we want to randomize name with seed, we can.
+            // But existing logic was: new seed -> new sprite AND new name.
+            // We'll keep that behavior for the "Dice" button.
+            setUsername(generateName(characterSeed));
+        }
+    }, [characterSeed]);
+
+    // Construct avatar URL
+    // We use username + seed to ensure uniqueness.
+    // If username is empty, use 'guest'.
+    const previewUrl = `/api/avatar/${username || 'guest'}?v=${characterSeed}`;
 
     const handleJoin = () => {
         onJoin({
             name: username,
             color,
-            avatar: spriteImage,
+            avatar: previewUrl, // Pass the URL effectively
             ircConfig: {
                 useIRC: true,
                 host: 'irc.gamesurge.net',
@@ -122,8 +67,12 @@ export default function EntryScreen({ onJoin }) {
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
                     {/* Sprite Preview */}
-                    <div style={{ width: '96px', height: '96px', background: color, borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 20px 40px ${color}40` }}>
-                        {spriteImage && <img src={spriteImage} alt="Avatar" style={{ width: '64px', height: '64px', imageRendering: 'pixelated' }} />}
+                    <div style={{ width: '96px', height: '96px', background: color, borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 20px 40px ${color}40`, overflow: 'hidden' }}>
+                        <img
+                            src={previewUrl}
+                            alt="Avatar"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                     </div>
 
                     {/* Controls */}
