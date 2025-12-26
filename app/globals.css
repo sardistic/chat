@@ -486,8 +486,15 @@ body {
 
 .input-area {
   margin-top: auto;
-  padding-top: 16px;
+  padding: 16px;
+  background: rgba(10, 11, 14, 0.6);
+  /* Semi-solid background */
+  backdrop-filter: blur(10px);
   border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  /* Prevent shrinking */
+  position: relative;
+  z-index: 10;
 }
 
 .chat-input {
