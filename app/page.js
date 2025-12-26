@@ -60,6 +60,44 @@ function MainApp({ user, onLeaveRoom }) {
     return () => window.removeEventListener('mousemove', handleBgMove);
   }, []);
 
+  // Chat Bubble Logic
+  const [chatBubbles, setChatBubbles] = useState({});
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessage = (msg) => {
+      // msg = { author, content, ... }
+      if (!msg || !msg.author || !msg.content) return;
+
+      const { author, content } = msg;
+
+      // Update bubble state
+      setChatBubbles(prev => ({
+        ...prev,
+        [author]: content
+      }));
+
+      // Clear after 6 seconds
+      setTimeout(() => {
+        setChatBubbles(prev => {
+          // Only clear if the current message matches the one we set (handle overlaps)
+          if (prev[author] === content) {
+            const newState = { ...prev };
+            delete newState[author];
+            return newState;
+          }
+          return prev;
+        });
+      }, 6000);
+    };
+
+    socket.on('chat-message', handleMessage);
+    return () => {
+      socket.off('chat-message', handleMessage);
+    };
+  }, [socket]);
+
   // Resize Logic
   const handleMouseDown = (e) => {
     setIsResizing(true);
@@ -187,7 +225,7 @@ function MainApp({ user, onLeaveRoom }) {
             bottom: 0,
             left: 0,
             right: 0,
-            height: '100px',
+            height: '140px', /* Increased height for bubbles */
             pointerEvents: 'none',
             overflow: 'visible',
             zIndex: 5,
@@ -197,21 +235,40 @@ function MainApp({ user, onLeaveRoom }) {
             gap: '24px',
             paddingBottom: '20px'
           }}>
-            {/* Collect all users */}
-            {[user, ...Array.from(peers.values()).map(p => p.user), ...Array.from(ircUsers.values())].filter(u => u && u.name).map((u, i) => (
-              <div key={u.name + i} className="aquarium-avatar">
-                <div style={{ position: 'relative', width: '56px', height: '56px' }}>
-                  <img
-                    src={`/api/avatar/${u.name}`}
-                    alt={u.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
-                  />
-                  <div className="avatar-name">
-                    {u.name}
+            {/* Collect & Deduplicate Users */}
+            {(() => {
+              const uniqueMap = new Map();
+              // Priority: Local -> Peer -> IRC
+              if (user && user.name) uniqueMap.set(user.name, user);
+              peers.forEach(p => { if (p.user && p.user.name) uniqueMap.set(p.user.name, p.user); });
+              ircUsers.forEach(u => { if (u && u.name) uniqueMap.set(u.name, u); });
+
+              return Array.from(uniqueMap.values()).map((u, i) => {
+                const bubble = chatBubbles[u.name];
+                return (
+                  <div key={u.name + i} className="aquarium-avatar" style={{ position: 'relative' }}>
+
+                    {/* Chat Bubble */}
+                    {bubble && (
+                      <div className="chat-bubble">
+                        {bubble}
+                      </div>
+                    )}
+
+                    <div style={{ position: 'relative', width: '56px', height: '56px' }}>
+                      <img
+                        src={`/api/avatar/${u.name}`}
+                        alt={u.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                      />
+                      <div className="avatar-name">
+                        {u.name}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              });
+            })()}
           </div>
         </div>
 
