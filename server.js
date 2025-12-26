@@ -86,6 +86,18 @@ app.prepare().then(() => {
       socket.to(roomId).emit("user-joined", { socketId: socket.id, user });
       socket.to(roomId).emit("user-connected", { socketId: socket.id, user }); // Keep compatibility
 
+      // System Message: Join
+      const joinMsg = {
+        roomId,
+        id: `sys-${Date.now()}`,
+        sender: 'System',
+        text: `✨ ${user.name} popped in!`,
+        type: 'system',
+        timestamp: new Date().toISOString()
+      };
+      storeMessage(roomId, joinMsg);
+      io.to(roomId).emit('chat-message', joinMsg);
+
       // Initialize Per-User IRC Bridge
       if (ircConfig && ircConfig.useIRC) {
         try {
@@ -108,13 +120,28 @@ app.prepare().then(() => {
       console.log(`User ${socket.id} left room ${roomId}`);
 
       const room = rooms.get(roomId);
+      let userName = 'Someone';
       if (room) {
+        const u = room.get(socket.id);
+        if (u) userName = u.name;
         room.delete(socket.id);
         if (room.size === 0) rooms.delete(roomId);
       }
 
       socket.to(roomId).emit("user-left", { socketId: socket.id });
       socket.to(roomId).emit("user-disconnected", socket.id);
+
+      // System Message: Leave
+      const leaveMsg = {
+        roomId,
+        id: `sys-${Date.now()}`,
+        sender: 'System',
+        text: `💨 ${userName} floated away...`,
+        type: 'system',
+        timestamp: new Date().toISOString()
+      };
+      storeMessage(roomId, leaveMsg);
+      io.to(roomId).emit('chat-message', leaveMsg);
 
       // Cleanup IRC
       if (socket.data.ircBridge) {
@@ -165,7 +192,21 @@ app.prepare().then(() => {
         }
         socket.to(roomId).emit("user-left", { socketId: socket.id });
         socket.to(roomId).emit("user-disconnected", socket.id);
-        if (user) console.log(`User left room ${roomId}:`, user.name);
+
+        // System Message: Disconnect
+        if (user) {
+          console.log(`User left room ${roomId}:`, user.name);
+          const leaveMsg = {
+            roomId,
+            id: `sys-${Date.now()}`,
+            sender: 'System',
+            text: `💨 ${user.name} floated away...`,
+            type: 'system',
+            timestamp: new Date().toISOString()
+          };
+          storeMessage(roomId, leaveMsg);
+          io.to(roomId).emit('chat-message', leaveMsg);
+        }
       }
 
       // Cleanup IRC

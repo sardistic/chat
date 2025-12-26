@@ -44,9 +44,32 @@ function MainApp({ user, onLeaveRoom }) {
     if (isBroadcasting) {
       stopBroadcast();
       setIsBroadcasting(false);
+
+      // System Notification
+      if (socket) {
+        socket.emit('chat-message', {
+          roomId,
+          sender: 'System',
+          text: `💤 ${user.name} went offline.`,
+          type: 'system',
+          timestamp: new Date().toISOString()
+        });
+      }
+
     } else {
       await startBroadcast();
       setIsBroadcasting(true);
+
+      // System Notification
+      if (socket) {
+        socket.emit('chat-message', {
+          roomId,
+          sender: 'System',
+          text: `🔴 ${user.name} is now LIVE!`,
+          type: 'system',
+          timestamp: new Date().toISOString()
+        });
+      }
     }
   };
 
