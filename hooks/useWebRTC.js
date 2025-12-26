@@ -251,15 +251,33 @@ export function useWebRTC(roomId, user, autoStart = true) {
 
         const handleExistingUsers = ({ users }) => {
             console.log(`📋 Existing users:`, users);
+            const broadcastingPeers = [];
             setPeers(prev => {
                 const newPeers = new Map(prev);
                 users.forEach(({ socketId, user: existingUser }) => {
                     if (socketId !== socket.id) {
                         newPeers.set(socketId, { stream: null, userId: socketId, user: existingUser });
+                        // Track users who are broadcasting
+                        if (existingUser.isVideoEnabled) {
+                            broadcastingPeers.push(socketId);
+                        }
                     }
                 });
                 return newPeers;
             });
+
+            // Create peer connections to users who are broadcasting
+            // We need to do this after a small delay to ensure PeerManager is created
+            setTimeout(() => {
+                if (peerManagerRef.current && broadcastingPeers.length > 0) {
+                    console.log('📡 Creating connections to broadcasting users:', broadcastingPeers);
+                    broadcastingPeers.forEach(peerId => {
+                        if (!peerManagerRef.current.peers.has(peerId)) {
+                            peerManagerRef.current.createPeer(peerId, false); // We are the receiver
+                        }
+                    });
+                }
+            }, 100);
         };
 
         const handleSignal = ({ sender, payload }) => {
@@ -296,6 +314,33 @@ export function useWebRTC(roomId, user, autoStart = true) {
         socket.on('signal', handleSignal);
         socket.on('user-left', handleUserLeft);
         socket.on('user-updated', handleUserUpdated);
+
+        // Create PeerManager early (even without local stream) so we can receive streams
+        if (!peerManagerRef.current) {
+            console.log('🆕 Creating PeerManager on room join (receive-only mode)');
+            const peerManager = new PeerManager(socket, null);
+            peerManagerRef.current = peerManager;
+
+            // Handle new peer streams
+            peerManager.onStream((peerId, stream) => {
+                console.log('📺 Received stream from peer:', peerId);
+                setPeers(prev => {
+                    const newPeers = new Map(prev);
+                    const existingPeer = prev.get(peerId) || {};
+                    newPeers.set(peerId, { ...existingPeer, stream, userId: peerId });
+                    return newPeers;
+                });
+            });
+
+            // Handle peer leaving
+            peerManager.onPeerLeft((peerId) => {
+                setPeers(prev => {
+                    const newPeers = new Map(prev);
+                    newPeers.delete(peerId);
+                    return newPeers;
+                });
+            });
+        }
 
         // JOIN
         const { ircConfig, ...safeUser } = currentUser;
