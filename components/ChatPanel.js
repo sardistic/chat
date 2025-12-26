@@ -95,11 +95,21 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
         inputRef.current?.focus();
     };
 
+    const sendingRef = useRef(false);
+
     const handleGifSelect = (gifUrl) => {
+        if (sendingRef.current) return;
+        sendingRef.current = true;
+
         sendMessage(gifUrl);
         setShowGifPicker(false);
         setGifQuery('');
         setInputValue('');
+
+        // Reset lock after short delay
+        setTimeout(() => {
+            sendingRef.current = false;
+        }, 500);
     };
 
     const handleInputChange = (e) => {
