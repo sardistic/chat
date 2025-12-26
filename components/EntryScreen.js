@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 
 function generateName(seed) {
-    const prefixes = ['Pixel', 'Byte', 'Net', 'Cyber', 'Data', 'Web', 'Tech', 'Code', 'Soft', 'Hard'];
-    const suffixes = ['User', 'Dev', 'Ops', 'Bot', 'Admin', 'Guest', 'Mancer', 'Runner', 'Surfer', 'Glider'];
+    const prefixes = ['Fluffy', 'Sparkle', 'Bubbly', 'Cozy', 'Sleepy', 'Happy', 'Lucky', 'Sunny', 'Dreamy', 'Soft'];
+    const suffixes = ['Bun', 'Cloud', 'Mochi', 'Puff', 'Star', 'Moon', 'Tea', 'Cake', 'Pop', 'Fizz'];
     const random = (min, max) => min + Math.floor(Math.abs((Math.sin(seed++) * 10000 % 1)) * (max - min));
     return prefixes[random(0, prefixes.length)] + suffixes[random(0, suffixes.length)] + Math.floor(random(10, 99));
 }
