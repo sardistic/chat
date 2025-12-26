@@ -15,10 +15,13 @@ function MainApp({ user, onLeaveRoom }) {
   const {
     localStream,
     peers,
+    peers,
     isAudioEnabled,
     isVideoEnabled,
+    isDeafened,
     toggleAudio,
     toggleVideo,
+    toggleDeaf,
     startBroadcast,
     stopBroadcast,
     error
@@ -158,11 +161,14 @@ function MainApp({ user, onLeaveRoom }) {
           {/* Broadcast Controls */}
           {isBroadcasting && (
             <div style={{ display: 'flex', gap: '8px', marginRight: '8px' }}>
-              <button className="btn icon-btn" onClick={toggleAudio} title={isAudioEnabled ? 'Mute Mic' : 'Unmute Mic'}>
+              <button className={`btn icon-btn ${!isAudioEnabled ? 'danger' : ''}`} onClick={toggleAudio} title={isAudioEnabled ? 'Mute Mic' : 'Unmute Mic'}>
                 {isAudioEnabled ? '🎤' : '🔇'}
               </button>
-              <button className="btn icon-btn" onClick={toggleVideo} title={isVideoEnabled ? 'Disable Camera' : 'Enable Camera'}>
+              <button className={`btn icon-btn ${!isVideoEnabled ? 'danger' : ''}`} onClick={toggleVideo} title={isVideoEnabled ? 'Disable Camera' : 'Enable Camera'}>
                 {isVideoEnabled ? '📹' : '🚫'}
+              </button>
+              <button className={`btn icon-btn ${isDeafened ? 'danger' : ''}`} onClick={toggleDeaf} title={isDeafened ? 'Undeafen' : 'Deafen'}>
+                {isDeafened ? '🙉' : '🎧'}
               </button>
             </div>
           )}
@@ -323,7 +329,12 @@ function MainApp({ user, onLeaveRoom }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
-                    <div style={{ fontSize: '11px', color: 'var(--status-online)' }}>● Online</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px' }}>
+                      <span title="Online" style={{ color: 'var(--status-online)' }}>●</span>
+                      {isVideoEnabled ? <span title="Broadcasting">📹</span> : <span title="Viewing">👁️</span>}
+                      {!isAudioEnabled && <span title="Muted">🔇</span>}
+                      {isDeafened && <span title="Deafened">🙉</span>}
+                    </div>
                   </div>
                 </div>
 
@@ -339,7 +350,12 @@ function MainApp({ user, onLeaveRoom }) {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Video Client</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px' }}>
+                        {p.user?.isVideoEnabled ? <span title="Broadcasting">📹</span> : <span title="Viewing">👁️</span>}
+                        {p.user?.isAudioEnabled === false && <span title="Muted">🔇</span>}
+                        {p.user?.isDeafened && <span title="Deafened">🙉</span>}
+                        {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <span title="Lurking">☁️</span>}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -363,7 +379,10 @@ function MainApp({ user, onLeaveRoom }) {
                           <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
                           <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.modes && u.modes.length > 0 ? `+${u.modes.join('')}` : 'Remote User'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px' }}>
+                          <span title="Text Only">⌨️</span>
+                          {u.modes && u.modes.length > 0 && <span>+{u.modes.join('')}</span>}
+                        </div>
                       </div>
                     </div>
                   ))}
