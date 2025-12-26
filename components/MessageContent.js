@@ -61,9 +61,9 @@ function ImageEmbed({ url, alt }) {
                 onLoad={() => setLoaded(true)}
                 onError={() => setError(true)}
                 style={{
-                    maxWidth: '400px',
-                    maxHeight: '300px',
-                    borderRadius: '8px',
+                    maxWidth: '200px',
+                    maxHeight: '150px',
+                    borderRadius: '6px',
                     display: loaded ? 'block' : 'none',
                     cursor: 'pointer',
                 }}
@@ -81,9 +81,9 @@ function VideoEmbed({ url }) {
                 src={url}
                 controls
                 style={{
-                    maxWidth: '400px',
-                    maxHeight: '300px',
-                    borderRadius: '8px',
+                    maxWidth: '200px',
+                    maxHeight: '150px',
+                    borderRadius: '6px',
                 }}
             />
         </div>
@@ -98,13 +98,13 @@ function YouTubeEmbed({ url }) {
     return (
         <div className="embed-youtube" style={{ marginTop: '8px' }}>
             <iframe
-                width="400"
-                height="225"
+                width="200"
+                height="112"
                 src={`https://www.youtube.com/embed/${videoId}`}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                style={{ borderRadius: '8px', maxWidth: '100%' }}
+                style={{ borderRadius: '6px', maxWidth: '100%' }}
             />
         </div>
     );
@@ -151,11 +151,12 @@ function LinkEmbed({ url }) {
                 padding: '8px 12px',
                 marginTop: '8px',
                 background: 'rgba(255,255,255,0.05)',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 borderLeft: '3px solid #5865F2',
                 textDecoration: 'none',
                 color: 'inherit',
-                maxWidth: '400px',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
             }}
         >
             <div style={{ flex: 1, minWidth: 0 }}>

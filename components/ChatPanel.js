@@ -191,7 +191,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-            <div className="msgs" style={{ padding: '16px' }}>
+            <div className="msgs" style={{ padding: '16px', overflowX: 'hidden', overflowY: 'auto' }}>
                 {messages.length === 0 && (
                     <div style={{
                         textAlign: 'center',
@@ -344,12 +344,12 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
                 <div style={{
                     background: 'var(--bg-tertiary)',
                     borderRadius: '8px',
-                    padding: '12px 16px',
+                    padding: '14px 16px',
                 }}>
                     <input
                         ref={inputRef}
                         className="chat-input"
-                        placeholder="Message... (/gif to search GIFs, @ to mention)"
+                        placeholder="Message... (/gif :word @ to mention)"
                         value={inputValue}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
@@ -359,8 +359,9 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
                             border: 'none',
                             outline: 'none',
                             color: 'var(--text-primary)',
-                            fontSize: '15px',
-                            padding: '4px 0',
+                            fontSize: '16px',
+                            padding: '6px 0',
+                            minHeight: '24px',
                         }}
                     />
                 </div>
