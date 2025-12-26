@@ -98,6 +98,17 @@ body {
   height: 100vh;
   width: 100vw;
   position: relative;
+  /* Mouse Reactive Background */
+  background-color: #0b0c0e;
+  background-image:
+    radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(29, 78, 216, 0.15) 0%, transparent 50%),
+    /* Blue Glow Spot */
+    radial-gradient(#2A2A2A 1px, transparent 1px);
+  /* Dot Pattern from reference */
+  background-size: 100% 100%, 24px 24px;
+  background-position: 0 0, 0 0;
+  transition: background 0.1s ease;
+  /* Smooth movement? No, instant is better for mouse */
 }
 
 /* Fixed Header */
@@ -112,7 +123,12 @@ body {
   justify-content: space-between;
   padding: 0 24px;
   z-index: 100;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  background: rgba(11, 12, 14, 0.3);
+  /* Ultra Transparent */
+  backdrop-filter: blur(40px) saturate(180%);
+  /* Maximum Glass Effect */
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
 }
 
 .app-content {
