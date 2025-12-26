@@ -3,8 +3,27 @@
 import { useState, useEffect } from "react";
 
 function generateName(seed) {
-    const prefixes = ['Fluffy', 'Sparkle', 'Bubbly', 'Cozy', 'Sleepy', 'Happy', 'Lucky', 'Sunny', 'Dreamy', 'Soft'];
-    const suffixes = ['Bun', 'Cloud', 'Mochi', 'Puff', 'Star', 'Moon', 'Tea', 'Cake', 'Pop', 'Fizz'];
+    // Whimsical & Cutesy Word Banks
+    const prefixes = [
+        'Fluffy', 'Sparkle', 'Bun', 'Cloud', 'Marshmallow', 'Velvet', 'Cozy', 'Snuggle',
+        'Twinkle', 'Star', 'Moon', 'Sun', 'Sky', 'Rain', 'Storm', 'Snow', 'Ice', 'Fire',
+        'Bubbles', 'Panda', 'Kitty', 'Puppy', 'Fox', 'Bear', 'Tiger', 'Lion', 'Wolf',
+        'Happy', 'Sleepy', 'Dreamy', 'Lucky', 'Sunny', 'Merry', 'Jolly', 'Silly', 'Bouncy',
+        'Magic', 'Mystic', 'Crystal', 'Rainbow', 'Glitter', 'Shiny', 'Glow', 'Neon', 'Pixel',
+        'Doughnut', 'Cookie', 'Muffin', 'Cupcake', 'Candy', 'Sugar', 'Honey', 'Berry', 'Cherry',
+        'Little', 'Tiny', 'Mini', 'Baby', 'Smol', 'Big', 'Mega', 'Giga', 'Ultra', 'Super',
+        'Cosmic', 'Astro', 'Lunar', 'Solar', 'Stellar', 'Galactic', 'Orbit', 'Comet', 'Meteor'
+    ];
+    const suffixes = [
+        'Puff', 'Pie', 'Cake', 'Pop', 'Drop', 'Fizzy', 'Soda', 'Shake', 'Cream', 'Tea',
+        'Byte', 'Bit', 'Bot', 'Droid', 'Mecha', 'Cyber', 'Data', 'Web', 'Net', 'Link',
+        'Mew', 'Woof', 'Purr', 'Roar', 'Hiss', 'Chirp', 'Peep', 'Squeak', 'Honk', 'Beep',
+        'Zoom', 'Zap', 'Pow', 'Bam', 'Boom', 'Crash', 'Bang', 'Slap', 'Punch', 'Kick',
+        'Wizard', 'Witch', 'Mage', 'Elf', 'Fairy', 'Dragon', 'Ghost', 'Spirit', 'Soul',
+        'Leaf', 'Flower', 'Petal', 'Bloom', 'Rose', 'Lily', 'Fern', 'Moss', 'Vine', 'Tree',
+        'Gem', 'Jewel', 'Ruby', 'Opal', 'Pearl', 'Gold', 'Silver', 'Copper', 'Iron', 'Steel',
+        'Heart', 'Star', 'Moon', 'Sun', 'Cloud', 'Sky', 'Rain', 'Snow', 'Wind', 'Storm'
+    ];
     const random = (min, max) => min + Math.floor(Math.abs((Math.sin(seed++) * 10000 % 1)) * (max - min));
     return prefixes[random(0, prefixes.length)] + suffixes[random(0, suffixes.length)] + Math.floor(random(10, 99));
 }
