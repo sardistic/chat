@@ -53,7 +53,7 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                 ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#242424' }}>
                         <img
-                            src={`/api/avatar/${localUser?.name}`}
+                            src={localUser?.avatar || `/api/avatar/${localUser?.name}`}
                             alt={localUser?.name}
                             style={{ width: '80px', height: '80px', opacity: 0.8 }}
                         />
@@ -96,7 +96,7 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                         ) : (
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#242424' }}>
                                 <img
-                                    src={`/api/avatar/${peerData.user?.name || 'User'}`}
+                                    src={peerData.user?.avatar || `/api/avatar/${peerData.user?.name || 'User'}`}
                                     alt={peerData.user?.name}
                                     style={{ width: '80px', height: '80px', opacity: 0.5, filter: 'grayscale(100%)' }}
                                 />
