@@ -51,16 +51,29 @@ export function useIRC() {
             });
         };
 
+        // Handle connection status
+        const handleConnected = ({ nick, channel }) => {
+            console.log(`[IRC] Connected as ${nick} to ${channel}`);
+        };
+
+        const handleError = (error) => {
+            console.error('[IRC] Connection Error:', error);
+        };
+
         socket.on("irc-userlist", handleUserList);
         socket.on("irc-user-joined", handleUserJoined);
         socket.on("irc-user-left", handleUserLeft);
         socket.on("irc-nick-change", handleNickChange);
+        socket.on("irc-connected", handleConnected);
+        socket.on("irc-error", handleError);
 
         return () => {
             socket.off("irc-userlist", handleUserList);
             socket.off("irc-user-joined", handleUserJoined);
             socket.off("irc-user-left", handleUserLeft);
             socket.off("irc-nick-change", handleNickChange);
+            socket.off("irc-connected", handleConnected);
+            socket.off("irc-error", handleError);
         };
     }, [socket, isConnected]);
 
