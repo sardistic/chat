@@ -5,8 +5,8 @@ const { Server } = require("socket.io");
 const IRCBridge = require("./lib/ircBridge");
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOSTNAME || "localhost";
-const port = process.env.PORT || 3000;
+const hostname = process.env.HOSTNAME || (dev ? "localhost" : "0.0.0.0");
+const port = parseInt(process.env.PORT || "3000", 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
