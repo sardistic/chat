@@ -150,6 +150,22 @@ app.prepare().then(() => {
       }
     });
 
+    // Update User Status (Audio/Video/Deaf)
+    socket.on('update-user', (updates) => {
+      const { roomId, user } = socket.data;
+      if (!roomId || !rooms.has(roomId)) return;
+
+      const room = rooms.get(roomId);
+      if (room && room.has(socket.id)) {
+        const currentUser = room.get(socket.id);
+        const updatedUser = { ...currentUser, ...updates };
+        room.set(socket.id, updatedUser);
+        socket.data.user = updatedUser; // Update socket data too
+
+        socket.to(roomId).emit('user-updated', { socketId: socket.id, user: updatedUser });
+      }
+    });
+
     // WebRTC Signaling
     socket.on("signal", (data) => {
       io.to(data.target).emit("signal", {

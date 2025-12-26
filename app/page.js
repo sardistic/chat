@@ -191,16 +191,21 @@ function MainApp({ user, onLeaveRoom }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
           {/* Broadcast Controls */}
+          {/* Deafen (Always Visible) */}
+          <button
+            className={`btn icon-btn ${isDeafened ? 'danger' : ''}`}
+            onClick={toggleDeaf}
+            title={isDeafened ? 'Undeafen' : 'Deafen'}
+            style={{ marginRight: '8px' }}
+          >
+            {isDeafened ? '🙉' : '🎧'}
+          </button>
+
+          {/* Broadcast Controls */}
           {isBroadcasting && (
             <div style={{ display: 'flex', gap: '8px', marginRight: '8px' }}>
               <button className={`btn icon-btn ${!isAudioEnabled ? 'danger' : ''}`} onClick={toggleAudio} title={isAudioEnabled ? 'Mute Mic' : 'Unmute Mic'}>
                 {isAudioEnabled ? '🎤' : '🔇'}
-              </button>
-              <button className={`btn icon-btn ${!isVideoEnabled ? 'danger' : ''}`} onClick={toggleVideo} title={isVideoEnabled ? 'Disable Camera' : 'Enable Camera'}>
-                {isVideoEnabled ? '📹' : '🚫'}
-              </button>
-              <button className={`btn icon-btn ${isDeafened ? 'danger' : ''}`} onClick={toggleDeaf} title={isDeafened ? 'Undeafen' : 'Deafen'}>
-                {isDeafened ? '🙉' : '🎧'}
               </button>
             </div>
           )}
@@ -210,7 +215,7 @@ function MainApp({ user, onLeaveRoom }) {
             style={{ padding: '6px 12px', fontSize: '12px', height: '32px' }}
             onClick={handleToggleBroadcast}
           >
-            {isBroadcasting ? 'Stop Stream' : 'Start Stream'}
+            {isBroadcasting ? 'Stream Off' : 'Stream'}
           </button>
 
           <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
@@ -257,6 +262,7 @@ function MainApp({ user, onLeaveRoom }) {
             localUser={user}
             isVideoEnabled={isVideoEnabled}
             isAudioEnabled={isAudioEnabled}
+            isDeafened={isDeafened}
           />
 
           {/* Avatar Aquarium */}

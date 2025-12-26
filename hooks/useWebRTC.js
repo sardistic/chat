@@ -9,7 +9,8 @@ export function useWebRTC(roomId, user, autoStart = true) {
     const [localStream, setLocalStream] = useState(null);
     const [peers, setPeers] = useState(new Map());
     const [isAudioEnabled, setIsAudioEnabled] = useState(false); // Default mute
-    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+    const [isVideoEnabled, setIsVideoEnabled] = useState(false); // Default video off (until start)
+    const [isDeafened, setIsDeafened] = useState(true); // Default deafened requested by user
     const [error, setError] = useState(null);
 
     const peerManagerRef = useRef(null);
@@ -49,20 +50,39 @@ export function useWebRTC(roomId, user, autoStart = true) {
         }
     }, []);
 
+    // Helper: Broadcast Status
+    const broadcastStatus = useCallback((status) => {
+        if (socket && isConnected) {
+            console.log('📡 Broadcasting status update:', status);
+            socket.emit('update-user', status);
+        }
+    }, [socket, isConnected]);
+
     // Start broadcasting
     const startBroadcast = useCallback(async () => {
         try {
             console.log('📹 Starting broadcast...');
-            console.log('   Current peers:', peers.size, Array.from(peers.keys()));
-            console.log('   PeerManager exists:', !!peerManagerRef.current);
+
+            // 1. Get Media
             const stream = await initializeMedia();
 
+            // 2. Set State
+            setIsVideoEnabled(true);
+            setIsAudioEnabled(false); // Start muted by default
+
+            // 3. Broadcast Status
+            broadcastStatus({
+                isVideoEnabled: true,
+                isAudioEnabled: false,
+                isDeafened
+            });
+
+            // 4. Update PeerManager
             if (peerManagerRef.current) {
                 console.log('🔄 Updating existing peer connections with new stream');
-                // Update existing peer connections with new stream
                 peerManagerRef.current.updateLocalStream(stream);
 
-                // Check for any peers we aren't connected to yet and connect
+                // Connect to any missing peers
                 const activePeers = peerManagerRef.current.getPeerIds();
                 peers.forEach((peerData, peerId) => {
                     if (!activePeers.includes(peerId)) {
@@ -72,7 +92,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 });
             } else {
                 console.log('🆕 Creating new PeerManager');
-                // Create peer manager
                 const peerManager = new PeerManager(socket, stream);
                 peerManagerRef.current = peerManager;
 
@@ -82,7 +101,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
                     setPeers(prev => {
                         const newPeers = new Map(prev);
                         const existingPeer = prev.get(peerId) || {};
-                        // Preserve existing user data when adding stream
                         newPeers.set(peerId, { ...existingPeer, stream, userId: peerId });
                         return newPeers;
                     });
@@ -97,16 +115,11 @@ export function useWebRTC(roomId, user, autoStart = true) {
                     });
                 });
 
-                // CRITICAL: Create peer connections for all existing users
-                // Use the current peers Map directly to avoid duplicate calls
-                console.log('🔗 Creating peer connections for existing users:', peers.size);
+                // Create connections for existing users
                 if (peers.size > 0) {
                     peers.forEach((peerData, peerId) => {
-                        console.log('  → Creating peer for:', peerId, peerData.user?.name);
                         peerManager.createPeer(peerId, true);
                     });
-                } else {
-                    console.log('  ⚠️ No existing peers to connect to');
                 }
             }
 
@@ -117,13 +130,13 @@ export function useWebRTC(roomId, user, autoStart = true) {
             setError('Failed to start camera');
             throw err;
         }
-    }, [socket, initializeMedia, peers]);
+    }, [socket, initializeMedia, peers, broadcastStatus, isDeafened]);
 
     // Stop broadcasting
     const stopBroadcast = useCallback(() => {
         console.log('🛑 Stopping broadcast...');
 
-        // 1. Notify peers to remove the stream
+        // 1. Notify peers to remove stream
         try {
             if (peerManagerRef.current) {
                 peerManagerRef.current.stopLocalStream();
@@ -132,49 +145,72 @@ export function useWebRTC(roomId, user, autoStart = true) {
             console.error("Error stopping local stream on peers:", err);
         }
 
-        // 2. Stop all local tracks physically (Turns off camera light)
+        // 2. Stop tracks
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => {
-                try {
-                    track.stop();
-                } catch (e) {
-                    console.warn('Error stopping track:', e);
-                }
+                try { track.stop(); } catch (e) { }
             });
             localStreamRef.current = null;
             setLocalStream(null);
         }
 
-        // 3. Reset State & Broadcast Status
+        // 3. Reset State & Broadcast
         setIsVideoEnabled(false);
         setIsAudioEnabled(false);
-        broadcastStatus({ isVideoEnabled: false, isAudioEnabled: false });
+        broadcastStatus({
+            isVideoEnabled: false,
+            isAudioEnabled: false,
+            isDeafened
+        });
 
-    }, []);
+    }, [broadcastStatus, isDeafened]);
 
     // Toggle audio
     const toggleAudio = useCallback(() => {
         if (localStreamRef.current) {
             const audioTrack = localStreamRef.current.getAudioTracks()[0];
             if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                setIsAudioEnabled(audioTrack.enabled);
+                const newState = !audioTrack.enabled;
+                audioTrack.enabled = newState;
+                setIsAudioEnabled(newState);
+                broadcastStatus({ isAudioEnabled: newState });
             }
         }
-    }, []);
+    }, [broadcastStatus]);
 
-    // Toggle video
+    // Toggle video (Internal or Helper)
     const toggleVideo = useCallback(() => {
         if (localStreamRef.current) {
             const videoTrack = localStreamRef.current.getVideoTracks()[0];
             if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                setIsVideoEnabled(videoTrack.enabled);
+                const newState = !videoTrack.enabled;
+                videoTrack.enabled = newState;
+                setIsVideoEnabled(newState);
+                broadcastStatus({ isVideoEnabled: newState });
             }
         }
-    }, []);
+    }, [broadcastStatus]);
 
-    // Leave room and cleanup
+    // Toggle Deaf
+    const toggleDeaf = useCallback(() => {
+        setIsDeafened(prev => {
+            const newState = !prev;
+            broadcastStatus({ isDeafened: newState });
+
+            // Logic to mute INCOMING audio? 
+            // The PeerManager usually handles streams.
+            // But we can mute the AUDIO ELEMENTS in VideoGrid effectively by the flag.
+            // Or we should iterate peers and mute them here?
+            // For now, we rely on VideoGrid checking `isDeafened` prop or this hook state if passed down?
+            // Actually, `useWebRTC` doesn't control the audio elements directly, VideoGrid does.
+            // So broadcasting the state is enough if VideoGrid uses it for UI. 
+            // BUT for actual functionality, VideoGrid should mute the <video> or <audio> tags.
+
+            return newState;
+        });
+    }, [broadcastStatus]);
+
+    // Leave room
     const leaveRoom = useCallback(() => {
         if (peerManagerRef.current) {
             peerManagerRef.current.destroyAll();
@@ -191,80 +227,30 @@ export function useWebRTC(roomId, user, autoStart = true) {
         hasJoinedRoom.current = false;
     }, [socket, roomId]);
 
-    // Update user ref when user changes
+    // Update user Ref
     useEffect(() => {
         userRef.current = user;
     }, [user]);
 
-    // Join room and set up event listeners
+    // Main Socket Logic
     useEffect(() => {
-        console.log('🔍 useEffect triggered:', {
-            hasSocket: !!socket,
-            isConnected,
-            roomId,
-            hasUser: !!userRef.current,
-            hasJoined: hasJoinedRoom.current
-        });
-
-        if (!socket || !isConnected || !roomId || !userRef.current || hasJoinedRoom.current) {
-            console.log('⏭️ Skipping room join:', {
-                reason: !socket ? 'no socket' : !isConnected ? 'not connected' : !roomId ? 'no roomId' : !userRef.current ? 'no user' : 'already joined'
-            });
-            return;
-        }
-
-        // Helper to get or create PeerManager with listeners attached
-        const getOrCreatePeerManager = () => {
-            if (peerManagerRef.current) return peerManagerRef.current;
-
-            console.log('🆕 Creating PeerManager (Passive/Active)');
-            const peerManager = new PeerManager(socket, localStreamRef.current || null); // Use current stream if any
-            peerManagerRef.current = peerManager;
-
-            // Handle new peer streams
-            peerManager.onStream((peerId, stream) => {
-                console.log('📺 Received stream from peer:', peerId);
-                setPeers(prev => {
-                    const newPeers = new Map(prev);
-                    const existingPeer = prev.get(peerId) || {};
-                    newPeers.set(peerId, { ...existingPeer, stream, userId: peerId });
-                    return newPeers;
-                });
-            });
-
-            // Handle peer leaving
-            peerManager.onPeerLeft((peerId) => {
-                setPeers(prev => {
-                    const newPeers = new Map(prev);
-                    newPeers.delete(peerId);
-                    return newPeers;
-                });
-            });
-
-            return peerManager;
-        };
+        if (!socket || !isConnected || !roomId || !userRef.current || hasJoinedRoom.current) return;
 
         const currentUser = userRef.current;
         console.log('🚀 Joining room:', roomId, 'as', currentUser.name);
 
-        // Set up event listeners BEFORE joining room
+        // Listeners
         const handleUserJoined = ({ socketId, user: joinedUser }) => {
             console.log(`👋 User ${joinedUser.name} joined (${socketId})`);
-
             setPeers(prev => {
                 const newPeers = new Map(prev);
                 newPeers.set(socketId, { stream: null, userId: socketId, user: joinedUser });
-                console.log('📊 Total users now:', newPeers.size + 1);
                 return newPeers;
             });
-
-            // REVERT: Don't connect proactively. Wait for broadcast.
-            // if (peerManagerRef.current) ...
         };
 
         const handleExistingUsers = ({ users }) => {
-            console.log(`📋 Existing users in room:`, users);
-
+            console.log(`📋 Existing users:`, users);
             setPeers(prev => {
                 const newPeers = new Map(prev);
                 users.forEach(({ socketId, user: existingUser }) => {
@@ -272,86 +258,83 @@ export function useWebRTC(roomId, user, autoStart = true) {
                         newPeers.set(socketId, { stream: null, userId: socketId, user: existingUser });
                     }
                 });
-                console.log('📊 Total users now:', newPeers.size + 1);
                 return newPeers;
             });
-
-            // REVERT: Don't connect proactively.
         };
 
         const handleSignal = ({ sender, payload }) => {
-            console.log('📶 Received signal from:', sender);
-            const pm = getOrCreatePeerManager();
-            pm.handleSignal(sender, payload);
+            if (peerManagerRef.current) {
+                peerManagerRef.current.handleSignal(sender, payload);
+            }
         };
 
         const handleUserLeft = ({ socketId }) => {
-            console.log(`👋 User ${socketId} left`);
-
             setPeers(prev => {
                 const newPeers = new Map(prev);
                 newPeers.delete(socketId);
-                console.log('📊 Total users now:', newPeers.size + 1);
                 return newPeers;
             });
-
             if (peerManagerRef.current) {
                 peerManagerRef.current.destroyPeer(socketId);
             }
         };
-        // Register all event listeners
-        console.log('📡 Registering socket event listeners...');
+
+        const handleUserUpdated = ({ socketId, user: updatedUser }) => {
+            console.log(`🔄 User updated: ${updatedUser.name} (${socketId})`, updatedUser);
+            setPeers(prev => {
+                const newPeers = new Map(prev);
+                const existing = newPeers.get(socketId);
+                if (existing) {
+                    newPeers.set(socketId, { ...existing, user: updatedUser });
+                }
+                return newPeers;
+            });
+        };
+
         socket.on('user-joined', handleUserJoined);
         socket.on('existing-users', handleExistingUsers);
         socket.on('signal', handleSignal);
         socket.on('user-left', handleUserLeft);
-        console.log('✅ Socket event listeners registered');
+        socket.on('user-updated', handleUserUpdated);
 
-        // NOW join the room (after listeners are set up)
-        console.log('📤 Emitting join-room event with:', { roomId, user: currentUser });
-
-        // Extract ircConfig to send separately (don't leak to other peers)
+        // JOIN
         const { ircConfig, ...safeUser } = currentUser;
-
-        if (ircConfig) {
-            console.log('🔌 Attaching IRC Config to join request:', ircConfig);
-        } else {
-            console.warn('⚠️ No IRC Config found in currentUser!');
-        }
-
-        socket.emit('join-room', { roomId, user: safeUser, ircConfig });
+        // Inject initial state
+        const userWithState = {
+            ...safeUser,
+            isVideoEnabled: false,
+            isAudioEnabled: false,
+            isDeafened: true // Initial deaf state
+        };
+        socket.emit('join-room', { roomId, user: userWithState, ircConfig });
         hasJoinedRoom.current = true;
-        console.log('✅ join-room event emitted');
 
-        // Cleanup listeners on unmount or re-run
         return () => {
-            console.log('🧹 Cleaning up socket listeners');
             socket.off('user-joined', handleUserJoined);
             socket.off('existing-users', handleExistingUsers);
             socket.off('signal', handleSignal);
             socket.off('user-left', handleUserLeft);
-
-            // Optionally leave room?
-            // socket.emit('leave-room', roomId); 
-            // We generally want to stay in room if just re-rendering, but strict mode unmounts.
-            // If we leave, we must rejoin. 
+            socket.off('user-updated', handleUserUpdated);
         };
     }, [socket, isConnected, roomId]);
 
-    // Auto-start camera if enabled
+    // Auto-start (Disabled mostly, or respects deaf default)
     useEffect(() => {
-        if (autoStart && socket && isConnected && roomId && user) {
-            startBroadcast();
+        if (autoStart && socket && isConnected && roomId && user && !localStream) {
+            // If autoStart, we do NOT auto-broadcast usually unless explicit.
+            // But if we did, we should respect isDeafened default.
         }
-    }, [autoStart, socket, isConnected, roomId, user?.name, startBroadcast]);
+    }, [autoStart, socket, isConnected, roomId, user, localStream]);
 
     return {
         localStream,
         peers,
         isAudioEnabled,
         isVideoEnabled,
+        isDeafened,
         toggleAudio,
         toggleVideo,
+        toggleDeaf,
         startBroadcast,
         stopBroadcast,
         leaveRoom,
