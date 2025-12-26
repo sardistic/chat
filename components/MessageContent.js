@@ -234,25 +234,24 @@ export default function MessageContent({ text }) {
         return [...new Set(matches)];
     }, [text]);
 
-    // Linkify the text
+    // Linkify the text (or hide URLs if they become embeds)
     const formattedText = useMemo(() => {
         if (urls.length === 0) return text;
 
         let result = text;
         urls.forEach(url => {
-            // Replace URL with clickable link
-            result = result.replace(
-                url,
-                `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #00AFF4; text-decoration: none;">${url}</a>`
-            );
+            // For this app, simply remove the URL from the text if it's being displayed as an embed below
+            // This mimics Discord's behavior where the media sits alone if the message is just a URL
+            result = result.replace(url, '');
         });
-        return result;
+
+        return result.trim();
     }, [text, urls]);
 
     return (
         <div className="message-content">
             {/* Text content with linkified URLs */}
-            <span dangerouslySetInnerHTML={{ __html: formattedText }} />
+            {formattedText && <span dangerouslySetInnerHTML={{ __html: formattedText }} />}
 
             {/* Render embeds for each URL */}
             {urls.map((url, index) => (
