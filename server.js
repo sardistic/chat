@@ -179,6 +179,52 @@ app.prepare().then(() => {
 
   httpServer.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
+
+    // --- History Bot Implementation ---
+    // Connects to IRC to log messages for history buffering.
+    // Does NOT broadcast to users (they have their own bridges).
+    // Filters out messages from Web Users to prevent history duplication.
+
+    console.log('[HistoryBot] Initializing...');
+    const historyConfig = {
+      nick: 'CamRoomsLogBot',
+      username: 'cr_logger',
+      channel: '#camsrooms', // Hardcoded as per simplified requirement
+      useIRC: true
+    };
+
+    const historyBridge = new IRCBridge(null, historyConfig, {
+      onMessage: (message) => {
+        // DUPLICATE CHECK:
+        // Iterate all active rooms and users to see if this message came from a Web User.
+        // If it did, it was already stored by the 'chat-message' handler.
+        let isWebUser = false;
+        for (const room of rooms.values()) {
+          for (const userData of room.values()) {
+            if (userData.name === message.sender) {
+              isWebUser = true;
+              break;
+            }
+          }
+          if (isWebUser) break;
+        }
+
+        if (isWebUser) {
+          // console.log(`[HistoryBot] Ignoring message from Web User: ${message.sender}`);
+          return;
+        }
+
+        // It's a message from a "Pure" IRC user. Store it in default history.
+        // Assuming single room 'default-room' for now as IRC is hardcoded.
+        // Ensure timestamp match format
+        if (!message.timestamp) message.timestamp = new Date().toISOString();
+
+        console.log(`[HistoryBot] Logging IRC message from ${message.sender}: ${message.text}`);
+        storeMessage('default-room', message);
+      }
+    });
+
+    historyBridge.connect();
   });
 });
 
