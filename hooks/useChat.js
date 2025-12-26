@@ -59,7 +59,12 @@ export function useChat(roomId, user) {
         if (!socket || !isConnected) return;
 
         const handleMessage = (message) => {
-            setMessages(prev => [...prev, message]);
+            // Deduplicate - check if we already have this message
+            setMessages(prev => {
+                const isDuplicate = prev.some(m => m.id === message.id);
+                if (isDuplicate) return prev;
+                return [...prev, message];
+            });
         };
 
         const handleUserTyping = ({ user: typingUser }) => {

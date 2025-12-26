@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import ProfileModal from "./ProfileModal";
+import CameraReactiveGrid from "./CameraReactiveGrid";
 import { useCameraEffects } from "@/hooks/useCameraEffects";
 
 // Generate a deterministic color from a username (similar to avatar API)
@@ -146,6 +147,9 @@ function VideoTile({
                     border: `${borderStyle.borderWidth}px solid ${borderStyle.borderColor}`,
                 }}
             />
+
+            {/* Animated dot grid background (reacts to camera colors) */}
+            <CameraReactiveGrid videoRef={tileVideoRef} isActive={isVideoEnabled && !!stream} />
 
             {/* Video or avatar */}
             {isVideoEnabled && stream ? (
