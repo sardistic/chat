@@ -475,7 +475,22 @@ export default function Home() {
     setIsRegistered(true);
   };
 
-  const handleLeave = () => {
+  const handleLeave = async () => {
+    // Clear guest cookies
+    document.cookie = 'guest_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'display_name=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'avatar_seed=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+    // Sign out of NextAuth (if logged in with Discord)
+    try {
+      const { signOut } = await import('next-auth/react');
+      await signOut({ redirect: false });
+    } catch (e) {
+      // Ignore if not signed in
+    }
+
+    // Reset to entry screen
+    setUser(null);
     setIsRegistered(false);
   };
 
