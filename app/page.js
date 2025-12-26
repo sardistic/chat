@@ -361,7 +361,12 @@ function MainApp({ user, onLeaveRoom }) {
             {activeTab === 'logs' ? (
               /* Chat Panel */
               <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <ChatPanel roomId={roomId} user={user} />
+                <ChatPanel
+                  roomId={roomId}
+                  user={user}
+                  users={Array.from(peers.values())}
+                  ircUsers={Array.from(ircUsers.values())}
+                />
               </div>
             ) : (
               /* User List (Services) */
