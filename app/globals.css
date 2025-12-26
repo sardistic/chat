@@ -28,10 +28,12 @@
   /* Mantine Gray-6ish */
 
   /* Accents */
-  --accent-primary: #A78BFA;
-  --accent-hover: #8B5CF6;
-  --accent-surface: rgba(167, 139, 250, 0.1);
-  --accent-glow: rgba(167, 139, 250, 0.3);
+  /* Accents */
+  --accent-primary: #6366F1;
+  /* Indigo */
+  --accent-hover: #4F46E5;
+  --accent-surface: rgba(99, 102, 241, 0.1);
+  --accent-glow: rgba(99, 102, 241, 0.3);
 
   /* Status */
   --status-online: #34D399;

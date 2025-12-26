@@ -11,18 +11,9 @@ function generateName(seed) {
 
 export default function EntryScreen({ onJoin }) {
     const [username, setUsername] = useState("");
-    const [color, setColor] = useState("#A78BFA"); // Default railway purple
+    const [color, setColor] = useState("#6366F1"); // Premium Indigo
     const [characterSeed, setCharacterSeed] = useState(Date.now());
     const [spriteImage, setSpriteImage] = useState(null);
-
-    const colors = [
-        { hex: "#A78BFA", name: "Purple" },
-        { hex: "#34D399", name: "Emerald" },
-        { hex: "#60A5FA", name: "Blue" },
-        { hex: "#F87171", name: "Red" },
-        { hex: "#FBBF24", name: "Amber" },
-        { hex: "#9CA3AF", name: "Grey" },
-    ];
 
     useEffect(() => {
         // When seed changes, just update name. Image updates via URL.
@@ -77,17 +68,7 @@ export default function EntryScreen({ onJoin }) {
 
                     {/* Controls */}
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn" onClick={() => setCharacterSeed(Date.now())} title="Randomize Avatar">🎲</button>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                            {colors.map(c => (
-                                <div
-                                    key={c.hex}
-                                    style={{ width: '24px', height: '24px', borderRadius: '50%', background: c.hex, cursor: 'pointer', border: color === c.hex ? '2px solid white' : '2px solid transparent', boxShadow: color === c.hex ? '0 0 0 2px var(--accent-primary)' : 'none' }}
-                                    onClick={() => setColor(c.hex)}
-                                    title={c.name}
-                                />
-                            ))}
-                        </div>
+                        <button className="btn" onClick={() => setCharacterSeed(Date.now())} title="Randomize Avatar">🎲 Randomize Identity</button>
                     </div>
                 </div>
 
