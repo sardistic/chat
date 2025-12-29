@@ -5,6 +5,9 @@ import ProfileModal from "./ProfileModal";
 import CameraReactiveGrid from "./CameraReactiveGrid";
 import { useCameraEffects } from "@/hooks/useCameraEffects";
 import { useSocket } from "@/lib/socket";
+import {
+    IconMicrophoneOff, IconHeadphonesOff, IconMessage, IconLink
+} from '@tabler/icons-react';
 
 // Floating emoji animation component
 function FloatingReaction({ emoji, onComplete }) {
@@ -277,7 +280,7 @@ function VideoTile({
                             style={{ background: isVideoEnabled ? 'var(--status-online)' : 'var(--text-muted)' }}
                         />
                         {user?.name || 'User'} {isLocal && '(You)'}
-                        {isDiscordUser && <span style={{ marginLeft: '4px', opacity: 0.7 }}>🔗</span>}
+                        {isDiscordUser && <span style={{ marginLeft: '4px', opacity: 0.7 }}><IconLink size={12} /></span>}
                     </div>
 
                     {/* Reaction Button */}
@@ -308,9 +311,9 @@ function VideoTile({
                 </div>
 
                 <div className="status-icons">
-                    {!isAudioEnabled && <span>🔇</span>}
-                    {!isLocal && user?.isDeafened && <span>🙉</span>}
-                    {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}>💬</span>}
+                    {!isAudioEnabled && <span><IconMicrophoneOff size={14} /></span>}
+                    {!isLocal && user?.isDeafened && <span><IconHeadphonesOff size={14} /></span>}
+                    {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}><IconMessage size={14} /></span>}
                 </div>
             </div>
         </div>

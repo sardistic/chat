@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import { IconLink, IconMovie } from '@tabler/icons-react';
 
 // URL regex patterns
 const URL_REGEX = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/gi;
@@ -165,7 +166,7 @@ function LinkEmbed({ url }) {
                     color: 'var(--text-muted)',
                     marginBottom: '2px'
                 }}>
-                    🔗 {hostname}
+                    <IconLink size={12} /> {hostname}
                 </div>
                 <div style={{
                     fontSize: '14px',
@@ -196,7 +197,7 @@ function TenorEmbed({ url }) {
                     fontSize: '14px',
                     color: '#00AFF4'
                 }}>
-                    🎬 Tenor GIF - Click to view
+                    <IconMovie size={16} /> Tenor GIF - Click to view
                 </div>
             </a>
         </div>

@@ -1,5 +1,10 @@
 "use client";
 
+import {
+    IconMicrophone, IconMicrophoneOff, IconVideo, IconVideoOff,
+    IconSettings, IconPhoneOff
+} from '@tabler/icons-react';
+
 export default function MediaControls({
     isAudioEnabled,
     isVideoEnabled,
@@ -16,7 +21,7 @@ export default function MediaControls({
                     onClick={onToggleAudio}
                     title={isAudioEnabled ? 'Mute' : 'Unmute'}
                 >
-                    <span className="icon">{isAudioEnabled ? '🎤' : '🔇'}</span>
+                    <span className="icon">{isAudioEnabled ? <IconMicrophone size={20} /> : <IconMicrophoneOff size={20} />}</span>
                     <span className="label">{isAudioEnabled ? 'Mute' : 'Unmuted'}</span>
                 </button>
 
@@ -25,7 +30,7 @@ export default function MediaControls({
                     onClick={onToggleVideo}
                     title={isVideoEnabled ? 'Stop Video' : 'Start Video'}
                 >
-                    <span className="icon">{isVideoEnabled ? '📹' : '🚫'}</span>
+                    <span className="icon">{isVideoEnabled ? <IconVideo size={20} /> : <IconVideoOff size={20} />}</span>
                     <span className="label">{isVideoEnabled ? 'Video' : 'No Video'}</span>
                 </button>
 
@@ -34,7 +39,7 @@ export default function MediaControls({
                     onClick={onOpenSettings}
                     title="Settings"
                 >
-                    <span className="icon">⚙️</span>
+                    <span className="icon"><IconSettings size={20} /></span>
                     <span className="label">Settings</span>
                 </button>
 
@@ -43,7 +48,7 @@ export default function MediaControls({
                     onClick={onLeaveRoom}
                     title="Leave Room"
                 >
-                    <span className="icon">📞</span>
+                    <span className="icon"><IconPhoneOff size={20} /></span>
                     <span className="label">Leave</span>
                 </button>
             </div>

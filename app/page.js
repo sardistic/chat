@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   IconVideo, IconEye, IconMicrophoneOff, IconHeadphonesOff,
+  IconVideo, IconEye, IconMicrophoneOff, IconHeadphonesOff,
   IconCloud, IconKeyboard, IconRobot, IconCircleFilled,
-  IconHeadphones, IconMicrophone
+  IconHeadphones, IconMicrophone, IconUser, IconMessage, IconSettings, IconLogout
 } from '@tabler/icons-react';
 import { SocketProvider } from "@/lib/socket";
 import VideoGrid from "@/components/VideoGrid";
@@ -260,11 +261,19 @@ function MainApp({ user, onLeaveRoom }) {
                     {customStatus || 'Online'}
                   </div>
                 </div>
-                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowOwnProfile(true); }}>👤 View Profile</button>
-                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>💬 Set Status</button>
-                <button className="menu-item disabled">⚙️ Settings</button>
+                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowOwnProfile(true); }}>
+                  <IconUser size={16} /> View Profile
+                </button>
+                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>
+                  <IconMessage size={16} /> Set Status
+                </button>
+                <button className="menu-item disabled">
+                  <IconSettings size={16} /> Settings
+                </button>
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
-                <button className="menu-item danger" onClick={onLeaveRoom}>🚪 Disconnect</button>
+                <button className="menu-item danger" onClick={onLeaveRoom}>
+                  <IconLogout size={16} /> Disconnect
+                </button>
               </div>
             )}
           </div>
