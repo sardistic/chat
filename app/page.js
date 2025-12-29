@@ -37,6 +37,7 @@ function MainApp({ user, onLeaveRoom }) {
   const [showStatusInput, setShowStatusInput] = useState(false);
   const [customStatus, setCustomStatus] = useState('');
   const [selectedProfileUser, setSelectedProfileUser] = useState(null);
+  const [modalPosition, setModalPosition] = useState(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -316,7 +317,10 @@ function MainApp({ user, onLeaveRoom }) {
                       key={u.name + i}
                       className="aquarium-avatar"
                       style={{ position: 'relative', cursor: 'pointer' }}
-                      onClick={() => setSelectedProfileUser(u)}
+                      onClick={(e) => {
+                        setSelectedProfileUser(u);
+                        setModalPosition({ x: e.clientX, y: e.clientY });
+                      }}
                     >
 
                       {/* Chat Bubble */}
@@ -406,7 +410,10 @@ function MainApp({ user, onLeaveRoom }) {
 
                 {/* Remote Users (WebRTC) */}
                 {Array.from(peers, ([socketId, p]) => (
-                  <div key={socketId} className="user-item" onClick={() => setSelectedProfileUser(p.user)} style={{ cursor: 'pointer' }}>
+                  <div key={socketId} className="user-item" onClick={(e) => {
+                    setSelectedProfileUser(p.user);
+                    setModalPosition({ x: e.clientX, y: e.clientY });
+                  }} style={{ cursor: 'pointer' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <img
                         src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
@@ -432,7 +439,10 @@ function MainApp({ user, onLeaveRoom }) {
                 {Array.from(ircUsers.values())
                   .filter(u => !['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()))
                   .map((u) => (
-                    <div key={u.name} className="user-item" onClick={() => setSelectedProfileUser(u)} style={{ cursor: 'pointer' }}>
+                    <div key={u.name} className="user-item" onClick={(e) => {
+                      setSelectedProfileUser(u);
+                      setModalPosition({ x: e.clientX, y: e.clientY });
+                    }} style={{ cursor: 'pointer' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <img
                           src={u.avatar || `/api/avatar/${u.name}`}
@@ -518,7 +528,8 @@ function MainApp({ user, onLeaveRoom }) {
       <ProfileModal
         user={selectedProfileUser}
         isOpen={!!selectedProfileUser}
-        onClose={() => setSelectedProfileUser(null)}
+        onClose={() => { setSelectedProfileUser(null); setModalPosition(null); }}
+        position={modalPosition}
       />
 
       {/* Status Input Dialog */}
