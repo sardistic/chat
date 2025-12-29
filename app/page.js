@@ -455,7 +455,12 @@ function MainApp({ user, onLeaveRoom }) {
                 {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
                 {/* IRC Users (Humans) */}
                 {Array.from(ircUsers.values())
-                  .filter(u => !['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()) && u.name !== user.name)
+                  .filter(u => {
+                    const isBot = ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase());
+                    const isMe = u.name === user.name;
+                    const isPeer = Array.from(peers.values()).some(p => p.user?.name === u.name);
+                    return !isBot && !isMe && !isPeer;
+                  })
                   .map((u) => (
                     <div key={u.name} className="user-item" onClick={(e) => {
                       setSelectedProfileUser(u);
