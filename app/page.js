@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   IconVideo, IconEye, IconMicrophoneOff, IconHeadphonesOff,
-  IconCloud, IconKeyboard, IconRobot, IconCircleFilled
+  IconCloud, IconKeyboard, IconRobot, IconCircleFilled,
+  IconHeadphones, IconMicrophone
 } from '@tabler/icons-react';
 import { SocketProvider } from "@/lib/socket";
 import VideoGrid from "@/components/VideoGrid";
@@ -185,11 +186,7 @@ function MainApp({ user, onLeaveRoom }) {
       {/* Fixed Header */}
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Logo / Icon */}
-          {/* Logo / Icon - REMOVED per user request */}
-          {/* <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div> */}
+          {/* Logo / Icon - Removed */}
           {/* Breadcrumbs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
             <button
@@ -213,16 +210,16 @@ function MainApp({ user, onLeaveRoom }) {
             className={`btn icon-btn ${isDeafened ? 'danger' : ''}`}
             onClick={toggleDeaf}
             title={isDeafened ? 'Undeafen' : 'Deafen'}
-            style={{ marginRight: '8px' }}
+            style={{ marginRight: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            {isDeafened ? '🙉' : '🎧'}
+            {isDeafened ? <IconHeadphonesOff size={18} /> : <IconHeadphones size={18} />}
           </button>
 
           {/* Broadcast Controls */}
           {isBroadcasting && (
             <div style={{ display: 'flex', gap: '8px', marginRight: '8px' }}>
-              <button className={`btn icon-btn ${!isAudioEnabled ? 'danger' : ''}`} onClick={toggleAudio} title={isAudioEnabled ? 'Mute Mic' : 'Unmute Mic'}>
-                {isAudioEnabled ? '🎤' : '🔇'}
+              <button className={`btn icon-btn ${!isAudioEnabled ? 'danger' : ''}`} onClick={toggleAudio} title={isAudioEnabled ? 'Mute Mic' : 'Unmute Mic'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isAudioEnabled ? <IconMicrophone size={18} /> : <IconMicrophoneOff size={18} />}
               </button>
             </div>
           )}
