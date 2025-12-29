@@ -512,7 +512,7 @@ function MainApp({ user, onLeaveRoom }) {
                     return (
                       <div key={u.name} className="user-item" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }}>
-                          <IconRobot size={18} color="white" stroke={1.5} />
+                          <Icon icon="fa:android" width="18" color="white" />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
