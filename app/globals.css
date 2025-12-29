@@ -28,12 +28,11 @@
   /* Mantine Gray-6ish */
 
   /* Accents */
-  /* Accents */
-  --accent-primary: #6366F1;
-  /* Indigo */
-  --accent-hover: #4F46E5;
-  --accent-surface: rgba(99, 102, 241, 0.1);
-  --accent-glow: rgba(99, 102, 241, 0.3);
+  /* New Accent: Deeper Indigo/Violet (Distinct from Discord #5865F2) */
+  --accent-primary: #4F46E5;
+  --accent-hover: #4338CA;
+  --accent-surface: rgba(79, 70, 229, 0.1);
+  --accent-glow: rgba(79, 70, 229, 0.3);
 
   /* Status */
   --status-online: #34D399;

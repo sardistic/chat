@@ -204,7 +204,7 @@ export default function EntryScreen({ onJoin }) {
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
                     {/* Sprite Preview */}
-                    <div style={{ width: '96px', height: '96px', background: '#6366F1', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(99, 102, 241, 0.25)', overflow: 'hidden' }}>
+                    <div style={{ width: '96px', height: '96px', background: 'var(--accent-primary)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px var(--accent-glow)', overflow: 'hidden' }}>
                         <img
                             src={previewUrl}
                             alt="Avatar"
@@ -247,7 +247,7 @@ export default function EntryScreen({ onJoin }) {
                                     padding: '14px',
                                     fontSize: '14px',
                                     justifyContent: 'center',
-                                    background: 'linear-gradient(135deg, #5865F2, #7289DA)',
+                                    background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-hover))',
                                     border: 'none',
                                     color: 'white',
                                     display: 'flex',
