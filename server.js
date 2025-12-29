@@ -165,19 +165,6 @@ app.prepare().then(() => {
       storeMessage(roomId, joinMsg);
       io.to(roomId).emit('chat-message', joinMsg);
 
-      // Initialize Per-User IRC Bridge
-      if (ircConfig && ircConfig.useIRC) {
-        try {
-          console.log(`[Server] Initializing IRC Bridge for ${user.name}`);
-          const bridge = new IRCBridge(socket, ircConfig);
-          bridge.connect();
-          socket.data.ircBridge = bridge;
-        } catch (err) {
-          console.error('[Server] Failed to init IRC bridge:', err);
-          socket.emit('irc-error', { message: 'Failed to initialize bridge' });
-        }
-      }
-
       console.log(`✅ ${user.name} joined room. Total users: ${room.size}`);
     });
 

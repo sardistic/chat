@@ -27,7 +27,7 @@ function MainApp({ user, onLeaveRoom }) {
     stopBroadcast,
     error
   } = useWebRTC(roomId, user, false);
-  const { ircUsers } = useIRC();
+  const { ircUsers } = useIRC(user);
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
