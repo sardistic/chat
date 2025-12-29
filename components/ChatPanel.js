@@ -443,9 +443,9 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                         borderTop: '1px solid rgba(255,255,255,0.05)'
                     }}>
                         <button
-                            onClick={() => setShowGifSearch(!showGifSearch)}
+                            onClick={() => setShowGifPicker(!showGifPicker)}
                             style={{
-                                background: showGifSearch ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                background: showGifPicker ? 'rgba(255,255,255,0.1)' : 'transparent',
                                 border: 'none',
                                 borderRadius: '6px',
                                 padding: '6px 10px',
