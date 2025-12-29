@@ -39,6 +39,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
     const { messages, sendMessage, isLoading, typingUsers, handleTyping } = useChat(roomId, user);
     const [inputValue, setInputValue] = useState('');
     const [showGifPicker, setShowGifPicker] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
     const [showMentions, setShowMentions] = useState(false);
     const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
@@ -412,62 +413,40 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                             }}
                         />
 
-                        {/* Send Button */}
-                        <button
-                            onClick={handleSend}
-                            disabled={!inputValue.trim()}
-                            style={{
-                                background: inputValue.trim() ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
-                                border: 'none',
-                                borderRadius: '8px',
-                                padding: '8px 14px',
-                                cursor: inputValue.trim() ? 'pointer' : 'default',
-                                color: '#fff',
-                                fontSize: '13px',
-                                fontWeight: 500,
-                                opacity: inputValue.trim() ? 1 : 0.5,
-                                transition: 'all 0.15s ease',
-                                flexShrink: 0
-                            }}
-                        >
-                            Send
-                        </button>
                     </div>
 
-                    {/* Bottom row: Actions */}
+                    {/* Bottom row: Actions + Send */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
                         padding: '6px 14px 10px',
-                        borderTop: '1px solid rgba(255,255,255,0.05)'
+                        borderTop: '1px solid rgba(255,255,255,0.05)',
+                        position: 'relative'
                     }}>
                         <button
-                            onClick={() => setShowGifPicker(!showGifPicker)}
+                            onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }}
                             style={{
-                                background: showGifPicker ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                background: showGifPicker ? 'rgba(255,255,255,0.15)' : 'transparent',
                                 border: 'none',
                                 borderRadius: '6px',
                                 padding: '6px 10px',
                                 cursor: 'pointer',
-                                color: 'var(--text-secondary)',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
+                                color: showGifPicker ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                fontSize: '12px'
                             }}
                         >
                             🎬 GIF
                         </button>
                         <button
-                            onClick={() => inputRef.current?.focus()}
+                            onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }}
                             style={{
-                                background: 'transparent',
+                                background: showEmojiPicker ? 'rgba(255,255,255,0.15)' : 'transparent',
                                 border: 'none',
                                 borderRadius: '6px',
                                 padding: '6px 10px',
                                 cursor: 'pointer',
-                                color: 'var(--text-secondary)',
+                                color: showEmojiPicker ? 'var(--text-primary)' : 'var(--text-secondary)',
                                 fontSize: '12px'
                             }}
                         >
@@ -488,9 +467,61 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                 fontSize: '12px'
                             }}
                         >
-                            @Mention
+                            @
+                        </button>
+
+                        {/* Spacer */}
+                        <div style={{ flex: 1 }} />
+
+                        {/* Send Button */}
+                        <button
+                            onClick={handleSend}
+                            disabled={!inputValue.trim()}
+                            style={{
+                                background: inputValue.trim() ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 14px',
+                                cursor: inputValue.trim() ? 'pointer' : 'default',
+                                color: '#fff',
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                opacity: inputValue.trim() ? 1 : 0.5
+                            }}
+                        >
+                            Send
                         </button>
                     </div>
+
+                    {/* Emoji Picker Popup */}
+                    {showEmojiPicker && (
+                        <div style={{
+                            padding: '10px 14px',
+                            borderTop: '1px solid rgba(255,255,255,0.05)',
+                            background: 'var(--bg-tertiary)'
+                        }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '120px', overflow: 'auto' }}>
+                                {['😀', '😂', '🥹', '😍', '🥰', '😘', '😎', '🤔', '😤', '😭', '🥺', '😱', '🤯', '🥳', '😈', '💀', '🔥', '❤️', '💜', '💙', '💚', '💛', '🧡', '🖤', '🤍', '👍', '👎', '👏', '🙌', '🤝', '✌️', '🤞', '🤙', '👋', '💪', '🎉', '🎊', '✨', '⭐', '🌟', '💫', '🚀', '🎮', '🎯', '🏆', '💎', '👀', '💬', '💭', '🗣️'].map(emoji => (
+                                    <button
+                                        key={emoji}
+                                        onClick={() => { setInputValue(prev => prev + emoji); setShowEmojiPicker(false); inputRef.current?.focus(); }}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            fontSize: '20px',
+                                            cursor: 'pointer',
+                                            padding: '4px',
+                                            borderRadius: '4px'
+                                        }}
+                                        onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
+                                        onMouseLeave={e => e.target.style.background = 'transparent'}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
