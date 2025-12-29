@@ -301,6 +301,52 @@ function MainApp({ user, onLeaveRoom }) {
               </div>
             )}
           </div>
+
+          {/* Avatar Aquarium - peeking down from header */}
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            height: '60px',
+            marginTop: '-20px',
+            pointerEvents: 'none',
+            overflow: 'visible',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px'
+          }}>
+            {(() => {
+              const uniqueMap = new Map();
+              if (user && user.name) uniqueMap.set(user.name, user);
+              peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
+              ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
+              return Array.from(uniqueMap.values())
+                .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
+                .map((u, i) => {
+                  const bubble = chatBubbles[u.name];
+                  return (
+                    <div
+                      key={u.name + i}
+                      className="aquarium-avatar"
+                      style={{ position: 'relative', cursor: 'pointer', pointerEvents: 'auto' }}
+                      onClick={(e) => handleProfileClick(u, e)}
+                    >
+                      {bubble && <div className="chat-bubble">{bubble}</div>}
+                      <div style={{ position: 'relative', width: '44px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <img
+                          src={u.avatar || `/api/avatar/${u.name}`}
+                          alt={u.name}
+                          style={{ width: '44px', height: '44px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                        />
+                        <div className="avatar-name" style={{ marginTop: '2px', top: 'auto', bottom: '-18px' }}>{u.name}</div>
+                      </div>
+                    </div>
+                  );
+                });
+            })()}
+          </div>
         </div>
       </header>
 
@@ -322,63 +368,7 @@ function MainApp({ user, onLeaveRoom }) {
             onProfileClick={handleProfileClick}
           />
 
-          {/* Avatar Aquarium - in header, peeking down */}
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            height: '60px',
-            marginTop: '-20px', /* Peek up into header */
-            pointerEvents: 'none',
-            overflow: 'visible',
-            zIndex: 5,
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px'
-          }}>
-            {/* Collect & Deduplicate Users */}
-            {(() => {
-              const uniqueMap = new Map();
-              // Priority: Local -> Peer -> IRC (don't overwrite existing entries)
-              if (user && user.name) uniqueMap.set(user.name, user);
-              peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
-              ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
 
-              return Array.from(uniqueMap.values())
-                .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase())) // Hide Bot
-                .map((u, i) => {
-                  const bubble = chatBubbles[u.name];
-                  return (
-                    <div
-                      key={u.name + i}
-                      className="aquarium-avatar"
-                      style={{ position: 'relative', cursor: 'pointer' }}
-                      onClick={(e) => handleProfileClick(u, e)}
-                    >
-
-                      {/* Chat Bubble */}
-                      {bubble && (
-                        <div className="chat-bubble">
-                          {bubble}
-                        </div>
-                      )}
-
-                      <div style={{ position: 'relative', width: '44px', display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
-                        <img
-                          src={u.avatar || `/api/avatar/${u.name}`}
-                          alt={u.name}
-                          style={{ width: '44px', height: '44px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
-                        />
-                        <div className="avatar-name" style={{ marginTop: '2px', top: 'auto', bottom: '-18px' }}>
-                          {u.name}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                });
-            })()}
-          </div>
         </div>
 
         {/* Floating Right Sidebar (Chat) */}
