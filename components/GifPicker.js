@@ -68,19 +68,12 @@ export default function GifPicker({ query, onSelect, onClose }) {
         <div
             ref={containerRef}
             style={{
-                position: 'absolute',
-                bottom: '100%',
-                left: 0,
-                right: 0,
+                position: 'relative',
                 background: 'var(--bg-secondary)',
-                borderRadius: '12px 12px 0 0',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderBottom: 'none',
-                maxHeight: '350px',
+                maxHeight: '300px',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                zIndex: 100,
             }}
         >
             {/* Header */}

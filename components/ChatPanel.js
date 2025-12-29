@@ -310,13 +310,40 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
 
             {/* Input Area */}
             <div className="input-area" style={{ position: 'relative', padding: '0 16px 16px' }}>
-                {/* GIF Picker */}
+                {/* GIF Picker with search */}
                 {showGifPicker && (
-                    <GifPicker
-                        query={gifQuery}
-                        onSelect={handleGifSelect}
-                        onClose={() => { setShowGifPicker(false); setInputValue(''); }}
-                    />
+                    <div style={{
+                        background: 'var(--bg-tertiary)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        marginBottom: '8px',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <input
+                                type="text"
+                                placeholder="Search GIFs..."
+                                value={gifQuery}
+                                onChange={(e) => setGifQuery(e.target.value)}
+                                autoFocus
+                                style={{
+                                    width: '100%',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '10px 12px',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '14px',
+                                    outline: 'none'
+                                }}
+                            />
+                        </div>
+                        <GifPicker
+                            query={gifQuery}
+                            onSelect={handleGifSelect}
+                            onClose={() => { setShowGifPicker(false); setGifQuery(''); }}
+                        />
+                    </div>
                 )}
 
                 {/* Mention Dropdown */}

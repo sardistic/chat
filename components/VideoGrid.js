@@ -346,9 +346,10 @@ function VideoTile({
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 background: 'rgba(0,0,0,0.5)',
-                                borderRadius: '12px',
-                                padding: '2px 4px',
-                                marginLeft: '6px'
+                                borderRadius: '14px',
+                                padding: '4px 8px',
+                                marginLeft: '6px',
+                                gap: '2px'
                             }}
                             onMouseEnter={() => setShowPicker(true)}
                             onMouseLeave={() => setShowPicker(false)}
@@ -369,10 +370,10 @@ function VideoTile({
                                     border: 'none',
                                     cursor: 'pointer',
                                     fontSize: '16px',
-                                    padding: '4px 6px',
-                                    pointerEvents: 'auto'
+                                    padding: '4px',
+                                    lineHeight: 1
                                 }}
-                                title="Send ❤️ (hover for more)"
+                                title="Send ❤️"
                             >
                                 ❤️
                             </button>
@@ -385,8 +386,8 @@ function VideoTile({
                                         background: 'transparent',
                                         border: 'none',
                                         cursor: 'pointer',
-                                        fontSize: '14px',
-                                        padding: '2px 4px',
+                                        fontSize: '16px',
+                                        padding: '4px',
                                         lineHeight: 1
                                     }}
                                 >
