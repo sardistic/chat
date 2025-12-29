@@ -546,49 +546,7 @@ body {
   box-shadow: 0 0 8px var(--status-online);
 }
 
-/* Tile Menu Trigger - Top Right */
-.tile-menu-trigger {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.4);
-  /* Darker for contrast */
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
-  z-index: 100;
-  /* Ensure above overlay */
-  opacity: 0;
-  transition: all 0.2s ease;
-}
 
-.tile:hover .tile-menu-trigger,
-.tile-menu-trigger.active {
-  opacity: 1;
-}
-
-.tile-menu-trigger:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-}
-
-.tile-menu-trigger.active {
-  background: rgba(255, 255, 255, 0.3);
-  color: white;
-  opacity: 1;
-}
-
-.tile-menu-trigger:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.4);
-}
 
 /* Updated Reaction Btn (Bottom) */
 .reaction-btn {
@@ -608,69 +566,6 @@ body {
 .reaction-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.3);
-}
-
-/* Tile Dropdown Menu */
-/* Tile Dropdown Menu - Sleek & Compact */
-.tile-menu {
-  position: absolute;
-  top: 24px;
-  /* Below the trigger */
-  right: 0;
-  background: #111;
-  /* Solid dark, less translucent than Discord */
-  border: 1px solid #333;
-  border-radius: 4px;
-  /* Sharpner corners */
-  padding: 2px;
-  min-width: 120px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  animation: menuIn 0.1s ease-out;
-}
-
-.menu-section {
-  padding: 8px 8px 4px;
-}
-
-.menu-label {
-  font-size: 9px;
-  font-weight: 800;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  font-size: 11px;
-  color: #ccc;
-  background: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  border-radius: 2px;
-  transition: background 0.1s;
-}
-
-.menu-item:hover {
-  background: #222;
-  color: white;
-}
-
-.menu-item.danger {
-  color: #ff4d4d;
-}
-
-.menu-item.danger:hover {
-  background: rgba(255, 77, 77, 0.1);
 }
 
 .menu-divider {

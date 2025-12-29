@@ -67,7 +67,7 @@ function VideoTile({
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
-    const [showMenu, setShowMenu] = useState(false);
+
 
     // Destructure settings
     const { volume, isLocallyMuted, isVideoHidden } = settings;
@@ -205,7 +205,7 @@ function VideoTile({
             className={`tile effect-${effectIntensity} ${borderStyle.animation}`}
             style={{ background }}
             onClick={onClick}
-            onMouseLeave={() => { setShowPicker(false); setShowMenu(false); }}
+            onMouseLeave={() => { setShowPicker(false); }}
         >
             {/* Reaction Overlay */}
             <div className="reaction-layer">
@@ -238,43 +238,7 @@ function VideoTile({
                 }}
             />
 
-            {/* Top Right Menu Trigger */}
-            <div className={`tile-menu-trigger ${showMenu ? 'active' : ''}`}
-                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); setShowPicker(false); }}>
-                <Icon icon="fa:ellipsis-v" width="8" />
-            </div>
 
-            {/* Dropdown Menu - Positioned relative to tile */}
-            {showMenu && (
-                <div className="tile-menu" onClick={e => e.stopPropagation()}>
-                    <div className="menu-section">
-                        <div className="menu-label">Local Volume</div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.1"
-                            value={volume}
-                            onChange={(e) => onUpdateSettings({ volume: parseFloat(e.target.value) })}
-                            className="volume-slider"
-                            onClick={e => e.stopPropagation()}
-                        />
-                    </div>
-                    <div className="menu-divider" />
-                    <button className="menu-item" onClick={() => onUpdateSettings({ isLocallyMuted: !isLocallyMuted })}>
-                        <Icon icon={isLocallyMuted ? "fa:microphone" : "fa:microphone-slash"} width="12" />
-                        {isLocallyMuted ? "Unmute" : "Mute"}
-                    </button>
-                    <button className="menu-item" onClick={() => onUpdateSettings({ isVideoHidden: !isVideoHidden })}>
-                        <Icon icon={isVideoHidden ? "fa:video-camera" : "fa:eye-slash"} width="12" />
-                        {isVideoHidden ? "Show Cam" : "Disable Cam"}
-                    </button>
-                    <button className="menu-item" onClick={(e) => { onClick(e); setShowMenu(false); }}>
-                        <Icon icon="fa:user" width="12" />
-                        Profile
-                    </button>
-                </div>
-            )}
 
             <CameraReactiveGrid
                 videoRef={tileVideoRef}

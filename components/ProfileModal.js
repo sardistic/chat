@@ -181,6 +181,40 @@ export default function ProfileModal({
                                 {badges.map(b => <span key={b.key} title={b.name} style={{ color: '#fff' }}>{b.icon}</span>)}
                             </div>
                         )}
+
+                        {/* Persistent Controls - Quick Access */}
+                        {userSettings && (
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                <button
+                                    onClick={() => onUpdatePeerSettings(user.id, { isLocallyMuted: !userSettings.isLocallyMuted })}
+                                    className={`icon-btn ${userSettings.isLocallyMuted ? 'danger' : 'secondary'}`}
+                                    title={userSettings.isLocallyMuted ? "Unmute" : "Mute"}
+                                    style={{
+                                        padding: '4px 8px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                                        background: userSettings.isLocallyMuted ? 'rgba(248, 113, 113, 0.2)' : 'rgba(255,255,255,0.1)',
+                                        color: userSettings.isLocallyMuted ? '#f87171' : 'rgba(255,255,255,0.7)',
+                                        display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px'
+                                    }}
+                                >
+                                    <Icon icon={userSettings.isLocallyMuted ? "fa:microphone-slash" : "fa:microphone"} width="12" />
+                                    {userSettings.isLocallyMuted ? "Unmute" : "Mute"}
+                                </button>
+                                <button
+                                    onClick={() => onUpdatePeerSettings(user.id, { isVideoHidden: !userSettings.isVideoHidden })}
+                                    className={`icon-btn ${userSettings.isVideoHidden ? 'danger' : 'secondary'}`}
+                                    title={userSettings.isVideoHidden ? "Show Cam" : "Hide Cam"}
+                                    style={{
+                                        padding: '4px 8px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                                        background: userSettings.isVideoHidden ? 'rgba(248, 113, 113, 0.2)' : 'rgba(255,255,255,0.1)',
+                                        color: userSettings.isVideoHidden ? '#f87171' : 'rgba(255,255,255,0.7)',
+                                        display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px'
+                                    }}
+                                >
+                                    <Icon icon={userSettings.isVideoHidden ? "fa:eye-slash" : "fa:video-camera"} width="12" />
+                                    {userSettings.isVideoHidden ? "Show" : "Hide"}
+                                </button>
+                            </div>
+                        )}
                     </div>
                     {/* Tiny X button */}
                     <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '4px', alignSelf: 'flex-start' }}>
@@ -268,24 +302,7 @@ export default function ProfileModal({
                             </div>
 
                             {/* Toggles */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                <button
-                                    className={`btn ${userSettings.isLocallyMuted ? 'danger' : 'secondary'}`}
-                                    onClick={() => onUpdatePeerSettings(user.id, { isLocallyMuted: !userSettings.isLocallyMuted })}
-                                    style={{ padding: '8px', justifyContent: 'center', fontSize: '12px' }}
-                                >
-                                    <Icon icon={userSettings.isLocallyMuted ? "fa:microphone-slash" : "fa:microphone"} width="14" />
-                                    {userSettings.isLocallyMuted ? "Unmute" : "Mute"}
-                                </button>
-                                <button
-                                    className={`btn ${userSettings.isVideoHidden ? 'danger' : 'secondary'}`}
-                                    onClick={() => onUpdatePeerSettings(user.id, { isVideoHidden: !userSettings.isVideoHidden })}
-                                    style={{ padding: '8px', justifyContent: 'center', fontSize: '12px' }}
-                                >
-                                    <Icon icon={userSettings.isVideoHidden ? "fa:eye-slash" : "fa:video-camera"} width="14" />
-                                    {userSettings.isVideoHidden ? "Show" : "Hide"}
-                                </button>
-                            </div>
+
 
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
 
