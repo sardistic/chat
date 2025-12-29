@@ -420,10 +420,10 @@ function MainApp({ user, onLeaveRoom }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                      <IconCircleFilled size={10} color="var(--status-online)" />
-                      {isVideoEnabled ? <IconVideo size={14} stroke={1.5} /> : <IconEye size={14} stroke={1.5} />}
-                      {!isAudioEnabled && <IconMicrophoneOff size={14} stroke={1.5} />}
-                      {isDeafened && <IconHeadphonesOff size={14} stroke={1.5} />}
+                      <Icon icon="fa:circle" width="10" color="var(--status-online)" />
+                      {isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
+                      {!isAudioEnabled && <Icon icon="fa:microphone-slash" width="14" />}
+                      {isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
                     </div>
                   </div>
                 </div>
@@ -448,10 +448,10 @@ function MainApp({ user, onLeaveRoom }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                          {p.user?.isVideoEnabled ? <IconVideo size={14} stroke={1.5} /> : <IconEye size={14} stroke={1.5} />}
-                          {p.user?.isAudioEnabled === false && <IconMicrophoneOff size={14} stroke={1.5} />}
-                          {p.user?.isDeafened && <IconHeadphonesOff size={14} stroke={1.5} />}
-                          {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <IconCloud size={14} stroke={1.5} />}
+                          {p.user?.isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
+                          {p.user?.isAudioEnabled === false && <Icon icon="fa:microphone-slash" width="14" />}
+                          {p.user?.isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
+                          {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <Icon icon="fa:cloud" width="14" />}
                         </div>
                       </div>
                     </div>
@@ -481,7 +481,7 @@ function MainApp({ user, onLeaveRoom }) {
                           <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                          <IconKeyboard size={14} stroke={1.5} />
+                          <Icon icon="fa:keyboard-o" width="14" />
                           {u.modes && u.modes.length > 0 && <span>+{u.modes.join('')}</span>}
                         </div>
                       </div>
