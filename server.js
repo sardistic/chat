@@ -411,6 +411,7 @@ app.prepare().then(() => {
       };
 
       const historyBridge = new IRCBridge(null, historyConfig, {
+        io, // Broadcast IRC events to all connected clients
         onMessage: (message) => {
           let isWebUser = false;
           for (const room of rooms.values()) {
@@ -431,6 +432,9 @@ app.prepare().then(() => {
           if (!message.timestamp) message.timestamp = new Date().toISOString();
           console.log(`[HistoryBot] 💾 STORING IRC message from ${message.sender}: ${message.text}`);
           storeMessage('default-room', message);
+
+          // Also broadcast IRC messages to all web clients
+          io.emit('chat-message', message);
         }
       });
 
