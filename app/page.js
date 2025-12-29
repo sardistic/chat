@@ -182,8 +182,8 @@ function MainApp({ user, onLeaveRoom }) {
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Logo / Icon */}
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span role="img" aria-label="logo" style={{ fontSize: '18px' }}>🚇</span>
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           {/* Breadcrumbs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
