@@ -223,6 +223,40 @@ function MainApp({ user, onLeaveRoom }) {
         {/* Right Header Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
+          {/* Avatar Aquarium - to the left of controls */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            marginRight: '8px'
+          }}>
+            {(() => {
+              const uniqueMap = new Map();
+              if (user && user.name) uniqueMap.set(user.name, user);
+              peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
+              ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
+              return Array.from(uniqueMap.values())
+                .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
+                .map((u, i) => (
+                  <div
+                    key={u.name + i}
+                    className="aquarium-avatar"
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => handleProfileClick(u, e)}
+                    title={u.name}
+                  >
+                    <img
+                      src={u.avatar || `/api/avatar/${u.name}`}
+                      alt={u.name}
+                      style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                  </div>
+                ));
+            })()}
+          </div>
+
+          <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
+
           {/* Broadcast Controls */}
           {/* Deafen (Always Visible) */}
           <button
@@ -256,38 +290,6 @@ function MainApp({ user, onLeaveRoom }) {
           >
             {isBroadcasting ? 'Stream Off' : 'Stream'}
           </button>
-
-          {/* Avatar Aquarium - inline after controls */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            marginLeft: '12px'
-          }}>
-            {(() => {
-              const uniqueMap = new Map();
-              if (user && user.name) uniqueMap.set(user.name, user);
-              peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
-              ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
-              return Array.from(uniqueMap.values())
-                .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
-                .map((u, i) => (
-                  <div
-                    key={u.name + i}
-                    className="aquarium-avatar"
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => handleProfileClick(u, e)}
-                    title={u.name}
-                  >
-                    <img
-                      src={u.avatar || `/api/avatar/${u.name}`}
-                      alt={u.name}
-                      style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
-                    />
-                  </div>
-                ));
-            })()}
-          </div>
 
           <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
