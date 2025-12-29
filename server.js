@@ -284,7 +284,7 @@ app.prepare().then(() => {
     try {
       console.log('[HistoryBot] Initializing...');
       const historyConfig = {
-        nick: 'CamRoomsLogBot',
+        nick: 'ChatLogBot',
         username: 'cr_logger',
         channel: '#camsrooms',
         useIRC: true

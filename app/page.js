@@ -36,6 +36,7 @@ function MainApp({ user, onLeaveRoom }) {
   const [showOwnProfile, setShowOwnProfile] = useState(false);
   const [showStatusInput, setShowStatusInput] = useState(false);
   const [customStatus, setCustomStatus] = useState('');
+  const [selectedProfileUser, setSelectedProfileUser] = useState(null);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -185,7 +186,13 @@ function MainApp({ user, onLeaveRoom }) {
           </div>
           {/* Breadcrumbs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <span style={{ color: '#888' }}>camsrooms</span>
+            <button
+              onClick={onLeaveRoom}
+              className="text-btn"
+              style={{ color: '#888', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+            >
+              chat
+            </button>
             <span style={{ color: '#444' }}>/</span>
             <span style={{ color: '#E2E8F0' }}>production</span>
           </div>
@@ -301,11 +308,16 @@ function MainApp({ user, onLeaveRoom }) {
               ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
 
               return Array.from(uniqueMap.values())
-                .filter(u => u.name.toLowerCase() !== 'camroomslogbot') // Hide Bot from Aquarium
+                .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase())) // Hide Bot
                 .map((u, i) => {
                   const bubble = chatBubbles[u.name];
                   return (
-                    <div key={u.name + i} className="aquarium-avatar" style={{ position: 'relative' }}>
+                    <div
+                      key={u.name + i}
+                      className="aquarium-avatar"
+                      style={{ position: 'relative', cursor: 'pointer' }}
+                      onClick={() => setSelectedProfileUser(u)}
+                    >
 
                       {/* Chat Bubble */}
                       {bubble && (
@@ -394,7 +406,7 @@ function MainApp({ user, onLeaveRoom }) {
 
                 {/* Remote Users (WebRTC) */}
                 {Array.from(peers, ([socketId, p]) => (
-                  <div key={socketId} className="user-item">
+                  <div key={socketId} className="user-item" onClick={() => setSelectedProfileUser(p.user)} style={{ cursor: 'pointer' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <img
                         src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
@@ -418,9 +430,9 @@ function MainApp({ user, onLeaveRoom }) {
                 {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
                 {/* IRC Users (Humans) */}
                 {Array.from(ircUsers.values())
-                  .filter(u => u.name.toLowerCase() !== 'camroomslogbot')
+                  .filter(u => !['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()))
                   .map((u) => (
-                    <div key={u.name} className="user-item">
+                    <div key={u.name} className="user-item" onClick={() => setSelectedProfileUser(u)} style={{ cursor: 'pointer' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <img
                           src={u.avatar || `/api/avatar/${u.name}`}
@@ -446,21 +458,37 @@ function MainApp({ user, onLeaveRoom }) {
                   System
                 </div>
                 {Array.from(ircUsers.values())
-                  .filter(u => u.name.toLowerCase() === 'camroomslogbot')
-                  .map((u) => (
-                    <div key={u.name} className="user-item" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }}>
-                        <span style={{ fontSize: '18px' }}>🤖</span>
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>LogBot</span>
-                          <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: 'white', color: 'var(--accent-primary)', fontWeight: 'bold' }}>OFFICIAL</span>
+                  .filter(u => ['camroomslogbot', 'chanserv'].includes(u.name.toLowerCase()))
+                  .map((u) => {
+                    let displayName = u.name;
+                    let role = 'BOT';
+                    let description = 'System Bot';
+
+                    if (u.name.toLowerCase() === 'camroomslogbot' || u.name.toLowerCase() === 'chatlogbot') {
+                      displayName = 'LogBot';
+                      role = 'OFFICIAL';
+                      description = 'Archives & Logs';
+                    } else if (u.name.toLowerCase() === 'chanserv') {
+                      displayName = 'ChanServ';
+                      role = 'SERVICE';
+                      description = 'Channel Services';
+                    }
+
+                    return (
+                      <div key={u.name} className="user-item" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }}>
+                          <span style={{ fontSize: '18px' }}>🤖</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--accent-primary)' }}>Archives & Logs</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
+                            <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: 'white', color: 'var(--accent-primary)', fontWeight: 'bold' }}>{role}</span>
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--accent-primary)' }}>{description}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             )}
           </div>
@@ -484,6 +512,13 @@ function MainApp({ user, onLeaveRoom }) {
         user={{ ...user, customStatus }}
         isOpen={showOwnProfile}
         onClose={() => setShowOwnProfile(false)}
+      />
+
+      {/* Selected User Profile Modal */}
+      <ProfileModal
+        user={selectedProfileUser}
+        isOpen={!!selectedProfileUser}
+        onClose={() => setSelectedProfileUser(null)}
       />
 
       {/* Status Input Dialog */}

@@ -171,7 +171,7 @@ export default function EntryScreen({ onJoin }) {
             <div className="starmap-bg" />
             <div className="entry-card">
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '8px' }}>CamRooms</h1>
+                    <h1 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '8px' }}>Chat</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Join the channel</p>
                 </div>
 
@@ -317,7 +317,7 @@ export default function EntryScreen({ onJoin }) {
                 </div>
 
                 <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Joining #camsrooms on irc.gamesurge.net
+                    Joining chat on irc.gamesurge.net
                 </div>
             </div>
         </div>

@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "CamRooms",
+  title: "Chat",
   description: "Video chat with friends",
 };
 
