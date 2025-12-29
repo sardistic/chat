@@ -339,30 +339,29 @@ function VideoTile({
                             {user?.name || 'User'} {isLocal && '(You)'}
                         </span>
                         {isDiscordUser && <span style={{ opacity: 0.7 }}><Icon icon="fa:link" width="12" /></span>}
-                    </div>
 
-                    {/* Reaction Button */}
-                    <button
-                        className="reaction-btn"
-                        onClick={(e) => { e.stopPropagation(); setShowPicker(!showPicker); }}
-                        style={{
-                            background: showPicker ? 'rgba(99,102,241,0.8)' : 'rgba(0,0,0,0.5)',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            borderRadius: '50%',
-                            width: '32px',
-                            height: '32px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginLeft: 'auto',
-                            pointerEvents: 'auto',
-                            zIndex: 15
-                        }}
-                        title="React"
-                    >
-                        <Icon icon="fa:smile-o" width="18" style={{ color: '#fff' }} />
-                    </button>
+                        {/* Reaction Button - directly after username */}
+                        <button
+                            className="reaction-btn"
+                            onClick={(e) => { e.stopPropagation(); setShowPicker(!showPicker); }}
+                            style={{
+                                background: showPicker ? 'rgba(99,102,241,0.8)' : 'rgba(0,0,0,0.5)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                borderRadius: '50%',
+                                width: '24px',
+                                height: '24px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                pointerEvents: 'auto',
+                                flexShrink: 0
+                            }}
+                            title="React"
+                        >
+                            <Icon icon="fa:smile-o" width="14" style={{ color: '#fff' }} />
+                        </button>
+                    </div>
 
                     {/* Mini Emoji Picker */}
                     {showPicker && (
