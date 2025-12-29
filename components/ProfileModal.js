@@ -1,13 +1,10 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import {
-    IconMessage, IconInfoCircle, IconBrandDiscord, IconMail,
-    IconRocket, IconDiamond, IconStar, IconMessagedots,
-    IconClock, IconVideo, IconMoodSmile, IconBug,
-    IconBriefcase, IconUsers, IconTent, IconShieldCheck,
-    IconCode
-} from '@tabler/icons-react';
+    Icon
+} from '@iconify/react';
 
 // Discord badge flags
 const DISCORD_FLAGS = {
@@ -26,17 +23,17 @@ const DISCORD_FLAGS = {
 
 // Badge display info
 const BADGE_INFO = {
-    DISCORD_EMPLOYEE: { name: "Discord Staff", icon: <IconBriefcase size={16} /> },
-    PARTNERED_SERVER_OWNER: { name: "Partnered Server Owner", icon: <IconUsers size={16} /> },
-    HYPESQUAD_EVENTS: { name: "HypeSquad Events", icon: <IconTent size={16} /> },
-    BUG_HUNTER_LEVEL_1: { name: "Bug Hunter", icon: <IconBug size={16} /> },
-    HOUSE_BRAVERY: { name: "HypeSquad Bravery", icon: <IconShieldCheck size={16} color="#9C89F7" /> },
-    HOUSE_BRILLIANCE: { name: "HypeSquad Brilliance", icon: <IconShieldCheck size={16} color="#F47B67" /> },
-    HOUSE_BALANCE: { name: "HypeSquad Balance", icon: <IconShieldCheck size={16} color="#4FD1C5" /> },
-    EARLY_SUPPORTER: { name: "Early Supporter", icon: <IconDiamond size={16} /> },
-    BUG_HUNTER_LEVEL_2: { name: "Bug Hunter Gold", icon: <IconBug size={16} color="#FCD34D" /> },
-    VERIFIED_BOT_DEVELOPER: { name: "Verified Bot Developer", icon: <IconCode size={16} /> },
-    ACTIVE_DEVELOPER: { name: "Active Developer", icon: <IconCode size={16} /> },
+    DISCORD_EMPLOYEE: { name: "Discord Staff", icon: <Icon icon="fa:briefcase" width="16" /> },
+    PARTNERED_SERVER_OWNER: { name: "Partnered Server Owner", icon: <Icon icon="fa:handshake-o" width="16" /> },
+    HYPESQUAD_EVENTS: { name: "HypeSquad Events", icon: <Icon icon="fa:shield" width="16" /> },
+    BUG_HUNTER_LEVEL_1: { name: "Bug Hunter", icon: <Icon icon="fa:bug" width="16" /> },
+    HOUSE_BRAVERY: { name: "HypeSquad Bravery", icon: <Icon icon="fa:shield" width="16" color="#9C89F7" /> },
+    HOUSE_BRILLIANCE: { name: "HypeSquad Brilliance", icon: <Icon icon="fa:shield" width="16" color="#F47B67" /> },
+    HOUSE_BALANCE: { name: "HypeSquad Balance", icon: <Icon icon="fa:shield" width="16" color="#4FD1C5" /> },
+    EARLY_SUPPORTER: { name: "Early Supporter", icon: <Icon icon="fa:star" width="16" /> },
+    BUG_HUNTER_LEVEL_2: { name: "Bug Hunter Gold", icon: <Icon icon="fa:bug" width="16" color="#FCD34D" /> },
+    VERIFIED_BOT_DEVELOPER: { name: "Verified Bot Developer", icon: <Icon icon="fa:code" width="16" /> },
+    ACTIVE_DEVELOPER: { name: "Active Developer", icon: <Icon icon="fa:code" width="16" /> },
 };
 
 // Parse badges from public_flags
@@ -53,18 +50,16 @@ function getBadges(flags) {
 
 // Get premium badge
 function getPremiumBadge(premiumType) {
-    switch (premiumType) {
-        case 1: return { name: "Nitro Classic", icon: <IconRocket size={16} /> };
-        case 2: return { name: "Nitro", icon: <IconRocket size={16} /> };
-        case 3: return { name: "Nitro Basic", icon: <IconStar size={16} /> };
-        default: return null;
-    }
+    if (premiumType === 1) return { name: "Nitro Classic", icon: <Icon icon="fa:rocket" width="16" /> };
+    if (premiumType === 2) return { name: "Nitro", icon: <Icon icon="fa:rocket" width="16" /> };
+    if (premiumType === 3) return { name: "Nitro Basic", icon: <Icon icon="fa:rocket" width="16" /> };
+    return null;
 }
 
 // Convert accent color integer to hex
 function accentToHex(accent) {
     if (!accent) return null;
-    return `#${accent.toString(16).padStart(6, '0')}`;
+    return `#${accent.toString(16).padStart(6, '0')} `;
 }
 
 export default function ProfileModal({ user, isOpen, onClose, position }) {
@@ -126,8 +121,8 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
         if (!seconds) return "0h";
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
-        if (h > 0) return `${h}h ${m}m`;
-        return `${m}m`;
+        if (h > 0) return `${h}h ${m} m`;
+        return `${m} m`;
     };
 
     if (!isOpen || !user) return null;
@@ -136,8 +131,9 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
     const premiumBadge = getPremiumBadge(user.premiumType);
     const accentColor = accentToHex(user.accentColor) || "#5865F2";
     const bannerUrl = user.banner;
-    const avatarUrl = user.image || user.avatar || `/api/avatar/${user.name}`;
+    const avatarUrl = user.image || user.avatar || `/ api / avatar / ${user.name} `;
     const isGuest = user.isGuest !== false && !user.discordId;
+    const customStatus = user.customStatus;
 
     // Calculate position (try to show near click but stay in viewport)
     const modalStyle = {
@@ -153,9 +149,23 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
         }),
     };
 
+    const StatItem = ({ icon, label, value, color }) => (
+        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: color }}>{value}</div>
+            <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>{label}</div>
+        </div>
+    );
+
     return (
         <div className="profile-modal-overlay" style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
             <div ref={modalRef} className="profile-modal" style={modalStyle} onClick={e => e.stopPropagation()}>
+                {/* Close button */}
+                <button className="close-btn" onClick={onClose} style={{
+                    position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none',
+                    color: 'white', cursor: 'pointer', fontSize: '24px', zIndex: 10
+                }}>
+                    <Icon icon="fa:times" width="24" />
+                </button>
                 {/* Banner */}
                 <div
                     className="profile-banner"
@@ -163,8 +173,8 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                         height: "100px",
                         borderRadius: "12px 12px 0 0",
                         background: bannerUrl
-                            ? `url(${bannerUrl}) center/cover`
-                            : `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}88 100%)`,
+                            ? `url(${bannerUrl}) center / cover`
+                            : `linear - gradient(135deg, ${accentColor} 0 %, ${accentColor}88 100 %)`,
                     }}
                 />
 
@@ -177,7 +187,7 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                         }}
                     >
                         {/* Online status dot */}
-                        <div className={`profile-status-dot ${connectionStatus?.isOnline ? 'online' : 'offline'}`}
+                        <div className={`profile - status - dot ${connectionStatus?.isOnline ? 'online' : 'offline'} `}
                             title={connectionStatus?.isOnline ? "Online" : "Offline"}
                             style={{ background: connectionStatus?.isOnline ? '#3ba55d' : '#747f8d' }}
                         />
@@ -234,12 +244,12 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
 
                     {activeTab === 'info' ? (
                         <>
-                            {/* Info sections */}
-                            {user.customStatus && (
+                            {/* Status Message */}
+                            {customStatus && (
                                 <div className="profile-section">
                                     <h3 className="profile-section-title">STATUS</h3>
                                     <p className="profile-section-content" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <IconMessagedots size={14} style={{ opacity: 0.7 }} /> {user.customStatus}
+                                        <Icon icon="fontelico:emo-happy" width="16" style={{ opacity: 0.7 }} /> {customStatus}
                                     </p>
                                 </div>
                             )}
@@ -271,30 +281,12 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                                 <div style={{ fontSize: '13px', color: '#888', padding: '20px', textAlign: 'center' }}>Loading stats...</div>
                             ) : stats ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#FCD34D' }}>{stats.chatPoints}</div>
-                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Chat Points</div>
-                                    </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatTime(stats.timeOnSiteSeconds)}</div>
-                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Time Online</div>
-                                    </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.messagesSent}</div>
-                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Messages</div>
-                                    </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatTime(stats.camTimeSeconds)}</div>
-                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Cam Time</div>
-                                    </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.emotesGiven}</div>
-                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Emotes Given</div>
-                                    </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.emotesReceived}</div>
-                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Emotes Recv</div>
-                                    </div>
+                                    <StatItem icon={<Icon icon="fa:star" width="20" />} label="Chat Points" value={stats?.chatPoints || 0} color="#FFD700" />
+                                    <StatItem icon={<Icon icon="fa:clock-o" width="20" />} label="Time Online" value={formatTime(stats?.timeOnSiteSeconds || 0)} color="#6495ED" />
+                                    <StatItem icon={<Icon icon="fa:comment" width="20" />} label="Messages" value={stats?.messagesSent || 0} color="#43B581" />
+                                    <StatItem icon={<Icon icon="fa:video-camera" width="20" />} label="Cam Time" value={formatTime(stats?.camTimeSeconds || 0)} color="#FF6F61" />
+                                    <StatItem icon={<Icon icon="fontelico:emo-wink" width="20" />} label="Emotes" value={(stats?.emotesGiven || 0)} color="#FAA61A" />
+                                    <StatItem icon={<Icon icon="fontelico:emo-surprised" width="20" />} label="Emotes Recv" value={(stats?.emotesReceived || 0)} color="#FAA61A" />
                                 </div>
                             ) : (
                                 <div style={{ fontSize: '13px', color: '#888' }}>No stats available.</div>

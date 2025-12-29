@@ -1,12 +1,8 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  IconVideo, IconEye, IconMicrophoneOff, IconHeadphonesOff,
-  IconVideo, IconEye, IconMicrophoneOff, IconHeadphonesOff,
-  IconCloud, IconKeyboard, IconRobot, IconCircleFilled,
-  IconHeadphones, IconMicrophone, IconUser, IconMessage, IconSettings, IconLogout
-} from '@tabler/icons-react';
+import { Icon } from '@iconify/react';
 import { SocketProvider } from "@/lib/socket";
 import VideoGrid from "@/components/VideoGrid";
 import EntryScreen from "@/components/EntryScreen";
@@ -100,8 +96,8 @@ function MainApp({ user, onLeaveRoom }) {
     const handleBgMove = (e) => {
       const x = (e.clientX / window.innerWidth) * 100;
       const y = (e.clientY / window.innerHeight) * 100;
-      document.documentElement.style.setProperty('--mouse-x', `${x}%`);
-      document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+      document.documentElement.style.setProperty('--mouse-x', `${x}% `);
+      document.documentElement.style.setProperty('--mouse-y', `${y}% `);
     };
     window.addEventListener('mousemove', handleBgMove);
     return () => window.removeEventListener('mousemove', handleBgMove);
@@ -179,7 +175,7 @@ function MainApp({ user, onLeaveRoom }) {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="app" style={{ '--dynamic-sidebar-w': `${sidebarWidth}px` }}>
+    <div className="app" style={{ '--dynamic-sidebar-w': `${sidebarWidth} px` }}>
 
       {/* Background Layer (Explicit) */}
       <div className="starmap-bg" />
@@ -208,25 +204,38 @@ function MainApp({ user, onLeaveRoom }) {
           {/* Broadcast Controls */}
           {/* Deafen (Always Visible) */}
           <button
-            className={`btn icon-btn ${isDeafened ? 'danger' : ''}`}
+            className={`btn icon - btn ${isDeafened ? 'danger' : ''} `}
             onClick={toggleDeaf}
             title={isDeafened ? 'Undeafen' : 'Deafen'}
             style={{ marginRight: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            {isDeafened ? <IconHeadphonesOff size={18} /> : <IconHeadphones size={18} />}
+            {isDeafened ? <Icon icon="fontelico:headphones" width="18" style={{ opacity: 0.5 }} /> : <Icon icon="fontelico:headphones" width="18" />}
           </button>
 
           {/* Broadcast Controls */}
           {isBroadcasting && (
             <div style={{ display: 'flex', gap: '8px', marginRight: '8px' }}>
-              <button className={`btn icon-btn ${!isAudioEnabled ? 'danger' : ''}`} onClick={toggleAudio} title={isAudioEnabled ? 'Mute Mic' : 'Unmute Mic'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {isAudioEnabled ? <IconMicrophone size={18} /> : <IconMicrophoneOff size={18} />}
+              <button
+                className="broadcast-btn"
+                onClick={toggleAudio}
+                title={isAudioEnabled ? "Mute" : "Unmute"}
+                style={{ background: isAudioEnabled ? 'rgba(255,255,255,0.1)' : '#ff4444' }}
+              >
+                {isAudioEnabled ? <Icon icon="fa:microphone" width="20" /> : <Icon icon="fa:microphone-slash" width="20" style={{ opacity: 0.5 }} />}
+              </button>
+              <button
+                className="broadcast-btn"
+                onClick={toggleVideo}
+                title={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
+                style={{ background: isVideoEnabled ? 'rgba(255,255,255,0.1)' : '#ff4444' }}
+              >
+                {isVideoEnabled ? <Icon icon="fa:video-camera" width="20" /> : <Icon icon="fa:video-camera" width="20" style={{ opacity: 0.5 }} />}
               </button>
             </div>
           )}
 
           <button
-            className={`btn ${isBroadcasting ? 'danger' : 'primary'}`}
+            className={`btn ${isBroadcasting ? 'danger' : 'primary'} `}
             style={{ padding: '6px 12px', fontSize: '12px', height: '32px' }}
             onClick={handleToggleBroadcast}
           >
@@ -236,7 +245,7 @@ function MainApp({ user, onLeaveRoom }) {
           <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
 
           {/* Connection Status */}
-          <div className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} title={isConnected ? 'Connected' : 'Disconnected'} />
+          <div className={`status - dot ${isConnected ? 'connected' : 'disconnected'} `} title={isConnected ? 'Connected' : 'Disconnected'} />
 
           {/* Profile Dropdown */}
           <div style={{ position: 'relative' }}>
@@ -246,7 +255,7 @@ function MainApp({ user, onLeaveRoom }) {
               title="Profile"
               style={{ padding: 0, width: '36px', height: '36px', overflow: 'hidden', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
             >
-              <img src={user.avatar || user.image || `/api/avatar/${user.name}`} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={user.avatar || user.image || `/ api / avatar / ${user.name} `} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </button>
 
             {showProfileMenu && (
@@ -262,17 +271,17 @@ function MainApp({ user, onLeaveRoom }) {
                   </div>
                 </div>
                 <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowOwnProfile(true); }}>
-                  <IconUser size={16} /> View Profile
+                  <Icon icon="fa:user" width="16" /> View Profile
                 </button>
                 <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>
-                  <IconMessage size={16} /> Set Status
+                  <Icon icon="fa:comment" width="16" /> Set Status
                 </button>
                 <button className="menu-item disabled">
-                  <IconSettings size={16} /> Settings
+                  <Icon icon="fa:cog" width="16" /> Settings
                 </button>
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
                 <button className="menu-item danger" onClick={onLeaveRoom}>
-                  <IconLogout size={16} /> Disconnect
+                  <Icon icon="fa:sign-out" width="16" /> Disconnect
                 </button>
               </div>
             )}
@@ -343,7 +352,7 @@ function MainApp({ user, onLeaveRoom }) {
 
                       <div style={{ position: 'relative', width: '56px', height: '56px' }}>
                         <img
-                          src={u.avatar || `/api/avatar/${u.name}`}
+                          src={u.avatar || `/ api / avatar / ${u.name} `}
                           alt={u.name}
                           style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
                         />
@@ -370,14 +379,14 @@ function MainApp({ user, onLeaveRoom }) {
           {/* Sidebar Tabs */}
           <div className="side-header" style={{ padding: '0 16px', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             <button
-              className={`btn ${activeTab === 'logs' ? 'primary' : ''}`}
+              className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
               style={{ flex: 1, fontSize: '12px', padding: '6px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent' }}
               onClick={() => setActiveTab('logs')}
             >
               Chat
             </button>
             <button
-              className={`btn ${activeTab === 'services' ? 'primary' : ''}`}
+              className={`btn ${activeTab === 'services' ? 'primary' : ''} `}
               style={{ flex: 1, fontSize: '12px', padding: '6px', border: 'none', background: activeTab === 'services' ? 'rgba(255,255,255,0.1)' : 'transparent' }}
               onClick={() => setActiveTab('services')}
             >
@@ -403,7 +412,7 @@ function MainApp({ user, onLeaveRoom }) {
                 <div className="user-item">
                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <img
-                      src={user.avatar || `/api/avatar/${user.name}`}
+                      src={user.avatar || `/ api / avatar / ${user.name} `}
                       alt={user.name}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
@@ -431,7 +440,7 @@ function MainApp({ user, onLeaveRoom }) {
                     }} style={{ cursor: 'pointer' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <img
-                          src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
+                          src={p.user?.avatar || `/ api / avatar / ${p.user?.name || 'Guest'} `}
                           alt={p.user?.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -461,7 +470,7 @@ function MainApp({ user, onLeaveRoom }) {
                     }} style={{ cursor: 'pointer' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <img
-                          src={u.avatar || `/api/avatar/${u.name}`}
+                          src={u.avatar || `/ api / avatar / ${u.name} `}
                           alt={u.name}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />

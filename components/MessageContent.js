@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { IconLink, IconMovie } from '@tabler/icons-react';
+import { Icon } from '@iconify/react';
 
 // URL regex patterns
 const URL_REGEX = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/gi;
@@ -161,12 +161,8 @@ function LinkEmbed({ url }) {
             }}
         >
             <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '2px'
-                }}>
-                    <IconLink size={12} /> {hostname}
+                <div style={{ fontSize: '11px', marginTop: '4px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Icon icon="fa:link" width="12" /> {hostname}
                 </div>
                 <div style={{
                     fontSize: '14px',
@@ -195,9 +191,12 @@ function TenorEmbed({ url }) {
                     borderRadius: '8px',
                     borderLeft: '3px solid #FF6F61',
                     fontSize: '14px',
-                    color: '#00AFF4'
+                    color: '#00AFF4',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                 }}>
-                    <IconMovie size={16} /> Tenor GIF - Click to view
+                    <Icon icon="fa:film" width="16" /> Tenor GIF - Click to view
                 </div>
             </a>
         </div>

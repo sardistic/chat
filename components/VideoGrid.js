@@ -5,9 +5,7 @@ import ProfileModal from "./ProfileModal";
 import CameraReactiveGrid from "./CameraReactiveGrid";
 import { useCameraEffects } from "@/hooks/useCameraEffects";
 import { useSocket } from "@/lib/socket";
-import {
-    IconMicrophoneOff, IconHeadphonesOff, IconMessage, IconLink
-} from '@tabler/icons-react';
+import { Icon } from '@iconify/react';
 
 // Floating emoji animation component
 function FloatingReaction({ emoji, onComplete }) {
@@ -273,14 +271,16 @@ function VideoTile({
 
             {/* Name & Controls Overlay */}
             <div className="overlay">
-                <div className="name-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <div className="name">
+                <div className="name-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                    <div className="name" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span
                             className="status-dot"
                             style={{ background: isVideoEnabled ? 'var(--status-online)' : 'var(--text-muted)' }}
                         />
-                        {user?.name || 'User'} {isLocal && '(You)'}
-                        {isDiscordUser && <span style={{ marginLeft: '4px', opacity: 0.7 }}><IconLink size={12} /></span>}
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
+                            {user?.name || 'User'} {isLocal && '(You)'}
+                        </span>
+                        {isDiscordUser && <span style={{ opacity: 0.7 }}><Icon icon="fa:link" width="12" /></span>}
                     </div>
 
                     {/* Reaction Button */}
@@ -290,6 +290,7 @@ function VideoTile({
                             onClick={(e) => handleReactionClick(e, '❤️')}
                             onMouseEnter={() => setShowPicker(true)}
                             title="React"
+                            style={{ padding: '2px 4px', fontSize: '12px' }}
                         >
                             ❤️
                         </button>
@@ -308,12 +309,14 @@ function VideoTile({
                             </div>
                         )}
                     </div>
+
+                    <div style={{ flex: 1 }}></div>
                 </div>
 
                 <div className="status-icons">
-                    {!isAudioEnabled && <span><IconMicrophoneOff size={14} /></span>}
-                    {!isLocal && user?.isDeafened && <span><IconHeadphonesOff size={14} /></span>}
-                    {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}><IconMessage size={14} /></span>}
+                    {!isAudioEnabled && <span><Icon icon="fa:microphone-slash" width="14" /></span>}
+                    {!isLocal && user?.isDeafened && <span><Icon icon="fontelico:headphones" width="14" /></span>}
+                    {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}><Icon icon="fa:comment" width="14" /></span>}
                 </div>
             </div>
         </div>

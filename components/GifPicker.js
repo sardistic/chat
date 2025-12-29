@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { IconMovie, IconX } from '@tabler/icons-react';
+import { Icon } from '@iconify/react';
 
 export default function GifPicker({ query, onSelect, onClose }) {
     const [gifs, setGifs] = useState([]);
@@ -92,7 +92,7 @@ export default function GifPicker({ query, onSelect, onClose }) {
                 justifyContent: 'space-between',
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span><IconMovie size={18} /></span>
+                    <span><Icon icon="fontelico:emo-sunglasses" width="18" /></span>
                     <span style={{ fontWeight: '600' }}>GIFs</span>
                     {query && <span style={{ color: 'var(--text-muted)' }}>• "{query}"</span>}
                 </div>
