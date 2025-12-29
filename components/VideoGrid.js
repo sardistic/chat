@@ -343,11 +343,12 @@ function VideoTile({
                         {/* Reaction Button - click for heart, hover/click for more */}
                         <div
                             style={{
-                                position: 'relative',
-                                display: 'flex',
+                                display: 'inline-flex',
                                 alignItems: 'center',
-                                padding: '4px',
-                                marginLeft: '-4px'
+                                background: 'rgba(0,0,0,0.5)',
+                                borderRadius: '12px',
+                                padding: '2px 4px',
+                                marginLeft: '6px'
                             }}
                             onMouseEnter={() => setShowPicker(true)}
                             onMouseLeave={() => setShowPicker(false)}
@@ -375,34 +376,23 @@ function VideoTile({
                             >
                                 ❤️
                             </button>
-
                             {/* More emojis on hover/toggle */}
-                            {showPicker && (
-                                <div style={{
-                                    display: 'flex',
-                                    gap: '4px',
-                                    marginLeft: '2px',
-                                    background: 'rgba(0,0,0,0.6)',
-                                    borderRadius: '12px',
-                                    padding: '4px 8px'
-                                }}>
-                                    {['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
-                                        <button
-                                            key={emoji}
-                                            onClick={(e) => handleReactionClick(e, emoji)}
-                                            style={{
-                                                background: 'transparent',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                fontSize: '16px',
-                                                padding: '2px 4px'
-                                            }}
-                                        >
-                                            {emoji}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            {showPicker && ['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+                                <button
+                                    key={emoji}
+                                    onClick={(e) => handleReactionClick(e, emoji)}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        padding: '2px 4px',
+                                        lineHeight: 1
+                                    }}
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
