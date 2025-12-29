@@ -101,32 +101,7 @@ export default function EntryScreen({ onJoin }) {
         setCookie('display_name', username);
         setCookie('avatar_seed', characterSeed.toString());
 
-        // Try to register/update guest in database
-        try {
-            const response = await fetch('/api/guest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    guestToken,
-                    name: username,
-                    avatarSeed: characterSeed,
-                    avatarUrl: previewUrl,
-                }),
-            });
-
-            const data = await response.json();
-            if (data.success && data.user) {
-                // Save the guest token for future visits
-                setCookie('guest_token', data.user.guestToken);
-                setGuestToken(data.user.guestToken);
-            }
-        } catch (err) {
-            console.warn('Guest registration failed, continuing as ephemeral guest:', err);
-        }
-
-        // Join as guest
-        onJoin({
-            id: data.user?.id, // Pass DB ID
+        let startData = {
             name: username,
             avatar: previewUrl,
             isGuest: true,
@@ -139,7 +114,38 @@ export default function EntryScreen({ onJoin }) {
                 channel: '#camsrooms',
                 username: username
             }
-        });
+        };
+
+        // Try to register/update guest in database to get ID
+        try {
+            const response = await fetch('/api/guest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    guestToken,
+                    name: username,
+                    avatarSeed: characterSeed,
+                    avatarUrl: previewUrl,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.user) {
+                    // Update cookie and ID
+                    setCookie('guest_token', data.user.guestToken);
+                    setGuestToken(data.user.guestToken);
+                    startData.id = data.user.id; // Attach DB ID
+                }
+            } else {
+                console.warn('Guest API returned non-200:', response.status);
+            }
+        } catch (err) {
+            console.warn('Guest registration failed, continuing as ephemeral guest:', err);
+        }
+
+        // Join as guest
+        onJoin(startData);
     };
 
     const handleDiscordLogin = () => {
