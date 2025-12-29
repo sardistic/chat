@@ -335,7 +335,7 @@ function VideoTile({
                             className="status-dot"
                             style={{ background: isVideoEnabled ? 'var(--status-online)' : 'var(--text-muted)' }}
                         />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
+                        <span>
                             {user?.name || 'User'} {isLocal && '(You)'}
                         </span>
                         {isDiscordUser && <span style={{ opacity: 0.7 }}><Icon icon="fa:link" width="12" /></span>}
