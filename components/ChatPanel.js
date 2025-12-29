@@ -362,28 +362,135 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                 )}
 
                 <div style={{
-                    background: 'var(--bg-tertiary)',
-                    borderRadius: '8px',
-                    padding: '14px 16px',
+                    background: 'var(--bg-card)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    overflow: 'hidden'
                 }}>
-                    <input
-                        ref={inputRef}
-                        className="chat-input"
-                        placeholder="Message... (/gif :word @ to mention)"
-                        value={inputValue}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                        style={{
-                            width: '100%',
-                            background: 'transparent',
-                            border: 'none',
-                            outline: 'none',
-                            color: 'var(--text-primary)',
-                            fontSize: '16px',
-                            padding: '6px 0',
-                            minHeight: '24px',
-                        }}
-                    />
+                    {/* Top row: Avatar + Input + Send */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        padding: '12px 14px 8px'
+                    }}>
+                        {/* User Avatar */}
+                        <img
+                            src={user?.avatar || user?.image || `/api/avatar/${user?.name || 'guest'}`}
+                            alt=""
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                flexShrink: 0,
+                                marginTop: '4px'
+                            }}
+                        />
+
+                        {/* Multiline Input */}
+                        <textarea
+                            ref={inputRef}
+                            className="chat-input"
+                            placeholder="Message... (/gif :emoji @mention)"
+                            value={inputValue}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            rows={1}
+                            style={{
+                                flex: 1,
+                                background: 'transparent',
+                                border: 'none',
+                                outline: 'none',
+                                color: 'var(--text-primary)',
+                                fontSize: '15px',
+                                resize: 'none',
+                                minHeight: '24px',
+                                maxHeight: '120px',
+                                lineHeight: '1.4',
+                                padding: '6px 0'
+                            }}
+                        />
+
+                        {/* Send Button */}
+                        <button
+                            onClick={handleSend}
+                            disabled={!inputValue.trim()}
+                            style={{
+                                background: inputValue.trim() ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '8px 14px',
+                                cursor: inputValue.trim() ? 'pointer' : 'default',
+                                color: '#fff',
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                opacity: inputValue.trim() ? 1 : 0.5,
+                                transition: 'all 0.15s ease',
+                                flexShrink: 0
+                            }}
+                        >
+                            Send
+                        </button>
+                    </div>
+
+                    {/* Bottom row: Actions */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '6px 14px 10px',
+                        borderTop: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                        <button
+                            onClick={() => setShowGifSearch(!showGifSearch)}
+                            style={{
+                                background: showGifSearch ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 10px',
+                                cursor: 'pointer',
+                                color: 'var(--text-secondary)',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            🎬 GIF
+                        </button>
+                        <button
+                            onClick={() => inputRef.current?.focus()}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 10px',
+                                cursor: 'pointer',
+                                color: 'var(--text-secondary)',
+                                fontSize: '12px'
+                            }}
+                        >
+                            😊 Emoji
+                        </button>
+                        <button
+                            onClick={() => {
+                                const mention = prompt('Enter username to mention:');
+                                if (mention) insertMention(mention);
+                            }}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 10px',
+                                cursor: 'pointer',
+                                color: 'var(--text-secondary)',
+                                fontSize: '12px'
+                            }}
+                        >
+                            @Mention
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
