@@ -370,7 +370,12 @@ function MainApp({ user, onLeaveRoom }) {
           />
 
           {/* Sidebar Tabs */}
-          <div className="side-header" style={{ padding: '0 16px', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="side-header" style={{ padding: '0 16px', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <img
+              src="https://i.imgur.com/MfbxoHW.gif"
+              alt="gem"
+              style={{ height: '24px', marginRight: '4px' }}
+            />
             <button
               className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
               style={{ flex: 1, fontSize: '12px', padding: '6px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent' }}

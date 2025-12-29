@@ -241,7 +241,7 @@ function VideoTile({
             {/* Top Right Menu Trigger */}
             <div className={`tile-menu-trigger ${showMenu ? 'active' : ''}`}
                 onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); setShowPicker(false); }}>
-                <Icon icon="fa:ellipsis-v" width="12" />
+                <Icon icon="fa:ellipsis-v" width="10" />
             </div>
 
             {/* Dropdown Menu - Positioned relative to tile */}

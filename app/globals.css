@@ -544,10 +544,10 @@ body {
 /* Tile Menu Trigger - Top Right */
 .tile-menu-trigger {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(4px);
