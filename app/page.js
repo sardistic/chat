@@ -223,14 +223,7 @@ function MainApp({ user, onLeaveRoom }) {
               >
                 {isAudioEnabled ? <Icon icon="fa:microphone" width="20" /> : <Icon icon="fa:microphone-slash" width="20" style={{ opacity: 0.5 }} />}
               </button>
-              <button
-                className="broadcast-btn"
-                onClick={toggleVideo}
-                title={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
-                style={{ background: isVideoEnabled ? 'rgba(255,255,255,0.1)' : '#ff4444' }}
-              >
-                {isVideoEnabled ? <Icon icon="fa:video-camera" width="20" /> : <Icon icon="fa:video-camera" width="20" style={{ opacity: 0.5 }} />}
-              </button>
+
             </div>
           )}
 
