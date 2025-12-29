@@ -476,22 +476,20 @@ body {
 
 .grid {
   flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  align-content: flex-start;
-  /* Hide scrollbar but allow scroll */
-  scrollbar-width: none;
-  /* Firefox */
-  -ms-overflow-style: none;
-  /* IE/Edge */
+  padding: 12px;
+  overflow: hidden;
+  /* Prevent scrolling */
+  display: flex;
+  /* Changed from grid to flex for dynamic JS sizing */
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 0;
 }
 
 .grid::-webkit-scrollbar {
   display: none;
-  /* Chrome/Safari */
 }
 
 .tile {

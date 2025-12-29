@@ -26,6 +26,48 @@ function FloatingReaction({ emoji, onComplete }) {
     );
 }
 
+// Helper to calculate optimal layout
+function calculateLayout(containerWidth, containerHeight, videoCount, aspectRatio = 16 / 9) {
+    let bestLayout = { cols: 1, rows: 1, width: 320, height: 180 };
+    if (videoCount === 0) return bestLayout;
+
+    // Deduct padding/gap (approx 24px padding + 12px gap)
+    const paddingX = 24;
+    const paddingY = 24;
+    const gap = 12;
+
+    for (let cols = 1; cols <= videoCount; cols++) {
+        const rows = Math.ceil(videoCount / cols);
+
+        // Available space for tiles excluding gaps
+        const hGapTotal = Math.max(0, cols - 1) * gap;
+        const vGapTotal = Math.max(0, rows - 1) * gap;
+
+        const availableWidth = containerWidth - hGapTotal - paddingX;
+        const availableHeight = containerHeight - vGapTotal - paddingY;
+
+        if (availableWidth <= 0 || availableHeight <= 0) continue;
+
+        const maxTileWidth = availableWidth / cols;
+        const maxTileHeight = availableHeight / rows;
+
+        // Fit based on aspect ratio
+        let w = maxTileWidth;
+        let h = w / aspectRatio;
+
+        if (h > maxTileHeight) {
+            h = maxTileHeight;
+            w = h * aspectRatio;
+        }
+
+        // Maximizing area (w * h) is equivalent to maximizing w since aspect ratio is fixed
+        if (w > bestLayout.width || cols === 1) { // cols===1 check ensures we have at least a valid start
+            bestLayout = { cols, rows, width: w, height: h };
+        }
+    }
+    return bestLayout;
+}
+
 // Generate a deterministic color from a username (similar to avatar API)
 function getUserColor(name) {
     if (!name) return '#6366F1';
@@ -63,7 +105,9 @@ function VideoTile({
 
     isDiscordUser = false,
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
-    onUpdateSettings = () => { }
+    onUpdateSettings = () => { },
+    width,
+    height
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
@@ -203,7 +247,12 @@ function VideoTile({
     return (
         <div
             className={`tile effect-${effectIntensity} ${borderStyle.animation}`}
-            style={{ background }}
+            style={{
+                background,
+                width: width || '100%',
+                height: height || 'auto',
+                flex: '0 0 auto' // Ensure it respects size in flex container
+            }}
             onClick={onClick}
             onMouseLeave={() => { setShowPicker(false); }}
         >
@@ -338,6 +387,36 @@ export default function VideoGrid({
     const { socket } = useSocket();
     const [incomingReactions, setIncomingReactions] = useState(new Map());
 
+    // Layout State
+    const gridRef = useRef(null);
+    const [layout, setLayout] = useState({ width: 320, height: 180 });
+    const totalTiles = 1 + (peers ? peers.size : 0);
+
+    // Resize Observer for Dynamic Layout
+    useEffect(() => {
+        const updateLayout = () => {
+            if (gridRef.current) {
+                const { clientWidth, clientHeight } = gridRef.current;
+                const { width, height } = calculateLayout(clientWidth, clientHeight, totalTiles);
+                setLayout({ width, height });
+            }
+        };
+
+        // Initial calc
+        updateLayout();
+
+        // Observer
+        const observer = new ResizeObserver(updateLayout);
+        if (gridRef.current) observer.observe(gridRef.current);
+
+        window.addEventListener('resize', updateLayout);
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', updateLayout);
+        };
+    }, [totalTiles]);
+
     // Listen for reactions
     useEffect(() => {
         if (!socket) return;
@@ -396,7 +475,7 @@ export default function VideoGrid({
 
     return (
         <>
-            <div className="grid">
+            <div className="grid" ref={gridRef} style={{ overflow: 'hidden' }}>
                 {/* Local User Tile */}
                 <VideoTile
                     stream={localStream}
@@ -411,6 +490,8 @@ export default function VideoGrid({
                     incomingReactions={incomingReactions.get(localUser?.id || socket?.id) || []}
                     // Local user doesn't really need settings, but we pass defaults
                     settings={{ volume: 0, isLocallyMuted: true, isVideoHidden: false }}
+                    width={layout.width}
+                    height={layout.height}
                 />
 
                 {/* Remote Peer Tiles */}
@@ -437,6 +518,8 @@ export default function VideoGrid({
                             incomingReactions={incomingReactions.get(userId) || []}
                             settings={mySettings}
                             onUpdateSettings={(newVals) => onUpdatePeerSettings(userId, newVals)}
+                            width={layout.width}
+                            height={layout.height}
                         />
                     );
                 })}
