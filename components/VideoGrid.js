@@ -362,7 +362,17 @@ function VideoTile({
                 <div style={{ flex: 1 }}></div>
             </div>
 
-            <div className="status-icons">
+            <div className="status-icons" style={{
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                display: 'flex',
+                gap: '6px',
+                zIndex: 10,
+                background: 'rgba(0,0,0,0.5)',
+                padding: '4px 8px',
+                borderRadius: '6px'
+            }}>
                 {!isAudioEnabled && <span><Icon icon="fa:microphone-slash" width="14" /></span>}
                 {!isLocal && user?.isDeafened && <span><Icon icon="fontelico:headphones" width="14" /></span>}
                 {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}><Icon icon="fa:comment" width="14" /></span>}
