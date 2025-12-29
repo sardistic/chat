@@ -25,6 +25,56 @@ const handle = app.getRequestHandler();
 const rooms = new Map(); // roomId -> Set of { socketId, user }
 let ircBridge = null; // IRC bridge instance
 
+// IRC Connection Rate Limiter - prevents G-lines from excessive connections
+const ircConnectionQueue = [];
+const IRC_MAX_CONNECTIONS_PER_WINDOW = 3; // Max new connections
+const IRC_RATE_WINDOW_MS = 15000; // Per 15 seconds
+let recentIrcConnections = []; // Timestamps of recent connections
+
+const canCreateIrcConnection = () => {
+  const now = Date.now();
+  // Clean old timestamps
+  recentIrcConnections = recentIrcConnections.filter(t => now - t < IRC_RATE_WINDOW_MS);
+  return recentIrcConnections.length < IRC_MAX_CONNECTIONS_PER_WINDOW;
+};
+
+const recordIrcConnection = () => {
+  recentIrcConnections.push(Date.now());
+};
+
+const processIrcQueue = () => {
+  if (ircConnectionQueue.length === 0) return;
+  if (!canCreateIrcConnection()) {
+    // Retry in a bit
+    setTimeout(processIrcQueue, 2000);
+    return;
+  }
+
+  const { socket, user, ircConfig, callback } = ircConnectionQueue.shift();
+  recordIrcConnection();
+
+  try {
+    console.log(`[IRC Queue] Creating connection for ${user.name}`);
+    const bridge = new IRCBridge(socket, ircConfig);
+    bridge.connect();
+    socket.data.ircBridge = bridge;
+    if (callback) callback(null, bridge);
+  } catch (err) {
+    console.error('[IRC Queue] Failed:', err);
+    if (callback) callback(err);
+  }
+
+  // Process next after a delay
+  if (ircConnectionQueue.length > 0) {
+    setTimeout(processIrcQueue, 1000);
+  }
+};
+
+const queueIrcConnection = (socket, user, ircConfig, callback) => {
+  ircConnectionQueue.push({ socket, user, ircConfig, callback });
+  processIrcQueue();
+};
+
 // Store message history per room (limit 200)
 const messageHistory = new Map(); // roomId -> Array of messages
 
@@ -164,6 +214,24 @@ app.prepare().then(() => {
       };
       storeMessage(roomId, joinMsg);
       io.to(roomId).emit('chat-message', joinMsg);
+
+      // Create per-user IRC connection via rate-limited queue
+      // Each user gets their own IRC connection like KiwiIRC/Twitch
+      const userIrcConfig = {
+        nick: user.name.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 15),
+        username: 'camrooms_' + user.name.slice(0, 8),
+        channel: '#camsrooms',
+        useIRC: true
+      };
+
+      queueIrcConnection(socket, user, userIrcConfig, (err, bridge) => {
+        if (err) {
+          console.error(`[IRC] Failed to create bridge for ${user.name}:`, err);
+          socket.emit('irc-error', { message: 'IRC connection queued - please wait' });
+        } else {
+          console.log(`[IRC] ✅ Bridge created for ${user.name}`);
+        }
+      });
 
       console.log(`✅ ${user.name} joined room. Total users: ${room.size}`);
     });
