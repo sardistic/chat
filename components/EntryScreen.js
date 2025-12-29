@@ -5,27 +5,54 @@ import { signIn, useSession } from "next-auth/react";
 import { setCookie } from "cookies-next";
 import { Icon } from '@iconify/react';
 
-// Whimsical name generator
+// Expanded name generator with gaming/internet culture
 function generateName(seed) {
-    const prefixes = [
-        'Fluffy', 'Sparkle', 'Bun', 'Cloud', 'Marshmallow', 'Velvet', 'Cozy', 'Snuggle',
-        'Twinkle', 'Star', 'Moon', 'Sun', 'Sky', 'Rain', 'Storm', 'Snow', 'Ice', 'Fire',
-        'Bubbles', 'Panda', 'Kitty', 'Puppy', 'Fox', 'Bear', 'Tiger', 'Lion', 'Wolf',
-        'Happy', 'Sleepy', 'Dreamy', 'Lucky', 'Sunny', 'Merry', 'Jolly', 'Silly', 'Bouncy',
-        'Magic', 'Mystic', 'Crystal', 'Rainbow', 'Glitter', 'Shiny', 'Glow', 'Neon', 'Pixel',
-        'Doughnut', 'Cookie', 'Muffin', 'Cupcake', 'Candy', 'Sugar', 'Honey', 'Berry', 'Cherry',
-        'Little', 'Tiny', 'Mini', 'Baby', 'Smol', 'Big', 'Mega', 'Giga', 'Ultra', 'Super',
-        'Cosmic', 'Astro', 'Lunar', 'Solar', 'Stellar', 'Galactic', 'Orbit', 'Comet', 'Meteor'
+    // Gaming icons, meme lords, internet culture
+    const gamingPrefixes = [
+        // Classic Gaming
+        'Mario', 'Luigi', 'Sonic', 'Tails', 'Link', 'Zelda', 'Samus', 'Kirby', 'Pikachu', 'Charizard',
+        'Cloud', 'Sephiroth', 'Tifa', 'Aerith', 'Squall', 'Tidus', 'Yuna', 'Auron', 'Vivi', 'Zidane',
+        // Modern Gaming
+        'Master', 'Chief', 'Kratos', 'Geralt', 'Ciri', 'Ellie', 'Joel', 'Nathan', 'Drake', 'Lara',
+        'Solid', 'Snake', 'Big', 'Boss', 'Raiden', 'Dante', 'Vergil', 'Nero', 'Leon', 'Jill',
+        // Esports/Streaming
+        'Ninja', 'Shroud', 'Summit', 'xQc', 'Toast', 'Sykkuno', 'Ludwig', 'Myth', 'Tfue', 'Tim',
+        // League/DOTA
+        'Faker', 'Dopa', 'Caps', 'Perkz', 'Bjerg', 'Doublelift', 'Sneaky', 'Rush', 'Jankos', 'Rekkles',
+        // Anime/Manga
+        'Goku', 'Vegeta', 'Naruto', 'Sasuke', 'Luffy', 'Zoro', 'Ichigo', 'Eren', 'Levi', 'Mikasa',
+        'Tanjiro', 'Nezuko', 'Gojo', 'Sukuna', 'Denji', 'Power', 'Makima', 'Anya', 'Spy', 'Family',
+        // Memes & Internet
+        'Doge', 'Pepe', 'Wojak', 'Chad', 'Sigma', 'Based', 'Cringe', 'Pog', 'Kappa', 'Monka',
+        'Stonks', 'Diamond', 'Ape', 'Moon', 'Hodl', 'Yeet', 'Vibe', 'Ratio', 'Cope', 'Seethe',
+        // Minecraft/Roblox
+        'Steve', 'Alex', 'Herobrine', 'Notch', 'Dream', 'George', 'Sapnap', 'Techno', 'Philza', 'Wilbur',
+        // Valorant/CS
+        'Jett', 'Phoenix', 'Sage', 'Reyna', 'Omen', 'Killjoy', 'Cypher', 'Sova', 'Breach', 'Skye',
+        // Overwatch
+        'Tracer', 'Genji', 'Mercy', 'Dva', 'Hanzo', 'Widow', 'Reaper', 'Soldier', 'Pharah', 'Echo',
+        // Fortnite/BR
+        'Noob', 'Bot', 'Sweat', 'Tryhard', 'Default', 'Cranking', 'Boxed', 'Goated', 'Cracked', 'Bussin',
+        // Pokemon
+        'Ash', 'Misty', 'Brock', 'Gary', 'Red', 'Blue', 'Cynthia', 'Leon', 'Mewtwo', 'Mew',
+        // Among Us era
+        'Sus', 'Vent', 'Imposter', 'Crew', 'Emergency', 'Voted', 'Ejected', 'Task', 'Sabotage', 'Report'
     ];
+
     const suffixes = [
-        'Puff', 'Pie', 'Cake', 'Pop', 'Drop', 'Fizzy', 'Soda', 'Shake', 'Cream', 'Tea',
-        'Byte', 'Bit', 'Bot', 'Droid', 'Mecha', 'Cyber', 'Data', 'Web', 'Net', 'Link',
-        'Mew', 'Woof', 'Purr', 'Roar', 'Hiss', 'Chirp', 'Peep', 'Squeak', 'Honk', 'Beep',
-        'Zoom', 'Zap', 'Pow', 'Bam', 'Boom', 'Crash', 'Bang', 'Slap', 'Punch', 'Kick',
-        'Wizard', 'Witch', 'Mage', 'Elf', 'Fairy', 'Dragon', 'Ghost', 'Spirit', 'Soul',
-        'Leaf', 'Flower', 'Petal', 'Bloom', 'Rose', 'Lily', 'Fern', 'Moss', 'Vine', 'Tree',
-        'Gem', 'Jewel', 'Ruby', 'Opal', 'Pearl', 'Gold', 'Silver', 'Copper', 'Iron', 'Steel',
-        'Heart', 'Star', 'Moon', 'Sun', 'Cloud', 'Sky', 'Rain', 'Snow', 'Wind', 'Storm'
+        // Gaming terms
+        'Main', 'Pro', 'Noob', 'God', 'King', 'Queen', 'Lord', 'Master', 'Sensei', 'Sama',
+        'Chan', 'Kun', 'San', 'Senpai', 'Kouhai', 'Kami', 'Dono', 'Hime', 'Ouji', 'Neko',
+        // Gamer tags
+        'Gaming', 'Plays', 'Stream', 'Live', 'TV', 'YT', 'TTV', 'Official', 'Real', 'Actual',
+        'xD', 'UwU', 'OwO', 'QQ', 'GG', 'WP', 'EZ', 'FF', 'AFK', 'BRB',
+        // Numbers/Leet
+        '69', '420', '1337', '9000', '360', '180', '2024', '99', '100', 'Max',
+        // Adjectives
+        'Dark', 'Light', 'Shadow', 'Void', 'Chaos', 'Order', 'True', 'False', 'Real', 'Fake',
+        'Ultra', 'Mega', 'Giga', 'Hyper', 'Super', 'Omega', 'Alpha', 'Beta', 'Sigma', 'Delta',
+        // Internet suffixes
+        'Moment', 'Hours', 'Mode', 'Core', 'Pilled', 'Maxxing', 'Wave', 'Era', 'Arc', 'Saga'
     ];
 
     // Simple, robust PRNG (Mulberry32)
@@ -37,11 +64,14 @@ function generateName(seed) {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
 
-    const idx1 = Math.floor(random() * prefixes.length);
+    const idx1 = Math.floor(random() * gamingPrefixes.length);
     const idx2 = Math.floor(random() * suffixes.length);
-    const num = Math.floor(random() * 90) + 10;
 
-    return `${prefixes[idx1]}${suffixes[idx2]}${num}`;
+    // Sometimes add a number, sometimes don't
+    const addNumber = random() > 0.4;
+    const num = addNumber ? Math.floor(random() * 999) : '';
+
+    return `${gamingPrefixes[idx1]}${suffixes[idx2]}${num}`;
 }
 
 // Cookie helper functions
