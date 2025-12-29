@@ -393,7 +393,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                         <textarea
                             ref={inputRef}
                             className="chat-input"
-                            placeholder="Message... (/gif :emoji @mention)"
+                            placeholder="Message..."
                             value={inputValue}
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
@@ -406,10 +406,10 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                 color: 'var(--text-primary)',
                                 fontSize: '15px',
                                 resize: 'none',
-                                minHeight: '24px',
-                                maxHeight: '120px',
-                                lineHeight: '1.4',
-                                padding: '6px 0'
+                                height: '24px',
+                                lineHeight: '1.5',
+                                padding: '2px 0',
+                                overflow: 'hidden'
                             }}
                         />
 

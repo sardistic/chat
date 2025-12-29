@@ -302,19 +302,19 @@ function MainApp({ user, onLeaveRoom }) {
             )}
           </div>
 
-          {/* Avatar Aquarium - right side of header, peeking down */}
+          {/* Avatar Aquarium - between controls and profile */}
           <div style={{
             position: 'absolute',
             top: '50%',
-            right: '180px', /* After the profile avatar */
+            right: '56px', /* Just before profile avatar */
             transform: 'translateY(-50%)',
-            height: '48px',
+            height: '36px',
             pointerEvents: 'none',
             overflow: 'visible',
-            zIndex: 100,
+            zIndex: 50,
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px'
           }}>
             {(() => {
               const uniqueMap = new Map();
