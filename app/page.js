@@ -409,35 +409,40 @@ function MainApp({ user, onLeaveRoom }) {
                 </div>
 
                 {/* Remote Users (WebRTC) */}
-                {Array.from(peers, ([socketId, p]) => (
-                  <div key={socketId} className="user-item" onClick={(e) => {
-                    setSelectedProfileUser(p.user);
-                    setModalPosition({ x: e.clientX, y: e.clientY });
-                  }} style={{ cursor: 'pointer' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <img
-                        src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
-                        alt={p.user?.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px' }}>
-                        {p.user?.isVideoEnabled ? <span title="Broadcasting">📹</span> : <span title="Viewing">👁️</span>}
-                        {p.user?.isAudioEnabled === false && <span title="Muted">🔇</span>}
-                        {p.user?.isDeafened && <span title="Deafened">🙉</span>}
-                        {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <span title="Lurking">☁️</span>}
+                {Array.from(peers, ([socketId, p]) => {
+                  // Skip if it's the local user
+                  if (p.user?.name === user.name) return null;
+
+                  return (
+                    <div key={socketId} className="user-item" onClick={(e) => {
+                      setSelectedProfileUser(p.user);
+                      setModalPosition({ x: e.clientX, y: e.clientY });
+                    }} style={{ cursor: 'pointer' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <img
+                          src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
+                          alt={p.user?.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px' }}>
+                          {p.user?.isVideoEnabled ? <span title="Broadcasting">📹</span> : <span title="Viewing">👁️</span>}
+                          {p.user?.isAudioEnabled === false && <span title="Muted">🔇</span>}
+                          {p.user?.isDeafened && <span title="Deafened">🙉</span>}
+                          {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <span title="Lurking">☁️</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
 
                 {/* IRC Users */}
                 {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
                 {/* IRC Users (Humans) */}
                 {Array.from(ircUsers.values())
-                  .filter(u => !['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()))
+                  .filter(u => !['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()) && u.name !== user.name)
                   .map((u) => (
                     <div key={u.name} className="user-item" onClick={(e) => {
                       setSelectedProfileUser(u);
@@ -468,7 +473,7 @@ function MainApp({ user, onLeaveRoom }) {
                   System
                 </div>
                 {Array.from(ircUsers.values())
-                  .filter(u => ['camroomslogbot', 'chanserv'].includes(u.name.toLowerCase()))
+                  .filter(u => ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()))
                   .map((u) => {
                     let displayName = u.name;
                     let role = 'BOT';
