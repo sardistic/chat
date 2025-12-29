@@ -40,6 +40,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
     const [inputValue, setInputValue] = useState('');
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
+    const [showMentions, setShowMentions] = useState(false);
     const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
 
     const [gifQuery, setGifQuery] = useState('');
