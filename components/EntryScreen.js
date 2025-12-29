@@ -41,7 +41,7 @@ function getCookie(name) {
 }
 
 
-}
+
 
 export default function EntryScreen({ onJoin }) {
     const { data: session, status } = useSession();
@@ -153,7 +153,7 @@ export default function EntryScreen({ onJoin }) {
     };
 
     const handleRandomize = () => {
-        const newSeed = Date.now();
+        const newSeed = Math.floor(Math.random() * 2147483647);
         setCharacterSeed(newSeed);
         setUsername(generateName(newSeed));
     };
@@ -195,7 +195,7 @@ export default function EntryScreen({ onJoin }) {
                     {/* Controls */}
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button className="btn" onClick={handleRandomize} title="Randomize Avatar" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            <IconDice size={18} /> Randomize
+                            <Icon icon="fa:dice" width="18" /> Randomize
                         </button>
                     </div>
                 </div>

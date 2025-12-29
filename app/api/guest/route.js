@@ -26,7 +26,7 @@ export async function POST(req) {
                     where: { id: user.id },
                     data: {
                         displayName: name || user.displayName,
-                        avatarSeed: avatarSeed ?? user.avatarSeed,
+                        avatarSeed: avatarSeed ? (Number(avatarSeed) | 0) : user.avatarSeed,
                         avatarUrl: avatarUrl || user.avatarUrl,
                         lastSeen: new Date(),
                         ipAddress: ip,
@@ -42,7 +42,7 @@ export async function POST(req) {
                 data: {
                     guestToken: newToken,
                     displayName: name || `Guest_${Math.floor(Math.random() * 10000)}`,
-                    avatarSeed: avatarSeed || Date.now(),
+                    avatarSeed: (avatarSeed ? Number(avatarSeed) : Math.floor(Math.random() * 2147483647)) | 0,
                     avatarUrl: avatarUrl,
                     isGuest: true,
                     ipAddress: ip,
