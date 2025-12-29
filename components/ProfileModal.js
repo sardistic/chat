@@ -131,7 +131,7 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
     const premiumBadge = getPremiumBadge(user.premiumType);
     const accentColor = accentToHex(user.accentColor) || "#5865F2";
     const bannerUrl = user.banner;
-    const avatarUrl = user.image || user.avatar || `/ api / avatar / ${user.name} `;
+    const avatarUrl = user.image || user.avatar || `/api/avatar/${user.name}`;
     const isGuest = user.isGuest !== false && !user.discordId;
     const customStatus = user.customStatus;
 

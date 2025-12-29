@@ -27,8 +27,21 @@ function generateName(seed) {
         'Gem', 'Jewel', 'Ruby', 'Opal', 'Pearl', 'Gold', 'Silver', 'Copper', 'Iron', 'Steel',
         'Heart', 'Star', 'Moon', 'Sun', 'Cloud', 'Sky', 'Rain', 'Snow', 'Wind', 'Storm'
     ];
-    const random = (min, max) => min + Math.floor(Math.abs((Math.sin(seed++) * 10000 % 1)) * (max - min));
-    return prefixes[random(0, prefixes.length)] + suffixes[random(0, suffixes.length)] + Math.floor(random(10, 99));
+
+    // Simple, robust PRNG (Mulberry32)
+    let s = Number(seed) || 123456;
+    const random = () => {
+        let t = s += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+
+    const idx1 = Math.floor(random() * prefixes.length);
+    const idx2 = Math.floor(random() * suffixes.length);
+    const num = Math.floor(random() * 90) + 10;
+
+    return `${prefixes[idx1]}${suffixes[idx2]}${num}`;
 }
 
 // Cookie helper functions
@@ -46,7 +59,7 @@ function getCookie(name) {
 export default function EntryScreen({ onJoin }) {
     const { data: session, status } = useSession();
     const [username, setUsername] = useState("");
-    const [characterSeed, setCharacterSeed] = useState(Date.now());
+    const [characterSeed, setCharacterSeed] = useState(Math.floor(Math.random() * 2147483647));
     const [isLoading, setIsLoading] = useState(true);
     const [guestToken, setGuestToken] = useState(null);
 
@@ -96,9 +109,13 @@ export default function EntryScreen({ onJoin }) {
     const previewUrl = `/api/avatar/${username || 'guest'}?v=${characterSeed}`;
 
     const handleGuestJoin = async () => {
-        // Save to cookies for persistence
-        setCookie('display_name', username);
-        setCookie('avatar_seed', characterSeed.toString());
+        // Save to cookies for persistence with 1 year expiry
+        const options = { maxAge: 60 * 60 * 24 * 365, path: '/' };
+        setCookie('display_name', username, options);
+        setCookie('avatar_seed', characterSeed.toString(), options);
+        if (guestToken) {
+            setCookie('guest_token', guestToken, options);
+        }
 
         let startData = {
             name: username,
