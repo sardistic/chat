@@ -72,13 +72,16 @@ export default function EntryScreen({ onJoin }) {
         if (savedToken) {
             setGuestToken(savedToken);
         }
-        if (savedSeed) {
-            setCharacterSeed(parseInt(savedSeed, 10));
+        let initialSeed = savedSeed ? parseInt(savedSeed, 10) : null;
+        if (!initialSeed || isNaN(initialSeed)) {
+            initialSeed = Math.floor(Math.random() * 2147483647);
         }
-        if (savedName) {
+        setCharacterSeed(initialSeed);
+
+        if (savedName && savedName !== 'null' && savedName !== 'undefined') {
             setUsername(savedName);
         } else {
-            setUsername(generateName(savedSeed ? parseInt(savedSeed, 10) : Date.now()));
+            setUsername(generateName(initialSeed));
         }
 
         setIsLoading(false);
@@ -229,14 +232,7 @@ export default function EntryScreen({ onJoin }) {
                             placeholder="Enter name..."
                             maxLength={16}
                         />
-                        <button
-                            type="button"
-                            className="btn icon-btn"
-                            onClick={() => setUsername(generateName())}
-                            title="Randomize Name"
-                        >
-                            <Icon icon="fa:random" width="20" />
-                        </button>
+
                     </div>
                 </div>
 
