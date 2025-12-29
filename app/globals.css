@@ -490,7 +490,8 @@ body {
   /* Darker than main for video contrast */
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow: visible;
+  /* Fix menu clipping */
   aspect-ratio: 16/9;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.2s;
@@ -507,6 +508,8 @@ body {
   height: 100%;
   object-fit: cover;
   opacity: 0.95;
+  border-radius: var(--radius-md);
+  /* Match tile */
   /* Slight blend */
 }
 
@@ -521,6 +524,8 @@ body {
   align-items: center;
   justify-content: space-between;
   pointer-events: none;
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
 }
 
 .tile .name {
@@ -546,8 +551,8 @@ body {
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.4);
   /* Darker for contrast */
@@ -558,7 +563,8 @@ body {
   justify-content: center;
   color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
-  z-index: 50;
+  z-index: 100;
+  /* Ensure above overlay */
   opacity: 0;
   transition: all 0.2s ease;
 }
@@ -608,16 +614,16 @@ body {
 /* Tile Dropdown Menu - Sleek & Compact */
 .tile-menu {
   position: absolute;
-  top: 36px;
+  top: 24px;
   /* Below the trigger */
-  right: 8px;
+  right: 0;
   background: #111;
   /* Solid dark, less translucent than Discord */
   border: 1px solid #333;
   border-radius: 4px;
   /* Sharpner corners */
-  padding: 4px;
-  min-width: 140px;
+  padding: 2px;
+  min-width: 120px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   z-index: 1000;
   display: flex;
