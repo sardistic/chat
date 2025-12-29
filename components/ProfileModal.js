@@ -54,9 +54,9 @@ function getBadges(flags) {
 // Get premium badge
 function getPremiumBadge(premiumType) {
     switch (premiumType) {
-        case 1: return { name: "Nitro Classic", emoji: "💜" };
-        case 2: return { name: "Nitro", emoji: "🚀" };
-        case 3: return { name: "Nitro Basic", emoji: "💙" };
+        case 1: return { name: "Nitro Classic", icon: <IconRocket size={16} /> };
+        case 2: return { name: "Nitro", icon: <IconRocket size={16} /> };
+        case 3: return { name: "Nitro Basic", icon: <IconStar size={16} /> };
         default: return null;
     }
 }
