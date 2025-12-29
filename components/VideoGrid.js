@@ -340,21 +340,35 @@ function VideoTile({
                         </span>
                         {isDiscordUser && <span style={{ opacity: 0.7 }}><Icon icon="fa:link" width="12" /></span>}
 
-                        {/* Reaction Button - click for heart, hover for more */}
+                        {/* Reaction Button - click for heart, hover/click for more */}
                         <div
-                            style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                            style={{
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '4px',
+                                marginLeft: '-4px'
+                            }}
                             onMouseEnter={() => setShowPicker(true)}
                             onMouseLeave={() => setShowPicker(false)}
                         >
                             <button
                                 className="reaction-btn"
-                                onClick={(e) => { e.stopPropagation(); onReaction('❤️'); }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // On mobile (touch), toggle picker. On desktop with hover, send heart
+                                    if ('ontouchstart' in window) {
+                                        setShowPicker(!showPicker);
+                                    } else {
+                                        onReaction('❤️');
+                                    }
+                                }}
                                 style={{
                                     background: 'transparent',
                                     border: 'none',
                                     cursor: 'pointer',
                                     fontSize: '16px',
-                                    padding: '2px 4px',
+                                    padding: '4px 6px',
                                     pointerEvents: 'auto'
                                 }}
                                 title="Send ❤️ (hover for more)"
@@ -362,9 +376,16 @@ function VideoTile({
                                 ❤️
                             </button>
 
-                            {/* More emojis on hover */}
+                            {/* More emojis on hover/toggle */}
                             {showPicker && (
-                                <div style={{ display: 'flex', gap: '2px', marginLeft: '4px' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '4px',
+                                    marginLeft: '2px',
+                                    background: 'rgba(0,0,0,0.6)',
+                                    borderRadius: '12px',
+                                    padding: '4px 8px'
+                                }}>
                                     {['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
                                         <button
                                             key={emoji}
@@ -373,13 +394,9 @@ function VideoTile({
                                                 background: 'transparent',
                                                 border: 'none',
                                                 cursor: 'pointer',
-                                                fontSize: '14px',
-                                                padding: '2px',
-                                                opacity: 0.8,
-                                                transition: 'opacity 0.15s, transform 0.15s'
+                                                fontSize: '16px',
+                                                padding: '2px 4px'
                                             }}
-                                            onMouseEnter={(e) => { e.target.style.opacity = 1; e.target.style.transform = 'scale(1.2)'; }}
-                                            onMouseLeave={(e) => { e.target.style.opacity = 0.8; e.target.style.transform = 'scale(1)'; }}
                                         >
                                             {emoji}
                                         </button>
