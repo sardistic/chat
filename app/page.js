@@ -204,12 +204,12 @@ function MainApp({ user, onLeaveRoom }) {
           {/* Broadcast Controls */}
           {/* Deafen (Always Visible) */}
           <button
-            className={`btn icon - btn ${isDeafened ? 'danger' : ''} `}
+            className={`btn icon-btn ${isDeafened ? 'danger' : ''} `}
             onClick={toggleDeaf}
             title={isDeafened ? 'Undeafen' : 'Deafen'}
             style={{ marginRight: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            {isDeafened ? <Icon icon="fontelico:headphones" width="18" style={{ opacity: 0.5 }} /> : <Icon icon="fontelico:headphones" width="18" />}
+            {isDeafened ? <Icon icon="fa:headphones" width="18" style={{ opacity: 0.5 }} /> : <Icon icon="fa:headphones" width="18" />}
           </button>
 
           {/* Broadcast Controls */}
