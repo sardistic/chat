@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
+import { setCookie } from "cookies-next";
+import { IconHashtag, IconDice, IconRefresh, IconHourglass, IconBrandDiscord } from "@tabler/icons-react";
 
 // Whimsical name generator
 function generateName(seed) {
@@ -165,7 +167,7 @@ export default function EntryScreen({ onJoin }) {
                 <div className="starmap-bg" />
                 <div className="entry-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏳</div>
+                        <div style={{ fontSize: '24px', marginBottom: '8px', color: 'var(--accent-primary)' }}><IconHourglass size={32} /></div>
                         <div style={{ color: 'var(--text-secondary)' }}>Loading...</div>
                     </div>
                 </div>
@@ -194,7 +196,9 @@ export default function EntryScreen({ onJoin }) {
 
                     {/* Controls */}
                     <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn" onClick={handleRandomize} title="Randomize Avatar">🎲 Randomize</button>
+                        <button className="btn" onClick={handleRandomize} title="Randomize Avatar" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <IconDice size={18} /> Randomize
+                        </button>
                     </div>
                 </div>
 
@@ -216,7 +220,7 @@ export default function EntryScreen({ onJoin }) {
                             onClick={() => setUsername(generateName(Date.now()))}
                             title="Random Name"
                         >
-                            ↺
+                            <IconRefresh size={16} />
                         </button>
                     </div>
                 </div>

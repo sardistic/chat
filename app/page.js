@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import {
+  IconVideo, IconEye, IconMicrophoneOff, IconHeadphonesOff,
+  IconCloud, IconKeyboard, IconRobot, IconCircleFilled
+} from '@tabler/icons-react';
 import { SocketProvider } from "@/lib/socket";
 import VideoGrid from "@/components/VideoGrid";
 import EntryScreen from "@/components/EntryScreen";
@@ -182,9 +186,10 @@ function MainApp({ user, onLeaveRoom }) {
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Logo / Icon */}
-          <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Logo / Icon - REMOVED per user request */}
+          {/* <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
+          </div> */}
           {/* Breadcrumbs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
             <button
@@ -399,11 +404,11 @@ function MainApp({ user, onLeaveRoom }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px' }}>
-                      <span title="Online" style={{ color: 'var(--status-online)' }}>●</span>
-                      {isVideoEnabled ? <span title="Broadcasting">📹</span> : <span title="Viewing">👁️</span>}
-                      {!isAudioEnabled && <span title="Muted">🔇</span>}
-                      {isDeafened && <span title="Deafened">🙉</span>}
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                      <IconCircleFilled size={10} color="var(--status-online)" />
+                      {isVideoEnabled ? <IconVideo size={14} stroke={1.5} /> : <IconEye size={14} stroke={1.5} />}
+                      {!isAudioEnabled && <IconMicrophoneOff size={14} stroke={1.5} />}
+                      {isDeafened && <IconHeadphonesOff size={14} stroke={1.5} />}
                     </div>
                   </div>
                 </div>
@@ -427,11 +432,11 @@ function MainApp({ user, onLeaveRoom }) {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px' }}>
-                          {p.user?.isVideoEnabled ? <span title="Broadcasting">📹</span> : <span title="Viewing">👁️</span>}
-                          {p.user?.isAudioEnabled === false && <span title="Muted">🔇</span>}
-                          {p.user?.isDeafened && <span title="Deafened">🙉</span>}
-                          {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <span title="Lurking">☁️</span>}
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                          {p.user?.isVideoEnabled ? <IconVideo size={14} stroke={1.5} /> : <IconEye size={14} stroke={1.5} />}
+                          {p.user?.isAudioEnabled === false && <IconMicrophoneOff size={14} stroke={1.5} />}
+                          {p.user?.isDeafened && <IconHeadphonesOff size={14} stroke={1.5} />}
+                          {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <IconCloud size={14} stroke={1.5} />}
                         </div>
                       </div>
                     </div>
@@ -460,8 +465,8 @@ function MainApp({ user, onLeaveRoom }) {
                           <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
                           <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px' }}>
-                          <span title="Text Only">⌨️</span>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                          <IconKeyboard size={14} stroke={1.5} />
                           {u.modes && u.modes.length > 0 && <span>+{u.modes.join('')}</span>}
                         </div>
                       </div>
@@ -492,7 +497,7 @@ function MainApp({ user, onLeaveRoom }) {
                     return (
                       <div key={u.name} className="user-item" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }}>
-                          <span style={{ fontSize: '18px' }}>🤖</span>
+                          <IconRobot size={18} color="white" stroke={1.5} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import {
+    IconMessage, IconInfoCircle, IconBrandDiscord, IconMail,
+    IconRocket, IconDiamond, IconStar, IconMessagedots,
+    IconClock, IconVideo, IconMoodSmile, IconBug,
+    IconBriefcase, IconUsers, IconTent, IconShieldCheck,
+    IconCode
+} from '@tabler/icons-react';
 
 // Discord badge flags
 const DISCORD_FLAGS = {
@@ -19,17 +26,17 @@ const DISCORD_FLAGS = {
 
 // Badge display info
 const BADGE_INFO = {
-    DISCORD_EMPLOYEE: { name: "Discord Staff", emoji: "👨‍💼" },
-    PARTNERED_SERVER_OWNER: { name: "Partnered Server Owner", emoji: "🤝" },
-    HYPESQUAD_EVENTS: { name: "HypeSquad Events", emoji: "🎪" },
-    BUG_HUNTER_LEVEL_1: { name: "Bug Hunter", emoji: "🐛" },
-    HOUSE_BRAVERY: { name: "HypeSquad Bravery", emoji: "🦁" },
-    HOUSE_BRILLIANCE: { name: "HypeSquad Brilliance", emoji: "🦊" },
-    HOUSE_BALANCE: { name: "HypeSquad Balance", emoji: "🐺" },
-    EARLY_SUPPORTER: { name: "Early Supporter", emoji: "💎" },
-    BUG_HUNTER_LEVEL_2: { name: "Bug Hunter Gold", emoji: "🐛" },
-    VERIFIED_BOT_DEVELOPER: { name: "Verified Bot Developer", emoji: "🤖" },
-    ACTIVE_DEVELOPER: { name: "Active Developer", emoji: "👨‍💻" },
+    DISCORD_EMPLOYEE: { name: "Discord Staff", icon: <IconBriefcase size={16} /> },
+    PARTNERED_SERVER_OWNER: { name: "Partnered Server Owner", icon: <IconUsers size={16} /> },
+    HYPESQUAD_EVENTS: { name: "HypeSquad Events", icon: <IconTent size={16} /> },
+    BUG_HUNTER_LEVEL_1: { name: "Bug Hunter", icon: <IconBug size={16} /> },
+    HOUSE_BRAVERY: { name: "HypeSquad Bravery", icon: <IconShieldCheck size={16} color="#9C89F7" /> },
+    HOUSE_BRILLIANCE: { name: "HypeSquad Brilliance", icon: <IconShieldCheck size={16} color="#F47B67" /> },
+    HOUSE_BALANCE: { name: "HypeSquad Balance", icon: <IconShieldCheck size={16} color="#4FD1C5" /> },
+    EARLY_SUPPORTER: { name: "Early Supporter", icon: <IconDiamond size={16} /> },
+    BUG_HUNTER_LEVEL_2: { name: "Bug Hunter Gold", icon: <IconBug size={16} color="#FCD34D" /> },
+    VERIFIED_BOT_DEVELOPER: { name: "Verified Bot Developer", icon: <IconCode size={16} /> },
+    ACTIVE_DEVELOPER: { name: "Active Developer", icon: <IconCode size={16} /> },
 };
 
 // Parse badges from public_flags
@@ -183,12 +190,12 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', minHeight: '24px' }}>
                         {premiumBadge && (
                             <span className="profile-badge" title={premiumBadge.name}>
-                                {premiumBadge.emoji}
+                                {premiumBadge.icon}
                             </span>
                         )}
                         {badges.map((badge) => (
                             <span key={badge.key} className="profile-badge" title={badge.name}>
-                                {badge.emoji}
+                                {badge.icon}
                             </span>
                         ))}
                     </div>
@@ -232,7 +239,7 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                                 <div className="profile-section">
                                     <h3 className="profile-section-title">STATUS</h3>
                                     <p className="profile-section-content" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        💬 {user.customStatus}
+                                        <IconMessagedots size={14} style={{ opacity: 0.7 }} /> {user.customStatus}
                                     </p>
                                 </div>
                             )}
