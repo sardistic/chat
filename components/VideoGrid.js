@@ -346,20 +346,22 @@ function VideoTile({
                         className="reaction-btn"
                         onClick={(e) => { e.stopPropagation(); setShowPicker(!showPicker); }}
                         style={{
-                            background: 'rgba(255,255,255,0.1)',
-                            border: 'none',
+                            background: showPicker ? 'rgba(99,102,241,0.8)' : 'rgba(0,0,0,0.5)',
+                            border: '1px solid rgba(255,255,255,0.2)',
                             borderRadius: '50%',
-                            width: '28px',
-                            height: '28px',
+                            width: '32px',
+                            height: '32px',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            marginLeft: 'auto'
+                            marginLeft: 'auto',
+                            pointerEvents: 'auto',
+                            zIndex: 15
                         }}
                         title="React"
                     >
-                        <Icon icon="fa:smile-o" width="16" style={{ color: 'rgba(255,255,255,0.8)' }} />
+                        <Icon icon="fa:smile-o" width="18" style={{ color: '#fff' }} />
                     </button>
 
                     {/* Mini Emoji Picker */}
