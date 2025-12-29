@@ -35,13 +35,13 @@ function groupMessages(messages) {
     return groups;
 }
 
-export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
-    const { messages, sendMessage, handleTyping, typingUsers } = useChat(roomId, user);
+export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onUserClick = () => { } }) {
+    const { messages, sendMessage, isLoading } = useChat(roomId, user);
     const [inputValue, setInputValue] = useState('');
-    const [showMentions, setShowMentions] = useState(false);
+    const [showGifPicker, setShowGifPicker] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
     const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
-    const [showGifPicker, setShowGifPicker] = useState(false);
+
     const [gifQuery, setGifQuery] = useState('');
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
@@ -232,7 +232,16 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [] }) {
                             background: group.senderColor || '#5865F2',
                             flexShrink: 0,
                             overflow: 'hidden',
-                        }}>
+                            cursor: 'pointer'
+                        }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const foundUser = users.find(u => u.name === group.sender) ||
+                                    ircUsers.find(u => u.name === group.sender) ||
+                                    // Fallback minimal object if not found (e.g. offline user)
+                                    { name: group.sender, avatar: group.senderAvatar, color: group.senderColor };
+                                onUserClick(foundUser, e);
+                            }}>
                             <img
                                 src={group.senderAvatar || `/api/avatar/${group.sender}`}
                                 alt={group.sender}

@@ -60,7 +60,14 @@ function accentToHex(accent) {
     return `#${accent.toString(16).padStart(6, '0')}`;
 }
 
-export default function ProfileModal({ user, isOpen, onClose, position }) {
+export default function ProfileModal({
+    user,
+    isOpen,
+    onClose,
+    position,
+    peerSettings = {},
+    onUpdatePeerSettings = () => { }
+}) {
     const modalRef = useRef(null);
     const { socket } = useSocket();
 
@@ -147,6 +154,16 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
         </div>
     );
 
+    // Get current settings for this user
+    const userSettings = (user && user.id) ? (peerSettings[user.id] || { volume: 1, isLocallyMuted: false, isVideoHidden: false }) : null;
+    const isSelf = false; // logic to detect self if needed, passed prop or compare IDs
+
+    const handleVolumeChange = (e) => {
+        if (user && user.id) {
+            onUpdatePeerSettings(user.id, { volume: parseFloat(e.target.value) });
+        }
+    };
+
     return (
         <div className="profile-modal-overlay" style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={onClose}>
             <div ref={modalRef} className="profile-modal" style={modalStyle} onClick={e => e.stopPropagation()}>
@@ -191,7 +208,7 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
 
                 {/* Tabs */}
                 <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0 16px' }}>
-                    {['Overview', 'Activity'].map(tab => (
+                    {['Overview', 'Activity', 'Actions'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -237,6 +254,55 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                             <InfoChip label="Messages" value={stats?.messagesSent || 0} icon="fa:comment" />
                             <InfoChip label="Emotes Sent" value={stats?.emotesGiven || 0} icon="fontelico:emo-wink" />
                             <InfoChip label="Time Online" value={formatTime(stats?.timeOnSiteSeconds || 0)} icon="fa:clock-o" />
+                        </div>
+                    )}
+
+                    {activeTab === 'Actions' && userSettings && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div className="menu-label" style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Available Actions</div>
+
+                            {/* Volume */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                                    <span>Volume</span>
+                                    <span>{Math.round(userSettings.volume * 100)}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.1"
+                                    value={userSettings.volume}
+                                    onChange={handleVolumeChange}
+                                    style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
+                                />
+                            </div>
+
+                            {/* Toggles */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <button
+                                    className={`btn ${userSettings.isLocallyMuted ? 'danger' : 'secondary'}`}
+                                    onClick={() => onUpdatePeerSettings(user.id, { isLocallyMuted: !userSettings.isLocallyMuted })}
+                                    style={{ padding: '8px', justifyContent: 'center', fontSize: '12px' }}
+                                >
+                                    <Icon icon={userSettings.isLocallyMuted ? "fa:microphone-slash" : "fa:microphone"} width="14" />
+                                    {userSettings.isLocallyMuted ? "Unmute" : "Mute"}
+                                </button>
+                                <button
+                                    className={`btn ${userSettings.isVideoHidden ? 'danger' : 'secondary'}`}
+                                    onClick={() => onUpdatePeerSettings(user.id, { isVideoHidden: !userSettings.isVideoHidden })}
+                                    style={{ padding: '8px', justifyContent: 'center', fontSize: '12px' }}
+                                >
+                                    <Icon icon={userSettings.isVideoHidden ? "fa:eye-slash" : "fa:video-camera"} width="14" />
+                                    {userSettings.isVideoHidden ? "Show" : "Hide"}
+                                </button>
+                            </div>
+
+                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+
+                            <button className="btn danger" style={{ justifyContent: 'center' }}>
+                                <Icon icon="fa:ban" width="14" /> Kick User (Mod)
+                            </button>
                         </div>
                     )}
                 </div>

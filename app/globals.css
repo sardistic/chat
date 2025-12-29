@@ -557,9 +557,9 @@ body {
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   transition: all 0.2s ease;
-  z-index: 20;
+  z-index: 50;
   opacity: 0;
-  /* Hidden by default until hover */
+  transition: opacity 0.2s ease, background 0.2s ease, transform 0.1s ease;
 }
 
 .tile:hover .tile-menu-trigger,
@@ -567,11 +567,20 @@ body {
   opacity: 1;
 }
 
-.tile-menu-trigger:hover,
-.tile-menu-trigger.active {
-  background: rgba(255, 255, 255, 0.15);
+.tile-menu-trigger:hover {
+  background: rgba(255, 255, 255, 0.2);
   color: white;
-  transform: scale(1.1);
+}
+
+.tile-menu-trigger.active {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  opacity: 1;
+}
+
+.tile-menu-trigger:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* Updated Reaction Btn (Bottom) */

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import ProfileModal from "./ProfileModal";
 import CameraReactiveGrid from "./CameraReactiveGrid";
 import { useCameraEffects } from "@/hooks/useCameraEffects";
 import { useSocket } from "@/lib/socket";
@@ -61,16 +60,17 @@ function VideoTile({
     incomingReactions = [],
     mentionCount = 0,
     chatActivity = 0,
-    isDiscordUser = false
+
+    isDiscordUser = false,
+    settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
+    onUpdateSettings = () => { }
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
 
-    // Local overrides
-    const [volume, setVolume] = useState(1);
-    const [isLocallyMuted, setIsLocallyMuted] = useState(false);
-    const [isVideoHidden, setIsVideoHidden] = useState(false);
+    // Destructure settings
+    const { volume, isLocallyMuted, isVideoHidden } = settings;
 
     // Internal state for reactions to render (cleans itself up)
     const [activeReactions, setActiveReactions] = useState([]);
@@ -255,17 +255,17 @@ function VideoTile({
                             max="1"
                             step="0.1"
                             value={volume}
-                            onChange={(e) => setVolume(parseFloat(e.target.value))}
+                            onChange={(e) => onUpdateSettings({ volume: parseFloat(e.target.value) })}
                             className="volume-slider"
                             onClick={e => e.stopPropagation()}
                         />
                     </div>
                     <div className="menu-divider" />
-                    <button className="menu-item" onClick={() => setIsLocallyMuted(!isLocallyMuted)}>
+                    <button className="menu-item" onClick={() => onUpdateSettings({ isLocallyMuted: !isLocallyMuted })}>
                         <Icon icon={isLocallyMuted ? "fa:microphone" : "fa:microphone-slash"} width="12" />
                         {isLocallyMuted ? "Unmute" : "Mute"}
                     </button>
-                    <button className="menu-item" onClick={() => setIsVideoHidden(!isVideoHidden)}>
+                    <button className="menu-item" onClick={() => onUpdateSettings({ isVideoHidden: !isVideoHidden })}>
                         <Icon icon={isVideoHidden ? "fa:video-camera" : "fa:eye-slash"} width="12" />
                         {isVideoHidden ? "Show Cam" : "Disable Cam"}
                     </button>
@@ -359,11 +359,19 @@ function VideoTile({
     );
 }
 
-export default function VideoGrid({ localStream, peers, localUser, isVideoEnabled, isAudioEnabled, isDeafened, roomId }) {
+export default function VideoGrid({
+    localStream,
+    peers,
+    localUser,
+    isVideoEnabled,
+    isAudioEnabled,
+    isDeafened,
+    roomId,
+    peerSettings = {},
+    onUpdatePeerSettings = () => { },
+    onProfileClick = () => { }
+}) {
     const { socket } = useSocket();
-    // Profile modal state
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [modalPosition, setModalPosition] = useState(null);
     const [incomingReactions, setIncomingReactions] = useState(new Map());
 
     // Listen for reactions
@@ -419,19 +427,7 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
     // Handle tile click to show profile
     const handleTileClick = (e, user) => {
         if (e.target.closest('.reaction-control')) return;
-        e.stopPropagation();
-        const rect = e.currentTarget.getBoundingClientRect();
-        setSelectedUser(user);
-        setModalPosition({
-            x: rect.right + 10,
-            y: rect.top,
-        });
-    };
-
-    // Close modal
-    const handleCloseModal = () => {
-        setSelectedUser(null);
-        setModalPosition(null);
+        onProfileClick(user, e);
     };
 
     return (
@@ -449,6 +445,8 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                     onClick={(e) => handleTileClick(e, localUser)}
                     onReaction={(emoji) => sendReaction(localUser?.id || socket?.id, emoji)}
                     incomingReactions={incomingReactions.get(localUser?.id || socket?.id) || []}
+                    // Local user doesn't really need settings, but we pass defaults
+                    settings={{ volume: 0, isLocallyMuted: true, isVideoHidden: false }}
                 />
 
                 {/* Remote Peer Tiles */}
@@ -456,6 +454,9 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                     const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
                     const isRemoteMuted = peerData.user?.isAudioEnabled === false;
                     const userId = peerData.user?.id || peerId;
+
+                    // Get settings for this peer or default
+                    const mySettings = peerSettings[userId] || { volume: 1, isLocallyMuted: false, isVideoHidden: false };
 
                     return (
                         <VideoTile
@@ -470,18 +471,12 @@ export default function VideoGrid({ localStream, peers, localUser, isVideoEnable
                             onClick={(e) => handleTileClick(e, peerData.user)}
                             onReaction={(emoji) => sendReaction(userId, emoji)}
                             incomingReactions={incomingReactions.get(userId) || []}
+                            settings={mySettings}
+                            onUpdateSettings={(newVals) => onUpdatePeerSettings(userId, newVals)}
                         />
                     );
                 })}
             </div>
-
-            {/* Profile Modal */}
-            <ProfileModal
-                user={selectedUser}
-                isOpen={!!selectedUser}
-                onClose={handleCloseModal}
-                position={modalPosition}
-            />
         </>
     );
 }

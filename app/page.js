@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -40,6 +39,24 @@ function MainApp({ user, onLeaveRoom }) {
   const [customStatus, setCustomStatus] = useState('');
   const [selectedProfileUser, setSelectedProfileUser] = useState(null);
   const [modalPosition, setModalPosition] = useState(null);
+  const [peerSettings, setPeerSettings] = useState({}); // { [userId]: { volume: 1, muted: false, hidden: false } }
+
+  const handleUpdatePeerSettings = (userId, newSettings) => {
+    setPeerSettings(prev => ({
+      ...prev,
+      [userId]: { ...prev[userId], ...newSettings }
+    }));
+  };
+
+  const handleProfileClick = (user, e) => {
+    e?.stopPropagation();
+    setSelectedProfileUser(user);
+    if (e?.clientX) {
+      setModalPosition({ x: e.clientX, y: e.clientY });
+    } else {
+      setModalPosition(null); // Center if no event
+    }
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -300,6 +317,9 @@ function MainApp({ user, onLeaveRoom }) {
             isAudioEnabled={isAudioEnabled}
             isDeafened={isDeafened}
             roomId={roomId}
+            peerSettings={peerSettings}
+            onUpdatePeerSettings={handleUpdatePeerSettings}
+            onProfileClick={handleProfileClick}
           />
 
           {/* Avatar Aquarium */}
@@ -335,10 +355,7 @@ function MainApp({ user, onLeaveRoom }) {
                       key={u.name + i}
                       className="aquarium-avatar"
                       style={{ position: 'relative', cursor: 'pointer' }}
-                      onClick={(e) => {
-                        setSelectedProfileUser(u);
-                        setModalPosition({ x: e.clientX, y: e.clientY });
-                      }}
+                      onClick={(e) => handleProfileClick(u, e)}
                     >
 
                       {/* Chat Bubble */}
@@ -401,6 +418,7 @@ function MainApp({ user, onLeaveRoom }) {
                   user={user}
                   users={Array.from(peers.values())}
                   ircUsers={Array.from(ircUsers.values())}
+                  onUserClick={handleProfileClick}
                 />
               </div>
             ) : (
@@ -432,10 +450,7 @@ function MainApp({ user, onLeaveRoom }) {
                   if (p.user?.name === user.name) return null;
 
                   return (
-                    <div key={socketId} className="user-item" onClick={(e) => {
-                      setSelectedProfileUser(p.user);
-                      setModalPosition({ x: e.clientX, y: e.clientY });
-                    }} style={{ cursor: 'pointer' }}>
+                    <div key={socketId} className="user-item" onClick={(e) => handleProfileClick(p.user, e)} style={{ cursor: 'pointer' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <img
                           src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
@@ -611,6 +626,14 @@ function MainApp({ user, onLeaveRoom }) {
           </div>
         </div>
       )}
+      <ProfileModal
+        user={selectedProfileUser}
+        isOpen={!!selectedProfileUser}
+        onClose={() => setSelectedProfileUser(null)}
+        position={modalPosition}
+        peerSettings={peerSettings}
+        onUpdatePeerSettings={handleUpdatePeerSettings}
+      />
     </div>
   );
 }
