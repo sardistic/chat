@@ -322,20 +322,20 @@ function MainApp({ user, onLeaveRoom }) {
             onProfileClick={handleProfileClick}
           />
 
-          {/* Avatar Aquarium */}
+          {/* Avatar Aquarium - in header, peeking down */}
           <div style={{
-            position: 'fixed',
-            bottom: '12px',
-            right: 'calc(var(--dynamic-sidebar-w, 320px) + 12px)',
-            height: '80px',
+            position: 'absolute',
+            top: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            height: '60px',
+            marginTop: '-20px', /* Peek up into header */
             pointerEvents: 'none',
             overflow: 'visible',
             zIndex: 5,
             display: 'flex',
-            flexDirection: 'row-reverse', /* Local user on the right */
-            alignItems: 'flex-end',
-            gap: '16px',
-            paddingRight: '8px'
+            alignItems: 'flex-start',
+            gap: '12px'
           }}>
             {/* Collect & Deduplicate Users */}
             {(() => {
@@ -364,15 +364,15 @@ function MainApp({ user, onLeaveRoom }) {
                         </div>
                       )}
 
-                      <div style={{ position: 'relative', width: '56px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <div className="avatar-name" style={{ marginBottom: '4px' }}>
-                          {u.name}
-                        </div>
+                      <div style={{ position: 'relative', width: '44px', display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
                         <img
                           src={u.avatar || `/api/avatar/${u.name}`}
                           alt={u.name}
-                          style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                          style={{ width: '44px', height: '44px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
                         />
+                        <div className="avatar-name" style={{ marginTop: '2px', top: 'auto', bottom: '-18px' }}>
+                          {u.name}
+                        </div>
                       </div>
                     </div>
                   );
