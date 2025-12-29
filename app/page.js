@@ -186,6 +186,11 @@ function MainApp({ user, onLeaveRoom }) {
           {/* Logo / Icon - Removed */}
           {/* Breadcrumbs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+            <img
+              src="https://i.imgur.com/MfbxoHW.gif"
+              alt="gem"
+              style={{ height: '20px', marginRight: '4px' }}
+            />
             <button
               onClick={onLeaveRoom}
               className="text-btn"
@@ -370,12 +375,7 @@ function MainApp({ user, onLeaveRoom }) {
           />
 
           {/* Sidebar Tabs */}
-          <div className="side-header" style={{ padding: '0 16px', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <img
-              src="https://i.imgur.com/MfbxoHW.gif"
-              alt="gem"
-              style={{ height: '24px', marginRight: '4px' }}
-            />
+          <div className="side-header" style={{ padding: '0 16px', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             <button
               className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
               style={{ flex: 1, fontSize: '12px', padding: '6px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent' }}
