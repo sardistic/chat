@@ -405,7 +405,12 @@ function MainApp({ user, onLeaveRoom }) {
               style={{ flex: 1, fontSize: '12px', padding: '6px', border: 'none', background: activeTab === 'services' ? 'rgba(255,255,255,0.1)' : 'transparent' }}
               onClick={() => setActiveTab('services')}
             >
-              Users ({peers.size + 1 + ircUsers.size})
+              Users ({(() => {
+                // Deduplicate: count web users + IRC users not already in web
+                const webUserNames = new Set([user.name, ...Array.from(peers.values()).map(p => p.user?.name).filter(Boolean)]);
+                const uniqueIrcCount = Array.from(ircUsers.values()).filter(u => !webUserNames.has(u.name)).length;
+                return webUserNames.size + uniqueIrcCount;
+              })()})
             </button>
           </div>
 
