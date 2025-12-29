@@ -324,11 +324,11 @@ function MainApp({ user, onLeaveRoom }) {
 
           {/* Avatar Aquarium */}
           <div style={{
-            position: 'absolute',
+            position: 'fixed',
             bottom: 0,
             left: 0,
-            right: 0,
-            height: '140px', /* Increased height for bubbles */
+            right: 'var(--dynamic-sidebar-w, 320px)', /* Stop before sidebar */
+            height: '100px',
             pointerEvents: 'none',
             overflow: 'visible',
             zIndex: 5,
@@ -336,7 +336,7 @@ function MainApp({ user, onLeaveRoom }) {
             alignItems: 'flex-end',
             justifyContent: 'center',
             gap: '24px',
-            paddingBottom: '20px'
+            paddingBottom: '12px'
           }}>
             {/* Collect & Deduplicate Users */}
             {(() => {
