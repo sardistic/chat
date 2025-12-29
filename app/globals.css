@@ -1303,15 +1303,16 @@ body {
     padding: 0 !important;
   }
 
-  /* Main stage takes full width, reduced height */
+  /* Main stage takes full width, positioned below header */
   .main-stage {
     width: 100% !important;
-    height: 40vh !important;
-    min-height: 200px;
+    height: calc(45vh - 25px) !important;
+    min-height: 180px;
     margin-right: 0 !important;
+    margin-top: 0 !important;
   }
 
-  /* Sidebar becomes bottom panel */
+  /* Sidebar becomes bottom panel, below main stage */
   .floating-sidebar {
     position: fixed !important;
     bottom: 0 !important;
@@ -1319,7 +1320,7 @@ body {
     right: 0 !important;
     top: auto !important;
     width: 100% !important;
-    height: 55vh !important;
+    height: calc(55vh - 25px) !important;
     border-radius: 16px 16px 0 0 !important;
     margin: 0 !important;
   }
