@@ -36,7 +36,7 @@ function groupMessages(messages) {
 }
 
 export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onUserClick = () => { } }) {
-    const { messages, sendMessage, isLoading, typingUsers } = useChat(roomId, user);
+    const { messages, sendMessage, isLoading, typingUsers, handleTyping } = useChat(roomId, user);
     const [inputValue, setInputValue] = useState('');
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
