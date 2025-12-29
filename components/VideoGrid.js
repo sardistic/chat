@@ -238,6 +238,44 @@ function VideoTile({
                 }}
             />
 
+            {/* Top Right Menu Trigger */}
+            <div className={`tile-menu-trigger ${showMenu ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); setShowPicker(false); }}>
+                <Icon icon="fa:ellipsis-v" width="12" />
+            </div>
+
+            {/* Dropdown Menu - Positioned relative to tile */}
+            {showMenu && (
+                <div className="tile-menu" onClick={e => e.stopPropagation()}>
+                    <div className="menu-section">
+                        <div className="menu-label">Local Volume</div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={volume}
+                            onChange={(e) => setVolume(parseFloat(e.target.value))}
+                            className="volume-slider"
+                            onClick={e => e.stopPropagation()}
+                        />
+                    </div>
+                    <div className="menu-divider" />
+                    <button className="menu-item" onClick={() => setIsLocallyMuted(!isLocallyMuted)}>
+                        <Icon icon={isLocallyMuted ? "fa:microphone" : "fa:microphone-slash"} width="12" />
+                        {isLocallyMuted ? "Unmute" : "Mute"}
+                    </button>
+                    <button className="menu-item" onClick={() => setIsVideoHidden(!isVideoHidden)}>
+                        <Icon icon={isVideoHidden ? "fa:video-camera" : "fa:eye-slash"} width="12" />
+                        {isVideoHidden ? "Show Cam" : "Disable Cam"}
+                    </button>
+                    <button className="menu-item" onClick={(e) => { onClick(e); setShowMenu(false); }}>
+                        <Icon icon="fa:user" width="12" />
+                        Profile
+                    </button>
+                </div>
+            )}
+
             <CameraReactiveGrid
                 videoRef={tileVideoRef}
                 isActive={isVideoEnabled && !!stream}
@@ -291,90 +329,33 @@ function VideoTile({
                     </div>
 
                     {/* Reaction Button */}
-                    <div className="reaction-control" style={{ position: 'relative', pointerEvents: 'auto', display: 'flex', gap: '4px' }}>
-                        {/* Menu Button */}
-                        <button
-                            className="reaction-btn"
-                            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); setShowPicker(false); }}
-                            title="Options"
-                            style={{ padding: '2px 4px', fontSize: '12px' }}
-                        >
-                            <Icon icon="fa:ellipsis-v" width="10" />
-                        </button>
+                    {/* Menu logic moved to top-right */}
 
-                        <button
-                            className="reaction-btn"
-                            onClick={(e) => handleReactionClick(e, '❤️')}
-                            onMouseEnter={() => setShowPicker(true)}
-                            title="React"
-                            style={{ padding: '2px 4px', fontSize: '12px' }}
-                        >
-                            ❤️
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {showMenu && (
-                            <div className="tile-menu" onClick={e => e.stopPropagation()}>
-                                <div className="menu-section">
-                                    <div className="menu-label">Volume</div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.1"
-                                        value={volume}
-                                        onChange={(e) => setVolume(parseFloat(e.target.value))}
-                                        className="volume-slider"
-                                        onClick={e => e.stopPropagation()}
-                                    />
-                                </div>
-                                <div className="menu-divider" />
-                                <button className="menu-item" onClick={() => setIsLocallyMuted(!isLocallyMuted)}>
-                                    <Icon icon={isLocallyMuted ? "fa:microphone" : "fa:microphone-slash"} width="14" />
-                                    {isLocallyMuted ? "Unmute" : "Mute Locally"}
+                    {/* Mini Emoji Picker */}
+                    {showPicker && (
+                        <div className="emoji-picker-mini" onClick={e => e.stopPropagation()} style={{ right: '30px' }}>
+                            {['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+                                <button
+                                    key={emoji}
+                                    onClick={(e) => handleReactionClick(e, emoji)}
+                                >
+                                    {emoji}
                                 </button>
-                                <button className="menu-item" onClick={() => setIsVideoHidden(!isVideoHidden)}>
-                                    <Icon icon={isVideoHidden ? "fa:video-camera" : "fa:eye-slash"} width="14" />
-                                    {isVideoHidden ? "Show Video" : "Disable Video"}
-                                </button>
-                                <button className="menu-item" onClick={(e) => { onClick(e); setShowMenu(false); }}>
-                                    <Icon icon="fa:user" width="14" />
-                                    Profile
-                                </button>
-                                <div className="menu-divider" />
-                                <div className="menu-label" style={{ color: 'var(--status-busy)', fontSize: '9px' }}>MODERATION</div>
-                                <button className="menu-item danger">
-                                    <Icon icon="fa:gavel" width="14" />
-                                    Kick User
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Mini Emoji Picker */}
-                        {showPicker && (
-                            <div className="emoji-picker-mini" onClick={e => e.stopPropagation()} style={{ right: '30px' }}>
-                                {['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
-                                    <button
-                                        key={emoji}
-                                        onClick={(e) => handleReactionClick(e, emoji)}
-                                    >
-                                        {emoji}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div style={{ flex: 1 }}></div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                <div className="status-icons">
-                    {!isAudioEnabled && <span><Icon icon="fa:microphone-slash" width="14" /></span>}
-                    {!isLocal && user?.isDeafened && <span><Icon icon="fontelico:headphones" width="14" /></span>}
-                    {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}><Icon icon="fa:comment" width="14" /></span>}
-                </div>
+                <div style={{ flex: 1 }}></div>
+            </div>
+
+            <div className="status-icons">
+                {!isAudioEnabled && <span><Icon icon="fa:microphone-slash" width="14" /></span>}
+                {!isLocal && user?.isDeafened && <span><Icon icon="fontelico:headphones" width="14" /></span>}
+                {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}><Icon icon="fa:comment" width="14" /></span>}
             </div>
         </div>
+
     );
 }
 
