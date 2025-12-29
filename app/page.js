@@ -364,15 +364,15 @@ function MainApp({ user, onLeaveRoom }) {
                         </div>
                       )}
 
-                      <div style={{ position: 'relative', width: '56px', height: '56px' }}>
+                      <div style={{ position: 'relative', width: '56px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div className="avatar-name" style={{ marginBottom: '4px' }}>
+                          {u.name}
+                        </div>
                         <img
                           src={u.avatar || `/api/avatar/${u.name}`}
                           alt={u.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
+                          style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}
                         />
-                        <div className="avatar-name">
-                          {u.name}
-                        </div>
                       </div>
                     </div>
                   );
