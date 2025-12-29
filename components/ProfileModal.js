@@ -71,17 +71,6 @@ export default function ProfileModal({
     const modalRef = useRef(null);
     const { socket } = useSocket();
 
-    // Close on click outside
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (modalRef.current && !modalRef.current.contains(e.target)) {
-                onClose();
-            }
-        };
-        if (isOpen) document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isOpen, onClose]);
-
     // Close on Escape key
     useEffect(() => {
         const handleEscape = (e) => { if (e.key === "Escape") onClose(); };
