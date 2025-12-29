@@ -342,7 +342,25 @@ function VideoTile({
                     </div>
 
                     {/* Reaction Button */}
-                    {/* Menu logic moved to top-right */}
+                    <button
+                        className="reaction-btn"
+                        onClick={(e) => { e.stopPropagation(); setShowPicker(!showPicker); }}
+                        style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '28px',
+                            height: '28px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginLeft: 'auto'
+                        }}
+                        title="React"
+                    >
+                        <Icon icon="fa:smile-o" width="16" style={{ color: 'rgba(255,255,255,0.8)' }} />
+                    </button>
 
                     {/* Mini Emoji Picker */}
                     {showPicker && (
