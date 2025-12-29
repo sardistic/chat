@@ -325,18 +325,17 @@ function MainApp({ user, onLeaveRoom }) {
           {/* Avatar Aquarium */}
           <div style={{
             position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 'var(--dynamic-sidebar-w, 320px)', /* Stop before sidebar */
-            height: '100px',
+            bottom: '12px',
+            right: 'calc(var(--dynamic-sidebar-w, 320px) + 12px)',
+            height: '80px',
             pointerEvents: 'none',
             overflow: 'visible',
             zIndex: 5,
             display: 'flex',
+            flexDirection: 'row-reverse', /* Local user on the right */
             alignItems: 'flex-end',
-            justifyContent: 'center',
-            gap: '24px',
-            paddingBottom: '12px'
+            gap: '16px',
+            paddingRight: '8px'
           }}>
             {/* Collect & Deduplicate Users */}
             {(() => {
