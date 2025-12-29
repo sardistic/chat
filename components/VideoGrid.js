@@ -359,14 +359,23 @@ function VideoTile({
                             }}
                             title="React"
                         >
-                            <Icon icon="fa:smile-o" width="14" style={{ color: '#fff' }} />
+                            ❤️
                         </button>
                     </div>
 
-                    {/* Mini Emoji Picker */}
+                    {/* Mini Emoji Picker - positioned above */}
                     {showPicker && (
-                        <div className="emoji-picker-mini" onClick={e => e.stopPropagation()} style={{ right: '30px' }}>
-                            {['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+                        <div
+                            className="emoji-picker-mini"
+                            onClick={e => e.stopPropagation()}
+                            style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                left: '0',
+                                marginBottom: '8px'
+                            }}
+                        >
+                            {['❤️', '🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
                                 <button
                                     key={emoji}
                                     onClick={(e) => handleReactionClick(e, emoji)}
