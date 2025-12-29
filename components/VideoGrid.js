@@ -65,6 +65,12 @@ function VideoTile({
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+
+    // Local overrides
+    const [volume, setVolume] = useState(1);
+    const [isLocallyMuted, setIsLocallyMuted] = useState(false);
+    const [isVideoHidden, setIsVideoHidden] = useState(false);
 
     // Internal state for reactions to render (cleans itself up)
     const [activeReactions, setActiveReactions] = useState([]);
@@ -98,10 +104,12 @@ function VideoTile({
 
     // Update video element
     useEffect(() => {
-        if (tileVideoRef.current && stream) {
-            tileVideoRef.current.srcObject = stream;
+        if (tileVideoRef.current) {
+            if (stream) tileVideoRef.current.srcObject = stream;
+            tileVideoRef.current.volume = volume;
+            tileVideoRef.current.muted = isLocal || isDeafened || isLocallyMuted;
         }
-    }, [stream]);
+    }, [stream, volume, isLocal, isDeafened, isLocallyMuted]);
 
     const userColor = getUserColor(user?.name);
     const background = getFadedBackground(userColor);
@@ -197,7 +205,7 @@ function VideoTile({
             className={`tile effect-${effectIntensity} ${borderStyle.animation}`}
             style={{ background }}
             onClick={onClick}
-            onMouseLeave={() => setShowPicker(false)}
+            onMouseLeave={() => { setShowPicker(false); setShowMenu(false); }}
         >
             {/* Reaction Overlay */}
             <div className="reaction-layer">
@@ -236,11 +244,10 @@ function VideoTile({
                 reactionTimestamp={latestReactionTime.current}
             />
 
-            {isVideoEnabled && stream ? (
+            {isVideoEnabled && stream && !isVideoHidden ? (
                 <video
                     ref={tileVideoRef}
                     autoPlay
-                    muted={isLocal || isDeafened}
                     playsInline
                     className="video"
                     style={{
@@ -284,7 +291,17 @@ function VideoTile({
                     </div>
 
                     {/* Reaction Button */}
-                    <div className="reaction-control" style={{ position: 'relative', pointerEvents: 'auto' }}>
+                    <div className="reaction-control" style={{ position: 'relative', pointerEvents: 'auto', display: 'flex', gap: '4px' }}>
+                        {/* Menu Button */}
+                        <button
+                            className="reaction-btn"
+                            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); setShowPicker(false); }}
+                            title="Options"
+                            style={{ padding: '2px 4px', fontSize: '12px' }}
+                        >
+                            <Icon icon="fa:ellipsis-v" width="10" />
+                        </button>
+
                         <button
                             className="reaction-btn"
                             onClick={(e) => handleReactionClick(e, '❤️')}
@@ -295,9 +312,47 @@ function VideoTile({
                             ❤️
                         </button>
 
+                        {/* Dropdown Menu */}
+                        {showMenu && (
+                            <div className="tile-menu" onClick={e => e.stopPropagation()}>
+                                <div className="menu-section">
+                                    <div className="menu-label">Volume</div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.1"
+                                        value={volume}
+                                        onChange={(e) => setVolume(parseFloat(e.target.value))}
+                                        className="volume-slider"
+                                        onClick={e => e.stopPropagation()}
+                                    />
+                                </div>
+                                <div className="menu-divider" />
+                                <button className="menu-item" onClick={() => setIsLocallyMuted(!isLocallyMuted)}>
+                                    <Icon icon={isLocallyMuted ? "fa:microphone" : "fa:microphone-slash"} width="14" />
+                                    {isLocallyMuted ? "Unmute" : "Mute Locally"}
+                                </button>
+                                <button className="menu-item" onClick={() => setIsVideoHidden(!isVideoHidden)}>
+                                    <Icon icon={isVideoHidden ? "fa:video-camera" : "fa:eye-slash"} width="14" />
+                                    {isVideoHidden ? "Show Video" : "Disable Video"}
+                                </button>
+                                <button className="menu-item" onClick={(e) => { onClick(e); setShowMenu(false); }}>
+                                    <Icon icon="fa:user" width="14" />
+                                    Profile
+                                </button>
+                                <div className="menu-divider" />
+                                <div className="menu-label" style={{ color: 'var(--status-busy)', fontSize: '9px' }}>MODERATION</div>
+                                <button className="menu-item danger">
+                                    <Icon icon="fa:gavel" width="14" />
+                                    Kick User
+                                </button>
+                            </div>
+                        )}
+
                         {/* Mini Emoji Picker */}
                         {showPicker && (
-                            <div className="emoji-picker-mini" onClick={e => e.stopPropagation()}>
+                            <div className="emoji-picker-mini" onClick={e => e.stopPropagation()} style={{ right: '30px' }}>
                                 {['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
                                     <button
                                         key={emoji}

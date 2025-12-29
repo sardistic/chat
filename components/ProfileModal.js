@@ -1,10 +1,8 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import {
-    Icon
-} from '@iconify/react';
+import { Icon } from '@iconify/react';
+import { useSocket } from "@/lib/socket";
 
 // Discord badge flags
 const DISCORD_FLAGS = {
@@ -23,17 +21,17 @@ const DISCORD_FLAGS = {
 
 // Badge display info
 const BADGE_INFO = {
-    DISCORD_EMPLOYEE: { name: "Discord Staff", icon: <Icon icon="fa:briefcase" width="16" /> },
-    PARTNERED_SERVER_OWNER: { name: "Partnered Server Owner", icon: <Icon icon="fa:handshake-o" width="16" /> },
-    HYPESQUAD_EVENTS: { name: "HypeSquad Events", icon: <Icon icon="fa:shield" width="16" /> },
-    BUG_HUNTER_LEVEL_1: { name: "Bug Hunter", icon: <Icon icon="fa:bug" width="16" /> },
-    HOUSE_BRAVERY: { name: "HypeSquad Bravery", icon: <Icon icon="fa:shield" width="16" color="#9C89F7" /> },
-    HOUSE_BRILLIANCE: { name: "HypeSquad Brilliance", icon: <Icon icon="fa:shield" width="16" color="#F47B67" /> },
-    HOUSE_BALANCE: { name: "HypeSquad Balance", icon: <Icon icon="fa:shield" width="16" color="#4FD1C5" /> },
-    EARLY_SUPPORTER: { name: "Early Supporter", icon: <Icon icon="fa:star" width="16" /> },
-    BUG_HUNTER_LEVEL_2: { name: "Bug Hunter Gold", icon: <Icon icon="fa:bug" width="16" color="#FCD34D" /> },
-    VERIFIED_BOT_DEVELOPER: { name: "Verified Bot Developer", icon: <Icon icon="fa:code" width="16" /> },
-    ACTIVE_DEVELOPER: { name: "Active Developer", icon: <Icon icon="fa:code" width="16" /> },
+    DISCORD_EMPLOYEE: { name: "Discord Staff", icon: <Icon icon="fa:briefcase" width="14" /> },
+    PARTNERED_SERVER_OWNER: { name: "Partnered Server Owner", icon: <Icon icon="fa:handshake-o" width="14" /> },
+    HYPESQUAD_EVENTS: { name: "HypeSquad Events", icon: <Icon icon="fa:shield" width="14" /> },
+    BUG_HUNTER_LEVEL_1: { name: "Bug Hunter", icon: <Icon icon="fa:bug" width="14" /> },
+    HOUSE_BRAVERY: { name: "HypeSquad Bravery", icon: <Icon icon="fa:shield" width="14" color="#9C89F7" /> },
+    HOUSE_BRILLIANCE: { name: "HypeSquad Brilliance", icon: <Icon icon="fa:shield" width="14" color="#F47B67" /> },
+    HOUSE_BALANCE: { name: "HypeSquad Balance", icon: <Icon icon="fa:shield" width="14" color="#4FD1C5" /> },
+    EARLY_SUPPORTER: { name: "Early Supporter", icon: <Icon icon="fa:star" width="14" /> },
+    BUG_HUNTER_LEVEL_2: { name: "Bug Hunter Gold", icon: <Icon icon="fa:bug" width="14" color="#FCD34D" /> },
+    VERIFIED_BOT_DEVELOPER: { name: "Verified Bot Developer", icon: <Icon icon="fa:code" width="14" /> },
+    ACTIVE_DEVELOPER: { name: "Active Developer", icon: <Icon icon="fa:code" width="14" /> },
 };
 
 // Parse badges from public_flags
@@ -50,20 +48,21 @@ function getBadges(flags) {
 
 // Get premium badge
 function getPremiumBadge(premiumType) {
-    if (premiumType === 1) return { name: "Nitro Classic", icon: <Icon icon="fa:rocket" width="16" /> };
-    if (premiumType === 2) return { name: "Nitro", icon: <Icon icon="fa:rocket" width="16" /> };
-    if (premiumType === 3) return { name: "Nitro Basic", icon: <Icon icon="fa:rocket" width="16" /> };
+    if (premiumType === 1) return { name: "Nitro Classic", icon: <Icon icon="fa:rocket" width="14" /> };
+    if (premiumType === 2) return { name: "Nitro", icon: <Icon icon="fa:rocket" width="14" /> };
+    if (premiumType === 3) return { name: "Nitro Basic", icon: <Icon icon="fa:rocket" width="14" /> };
     return null;
 }
 
 // Convert accent color integer to hex
 function accentToHex(accent) {
     if (!accent) return null;
-    return `#${accent.toString(16).padStart(6, '0')} `;
+    return `#${accent.toString(16).padStart(6, '0')}`;
 }
 
 export default function ProfileModal({ user, isOpen, onClose, position }) {
     const modalRef = useRef(null);
+    const { socket } = useSocket();
 
     // Close on click outside
     useEffect(() => {
@@ -72,21 +71,14 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                 onClose();
             }
         };
-
-        if (isOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
+        if (isOpen) document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isOpen, onClose]);
 
     // Close on Escape key
     useEffect(() => {
-        const handleEscape = (e) => {
-            if (e.key === "Escape") onClose();
-        };
-        if (isOpen) {
-            document.addEventListener("keydown", handleEscape);
-        }
+        const handleEscape = (e) => { if (e.key === "Escape") onClose(); };
+        if (isOpen) document.addEventListener("keydown", handleEscape);
         return () => document.removeEventListener("keydown", handleEscape);
     }, [isOpen, onClose]);
 
@@ -94,14 +86,6 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
     const [stats, setStats] = useState(null);
     const [connectionStatus, setConnectionStatus] = useState(null);
     const [loadingStats, setLoadingStats] = useState(false);
-
-    // We need socket to fetch stats
-    // Assuming socket is available via global context or passed prop (it's not passed currently)
-    // We can try to import useSocket, but ProfileModal is a child component.
-    // Better to just fetch via API or if we have access to socket.
-    // The previous implementation of MainApp uses useSocket but doesn't pass it here.
-    // Let's import useSocket hook.
-    const { socket } = require("@/lib/socket").useSocket();
 
     useEffect(() => {
         if (isOpen && user && user.id && socket) {
@@ -116,32 +100,37 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
         }
     }, [isOpen, user, socket]);
 
-    // Format utility
     const formatTime = (seconds) => {
         if (!seconds) return "0h";
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
-        if (h > 0) return `${h}h ${m} m`;
-        return `${m} m`;
+        if (h > 0) return `${h}h ${m}m`;
+        return `${m}m`;
     };
 
     if (!isOpen || !user) return null;
 
     const badges = getBadges(user.publicFlags);
     const premiumBadge = getPremiumBadge(user.premiumType);
-    const accentColor = accentToHex(user.accentColor) || "#5865F2";
-    const bannerUrl = user.banner;
+    const accentColor = accentToHex(user.accentColor) || "var(--accent-primary)";
     const avatarUrl = user.image || user.avatar || `/api/avatar/${user.name}`;
     const isGuest = user.isGuest !== false && !user.discordId;
     const customStatus = user.customStatus;
 
-    // Calculate position (try to show near click but stay in viewport)
+    // Viewport-aware positioning
     const modalStyle = {
         position: "fixed",
         zIndex: 9999,
+        background: "rgba(15, 16, 19, 0.95)", // Solid dark background
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: "12px",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+        width: "300px",
+        overflow: "hidden",
         ...(position ? {
-            top: Math.min(position.y, window.innerHeight - 450),
-            left: Math.min(position.x, window.innerWidth - 340),
+            top: Math.min(position.y, window.innerHeight - 400),
+            left: Math.min(position.x, window.innerWidth - 320),
         } : {
             top: "50%",
             left: "50%",
@@ -149,148 +138,105 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
         }),
     };
 
-    const StatItem = ({ icon, label, value, color }) => (
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: color }}>{value}</div>
-            <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>{label}</div>
+    const InfoChip = ({ label, value, icon, color }) => (
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '6px 8px', borderRadius: '6px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Icon icon={icon} width="10" /> {label}
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 'bold', color: color || 'white' }}>{value}</div>
         </div>
     );
 
     return (
-        <div className="profile-modal-overlay" style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
+        <div className="profile-modal-overlay" style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={onClose}>
             <div ref={modalRef} className="profile-modal" style={modalStyle} onClick={e => e.stopPropagation()}>
-                {/* Close button */}
-                <button className="close-btn" onClick={onClose} style={{
-                    position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none',
-                    color: 'white', cursor: 'pointer', fontSize: '24px', zIndex: 10
-                }}>
-                    <Icon icon="fa:times" width="24" />
-                </button>
-                {/* Banner */}
-                <div
-                    className="profile-banner"
-                    style={{
-                        height: "100px",
-                        borderRadius: "12px 12px 0 0",
-                        background: bannerUrl
-                            ? `url(${bannerUrl}) center / cover`
-                            : `linear - gradient(135deg, ${accentColor} 0 %, ${accentColor}88 100 %)`,
-                    }}
-                />
+                {/* Thin colored top strip */}
+                <div style={{ height: '4px', background: accentColor }} />
 
-                {/* Avatar */}
-                <div className="profile-avatar-wrapper">
-                    <div
-                        className="profile-avatar"
-                        style={{
-                            backgroundImage: `url(${avatarUrl})`,
-                        }}
-                    >
-                        {/* Online status dot */}
-                        <div className={`profile - status - dot ${connectionStatus?.isOnline ? 'online' : 'offline'} `}
-                            title={connectionStatus?.isOnline ? "Online" : "Offline"}
-                            style={{ background: connectionStatus?.isOnline ? '#3ba55d' : '#747f8d' }}
+                {/* Header: Compact, side-by-side */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', position: 'relative' }}>
+                    <div style={{ position: 'relative' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: `url(${avatarUrl}) center/cover`, border: `2px solid ${accentColor}` }} />
+                        <div className={`profile-status-dot ${connectionStatus?.isOnline ? 'online' : 'offline'}`}
+                            style={{ width: '12px', height: '12px', border: '2px solid #0f1013', position: 'absolute', bottom: 0, right: 0, background: connectionStatus?.isOnline ? '#3ba55d' : '#747f8d', borderRadius: '50%' }}
                         />
                     </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {user.globalName || user.name}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {user.username || user.name || "User"}
+                        </div>
+                        {/* Badges Row */}
+                        {(badges.length > 0 || premiumBadge) && (
+                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                                {premiumBadge && <span title={premiumBadge.name} style={{ color: '#fff' }}>{premiumBadge.icon}</span>}
+                                {badges.map(b => <span key={b.key} title={b.name} style={{ color: '#fff' }}>{b.icon}</span>)}
+                            </div>
+                        )}
+                    </div>
+                    {/* Tiny X button */}
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', padding: '4px', alignSelf: 'flex-start' }}>
+                        <Icon icon="fa:times" width="12" />
+                    </button>
                 </div>
 
-                {/* Content */}
-                <div className="profile-content">
-                    {/* Badges */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', minHeight: '24px' }}>
-                        {premiumBadge && (
-                            <span className="profile-badge" title={premiumBadge.name}>
-                                {premiumBadge.icon}
-                            </span>
-                        )}
-                        {badges.map((badge) => (
-                            <span key={badge.key} className="profile-badge" title={badge.name}>
-                                {badge.icon}
-                            </span>
-                        ))}
-                    </div>
+                {/* Quick Info Grid */}
+                <div style={{ display: 'flex', gap: '8px', padding: '0 16px 12px' }}>
+                    <InfoChip label="Type" value={isGuest ? "Guest" : "Member"} icon="fa:user" />
+                    <InfoChip label="Status" value={connectionStatus?.isOnline ? "Online" : "Away"} icon="fa:circle" color={connectionStatus?.isOnline ? "var(--status-online)" : "var(--text-muted)"} />
+                    <InfoChip label="Cam" value={stats?.camTimeSeconds > 0 ? formatTime(stats.camTimeSeconds) : "Off"} icon="fa:video-camera" />
+                </div>
 
-                    {/* Name */}
-                    <div className="profile-name-section">
-                        <h2 className="profile-display-name">
-                            {user.globalName || user.name || "Unknown User"}
-                        </h2>
-                        <p className="profile-username">
-                            {user.username || user.name}
-                        </p>
-                    </div>
-
-                    {/* Tabs */}
-                    <div style={{ display: 'flex', gap: '16px', margin: '16px 0 12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                {/* Tabs */}
+                <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0 16px' }}>
+                    {['Overview', 'Activity'].map(tab => (
                         <button
-                            onClick={() => setActiveTab('info')}
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
                             style={{
-                                background: 'none', border: 'none', color: activeTab === 'info' ? 'white' : '#888',
-                                borderBottom: activeTab === 'info' ? '2px solid white' : 'none', padding: '4px 8px', cursor: 'pointer'
+                                flex: 1, padding: '8px', background: 'none', border: 'none',
+                                color: activeTab === tab ? 'white' : 'var(--text-muted)',
+                                borderBottom: activeTab === tab ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                                fontSize: '12px', fontWeight: '600', cursor: 'pointer'
                             }}
                         >
-                            User Info
+                            {tab}
                         </button>
-                        <button
-                            onClick={() => setActiveTab('stats')}
-                            style={{
-                                background: 'none', border: 'none', color: activeTab === 'stats' ? 'white' : '#888',
-                                borderBottom: activeTab === 'stats' ? '2px solid white' : 'none', padding: '4px 8px', cursor: 'pointer'
-                            }}
-                        >
-                            Stats & Points
-                        </button>
-                    </div>
+                    ))}
+                </div>
 
-                    {activeTab === 'info' ? (
-                        <>
-                            {/* Status Message */}
+                {/* Tab Content */}
+                <div style={{ padding: '16px', minHeight: '120px' }}>
+                    {activeTab === 'Overview' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {customStatus && (
-                                <div className="profile-section">
-                                    <h3 className="profile-section-title">STATUS</h3>
-                                    <p className="profile-section-content" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <Icon icon="fontelico:emo-happy" width="16" style={{ opacity: 0.7 }} /> {customStatus}
-                                    </p>
+                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px', fontSize: '12px' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Status</span>
+                                    {customStatus}
                                 </div>
                             )}
-
-                            <div className="profile-section">
-                                <h3 className="profile-section-title">ABOUT ME</h3>
-                                <p className="profile-section-content">
-                                    {isGuest
-                                        ? "This is a guest user."
-                                        : "No bio available"
-                                    }
-                                </p>
+                            <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>About Me</div>
+                                <div style={{ fontSize: '13px', lineHeight: '1.4', color: 'rgba(255,255,255,0.8)' }}>
+                                    {isGuest ? "This is a guest user." : "No bio available."}
+                                </div>
                             </div>
+                            {!isGuest && (
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 'auto' }}>
+                                    ID: <span style={{ fontFamily: 'monospace' }}>{user.discordId}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                            {/* Member since - only for Discord users */}
-                            {!isGuest && user.discordId && (
-                                <div className="profile-section">
-                                    <h3 className="profile-section-title">DISCORD ID</h3>
-                                    <p className="profile-section-content" style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}>
-                                        {user.discordId}
-                                    </p>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        /* Stats Tab */
-                        <div className="profile-section">
-                            {loadingStats ? (
-                                <div style={{ fontSize: '13px', color: '#888', padding: '20px', textAlign: 'center' }}>Loading stats...</div>
-                            ) : stats ? (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <StatItem icon={<Icon icon="fa:star" width="20" />} label="Chat Points" value={stats?.chatPoints || 0} color="#FFD700" />
-                                    <StatItem icon={<Icon icon="fa:clock-o" width="20" />} label="Time Online" value={formatTime(stats?.timeOnSiteSeconds || 0)} color="#6495ED" />
-                                    <StatItem icon={<Icon icon="fa:comment" width="20" />} label="Messages" value={stats?.messagesSent || 0} color="#43B581" />
-                                    <StatItem icon={<Icon icon="fa:video-camera" width="20" />} label="Cam Time" value={formatTime(stats?.camTimeSeconds || 0)} color="#FF6F61" />
-                                    <StatItem icon={<Icon icon="fontelico:emo-wink" width="20" />} label="Emotes" value={(stats?.emotesGiven || 0)} color="#FAA61A" />
-                                    <StatItem icon={<Icon icon="fontelico:emo-surprised" width="20" />} label="Emotes Recv" value={(stats?.emotesReceived || 0)} color="#FAA61A" />
-                                </div>
-                            ) : (
-                                <div style={{ fontSize: '13px', color: '#888' }}>No stats available.</div>
-                            )}
+                    {activeTab === 'Activity' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <InfoChip label="Chat Points" value={stats?.chatPoints || 0} icon="fa:star" color="#FFD700" />
+                            <InfoChip label="Messages" value={stats?.messagesSent || 0} icon="fa:comment" />
+                            <InfoChip label="Emotes Sent" value={stats?.emotesGiven || 0} icon="fontelico:emo-wink" />
+                            <InfoChip label="Time Online" value={formatTime(stats?.timeOnSiteSeconds || 0)} icon="fa:clock-o" />
                         </div>
                     )}
                 </div>
