@@ -88,6 +88,41 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
         return () => document.removeEventListener("keydown", handleEscape);
     }, [isOpen, onClose]);
 
+    const [activeTab, setActiveTab] = useState('info');
+    const [stats, setStats] = useState(null);
+    const [connectionStatus, setConnectionStatus] = useState(null);
+    const [loadingStats, setLoadingStats] = useState(false);
+
+    // We need socket to fetch stats
+    // Assuming socket is available via global context or passed prop (it's not passed currently)
+    // We can try to import useSocket, but ProfileModal is a child component.
+    // Better to just fetch via API or if we have access to socket.
+    // The previous implementation of MainApp uses useSocket but doesn't pass it here.
+    // Let's import useSocket hook.
+    const { socket } = require("@/lib/socket").useSocket();
+
+    useEffect(() => {
+        if (isOpen && user && user.id && socket) {
+            setLoadingStats(true);
+            socket.emit("fetch-profile-stats", { userId: user.id }, (response) => {
+                if (response && !response.error) {
+                    setStats(response.stats);
+                    setConnectionStatus(response.status);
+                }
+                setLoadingStats(false);
+            });
+        }
+    }, [isOpen, user, socket]);
+
+    // Format utility
+    const formatTime = (seconds) => {
+        if (!seconds) return "0h";
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        if (h > 0) return `${h}h ${m}m`;
+        return `${m}m`;
+    };
+
     if (!isOpen || !user) return null;
 
     const badges = getBadges(user.publicFlags);
@@ -102,7 +137,7 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
         position: "fixed",
         zIndex: 9999,
         ...(position ? {
-            top: Math.min(position.y, window.innerHeight - 400),
+            top: Math.min(position.y, window.innerHeight - 450),
             left: Math.min(position.x, window.innerWidth - 340),
         } : {
             top: "50%",
@@ -112,8 +147,8 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
     };
 
     return (
-        <div className="profile-modal-overlay" style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.5)" }}>
-            <div ref={modalRef} className="profile-modal" style={modalStyle}>
+        <div className="profile-modal-overlay" style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
+            <div ref={modalRef} className="profile-modal" style={modalStyle} onClick={e => e.stopPropagation()}>
                 {/* Banner */}
                 <div
                     className="profile-banner"
@@ -135,27 +170,28 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                         }}
                     >
                         {/* Online status dot */}
-                        <div className="profile-status-dot" />
+                        <div className={`profile-status-dot ${connectionStatus?.isOnline ? 'online' : 'offline'}`}
+                            title={connectionStatus?.isOnline ? "Online" : "Offline"}
+                            style={{ background: connectionStatus?.isOnline ? '#3ba55d' : '#747f8d' }}
+                        />
                     </div>
                 </div>
 
                 {/* Content */}
                 <div className="profile-content">
                     {/* Badges */}
-                    {(badges.length > 0 || premiumBadge) && (
-                        <div className="profile-badges">
-                            {premiumBadge && (
-                                <span className="profile-badge" title={premiumBadge.name}>
-                                    {premiumBadge.emoji}
-                                </span>
-                            )}
-                            {badges.map((badge) => (
-                                <span key={badge.key} className="profile-badge" title={badge.name}>
-                                    {badge.emoji}
-                                </span>
-                            ))}
-                        </div>
-                    )}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', minHeight: '24px' }}>
+                        {premiumBadge && (
+                            <span className="profile-badge" title={premiumBadge.name}>
+                                {premiumBadge.emoji}
+                            </span>
+                        )}
+                        {badges.map((badge) => (
+                            <span key={badge.key} className="profile-badge" title={badge.name}>
+                                {badge.emoji}
+                            </span>
+                        ))}
+                    </div>
 
                     {/* Name */}
                     <div className="profile-name-section">
@@ -163,59 +199,99 @@ export default function ProfileModal({ user, isOpen, onClose, position }) {
                             {user.globalName || user.name || "Unknown User"}
                         </h2>
                         <p className="profile-username">
-                            {isGuest ? (
-                                <span style={{ color: "var(--text-muted)" }}>Guest</span>
-                            ) : (
-                                <>
-                                    {user.username || user.name}
-                                    {user.discriminator && user.discriminator !== "0" && (
-                                        <span style={{ color: "var(--text-muted)" }}>#{user.discriminator}</span>
-                                    )}
-                                </>
+                            {user.username || user.name}
+                        </p>
+                    </div>
+
+                    {/* Tabs */}
+                    <div style={{ display: 'flex', gap: '16px', margin: '16px 0 12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                        <button
+                            onClick={() => setActiveTab('info')}
+                            style={{
+                                background: 'none', border: 'none', color: activeTab === 'info' ? 'white' : '#888',
+                                borderBottom: activeTab === 'info' ? '2px solid white' : 'none', padding: '4px 8px', cursor: 'pointer'
+                            }}
+                        >
+                            User Info
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('stats')}
+                            style={{
+                                background: 'none', border: 'none', color: activeTab === 'stats' ? 'white' : '#888',
+                                borderBottom: activeTab === 'stats' ? '2px solid white' : 'none', padding: '4px 8px', cursor: 'pointer'
+                            }}
+                        >
+                            Stats & Points
+                        </button>
+                    </div>
+
+                    {activeTab === 'info' ? (
+                        <>
+                            {/* Info sections */}
+                            {user.customStatus && (
+                                <div className="profile-section">
+                                    <h3 className="profile-section-title">STATUS</h3>
+                                    <p className="profile-section-content" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        💬 {user.customStatus}
+                                    </p>
+                                </div>
                             )}
-                        </p>
-                    </div>
 
-                    {/* Divider */}
-                    <div className="profile-divider" />
+                            <div className="profile-section">
+                                <h3 className="profile-section-title">ABOUT ME</h3>
+                                <p className="profile-section-content">
+                                    {isGuest
+                                        ? "This is a guest user."
+                                        : "No bio available"
+                                    }
+                                </p>
+                            </div>
 
-                    {/* Info sections */}
-                    {user.customStatus && (
+                            {/* Member since - only for Discord users */}
+                            {!isGuest && user.discordId && (
+                                <div className="profile-section">
+                                    <h3 className="profile-section-title">DISCORD ID</h3>
+                                    <p className="profile-section-content" style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+                                        {user.discordId}
+                                    </p>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        /* Stats Tab */
                         <div className="profile-section">
-                            <h3 className="profile-section-title">STATUS</h3>
-                            <p className="profile-section-content" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                💬 {user.customStatus}
-                            </p>
-                        </div>
-                    )}
-
-                    <div className="profile-section">
-                        <h3 className="profile-section-title">ABOUT ME</h3>
-                        <p className="profile-section-content">
-                            {isGuest
-                                ? "This is a guest user."
-                                : "No bio available"
-                            }
-                        </p>
-                    </div>
-
-                    {/* Member since - only for Discord users */}
-                    {!isGuest && user.discordId && (
-                        <div className="profile-section">
-                            <h3 className="profile-section-title">DISCORD ID</h3>
-                            <p className="profile-section-content" style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}>
-                                {user.discordId}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Email - only if verified */}
-                    {user.email && user.verified && (
-                        <div className="profile-section">
-                            <h3 className="profile-section-title">EMAIL</h3>
-                            <p className="profile-section-content">
-                                {user.email} ✓
-                            </p>
+                            {loadingStats ? (
+                                <div style={{ fontSize: '13px', color: '#888', padding: '20px', textAlign: 'center' }}>Loading stats...</div>
+                            ) : stats ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#FCD34D' }}>{stats.chatPoints}</div>
+                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Chat Points</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatTime(stats.timeOnSiteSeconds)}</div>
+                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Time Online</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.messagesSent}</div>
+                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Messages</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatTime(stats.camTimeSeconds)}</div>
+                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Cam Time</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.emotesGiven}</div>
+                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Emotes Given</div>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.emotesReceived}</div>
+                                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase' }}>Emotes Recv</div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{ fontSize: '13px', color: '#888' }}>No stats available.</div>
+                            )}
                         </div>
                     )}
                 </div>

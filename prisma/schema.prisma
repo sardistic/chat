@@ -89,10 +89,28 @@ model User {
   // Relations
   accounts      Account[]
   sessions      Session[]
+  stats         UserStats?
 
   @@index([discordId])
   @@index([guestToken])
   @@index([role])
+}
+
+model UserStats {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  chatPoints        Int      @default(0)
+  timeOnSiteSeconds Int      @default(0)
+  camTimeSeconds    Int      @default(0)
+  messagesSent      Int      @default(0)
+  emotesGiven       Int      @default(0)
+  emotesReceived    Int      @default(0)
+  
+  updatedAt         DateTime @updatedAt
+  
+  @@index([chatPoints])
 }
 
 // ============================================

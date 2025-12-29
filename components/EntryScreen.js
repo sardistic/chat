@@ -126,6 +126,7 @@ export default function EntryScreen({ onJoin }) {
 
         // Join as guest
         onJoin({
+            id: data.user?.id, // Pass DB ID
             name: username,
             avatar: previewUrl,
             isGuest: true,

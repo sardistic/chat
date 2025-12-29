@@ -3,6 +3,9 @@ const { parse } = require("url");
 const next = require("next");
 const { Server } = require("socket.io");
 const IRCBridge = require("./lib/ircBridge");
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
 
 // Global error handlers to prevent silent crashes
 process.on('uncaughtException', (err) => {
@@ -44,6 +47,62 @@ app.prepare().then(() => {
     const parsedUrl = parse(req.url, true);
     handle(req, res, parsedUrl);
   });
+
+  // --- Stats Tracking Logic ---
+  const updateStats = async () => {
+    // Collect active users based on room presence
+    const activeUserIds = new Set();
+    const videoUserIds = new Set();
+
+    rooms.forEach((room) => {
+      room.forEach((user) => {
+        if (user.id) {
+          activeUserIds.add(user.id);
+          if (user.isVideoEnabled) {
+            videoUserIds.add(user.id);
+          }
+        }
+      });
+    });
+
+    if (activeUserIds.size === 0) return;
+
+    try {
+      // Award 1 point per minute for being online
+      await prisma.userStats.updateMany({
+        where: { userId: { in: Array.from(activeUserIds) } },
+        data: {
+          timeOnSiteSeconds: { increment: 60 },
+          chatPoints: { increment: 1 }
+        }
+      });
+
+      // Award additional 2 points per minute for broadcasting (total 3)
+      if (videoUserIds.size > 0) {
+        await prisma.userStats.updateMany({
+          where: { userId: { in: Array.from(videoUserIds) } },
+          data: {
+            camTimeSeconds: { increment: 60 },
+            chatPoints: { increment: 2 }
+          }
+        });
+      }
+
+      // Ensure stats exist for active users who might not have them
+      for (const userId of activeUserIds) {
+        await prisma.userStats.upsert({
+          where: { userId },
+          create: { userId, timeOnSiteSeconds: 60, chatPoints: 1 },
+          update: {} // Handled by updateMany above generally, but upsert ensures row creation
+        });
+      }
+    } catch (e) {
+      console.error("[Stats] Error updating stats:", e.message);
+    }
+  };
+
+  // Run stats update every 60 seconds
+  setInterval(updateStats, 60000);
 
   const io = new Server(httpServer, {
     path: "/api/socket/io",
@@ -214,6 +273,15 @@ app.prepare().then(() => {
       if (socket.data.ircBridge) {
         socket.data.ircBridge.sendToIRC(message);
       }
+
+      // Track Message Stats
+      if (socket.data.user && socket.data.user.id) {
+        prisma.userStats.upsert({
+          where: { userId: socket.data.user.id },
+          create: { userId: socket.data.user.id, messagesSent: 1, chatPoints: 1 },
+          update: { messagesSent: { increment: 1 }, chatPoints: { increment: 1 } }
+        }).catch(e => console.error("[Stats] Failed to track message:", e.message));
+      }
     });
 
     // Typing
@@ -234,6 +302,71 @@ app.prepare().then(() => {
         emoji,
         timestamp: Date.now()
       });
+
+      // Track Reaction Stats
+      if (socket.data.user && socket.data.user.id) {
+        // Giver
+        prisma.userStats.upsert({
+          where: { userId: socket.data.user.id },
+          create: { userId: socket.data.user.id, emotesGiven: 1, chatPoints: 1 },
+          update: { emotesGiven: { increment: 1 }, chatPoints: { increment: 1 } }
+        }).catch(e => console.error("[Stats] Failed to track reaction give:", e.message));
+      }
+
+      // Receiver (Find user by socket/targetId?)
+      // targetId is likely a socketId or userId. The reaction event assumes socketId usually.
+      // We need to resolve targetId to a user ID.
+      // Since rooms map stores users by socketId, we can look it up.
+      const room = rooms.get(roomId);
+      if (room && targetId && room.has(targetId)) {
+        const targetUser = room.get(targetId);
+        if (targetUser && targetUser.id) {
+          prisma.userStats.upsert({
+            where: { userId: targetUser.id },
+            create: { userId: targetUser.id, emotesReceived: 1, chatPoints: 1 },
+            update: { emotesReceived: { increment: 1 }, chatPoints: { increment: 1 } }
+          }).catch(e => console.error("[Stats] Failed to track reaction receive:", e.message));
+        }
+      }
+    });
+
+    // Fetch Profile Stats
+    socket.on("fetch-profile-stats", async ({ userId }, callback) => {
+      try {
+        if (!userId) {
+          callback({ error: "No User ID" });
+          return;
+        }
+
+        const stats = await prisma.userStats.findUnique({
+          where: { userId }
+        });
+
+        // Also calculate connection status
+        let isOnline = false;
+        let isIdle = true;
+        let lastSeen = null; // Could fetch from User table if needed
+
+        // Check if online in any room
+        for (const room of rooms.values()) {
+          for (const u of room.values()) {
+            if (u.id === userId) {
+              isOnline = true;
+              isIdle = false; // Simplified; real idle tracking requires more state
+              break;
+            }
+          }
+          if (isOnline) break;
+        }
+
+        callback({
+          stats: stats || { chatPoints: 0, timeOnSiteSeconds: 0, camTimeSeconds: 0, messagesSent: 0, emotesGiven: 0, emotesReceived: 0 },
+          status: { isOnline, isIdle }
+        });
+      } catch (e) {
+        console.error("Error fetching stats:", e);
+        callback({ error: "Server Error" });
+      }
     });
 
     // Disconnect
