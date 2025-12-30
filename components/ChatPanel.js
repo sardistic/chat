@@ -141,7 +141,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
         } else {
             // Check for :word pattern (like Discord emoji picker)
             const colonMatch = value.match(/:(\w+)$/);
-            if (colonMatch && colonMatch[1].length >= 1) {
+            if (colonMatch && colonMatch[1].length >= 3) {
                 setShowGifPicker(true);
                 setGifQuery(colonMatch[1]);
                 setShowMentions(false);

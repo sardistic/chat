@@ -217,11 +217,29 @@ app.prepare().then(() => {
 
       // Create per-user IRC connection via rate-limited queue
       // Each user gets their own IRC connection like KiwiIRC/Twitch
+      const derivedNick = user.name.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 15);
+
+      // Update user with their IRC nick for filtering duplicates
+      user.ircNick = derivedNick;
+      room.set(socket.id, user); // Update room with new field
+
       const userIrcConfig = {
-        nick: user.name.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 15),
+        nick: derivedNick,
         username: 'camrooms_' + user.name.slice(0, 8),
         channel: '#camsrooms',
         useIRC: true
+      };
+
+      const bridgeOptions = {
+        shouldIgnoreSender: (senderNick) => {
+          // Ignore messages from anyone currently connected to this room via Web
+          const r = rooms.get(roomId);
+          if (!r) return false;
+          for (const u of r.values()) {
+            if (u.ircNick === senderNick) return true;
+          }
+          return false;
+        }
       };
 
       queueIrcConnection(socket, user, userIrcConfig, (err, bridge) => {
@@ -231,7 +249,7 @@ app.prepare().then(() => {
         } else {
           console.log(`[IRC] ✅ Bridge created for ${user.name}`);
         }
-      });
+      }, bridgeOptions);
 
       console.log(`✅ ${user.name} joined room. Total users: ${room.size}`);
     });
