@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 import { Icon } from '@iconify/react';
@@ -246,11 +246,22 @@ export default function TubeTile({
     const videoUrl = tubeState.videoId.startsWith('http') ? tubeState.videoId : `https://www.youtube.com/watch?v=${tubeState.videoId}`;
     console.log("[TubeTile] Rendering URL:", videoUrl, "Playing:", tubeState.isPlaying);
 
+    // Memoize config to prevent re-initialization on every render
+    const playerConfig = useMemo(() => ({
+        youtube: {
+            playerVars: {
+                origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+                enablejsapi: 1,
+                modestbranding: 1,
+                rel: 0
+            }
+        }
+    }), []);
+
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
             <div style={{ width: '100%', height: '100%', pointerEvents: isOwner ? 'auto' : 'none', position: 'relative' }}>
                 <ReactPlayer
-                    key={videoUrl}
                     ref={playerRef}
                     url={videoUrl}
                     width="100%"
@@ -260,16 +271,7 @@ export default function TubeTile({
                     muted={settings.isLocallyMuted || settings.volume === 0}
                     volume={settings.volume}
                     playsinline={true}
-                    config={{
-                        youtube: {
-                            playerVars: {
-                                origin: typeof window !== 'undefined' ? window.location.origin : undefined,
-                                enablejsapi: 1,
-                                modestbranding: 1,
-                                rel: 0
-                            }
-                        }
-                    }}
+                    config={playerConfig}
                     onReady={() => { console.log("[TubeTile] Player READY"); setIsReady(true); }}
                     onStart={() => console.log("[TubeTile] Player START")}
                     onBuffer={() => console.log("[TubeTile] Player BUFFER")}
