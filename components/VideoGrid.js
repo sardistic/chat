@@ -440,6 +440,7 @@ export default function VideoGrid({
 
     // Tube props
     tubeState = null,
+    receivedAt = 0,
     onUpdateTubeState = () => { },
     isTubeOwner = false
 }) {

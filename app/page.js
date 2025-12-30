@@ -44,7 +44,7 @@ function MainApp({ user, onLeaveRoom }) {
   const [typingUsers, setTypingUsers] = useState([]);
   const [mentionCounts, setMentionCounts] = useState({});
   const [chatReactions, setChatReactions] = useState([]);
-  const { tubeState, updateTubeState, isOwner: isTubeOwner } = useYouTubeSync(roomId, user);
+  const { tubeState, receivedAt, updateTubeState, isOwner: isTubeOwner } = useYouTubeSync(roomId, user);
 
   const handleUpdatePeerSettings = (userId, newSettings) => {
     setPeerSettings(prev => ({
@@ -410,6 +410,7 @@ function MainApp({ user, onLeaveRoom }) {
             mentionCounts={mentionCounts}
             chatReactions={chatReactions}
             tubeState={tubeState}
+            receivedAt={receivedAt}
             onUpdateTubeState={updateTubeState}
             isTubeOwner={isTubeOwner}
           />
