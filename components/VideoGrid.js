@@ -351,20 +351,13 @@ function VideoTile({
                                 marginLeft: '6px',
                                 gap: '2px'
                             }}
-                            onMouseEnter={() => setShowPicker(true)}
-                            onMouseLeave={() => setShowPicker(false)}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button
                                 className="reaction-btn"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    // On mobile (touch), toggle picker. On desktop with hover, send heart
-                                    if ('ontouchstart' in window) {
-                                        setShowPicker(!showPicker);
-                                    } else {
-                                        onReaction('❤️');
-                                    }
+                                    setShowPicker(!showPicker);
                                 }}
                                 style={{
                                     background: 'transparent',
