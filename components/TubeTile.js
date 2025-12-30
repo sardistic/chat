@@ -242,37 +242,58 @@ export default function TubeTile({
         return renderPlaceholder();
     }
 
+    // URL Construction
     const videoUrl = tubeState.videoId.startsWith('http') ? tubeState.videoId : `https://www.youtube.com/watch?v=${tubeState.videoId}`;
-    console.log("[TubeTile] Rendering URL:", videoUrl, "Playing:", tubeState.isPlaying, "Dimensions:", width, "x", height);
-
-    // Extract ID for raw iframe
-    let embedId = tubeState.videoId;
-    if (tubeState.videoId.includes('v=')) {
-        embedId = tubeState.videoId.split('v=')[1].split('&')[0];
-    } else if (tubeState.videoId.includes('youtu.be/')) {
-        embedId = tubeState.videoId.split('youtu.be/')[1].split('?')[0];
-    }
-
-    const embedUrl = `https://www.youtube.com/embed/${embedId}?autoplay=1&mute=1&controls=1&playsinline=1&enablejsapi=1`;
-    console.log("[TubeTile] Raw Embed URL:", embedUrl);
+    console.log("[TubeTile] Rendering URL:", videoUrl, "Playing:", tubeState.isPlaying);
 
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
             <div style={{ width: '100%', height: '100%', pointerEvents: isOwner ? 'auto' : 'none', position: 'relative' }}>
-                {/* Debugging: Raw Iframe Mode */}
-                <iframe
+                <ReactPlayer
+                    key={videoUrl}
+                    ref={playerRef}
+                    url={videoUrl}
                     width="100%"
                     height="100%"
-                    src={embedUrl}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    allowFullScreen
-                    style={{ pointerEvents: 'auto' }} // Ensure clickable
-                ></iframe>
+                    controls={true} // Keep controls for reliability
+                    playing={tubeState.isPlaying}
+                    muted={settings.isLocallyMuted || settings.volume === 0}
+                    volume={settings.volume}
+                    playsinline={true}
+                    config={{
+                        youtube: {
+                            playerVars: {
+                                origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+                                enablejsapi: 1,
+                                modestbranding: 1,
+                                rel: 0
+                            }
+                        }
+                    }}
+                    onReady={() => { console.log("[TubeTile] Player READY"); setIsReady(true); }}
+                    onStart={() => console.log("[TubeTile] Player START")}
+                    onBuffer={() => console.log("[TubeTile] Player BUFFER")}
+                    onError={(e) => {
+                        console.error("[TubeTile] Player ERROR:", e);
+                        setHasError(true);
+                    }}
+                    onProgress={(state) => {
+                        if (isOwner && onSync) {
+                            onSync({ ...state, type: 'progress' });
+                        }
+                    }}
+                    onPlay={() => {
+                        console.log("[TubeTile] Player PLAY");
+                        isOwner && onSync && onSync({ type: 'play' });
+                    }}
+                    onPause={() => {
+                        if (ignorePauseRef.current) return;
+                        console.log("[TubeTile] Player PAUSE");
+                        if (isOwner && onSync) onSync({ type: 'pause' });
+                    }}
+                    style={{ opacity: (settings.isVideoHidden || hasError) ? 0 : 1 }}
+                />
 
-                {/* Keeping error overlay just in case */}
                 {hasError && (
                     <div style={{
                         position: 'absolute', inset: 0,
