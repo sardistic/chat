@@ -23,7 +23,6 @@ export default function TubeTile({
     // UI State
     const [showInput, setShowInput] = useState(false);
     const [inputValue, setInputValue] = useState('');
-    const [startSeconds, setStartSeconds] = useState(0); // For handling ?t=X
 
     // Search State
     const [isSearching, setIsSearching] = useState(false);
@@ -48,10 +47,6 @@ export default function TubeTile({
         setHasError(false);
         setIsReady(false);
     }, [tubeState.videoId]);
-
-    const handleDuration = (duration) => {
-        // console.log('onDuration', duration)
-    };
 
     const handleSearch = (query) => {
         if (!socket) return;
@@ -107,42 +102,6 @@ export default function TubeTile({
         border: '2px solid rgba(255, 0, 0, 0.3)', // Red border for YouTube
         boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
     };
-
-    const renderPlaceholder = () => (
-        <div className="tile" style={style}>
-            <div style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'radial-gradient(ellipse at center, #2a0000 0%, #000 100%)',
-                flexDirection: 'column',
-                gap: '12px',
-                color: 'rgba(255,255,255,0.7)',
-                textAlign: 'center',
-                padding: '20px'
-            }}>
-                <Icon icon={hasError ? "fa:exclamation-triangle" : "fa:youtube-play"} width="48" color={hasError ? "#eab308" : "#ff0000"} />
-                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                    {hasError ? "VIDEO UNAVAILABLE" : "THE TUBE"}
-                </div>
-                {hasError && <div style={{ fontSize: '12px', opacity: 0.7 }}>This video cannot be played (or is restricted).</div>}
-
-                {isOwner ? (
-                    <button
-                        onClick={() => { setShowInput(true); setHasError(false); }}
-                        className="btn primary"
-                        style={{ fontSize: '12px', padding: '6px 12px', marginTop: '8px' }}
-                    >
-                        {hasError ? "Try Another Video" : "Load Video"}
-                    </button>
-                ) : (
-                    <div style={{ fontSize: '12px', opacity: 0.5 }}>Waiting for video...</div>
-                )}
-            </div>
-            {renderInputModal()}
-        </div>
-    );
 
     const renderInputModal = () => {
         if (!showInput) return null;
@@ -219,19 +178,47 @@ export default function TubeTile({
         );
     };
 
-    if (!tubeState?.videoId || hasError && !isOwner) {
-        return renderPlaceholder();
-    }
+    const renderPlaceholder = () => (
+        <div className="tile" style={style}>
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'radial-gradient(ellipse at center, #2a0000 0%, #000 100%)',
+                flexDirection: 'column',
+                gap: '12px',
+                color: 'rgba(255,255,255,0.7)',
+                textAlign: 'center',
+                padding: '20px'
+            }}>
+                <Icon icon="fa:youtube-play" width="48" color="#ff0000" />
+                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>THE TUBE</div>
 
-    // If owner has error, we show player but inside it handle it?
-    // Actually easier to just replace content with error placeholder
-    if (hasError && isOwner) {
+                {isOwner ? (
+                    <button
+                        onClick={() => setShowInput(true)}
+                        className="btn primary"
+                        style={{ fontSize: '12px', padding: '6px 12px', marginTop: '8px' }}
+                    >
+                        Load Video
+                    </button>
+                ) : (
+                    <div style={{ fontSize: '12px', opacity: 0.5 }}>Waiting for video...</div>
+                )}
+            </div>
+            {renderInputModal()}
+        </div>
+    );
+
+    // Initial Empty State
+    if (!tubeState?.videoId) {
         return renderPlaceholder();
     }
 
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
-            <div style={{ width: '100%', height: '100%', pointerEvents: isOwner ? 'auto' : 'none' }}>
+            <div style={{ width: '100%', height: '100%', pointerEvents: isOwner ? 'auto' : 'none', position: 'relative' }}>
                 <ReactPlayer
                     ref={playerRef}
                     url={tubeState.videoId.startsWith('http') ? tubeState.videoId : `https://www.youtube.com/watch?v=${tubeState.videoId}`}
@@ -253,8 +240,32 @@ export default function TubeTile({
                     }}
                     onPlay={() => isOwner && onSync && onSync({ type: 'play' })}
                     onPause={() => isOwner && onSync && onSync({ type: 'pause' })}
-                    style={{ opacity: settings.isVideoHidden ? 0 : 1 }}
+                    style={{ opacity: (settings.isVideoHidden || hasError) ? 0 : 1 }}
                 />
+
+                {/* Error Overlay - Render ON TOP of player, do not unmount player */}
+                {hasError && (
+                    <div style={{
+                        position: 'absolute', inset: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(0,0,0,0.8)',
+                        flexDirection: 'column', gap: '12px', color: '#eab308',
+                        zIndex: 5
+                    }}>
+                        <Icon icon="fa:exclamation-triangle" width="48" />
+                        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>VIDEO UNAVAILABLE</div>
+                        {isOwner && (
+                            <button
+                                onClick={() => { setShowInput(true); }}
+                                className="btn primary"
+                                style={{ fontSize: '12px', padding: '6px 12px' }}
+                            >
+                                Try Another Video
+                            </button>
+                        )}
+                        {!isOwner && <div style={{ fontSize: '12px', opacity: 0.7 }}>The owner is fixing this...</div>}
+                    </div>
+                )}
             </div>
 
             {/* Name Label */}
@@ -263,7 +274,8 @@ export default function TubeTile({
                 background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px',
                 fontSize: '12px', fontWeight: '600', color: 'white',
                 display: 'flex', alignItems: 'center', gap: '6px',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                zIndex: 10
             }}>
                 <Icon icon="fa:youtube" color="#ff0000" />
                 Channel 1
