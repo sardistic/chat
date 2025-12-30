@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
+const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 import { Icon } from '@iconify/react';
 import { useSocket } from '@/lib/socket';
 
@@ -249,6 +249,7 @@ export default function TubeTile({
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
             <div style={{ width: '100%', height: '100%', pointerEvents: isOwner ? 'auto' : 'none', position: 'relative' }}>
                 <ReactPlayer
+                    key={videoUrl} // Force remount on URL change to avoid internal state bugs
                     ref={playerRef}
                     url={videoUrl}
                     width="100%"
@@ -257,6 +258,16 @@ export default function TubeTile({
                     playing={tubeState.isPlaying}
                     muted={settings.isLocallyMuted || settings.volume === 0}
                     volume={settings.volume}
+                    playsinline={true}
+                    config={{
+                        youtube: {
+                            playerVars: {
+                                showinfo: 0,
+                                modestbranding: 1,
+                                origin: typeof window !== 'undefined' ? window.location.origin : undefined
+                            }
+                        }
+                    }}
                     onReady={() => setIsReady(true)}
                     onError={(e) => {
                         console.error("Tube Error:", e);
