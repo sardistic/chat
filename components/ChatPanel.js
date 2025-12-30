@@ -479,23 +479,6 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                         >
                             😊 Emoji
                         </button>
-                        <button
-                            onClick={() => {
-                                const mention = prompt('Enter username to mention:');
-                                if (mention) insertMention(mention);
-                            }}
-                            style={{
-                                background: 'transparent',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 10px',
-                                cursor: 'pointer',
-                                color: 'var(--text-secondary)',
-                                fontSize: '12px'
-                            }}
-                        >
-                            @
-                        </button>
 
                         {/* Spacer */}
                         <div style={{ flex: 1 }} />
