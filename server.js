@@ -98,7 +98,8 @@ const tubeState = {
   videoId: null,
   isPlaying: false,
   timestamp: 0,
-  lastUpdate: Date.now()
+  lastUpdate: Date.now(),
+  ownerId: null
 };
 
 app.prepare().then(() => {
@@ -422,6 +423,7 @@ app.prepare().then(() => {
       if (newState.videoId !== undefined) tubeState.videoId = newState.videoId;
       if (newState.isPlaying !== undefined) tubeState.isPlaying = newState.isPlaying;
       if (newState.timestamp !== undefined) tubeState.timestamp = newState.timestamp;
+      if (newState.ownerId !== undefined) tubeState.ownerId = newState.ownerId;
       tubeState.lastUpdate = Date.now();
       // Broadcast with server's current clock to allow drift calculation
       io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });

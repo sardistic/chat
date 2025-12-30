@@ -115,7 +115,7 @@ export default function TubeTile({
             }
         };
         initPlayer();
-    }, [tubeState?.videoId]);
+    }, [tubeState?.videoId, isOwner]);
 
     // Sync Effect (Native)
     useEffect(() => {
@@ -129,6 +129,14 @@ export default function TubeTile({
         }
 
         const currentTime = ytPlayerRef.current.getCurrentTime();
+
+        // --- SOURCE OF TRUTH CHECK ---
+        // If we are the owner, we are the master clock. 
+        // We should NEVER seek ourselves based on server echoes (to avoid feedback loops).
+        if (isOwner) return;
+
+        // Ensure we have a server timestamp to synchronize with
+        if (!tubeState.serverTime) return;
 
         // STABLE SYNC CALCULATION
         // 1. Calculate the clock offset once per state update
@@ -150,7 +158,7 @@ export default function TubeTile({
             ytPlayerRef.current.seekTo(serverVideoTime, true);
             setTimeout(() => { ignorePauseRef.current = false; }, 1000);
         }
-    }, [tubeState, isReady]);
+    }, [tubeState, isReady, receivedAt, isOwner]);
 
     // Owner Heartbeat: Periodically sync progress to server
     useEffect(() => {

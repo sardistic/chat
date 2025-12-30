@@ -42,8 +42,10 @@ export function useYouTubeSync(roomId, user) {
             ownerId: socket.id // We take ownership when we interact
         };
 
+        // OPTIMISTIC UPDATE
+        // We update the state so UI is snappy, but we DO NOT update receivedAt.
+        // The sync math in TubeTile relies on receivedAt being paired with serverTime.
         setTubeState(prev => ({ ...prev, ...newState, lastUpdate: Date.now() }));
-        setReceivedAt(Date.now());
 
         socket.emit('tube-update', {
             roomId,
