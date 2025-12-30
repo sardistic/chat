@@ -64,11 +64,12 @@ export default function TubeTile({
         };
 
         const onPlayerStateChange = (event) => {
+            const currentTime = event.target.getCurrentTime();
             if (event.data === 1) { // Playing
-                if (isOwner && onSync) onSync({ type: 'play' });
+                if (isOwner && onSync) onSync({ type: 'play', playedSeconds: currentTime });
             } else if (event.data === 2) { // Paused
                 if (ignorePauseRef.current) return;
-                if (isOwner && onSync) onSync({ type: 'pause' });
+                if (isOwner && onSync) onSync({ type: 'pause', playedSeconds: currentTime });
             }
         };
 
@@ -125,15 +126,32 @@ export default function TubeTile({
         }
 
         const currentTime = ytPlayerRef.current.getCurrentTime();
-        const timeSinceUpdate = (Date.now() - tubeState.lastUpdate) / 1000;
+        const drift = tubeState.serverTime ? (tubeState.serverTime - Date.now()) : 0;
+        const estimatedServerNow = Date.now() + drift;
+        const timeSinceUpdate = (estimatedServerNow - tubeState.lastUpdate) / 1000;
         const serverTime = tubeState.timestamp + (tubeState.isPlaying ? timeSinceUpdate : 0);
 
         if (Math.abs(currentTime - serverTime) > 2) {
+            console.log("[TubeTile-Native] Sync: Seek to", serverTime, "Drift:", drift);
             ignorePauseRef.current = true;
             ytPlayerRef.current.seekTo(serverTime, true);
             setTimeout(() => { ignorePauseRef.current = false; }, 1000);
         }
     }, [tubeState, isReady]);
+
+    // Owner Heartbeat: Periodically sync progress to server
+    useEffect(() => {
+        if (!isOwner || !isReady || !ytPlayerRef.current || !ytPlayerRef.current.getCurrentTime) return;
+
+        const heartbeat = setInterval(() => {
+            if (tubeState.isPlaying) {
+                const currentTime = ytPlayerRef.current.getCurrentTime();
+                if (onSync) onSync({ type: 'progress', playedSeconds: currentTime });
+            }
+        }, 5000); // Every 5 seconds
+
+        return () => clearInterval(heartbeat);
+    }, [isOwner, isReady, tubeState.isPlaying]);
 
     // Error Reset when video changes
     useEffect(() => {

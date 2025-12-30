@@ -590,7 +590,7 @@ export default function VideoGrid({
                         onSync={(update) => {
                             if (update.type === 'play') onUpdateTubeState({ isPlaying: true, timestamp: update.playedSeconds });
                             if (update.type === 'pause') onUpdateTubeState({ isPlaying: false, timestamp: update.playedSeconds });
-                            if (update.type === 'progress') { /* Optional: sync time periodically */ }
+                            if (update.type === 'progress') onUpdateTubeState({ timestamp: update.playedSeconds });
                         }}
                         onChangeVideo={(url) => onUpdateTubeState({ videoId: url, isPlaying: true, timestamp: 0 })}
                         width={layout.width}

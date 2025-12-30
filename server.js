@@ -414,7 +414,7 @@ app.prepare().then(() => {
 
     // Tube Sync Handlers
     socket.on('tube-request-state', () => {
-      socket.emit('tube-state', tubeState);
+      socket.emit('tube-state', { ...tubeState, serverTime: Date.now() });
     });
 
     socket.on('tube-update', (newState) => {
@@ -423,9 +423,8 @@ app.prepare().then(() => {
       if (newState.isPlaying !== undefined) tubeState.isPlaying = newState.isPlaying;
       if (newState.timestamp !== undefined) tubeState.timestamp = newState.timestamp;
       tubeState.lastUpdate = Date.now();
-
-      // Broadcast to everyone in room including sender (to confirm sync)
-      io.to(roomId).emit('tube-state', tubeState);
+      // Broadcast with server's current clock to allow drift calculation
+      io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });
     });
 
     // Handle Tube Search

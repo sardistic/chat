@@ -40,7 +40,7 @@ export function useYouTubeSync(roomId, user) {
         socket.emit('tube-update', {
             roomId,
             ...partialState,
-            timestamp: partialState.timestamp || tubeState.timestamp, // Ensure we send current time if updating play status
+            timestamp: partialState.timestamp !== undefined ? partialState.timestamp : tubeState.timestamp,
             lastUpdate: Date.now()
         });
     }, [socket, roomId, tubeState]);
