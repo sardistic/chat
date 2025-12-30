@@ -287,7 +287,10 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                         lineHeight: '1.4',
                                     }}
                                 >
-                                    <MessageContent text={msg.text} />
+                                    <MessageContent
+                                        text={msg.text}
+                                        onMentionClick={(username) => onUserClick({ name: username })}
+                                    />
                                 </div>
                             ))}
                         </div>

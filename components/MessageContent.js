@@ -226,7 +226,7 @@ function EmbedRenderer({ url }) {
 }
 
 // Parse message text and render with embeds
-export default function MessageContent({ text }) {
+export default function MessageContent({ text, onMentionClick }) {
     // Find all URLs in the message
     const urls = useMemo(() => {
         const matches = text.match(URL_REGEX) || [];
@@ -234,24 +234,65 @@ export default function MessageContent({ text }) {
         return [...new Set(matches)];
     }, [text]);
 
-    // Linkify the text (or hide URLs if they become embeds)
-    const formattedText = useMemo(() => {
-        if (urls.length === 0) return text;
+    // Parse text with mentions and URLs
+    const formattedContent = useMemo(() => {
+        let processedText = text;
 
-        let result = text;
+        // Remove URLs that will be embedded
         urls.forEach(url => {
-            // For this app, simply remove the URL from the text if it's being displayed as an embed below
-            // This mimics Discord's behavior where the media sits alone if the message is just a URL
-            result = result.replace(url, '');
+            processedText = processedText.replace(url, '');
         });
 
-        return result.trim();
+        processedText = processedText.trim();
+        if (!processedText) return null;
+
+        // Split by @mentions - match @word
+        const mentionRegex = /@(\w+)/g;
+        const parts = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = mentionRegex.exec(processedText)) !== null) {
+            // Add text before mention
+            if (match.index > lastIndex) {
+                parts.push({ type: 'text', content: processedText.slice(lastIndex, match.index) });
+            }
+            // Add mention
+            parts.push({ type: 'mention', username: match[1], full: match[0] });
+            lastIndex = match.index + match[0].length;
+        }
+        // Add remaining text
+        if (lastIndex < processedText.length) {
+            parts.push({ type: 'text', content: processedText.slice(lastIndex) });
+        }
+
+        return parts.length > 0 ? parts : [{ type: 'text', content: processedText }];
     }, [text, urls]);
 
     return (
         <div className="message-content">
-            {/* Text content with linkified URLs */}
-            {formattedText && <span dangerouslySetInnerHTML={{ __html: formattedText }} />}
+            {/* Text content with mentions */}
+            {formattedContent && formattedContent.map((part, i) => {
+                if (part.type === 'mention') {
+                    return (
+                        <span
+                            key={i}
+                            onClick={() => onMentionClick && onMentionClick(part.username)}
+                            style={{
+                                color: '#7289da',
+                                background: 'rgba(114, 137, 218, 0.15)',
+                                padding: '0 2px',
+                                borderRadius: '3px',
+                                cursor: onMentionClick ? 'pointer' : 'default',
+                                fontWeight: 500
+                            }}
+                        >
+                            @{part.username}
+                        </span>
+                    );
+                }
+                return <span key={i}>{part.content}</span>;
+            })}
 
             {/* Render embeds for each URL */}
             {urls.map((url, index) => (
