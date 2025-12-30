@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
+const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
 import { Icon } from '@iconify/react';
 import { useSocket } from '@/lib/socket';
 
@@ -242,12 +242,15 @@ export default function TubeTile({
         return renderPlaceholder();
     }
 
+    const videoUrl = tubeState.videoId.startsWith('http') ? tubeState.videoId : `https://www.youtube.com/watch?v=${tubeState.videoId}`;
+    console.log("[TubeTile] Rendering URL:", videoUrl, "Playing:", tubeState.isPlaying, "IsOwner:", isOwner);
+
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
             <div style={{ width: '100%', height: '100%', pointerEvents: isOwner ? 'auto' : 'none', position: 'relative' }}>
                 <ReactPlayer
                     ref={playerRef}
-                    url={tubeState.videoId.startsWith('http') ? tubeState.videoId : `https://www.youtube.com/watch?v=${tubeState.videoId}`}
+                    url={videoUrl}
                     width="100%"
                     height="100%"
                     controls={isOwner}
