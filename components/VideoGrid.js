@@ -328,7 +328,7 @@ function VideoTile({
             )}
 
             {/* Name & Controls Overlay */}
-            <div className="overlay" onClick={(e) => e.stopPropagation()}>
+            <div className="overlay" style={{ pointerEvents: 'auto' }} onClick={(e) => e.stopPropagation()}>
                 <div className="name-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                     <div className="name" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span
