@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useEffect, useState } from 'react';
-import ReactPlayer from 'react-player/youtube';
+import dynamic from 'next/dynamic';
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 import { Icon } from '@iconify/react';
 
 export default function TubeTile({
