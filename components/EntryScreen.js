@@ -74,6 +74,30 @@ function generateName(seed) {
     return `${gamingPrefixes[idx1]}${suffixes[idx2]}${num}`;
 }
 
+// Sanitize username for IRC compatibility
+// IRC rules: alphanumeric + _-[] only, starts with letter, 2-20 chars
+function sanitizeUsername(name) {
+    if (!name) return 'Guest';
+
+    // Remove any characters that aren't alphanumeric, underscore, hyphen
+    let sanitized = name.replace(/[^a-zA-Z0-9_-]/g, '');
+
+    // Must start with a letter
+    if (!/^[a-zA-Z]/.test(sanitized)) {
+        sanitized = 'G' + sanitized;
+    }
+
+    // Enforce length limits (2-20 chars)
+    if (sanitized.length < 2) {
+        sanitized = sanitized + 'Guest';
+    }
+    if (sanitized.length > 20) {
+        sanitized = sanitized.substring(0, 20);
+    }
+
+    return sanitized;
+}
+
 // Cookie helper functions
 function getCookie(name) {
     if (typeof document === 'undefined') return null;
@@ -151,7 +175,7 @@ export default function EntryScreen({ onJoin }) {
         }
 
         let startData = {
-            name: username,
+            name: sanitizeUsername(username),
             avatar: previewUrl,
             isGuest: true,
             guestToken: guestToken,
@@ -159,9 +183,9 @@ export default function EntryScreen({ onJoin }) {
                 useIRC: true,
                 host: 'irc.gamesurge.net',
                 port: 6667,
-                nick: username,
+                nick: sanitizeUsername(username),
                 channel: '#camsrooms',
-                username: username
+                username: sanitizeUsername(username)
             }
         };
 
@@ -286,7 +310,7 @@ export default function EntryScreen({ onJoin }) {
                                     fontWeight: '600'
                                 }}
                                 onClick={() => onJoin({
-                                    name: session.user.globalName || session.user.displayName || session.user.name,
+                                    name: sanitizeUsername(session.user.globalName || session.user.displayName || session.user.name),
                                     avatar: session.user.image || session.user.avatarUrl,
                                     image: session.user.image,
                                     userId: session.user.id,
@@ -305,9 +329,9 @@ export default function EntryScreen({ onJoin }) {
                                         useIRC: true,
                                         host: 'irc.gamesurge.net',
                                         port: 6667,
-                                        nick: session.user.globalName || session.user.displayName || session.user.name,
+                                        nick: sanitizeUsername(session.user.globalName || session.user.displayName || session.user.name),
                                         channel: '#camsrooms',
-                                        username: session.user.globalName || session.user.displayName || session.user.name
+                                        username: sanitizeUsername(session.user.globalName || session.user.displayName || session.user.name)
                                     }
                                 })}
                             >
