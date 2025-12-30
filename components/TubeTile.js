@@ -25,6 +25,7 @@ export default function TubeTile({
     // Search State
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
+    const [retryKey, setRetryKey] = useState(0);
 
     const ignorePauseRef = useRef(false);
     const ytPlayerRef = useRef(null);
@@ -124,7 +125,13 @@ export default function TubeTile({
                         'onStateChange': onPlayerStateChange,
                         'onError': (e) => {
                             console.error("[TubeTile-Native] Error:", e);
-                            if (e.data === 5 || e.data === 100 || e.data === 150) setHasError(true);
+                            // Error 5 is often just a transient HTML5 player issue on mobile
+                            if (e.data === 101 || e.data === 150) {
+                                setHasError(true);
+                            } else if (e.data === 100) {
+                                // Video not found, only owner sees real error
+                                setHasError(true);
+                            }
                         }
                     }
                 });
@@ -134,11 +141,11 @@ export default function TubeTile({
                         clearInterval(checkYT);
                         initPlayer();
                     }
-                }, 200);
+                }, 500);
             }
         };
         initPlayer();
-    }, [tubeState?.videoId]);
+    }, [tubeState?.videoId, retryKey]); // Added retryKey to force re-init
 
     // Sync Effect (Native)
     useEffect(() => {
@@ -196,6 +203,7 @@ export default function TubeTile({
     useEffect(() => {
         setHasError(false);
         setIsReady(false);
+        setRetryKey(k => k + 1); // Auto-retry once on vid change
     }, [tubeState.videoId]);
 
     const handleSearch = (query) => {
@@ -375,13 +383,18 @@ export default function TubeTile({
                             <Icon icon="fa:exclamation-triangle" width="48" />
                             <div style={{ fontSize: '14px', fontWeight: 'bold' }}>CONNECTION ISSUE</div>
                             <button
-                                onClick={() => { setHasError(false); setIsReady(false); setTimeout(() => window.location.reload(), 100); }}
+                                onClick={() => {
+                                    setHasError(false);
+                                    setIsReady(false);
+                                    ytPlayerRef.current = null;
+                                    setRetryKey(prev => prev + 1);
+                                }}
                                 className="btn primary"
                                 style={{ fontSize: '12px', padding: '6px 12px' }}
                             >
-                                Refresh Player
+                                Try Refreshing Tile
                             </button>
-                            <div style={{ fontSize: '12px', opacity: 0.7 }}>Mobile browsers may need a refresh to start.</div>
+                            <div style={{ fontSize: '12px', opacity: 0.7 }}>If this persists, check if the video is restricted.</div>
                         </div>
                     )}
 
@@ -406,11 +419,9 @@ export default function TubeTile({
                                     fontSize: '13px'
                                 }}
                                 onClick={() => {
-                                    if (ytPlayerRef.current) {
+                                    if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
                                         ytPlayerRef.current.playVideo();
                                         ytPlayerRef.current.unMute();
-                                        // Trigger a re-sync
-                                        if (onSync) onSync({ type: 'progress', playedSeconds: ytPlayerRef.current.getCurrentTime() });
                                     }
                                 }}
                             >
