@@ -254,7 +254,7 @@ export default function TubeTile({
                     url={videoUrl}
                     width="100%"
                     height="100%"
-                    controls={isOwner}
+                    controls={true} // Force controls for debug
                     playing={tubeState.isPlaying}
                     muted={settings.isLocallyMuted || settings.volume === 0}
                     volume={settings.volume}
@@ -268,22 +268,29 @@ export default function TubeTile({
                             }
                         }
                     }}
-                    onReady={() => setIsReady(true)}
+                    onReady={() => { console.log("[TubeTile] Player READY"); setIsReady(true); }}
+                    onStart={() => console.log("[TubeTile] Player START")}
+                    onBuffer={() => console.log("[TubeTile] Player BUFFER")}
                     onError={(e) => {
-                        console.error("Tube Error:", e);
+                        console.error("[TubeTile] Player ERROR:", e);
                         setHasError(true);
                     }}
                     onProgress={(state) => {
+                        // console.log("[TubeTile] Progress:", state.playedSeconds);
                         if (isOwner && onSync) {
                             onSync({ ...state, type: 'progress' });
                         }
                     }}
-                    onPlay={() => isOwner && onSync && onSync({ type: 'play' })}
+                    onPlay={() => {
+                        console.log("[TubeTile] Player PLAY event");
+                        isOwner && onSync && onSync({ type: 'play' });
+                    }}
                     onPause={() => {
                         if (ignorePauseRef.current) {
-                            console.log("Ignoring pause event due to seek");
+                            console.log("[TubeTile] Ignoring pause event due to seek");
                             return;
                         }
+                        console.log("[TubeTile] Player PAUSE event");
                         if (isOwner && onSync) onSync({ type: 'pause' });
                     }}
                     style={{ opacity: (settings.isVideoHidden || hasError) ? 0 : 1 }}
