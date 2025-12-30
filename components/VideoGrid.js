@@ -5,6 +5,7 @@ import CameraReactiveGrid from "./CameraReactiveGrid";
 import { useCameraEffects } from "@/hooks/useCameraEffects";
 import { useSocket } from "@/lib/socket";
 import { Icon } from '@iconify/react';
+import TubeTile from './TubeTile';
 
 // Floating emoji animation component
 function FloatingReaction({ emoji, onComplete }) {
@@ -103,16 +104,6 @@ function VideoTile({
     mentionCount = 0,
     chatActivity = 0,
     isTyping = false,
-
-    // New props from chat
-    mentionCounts = {}, // { username: count }
-    chatReactions = [], // [ { sender, emoji, id } ]
-
-    // Tube props
-    tubeState = { videoId: null, isPlaying: false, timestamp: 0, lastUpdate: 0 },
-    onUpdateTubeState = () => { },
-    isTubeOwner = false,
-
     isDiscordUser = false,
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
     onUpdateSettings = () => { },
@@ -121,56 +112,6 @@ function VideoTile({
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
-
-    // Process chat-driven reactions
-    useEffect(() => {
-        if (chatReactions.length > 0) {
-            // Get the latest reaction
-            const latest = chatReactions[chatReactions.length - 1];
-
-            // Find user ID format that matches our map keys
-            // We need to match userName -> userID
-
-            // Helper to match name to ID
-            const findUserId = (name) => {
-                if (name === localUser?.name) return localUser.id || socket?.id;
-                for (const [pid, pdata] of peers) {
-                    if (pdata.user?.name === name) return pdata.user.id || pid;
-                }
-                return null;
-            };
-
-            const targetId = findUserId(latest.sender);
-
-            if (targetId) {
-                setIncomingReactions(prev => {
-                    const newMap = new Map(prev);
-                    const current = newMap.get(targetId) || [];
-                    // Avoid duplicates if same ID processed
-                    if (current.some(r => r.id === latest.id)) return prev;
-
-                    const updated = [...current, { id: latest.id, emoji: latest.emoji }].slice(-5);
-                    newMap.set(targetId, updated);
-                    return newMap;
-                });
-
-                // Cleanup after 3s
-                setTimeout(() => {
-                    setIncomingReactions(prev => {
-                        const newMap = new Map(prev);
-                        const current = newMap.get(targetId) || [];
-                        if (current.length > 0) {
-                            // allow cleanup of specific id
-                            const filtered = current.filter(r => r.id !== latest.id);
-                            newMap.set(targetId, filtered);
-                        }
-                        return newMap;
-                    });
-                }, 3000);
-            }
-        }
-    }, [chatReactions, localUser, peers, socket]);
-
 
     // Destructure settings
     const { volume, isLocallyMuted, isVideoHidden } = settings;
@@ -297,12 +238,6 @@ function VideoTile({
 
     const borderStyle = getBorderStyle();
 
-    const handleReactionClick = (e, emoji) => {
-        e.stopPropagation();
-        onReaction(emoji);
-        setShowPicker(false);
-    };
-
     return (
         <div
             className={`tile effect-${effectIntensity} ${borderStyle.animation}`}
@@ -345,8 +280,6 @@ function VideoTile({
                     border: `${borderStyle.borderWidth}px solid ${borderStyle.borderColor}`,
                 }}
             />
-
-
 
             <CameraReactiveGrid
                 videoRef={tileVideoRef}
@@ -492,10 +425,65 @@ export default function VideoGrid({
     peerSettings = {},
     onUpdatePeerSettings = () => { },
     onProfileClick = () => { },
-    typingUsers = []
+    typingUsers = [],
+
+    // New props from chat
+    mentionCounts = {},
+    chatReactions = [],
+
+    // Tube props
+    tubeState = null,
+    onUpdateTubeState = () => { },
+    isTubeOwner = false
 }) {
     const { socket } = useSocket();
     const [incomingReactions, setIncomingReactions] = useState(new Map());
+
+    // Process chat-driven reactions
+    useEffect(() => {
+        if (chatReactions.length > 0) {
+            // Get the latest reaction
+            const latest = chatReactions[chatReactions.length - 1];
+
+            // Helper to match name to ID
+            const findUserId = (name) => {
+                if (name === localUser?.name) return localUser.id || socket?.id;
+                for (const [pid, pdata] of peers) {
+                    if (pdata.user?.name === name) return pdata.user.id || pid;
+                }
+                return null;
+            };
+
+            const targetId = findUserId(latest.sender);
+
+            if (targetId) {
+                setIncomingReactions(prev => {
+                    const newMap = new Map(prev);
+                    const current = newMap.get(targetId) || [];
+                    // Avoid duplicates if same ID processed
+                    if (current.some(r => r.id === latest.id)) return prev;
+
+                    const updated = [...current, { id: latest.id, emoji: latest.emoji }].slice(-5);
+                    newMap.set(targetId, updated);
+                    return newMap;
+                });
+
+                // Cleanup after 3s
+                setTimeout(() => {
+                    setIncomingReactions(prev => {
+                        const newMap = new Map(prev);
+                        const current = newMap.get(targetId) || [];
+                        if (current.length > 0) {
+                            // allow cleanup of specific id
+                            const filtered = current.filter(r => r.id !== latest.id);
+                            newMap.set(targetId, filtered);
+                        }
+                        return newMap;
+                    });
+                }, 3000);
+            }
+        }
+    }, [chatReactions, localUser, peers, socket]);
 
     // Layout State
     const gridRef = useRef(null);
