@@ -415,6 +415,10 @@ app.prepare().then(() => {
 
     // Tube Sync Handlers
     socket.on('tube-request-state', () => {
+      // If there's no owner, and we have a video, requester can be owner
+      if (!tubeState.ownerId && tubeState.videoId) {
+        tubeState.ownerId = socket.id;
+      }
       socket.emit('tube-state', { ...tubeState, serverTime: Date.now() });
     });
 

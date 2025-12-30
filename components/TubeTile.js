@@ -141,19 +141,14 @@ export default function TubeTile({
         // STABLE SYNC CALCULATION
         // 1. Calculate the clock offset once per state update
         const offset = tubeState.serverTime - receivedAt;
-
-        // 2. Estimate what time it is on the server right now (stable)
         const estimatedServerNow = Date.now() + offset;
-
-        // 3. Calculate how long it's been since the server recorded the video position
         const timeSinceUpdate = (estimatedServerNow - tubeState.lastUpdate) / 1000;
-
-        // 4. Determine where the video SHOULD be
         const serverVideoTime = tubeState.timestamp + (tubeState.isPlaying ? timeSinceUpdate : 0);
 
-        // 5. Seek if drift is significant (> 3s for stability)
-        if (Math.abs(currentTime - serverVideoTime) > 3) {
-            console.log("[TubeTile-Native] Sync: Seek to", serverVideoTime, "Offset:", offset);
+        const drift = Math.abs(currentTime - serverVideoTime);
+
+        if (drift > 3) {
+            console.log(`[Tube-Sync] Drift: ${drift.toFixed(2)}s. Seeking to ${serverVideoTime.toFixed(2)}s. (Offset: ${offset}ms)`);
             ignorePauseRef.current = true;
             ytPlayerRef.current.seekTo(serverVideoTime, true);
             setTimeout(() => { ignorePauseRef.current = false; }, 1000);
@@ -359,17 +354,15 @@ export default function TubeTile({
                         zIndex: 5
                     }}>
                         <Icon icon="fa:exclamation-triangle" width="48" />
-                        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>VIDEO UNAVAILABLE</div>
-                        {isOwner && (
-                            <button
-                                onClick={() => { setShowInput(true); }}
-                                className="btn primary"
-                                style={{ fontSize: '12px', padding: '6px 12px' }}
-                            >
-                                Try Another Video
-                            </button>
-                        )}
-                        {!isOwner && <div style={{ fontSize: '12px', opacity: 0.7 }}>The owner is fixing this...</div>}
+                        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>CONNECTION ISSUE</div>
+                        <button
+                            onClick={() => { setHasError(false); setIsReady(false); setTimeout(() => window.location.reload(), 100); }}
+                            className="btn primary"
+                            style={{ fontSize: '12px', padding: '6px 12px' }}
+                        >
+                            Refresh Player
+                        </button>
+                        <div style={{ fontSize: '12px', opacity: 0.7 }}>Mobile browsers may need a refresh to start.</div>
                     </div>
                 )}
             </div>
@@ -386,6 +379,42 @@ export default function TubeTile({
                 <Icon icon="fa:youtube" color="#ff0000" />
                 {isOwner ? 'You are DJ' : 'Following Host'}
             </div>
+
+            {/* Tap to Sync / Join Playback (Mainly for Mobile Autoplay Policy) */}
+            {!isOwner && isReady && !hasError && (
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.1)',
+                    zIndex: 2,
+                    pointerEvents: 'none'
+                }}>
+                    <button
+                        className="btn primary"
+                        style={{
+                            pointerEvents: 'auto',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            background: '#ff0000',
+                            fontWeight: 'bold',
+                            boxShadow: '0 4px 15px rgba(255,0,0,0.4)',
+                            fontSize: '13px'
+                        }}
+                        onClick={() => {
+                            if (ytPlayerRef.current) {
+                                ytPlayerRef.current.playVideo();
+                                ytPlayerRef.current.unMute();
+                                // Trigger a re-sync
+                                setReceivedAt(0); // This forces the sync effect to re-run next render
+                                setTimeout(() => setReceivedAt(Date.now()), 50);
+                            }
+                        }}
+                    >
+                        <Icon icon="fa:play" style={{ marginRight: '8px' }} />
+                        JOIN PLAYBACK
+                    </button>
+                </div>
+            )}
 
             {/* DJ Controls Overlay (Top Right) - Show for everyone to allow "Taking Control" */}
             <div style={{

@@ -36,22 +36,20 @@ export function useYouTubeSync(roomId, user) {
     const updateTubeState = useCallback((partialState) => {
         if (!socket) return;
 
-        // If we are taking control, we become the owner
         const newState = {
             ...partialState,
-            ownerId: socket.id // We take ownership when we interact
+            ownerId: socket.id
         };
 
-        // OPTIMISTIC UPDATE
-        // We update the state so UI is snappy, but we DO NOT update receivedAt.
-        // The sync math in TubeTile relies on receivedAt being paired with serverTime.
-        setTubeState(prev => ({ ...prev, ...newState, lastUpdate: Date.now() }));
+        // OPTIMISTIC UPDATE: 
+        // We update locally for UI responsiveness, but we NEVER update lastUpdate here.
+        // We MUST wait for the server's echoed lastUpdate to maintain sync math.
+        setTubeState(prev => ({ ...prev, ...newState }));
 
         socket.emit('tube-update', {
             roomId,
             ...newState,
-            timestamp: newState.timestamp !== undefined ? newState.timestamp : tubeState.timestamp,
-            lastUpdate: Date.now()
+            timestamp: newState.timestamp !== undefined ? newState.timestamp : tubeState.timestamp
         });
     }, [socket, roomId, tubeState]);
 
