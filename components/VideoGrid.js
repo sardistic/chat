@@ -102,6 +102,7 @@ function VideoTile({
     incomingReactions = [],
     mentionCount = 0,
     chatActivity = 0,
+    isTyping = false,
 
     isDiscordUser = false,
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
@@ -315,7 +316,7 @@ function VideoTile({
                     background: 'transparent'
                 }}>
                     <img
-                        src={user?.avatar || user?.image || `/api/avatar/${user?.name || 'User'}`}
+                        src={user?.avatar || user?.image || `/api/avatar/${user?.name || 'User'}${isTyping ? '?expr=typing' : ''}`}
                         alt={user?.name}
                         style={{
                             width: '80px',
