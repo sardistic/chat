@@ -10,6 +10,7 @@ import ProfileModal from "@/components/ProfileModal";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useIRC } from "@/hooks/useIRC";
 import { useSocket } from "@/lib/socket";
+import { useYouTubeSync } from "@/hooks/useYouTubeSync";
 
 function MainApp({ user, onLeaveRoom }) {
   const roomId = "default-room";
@@ -41,6 +42,9 @@ function MainApp({ user, onLeaveRoom }) {
   const [modalPosition, setModalPosition] = useState(null);
   const [peerSettings, setPeerSettings] = useState({}); // { [userId]: { volume: 1, muted: false, hidden: false } }
   const [typingUsers, setTypingUsers] = useState([]);
+  const [mentionCounts, setMentionCounts] = useState({});
+  const [chatReactions, setChatReactions] = useState([]);
+  const { tubeState, updateTubeState, isOwner: isTubeOwner } = useYouTubeSync(roomId, user);
 
   const handleUpdatePeerSettings = (userId, newSettings) => {
     setPeerSettings(prev => ({
@@ -140,6 +144,41 @@ function MainApp({ user, onLeaveRoom }) {
         ...prev,
         [author]: content
       }));
+
+      // 1. Detect Mentions for Camera Glow (Target gets glow)
+      const mentionedUsers = [];
+      const allKnownUsers = [...peers.values().map(p => p.user?.name), user?.name].filter(Boolean);
+      allKnownUsers.forEach(name => {
+        if (content.includes(`@${name}`)) {
+          mentionedUsers.push(name);
+        }
+      });
+
+      if (mentionedUsers.length > 0) {
+        setMentionCounts(prev => {
+          const newCounts = { ...prev };
+          mentionedUsers.forEach(u => newCounts[u] = (newCounts[u] || 0) + 1);
+          return newCounts;
+        });
+        // Clear mention glow after 3s
+        setTimeout(() => {
+          setMentionCounts(prev => {
+            const newCounts = { ...prev };
+            mentionedUsers.forEach(u => {
+              if (newCounts[u] > 0) newCounts[u]--;
+            });
+            return newCounts;
+          });
+        }, 3000);
+      }
+
+      // 2. Detect Single Emojis for Floating Reactions (Sender emits reaction)
+      // Simple regex for single emoji
+      const isEmoji = /^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff]){1,4}$/.test(content.trim());
+      if (isEmoji) {
+        const emoji = content.trim();
+        setChatReactions(prev => [...prev, { sender: author, emoji, id: Date.now() }]);
+      }
 
       // Clear after 6 seconds
       setTimeout(() => {
@@ -368,9 +407,12 @@ function MainApp({ user, onLeaveRoom }) {
             onUpdatePeerSettings={handleUpdatePeerSettings}
             onProfileClick={handleProfileClick}
             typingUsers={typingUsers}
+            mentionCounts={mentionCounts}
+            chatReactions={chatReactions}
+            tubeState={tubeState}
+            onUpdateTubeState={updateTubeState}
+            isTubeOwner={isTubeOwner}
           />
-
-
         </div>
 
         {/* Floating Right Sidebar (Chat) */}

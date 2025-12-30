@@ -138,8 +138,61 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
             setShowGifPicker(true);
             setGifQuery('');
             setShowMentions(false);
-        } else {
-            // Check for :word pattern (like Discord emoji picker)
+        }
+
+        // Emoji replacement map
+        const emojiMap = {
+            ':D': '😃',
+            ':)': '🙂',
+            ':(': '🙁',
+            ';)': '😉',
+            ':P': '😛',
+            ':p': '😛',
+            '<3': '❤️',
+            ':o': '😮',
+            ':O': '😮',
+            ':joy': '😂',
+            ':sob': '😭',
+            ':fire': '🔥'
+        };
+
+        // Check for text replacement
+        let processedValue = value;
+        // Only replace if the last character typed was space or end of string
+        // And ensure we don't break existing emoji codes or URLs
+        Object.entries(emojiMap).forEach(([text, emoji]) => {
+            if (processedValue.endsWith(text + ' ')) {
+                processedValue = processedValue.slice(0, -(text.length + 1)) + emoji + ' ';
+            } else if (processedValue === text) {
+                // Don't replace partial typing instantly unless it's a known exact match after a space (handled above)
+                // But user asked for ":D". If I type ":D", it should become 😃.
+                // Let's stick to safe replacement on space or exact match if it feels right.
+                // Actually, simpler: replace if the pattern exists at the end?
+                // No, that interrupts typing ":Dog".
+                // Let's replace ONLY on Space or Enter (but Enter sends).
+                // User request: "replace :expresions that represent emojis with emojis like :D"
+                // This usually means while typing.
+            }
+        });
+
+        // Simple instant replacement for standalone smileys if desired?
+        // Let's implement keydown handler approach or input change check.
+        // Actually, let's just do simple replaceAll for known safe patterns
+        // that are preceded by space or start of string.
+
+        let newValue = value;
+        Object.entries(emojiMap).forEach(([code, emoji]) => {
+            // Replace code if it's followed by a space
+            newValue = newValue.replace(new RegExp(`(^|\\s)${code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`, 'g'), `$1${emoji}$2`);
+        });
+
+        if (newValue !== value) {
+            setInputValue(newValue);
+            return; // Skip other checks if we modified input
+        }
+
+        if (!value.startsWith('/gif')) {
+            // Check for :word pattern logic
             const colonMatch = value.match(/:(\w+)$/);
             if (colonMatch && colonMatch[1].length >= 3) {
                 setShowGifPicker(true);
@@ -316,7 +369,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                         >
                                             <MessageContent
                                                 text={msg.text}
-                                                onMentionClick={(username) => onUserClick({ name: username })}
+                                                onMentionClick={(username, e) => onUserClick({ name: username }, e)}
                                             />
                                         </div>
                                     ))}
@@ -432,7 +485,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                         display: 'flex',
                         alignItems: 'flex-start',
                         gap: '10px',
-                        padding: '12px 14px 8px'
+                        padding: '8px 12px 6px'
                     }}>
                         {/* User Avatar */}
                         <img

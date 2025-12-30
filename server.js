@@ -92,6 +92,14 @@ const storeMessage = (roomId, message) => {
   }
 };
 
+// Tube Sync State
+const tubeState = {
+  videoId: null,
+  isPlaying: false,
+  timestamp: 0,
+  lastUpdate: Date.now()
+};
+
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
@@ -401,6 +409,22 @@ app.prepare().then(() => {
           }).catch(e => console.error("[Stats] Failed to track reaction receive:", e.message));
         }
       }
+    });
+
+    // Tube Sync Handlers
+    socket.on('tube-request-state', () => {
+      socket.emit('tube-state', tubeState);
+    });
+
+    socket.on('tube-update', (newState) => {
+      // Merge state
+      if (newState.videoId !== undefined) tubeState.videoId = newState.videoId;
+      if (newState.isPlaying !== undefined) tubeState.isPlaying = newState.isPlaying;
+      if (newState.timestamp !== undefined) tubeState.timestamp = newState.timestamp;
+      tubeState.lastUpdate = Date.now();
+
+      // Broadcast to everyone in room including sender (to confirm sync)
+      io.to(roomId).emit('tube-state', tubeState);
     });
 
     // Fetch Profile Stats

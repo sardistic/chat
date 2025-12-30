@@ -104,6 +104,15 @@ function VideoTile({
     chatActivity = 0,
     isTyping = false,
 
+    // New props from chat
+    mentionCounts = {}, // { username: count }
+    chatReactions = [], // [ { sender, emoji, id } ]
+
+    // Tube props
+    tubeState = { videoId: null, isPlaying: false, timestamp: 0, lastUpdate: 0 },
+    onUpdateTubeState = () => { },
+    isTubeOwner = false,
+
     isDiscordUser = false,
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
     onUpdateSettings = () => { },
@@ -112,6 +121,55 @@ function VideoTile({
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
+
+    // Process chat-driven reactions
+    useEffect(() => {
+        if (chatReactions.length > 0) {
+            // Get the latest reaction
+            const latest = chatReactions[chatReactions.length - 1];
+
+            // Find user ID format that matches our map keys
+            // We need to match userName -> userID
+
+            // Helper to match name to ID
+            const findUserId = (name) => {
+                if (name === localUser?.name) return localUser.id || socket?.id;
+                for (const [pid, pdata] of peers) {
+                    if (pdata.user?.name === name) return pdata.user.id || pid;
+                }
+                return null;
+            };
+
+            const targetId = findUserId(latest.sender);
+
+            if (targetId) {
+                setIncomingReactions(prev => {
+                    const newMap = new Map(prev);
+                    const current = newMap.get(targetId) || [];
+                    // Avoid duplicates if same ID processed
+                    if (current.some(r => r.id === latest.id)) return prev;
+
+                    const updated = [...current, { id: latest.id, emoji: latest.emoji }].slice(-5);
+                    newMap.set(targetId, updated);
+                    return newMap;
+                });
+
+                // Cleanup after 3s
+                setTimeout(() => {
+                    setIncomingReactions(prev => {
+                        const newMap = new Map(prev);
+                        const current = newMap.get(targetId) || [];
+                        if (current.length > 0) {
+                            // allow cleanup of specific id
+                            const filtered = current.filter(r => r.id !== latest.id);
+                            newMap.set(targetId, filtered);
+                        }
+                        return newMap;
+                    });
+                }, 3000);
+            }
+        }
+    }, [chatReactions, localUser, peers, socket]);
 
 
     // Destructure settings
@@ -528,6 +586,23 @@ export default function VideoGrid({
     return (
         <>
             <div className="grid" ref={gridRef} style={{ overflow: 'hidden' }}>
+                {/* Tube Tile */}
+                {tubeState && (
+                    <TubeTile
+                        tubeState={tubeState}
+                        isOwner={isTubeOwner}
+                        settings={{ volume: 1, isLocallyMuted: false, isVideoHidden: false }} // Tube settings could be separate? For now use defaults/dummy
+                        onSync={(update) => {
+                            if (update.type === 'play') onUpdateTubeState({ isPlaying: true, timestamp: update.playedSeconds });
+                            if (update.type === 'pause') onUpdateTubeState({ isPlaying: false, timestamp: update.playedSeconds });
+                            if (update.type === 'progress') { /* Optional: sync time periodically */ }
+                        }}
+                        onChangeVideo={(url) => onUpdateTubeState({ videoId: url, isPlaying: true, timestamp: 0 })}
+                        width={layout.width}
+                        height={layout.height}
+                    />
+                )}
+
                 {/* Local User Tile */}
                 <VideoTile
                     stream={localStream}
@@ -543,6 +618,7 @@ export default function VideoGrid({
                     // Local user doesn't really need settings, but we pass defaults
                     settings={{ volume: 0, isLocallyMuted: true, isVideoHidden: false }}
                     isTyping={typingUsers.includes(localUser?.name)}
+                    mentionCount={mentionCounts[localUser?.name] || 0}
                     width={layout.width}
                     height={layout.height}
                 />
@@ -572,6 +648,7 @@ export default function VideoGrid({
                             settings={mySettings}
                             onUpdateSettings={(newVals) => onUpdatePeerSettings(userId, newVals)}
                             isTyping={typingUsers.includes(peerData.user?.name)}
+                            mentionCount={mentionCounts[peerData.user?.name] || 0}
                             width={layout.width}
                             height={layout.height}
                         />

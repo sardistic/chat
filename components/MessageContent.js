@@ -277,7 +277,7 @@ export default function MessageContent({ text, onMentionClick }) {
                     return (
                         <span
                             key={i}
-                            onClick={() => onMentionClick && onMentionClick(part.username)}
+                            onClick={(e) => onMentionClick && onMentionClick(part.username, e)}
                             style={{
                                 color: '#7289da',
                                 background: 'rgba(114, 137, 218, 0.15)',
