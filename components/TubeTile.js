@@ -28,6 +28,8 @@ export default function TubeTile({
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
 
+    const ignorePauseRef = useRef(false);
+
     // Sync Logic
     useEffect(() => {
         if (!playerRef.current || !tubeState.videoId || !isReady) return;
@@ -38,9 +40,15 @@ export default function TubeTile({
 
         // Sync if drift > 2s
         if (Math.abs(localTime - serverTime) > 2) {
+            // Set ignore flag so the resulting 'pause' event from seeking doesn't stop playback server-side
+            ignorePauseRef.current = true;
             player.seekTo(serverTime, 'seconds');
+            // Clear flag after short delay (seeking takes time)
+            setTimeout(() => { ignorePauseRef.current = false; }, 1000);
         }
     }, [tubeState, isReady]);
+
+
 
     // Error Reset when video changes
     useEffect(() => {
@@ -239,7 +247,13 @@ export default function TubeTile({
                         }
                     }}
                     onPlay={() => isOwner && onSync && onSync({ type: 'play' })}
-                    onPause={() => isOwner && onSync && onSync({ type: 'pause' })}
+                    onPause={() => {
+                        if (ignorePauseRef.current) {
+                            console.log("Ignoring pause event due to seek");
+                            return;
+                        }
+                        if (isOwner && onSync) onSync({ type: 'pause' });
+                    }}
                     style={{ opacity: (settings.isVideoHidden || hasError) ? 0 : 1 }}
                 />
 
