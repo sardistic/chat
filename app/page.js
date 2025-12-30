@@ -240,7 +240,13 @@ function MainApp({ user, onLeaveRoom }) {
                 .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
                 .map((u, i) => {
                   const isUserTyping = typingUsers.includes(u.name);
-                  const avatarUrl = u.avatar || `/api/avatar/${u.name}${isUserTyping ? '?expr=typing' : ''}`;
+                  const base = u.avatar || `/api/avatar/${u.name}`;
+                  // Only animate if it's our internal avatar API
+                  let avatarUrl = base;
+                  if (isUserTyping && base.includes('/api/avatar')) {
+                    const hasQuery = base.includes('?');
+                    avatarUrl = `${base}${hasQuery ? '&' : '?'}expr=typing`;
+                  }
                   return (
                     <div
                       key={u.name + i}

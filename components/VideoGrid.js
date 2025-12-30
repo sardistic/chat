@@ -316,7 +316,15 @@ function VideoTile({
                     background: 'transparent'
                 }}>
                     <img
-                        src={user?.avatar || user?.image || `/api/avatar/${user?.name || 'User'}${isTyping ? '?expr=typing' : ''}`}
+                        src={(() => {
+                            const base = user?.avatar || user?.image || `/api/avatar/${user?.name || 'User'}`;
+                            // Only animate if it's our internal avatar API
+                            if (isTyping && base.includes('/api/avatar')) {
+                                const hasQuery = base.includes('?');
+                                return `${base}${hasQuery ? '&' : '?'}expr=typing`;
+                            }
+                            return base;
+                        })()}
                         alt={user?.name}
                         style={{
                             width: '80px',
