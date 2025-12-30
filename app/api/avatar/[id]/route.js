@@ -297,6 +297,7 @@ export async function GET(req, { params }) {
   const rand = mulberry32(seed);
 
   const size = clamp(parseInt(url.searchParams.get("s") ?? "256", 10) || 256, 64, 1024);
+  const expr = url.searchParams.get("expr") || "idle"; // idle, typing, happy, wink
   const w = size;
   const hgt = size;
 
@@ -372,27 +373,59 @@ export async function GET(req, { params }) {
   }
 
   if (!mouth) {
-    const mouthType = Math.floor(rand() * 4);
-    if (mouthType === 0) {
+    // Expression-based mouth override
+    if (expr === 'typing') {
+      // Animated talking mouth
+      const rr = w * 0.035;
+      mouth = `
+        <ellipse cx="${cx.toFixed(2)}" cy="${mouthY.toFixed(2)}" rx="${rr.toFixed(2)}" ry="${(rr * 0.6).toFixed(2)}" fill="${eye}" opacity="0.9">
+          <animate attributeName="ry" values="${(rr * 0.6).toFixed(2)};${(rr * 1.2).toFixed(2)};${(rr * 0.6).toFixed(2)}" dur="0.3s" repeatCount="indefinite"/>
+        </ellipse>
+      `;
+    } else if (expr === 'happy') {
       const x0 = cx - mouthW / 2;
       const x1 = cx + mouthW / 2;
       const y0 = mouthY;
-      const y1 = mouthY + mouthH;
-      mouth = `<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${y1.toFixed(2)} ${x1.toFixed(2)} ${y0.toFixed(2)}" stroke="${eye}" stroke-width="${(w * 0.018).toFixed(2)}" stroke-linecap="round" fill="none"/>`;
-    } else if (mouthType === 1) {
-      const x0 = cx - mouthW / 2;
-      const x1 = cx + mouthW / 2;
-      const y0 = mouthY + mouthH * 0.25;
-      mouth = `<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${(mouthY - mouthH * 0.05).toFixed(2)} ${x1.toFixed(2)} ${y0.toFixed(2)}" stroke="${eye}" stroke-width="${(w * 0.018).toFixed(2)}" stroke-linecap="round" fill="none"/>`;
-    } else if (mouthType === 2) {
-      const rr = w * 0.025;
-      mouth = `<circle cx="${cx.toFixed(2)}" cy="${mouthY.toFixed(2)}" r="${rr.toFixed(2)}" fill="${eye}" opacity="0.9"/>`;
+      const y1 = mouthY + mouthH * 1.2;
+      mouth = `<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${y1.toFixed(2)} ${x1.toFixed(2)} ${y0.toFixed(2)}" stroke="${eye}" stroke-width="${(w * 0.022).toFixed(2)}" stroke-linecap="round" fill="none"/>`;
     } else {
-      const x0 = cx - mouthW / 2;
-      const x1 = cx + mouthW / 2;
-      const y0 = mouthY;
-      const y1 = mouthY + mouthH * 0.6;
-      mouth = `<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${y1.toFixed(2)} ${x1.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${(y0 + mouthH * 0.25).toFixed(2)} ${x0.toFixed(2)} ${y0.toFixed(2)}" fill="${eye}" opacity="0.9"/>`;
+      // Default idle expressions
+      const mouthType = Math.floor(rand() * 6);
+      if (mouthType === 0) {
+        const x0 = cx - mouthW / 2;
+        const x1 = cx + mouthW / 2;
+        const y0 = mouthY;
+        const y1 = mouthY + mouthH;
+        mouth = `<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${y1.toFixed(2)} ${x1.toFixed(2)} ${y0.toFixed(2)}" stroke="${eye}" stroke-width="${(w * 0.018).toFixed(2)}" stroke-linecap="round" fill="none"/>`;
+      } else if (mouthType === 1) {
+        const x0 = cx - mouthW / 2;
+        const x1 = cx + mouthW / 2;
+        const y0 = mouthY + mouthH * 0.25;
+        mouth = `<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${(mouthY - mouthH * 0.05).toFixed(2)} ${x1.toFixed(2)} ${y0.toFixed(2)}" stroke="${eye}" stroke-width="${(w * 0.018).toFixed(2)}" stroke-linecap="round" fill="none"/>`;
+      } else if (mouthType === 2) {
+        const rr = w * 0.025;
+        mouth = `<circle cx="${cx.toFixed(2)}" cy="${mouthY.toFixed(2)}" r="${rr.toFixed(2)}" fill="${eye}" opacity="0.9"/>`;
+      } else if (mouthType === 3) {
+        // Cat mouth :3
+        const mw = w * 0.04;
+        mouth = `
+          <path d="M ${(cx - mw).toFixed(2)} ${mouthY.toFixed(2)} Q ${(cx - mw / 2).toFixed(2)} ${(mouthY + mw * 0.4).toFixed(2)} ${cx.toFixed(2)} ${mouthY.toFixed(2)}" stroke="${eye}" stroke-width="${(w * 0.015).toFixed(2)}" fill="none"/>
+          <path d="M ${cx.toFixed(2)} ${mouthY.toFixed(2)} Q ${(cx + mw / 2).toFixed(2)} ${(mouthY + mw * 0.4).toFixed(2)} ${(cx + mw).toFixed(2)} ${mouthY.toFixed(2)}" stroke="${eye}" stroke-width="${(w * 0.015).toFixed(2)}" fill="none"/>
+        `;
+      } else if (mouthType === 4) {
+        // Tongue out :P
+        const tw = w * 0.035;
+        mouth = `
+          <path d="M ${(cx - mouthW / 3).toFixed(2)} ${mouthY.toFixed(2)} L ${(cx + mouthW / 3).toFixed(2)} ${mouthY.toFixed(2)}" stroke="${eye}" stroke-width="${(w * 0.016).toFixed(2)}" stroke-linecap="round"/>
+          <ellipse cx="${cx.toFixed(2)}" cy="${(mouthY + tw).toFixed(2)}" rx="${(tw * 0.7).toFixed(2)}" ry="${tw.toFixed(2)}" fill="#FF6B9D"/>
+        `;
+      } else {
+        const x0 = cx - mouthW / 2;
+        const x1 = cx + mouthW / 2;
+        const y0 = mouthY;
+        const y1 = mouthY + mouthH * 0.6;
+        mouth = `<path d="M ${x0.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${y1.toFixed(2)} ${x1.toFixed(2)} ${y0.toFixed(2)} Q ${cx.toFixed(2)} ${(y0 + mouthH * 0.25).toFixed(2)} ${x0.toFixed(2)} ${y0.toFixed(2)}" fill="${eye}" opacity="0.9"/>`;
+      }
     }
   }
 
