@@ -34,8 +34,9 @@ function calculateLayout(containerWidth, containerHeight, videoCount, aspectRati
 
     // Deduct padding/gap (approx 24px padding + 12px gap)
     // Increase safeguards to prevent overflow
-    const paddingX = 48; // Was 24, increased to account for scrollbars/margins
-    const paddingY = 48; // Was 24, increased to account for headers/footers
+    // We assume containerWidth includes padding, but we need to subtract it for available space
+    const paddingX = 48;
+    const paddingY = 48;
     const gap = 12;
 
     for (let cols = 1; cols <= videoCount; cols++) {
@@ -50,8 +51,8 @@ function calculateLayout(containerWidth, containerHeight, videoCount, aspectRati
 
         if (availableWidth <= 0 || availableHeight <= 0) continue;
 
-        const maxTileWidth = availableWidth / cols;
-        const maxTileHeight = availableHeight / rows;
+        const maxTileWidth = Math.floor(availableWidth / cols); // Use floor to avoid sub-pixel wrap
+        const maxTileHeight = Math.floor(availableHeight / rows);
 
         // Fit based on aspect ratio
         let w = maxTileWidth;
@@ -62,6 +63,10 @@ function calculateLayout(containerWidth, containerHeight, videoCount, aspectRati
             w = h * aspectRatio;
         }
 
+        // Ensure integer values
+        w = Math.floor(w);
+        h = Math.floor(h);
+
         // Maximizing area (w * h) is equivalent to maximizing w since aspect ratio is fixed
         if (w > bestLayout.width || cols === 1) { // cols===1 check ensures we have at least a valid start
             bestLayout = { cols, rows, width: w, height: h };
@@ -69,6 +74,7 @@ function calculateLayout(containerWidth, containerHeight, videoCount, aspectRati
     }
     return bestLayout;
 }
+
 
 // Generate a deterministic color from a username (similar to avatar API)
 function getUserColor(name) {
