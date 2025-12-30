@@ -243,7 +243,7 @@ export default function TubeTile({
     }
 
     const videoUrl = tubeState.videoId.startsWith('http') ? tubeState.videoId : `https://www.youtube.com/watch?v=${tubeState.videoId}`;
-    console.log("[TubeTile] Rendering URL:", videoUrl, "Playing:", tubeState.isPlaying, "IsOwner:", isOwner);
+    console.log("[TubeTile] Rendering URL:", videoUrl, "Playing:", tubeState.isPlaying, "Dimensions:", width, "x", height);
 
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
