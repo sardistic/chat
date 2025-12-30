@@ -495,7 +495,7 @@ export default function VideoGrid({
     // Layout State
     const gridRef = useRef(null);
     const [layout, setLayout] = useState({ width: 320, height: 180 });
-    const totalTiles = 1 + (peers ? peers.size : 0);
+    const totalTiles = 1 + (peers ? peers.size : 0) + (tubeState ? 1 : 0);
 
     // Resize Observer for Dynamic Layout
     useEffect(() => {
