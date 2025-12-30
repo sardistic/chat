@@ -163,7 +163,7 @@ export default function EntryScreen({ onJoin }) {
         }
     }, [characterSeed]);
 
-    const previewUrl = `/api/avatar/${username || 'guest'}?v=${characterSeed}`;
+    const previewUrl = `/api/avatar/${sanitizeUsername(username) || 'guest'}?v=${characterSeed}`;
 
     const handleGuestJoin = async () => {
         // Save to cookies for persistence with 1 year expiry
