@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSocket } from '@/lib/socket';
 
 export function useChat(roomId, user) {
@@ -119,11 +119,14 @@ export function useChat(roomId, user) {
         };
     }, [socket, isConnected, user]);
 
+    // Memoize array conversion to prevent effect loops
+    const typingUsersList = useMemo(() => Array.from(typingUsers), [typingUsers]);
+
     return {
         messages,
         sendMessage,
         handleTyping,
-        typingUsers: Array.from(typingUsers),
+        typingUsers: typingUsersList,
         isTyping
     };
 }
