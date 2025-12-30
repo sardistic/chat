@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 import { Icon } from '@iconify/react';
 import { useSocket } from '@/lib/socket';
 
