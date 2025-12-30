@@ -3,11 +3,13 @@ import { useSocket } from '@/lib/socket';
 
 export function useYouTubeSync(roomId, user) {
     const { socket } = useSocket();
+    const [receivedAt, setReceivedAt] = useState(Date.now());
     const [tubeState, setTubeState] = useState({
         videoId: null,
         isPlaying: false,
         timestamp: 0,
-        lastUpdate: 0
+        lastUpdate: 0,
+        ownerId: null
     });
 
     // Listen for updates from server
@@ -17,6 +19,7 @@ export function useYouTubeSync(roomId, user) {
         const handleStateUpdate = (newState) => {
             // console.log("TUBE: Received state", newState);
             setTubeState(newState);
+            setReceivedAt(Date.now());
         };
 
         socket.on('tube-state', handleStateUpdate);
@@ -29,25 +32,34 @@ export function useYouTubeSync(roomId, user) {
         };
     }, [socket, roomId]);
 
-    // Function to broadcast updates (only if allowed)
+    // Function to broadcast updates
     const updateTubeState = useCallback((partialState) => {
         if (!socket) return;
 
-        // Optimistic update? Maybe safer to wait for echo, but players feel laggy without it.
-        // Let's do optimistic.
-        setTubeState(prev => ({ ...prev, ...partialState, lastUpdate: Date.now() }));
+        // If we are taking control, we become the owner
+        const newState = {
+            ...partialState,
+            ownerId: socket.id // We take ownership when we interact
+        };
+
+        setTubeState(prev => ({ ...prev, ...newState, lastUpdate: Date.now() }));
+        setReceivedAt(Date.now());
 
         socket.emit('tube-update', {
             roomId,
-            ...partialState,
-            timestamp: partialState.timestamp !== undefined ? partialState.timestamp : tubeState.timestamp,
+            ...newState,
+            timestamp: newState.timestamp !== undefined ? newState.timestamp : tubeState.timestamp,
             lastUpdate: Date.now()
         });
     }, [socket, roomId, tubeState]);
 
+    // We are the owner if we set the last state OR if no owner exists
+    const isOwner = !tubeState.ownerId || tubeState.ownerId === socket?.id;
+
     return {
         tubeState,
+        receivedAt,
         updateTubeState,
-        isOwner: true // For now, everyone is owner/can control. Later: check user.isAdmin
+        isOwner
     };
 }

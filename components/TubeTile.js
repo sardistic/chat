@@ -5,8 +5,9 @@ import { Icon } from '@iconify/react';
 import { useSocket } from '@/lib/socket';
 
 export default function TubeTile({
-    tubeState, // { videoId, isPlaying, timestamp, lastUpdate }
-    isOwner,   // If true, shows controls to change video
+    tubeState, // { videoId, isPlaying, timestamp, lastUpdate, serverTime, ownerId }
+    receivedAt, // Local timestamp when tubeState was received
+    isOwner,   // If true, we are the sync master
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
     onSync,    // Callback when player reports progress/state
     onChangeVideo, // Callback to change video
@@ -64,12 +65,14 @@ export default function TubeTile({
         };
 
         const onPlayerStateChange = (event) => {
+            if (!isOwner) return; // Only owner reports state changes
+
             const currentTime = event.target.getCurrentTime();
             if (event.data === 1) { // Playing
-                if (isOwner && onSync) onSync({ type: 'play', playedSeconds: currentTime });
+                if (onSync) onSync({ type: 'play', playedSeconds: currentTime });
             } else if (event.data === 2) { // Paused
                 if (ignorePauseRef.current) return;
-                if (isOwner && onSync) onSync({ type: 'pause', playedSeconds: currentTime });
+                if (onSync) onSync({ type: 'pause', playedSeconds: currentTime });
             }
         };
 
@@ -126,15 +129,25 @@ export default function TubeTile({
         }
 
         const currentTime = ytPlayerRef.current.getCurrentTime();
-        const drift = tubeState.serverTime ? (tubeState.serverTime - Date.now()) : 0;
-        const estimatedServerNow = Date.now() + drift;
-        const timeSinceUpdate = (estimatedServerNow - tubeState.lastUpdate) / 1000;
-        const serverTime = tubeState.timestamp + (tubeState.isPlaying ? timeSinceUpdate : 0);
 
-        if (Math.abs(currentTime - serverTime) > 2) {
-            console.log("[TubeTile-Native] Sync: Seek to", serverTime, "Drift:", drift);
+        // STABLE SYNC CALCULATION
+        // 1. Calculate the clock offset once per state update
+        const offset = tubeState.serverTime - receivedAt;
+
+        // 2. Estimate what time it is on the server right now (stable)
+        const estimatedServerNow = Date.now() + offset;
+
+        // 3. Calculate how long it's been since the server recorded the video position
+        const timeSinceUpdate = (estimatedServerNow - tubeState.lastUpdate) / 1000;
+
+        // 4. Determine where the video SHOULD be
+        const serverVideoTime = tubeState.timestamp + (tubeState.isPlaying ? timeSinceUpdate : 0);
+
+        // 5. Seek if drift is significant (> 3s for stability)
+        if (Math.abs(currentTime - serverVideoTime) > 3) {
+            console.log("[TubeTile-Native] Sync: Seek to", serverVideoTime, "Offset:", offset);
             ignorePauseRef.current = true;
-            ytPlayerRef.current.seekTo(serverTime, true);
+            ytPlayerRef.current.seekTo(serverVideoTime, true);
             setTimeout(() => { ignorePauseRef.current = false; }, 1000);
         }
     }, [tubeState, isReady]);

@@ -585,6 +585,7 @@ export default function VideoGrid({
                 {tubeState && (
                     <TubeTile
                         tubeState={tubeState}
+                        receivedAt={receivedAt}
                         isOwner={isTubeOwner}
                         settings={{ volume: 0.5, isLocallyMuted: true, isVideoHidden: false }} // Tube settings default to muted for autoplay policy
                         onSync={(update) => {
