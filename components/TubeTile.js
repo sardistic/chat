@@ -30,6 +30,18 @@ export default function TubeTile({
 
     const ignorePauseRef = useRef(false);
 
+    // Memoize config to prevent re-initialization on every render
+    const playerConfig = useMemo(() => ({
+        youtube: {
+            playerVars: {
+                origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+                enablejsapi: 1,
+                modestbranding: 1,
+                rel: 0
+            }
+        }
+    }), []);
+
     // Sync Logic
     // Sync Logic
     useEffect(() => {
@@ -246,17 +258,7 @@ export default function TubeTile({
     const videoUrl = tubeState.videoId.startsWith('http') ? tubeState.videoId : `https://www.youtube.com/watch?v=${tubeState.videoId}`;
     console.log("[TubeTile] Rendering URL:", videoUrl, "Playing:", tubeState.isPlaying);
 
-    // Memoize config to prevent re-initialization on every render
-    const playerConfig = useMemo(() => ({
-        youtube: {
-            playerVars: {
-                origin: typeof window !== 'undefined' ? window.location.origin : undefined,
-                enablejsapi: 1,
-                modestbranding: 1,
-                rel: 0
-            }
-        }
-    }), []);
+
 
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
