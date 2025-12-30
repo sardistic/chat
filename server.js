@@ -423,11 +423,20 @@ app.prepare().then(() => {
     });
 
     socket.on('tube-update', (newState) => {
-      // Merge state
+      // Security: Only the owner should be able to update progress heartbeats,
+      // but anyone can change the video or toggle play/pause (Collaborative DJ).
+      // If there's no owner, the first person to update takes it.
+      if (!tubeState.ownerId) {
+        tubeState.ownerId = socket.id;
+      }
+
       if (newState.videoId !== undefined) tubeState.videoId = newState.videoId;
       if (newState.isPlaying !== undefined) tubeState.isPlaying = newState.isPlaying;
       if (newState.timestamp !== undefined) tubeState.timestamp = newState.timestamp;
-      if (newState.ownerId !== undefined) tubeState.ownerId = newState.ownerId;
+
+      // If the update includes an ownerId, only respect it if intentionally handed over
+      // For now, we allow anyone to become owner if they send an update and CURRENT owner is missing.
+
       tubeState.lastUpdate = Date.now();
       // Broadcast with server's current clock to allow drift calculation
       io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });
@@ -504,7 +513,17 @@ app.prepare().then(() => {
         const room = rooms.get(roomId);
         if (room) {
           room.delete(socket.id);
-          if (room.size === 0) rooms.delete(roomId);
+          if (room.size === 0) {
+            rooms.delete(roomId);
+            // If room is empty, reset tube state partially
+            tubeState.ownerId = null;
+          } else if (tubeState.ownerId === socket.id) {
+            // Handover to someone else
+            const nextOwnerId = room.keys().next().value;
+            tubeState.ownerId = nextOwnerId;
+            console.log(`[Tube] Handed over ownership to ${nextOwnerId}`);
+            io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });
+          }
         }
         socket.to(roomId).emit("user-left", { socketId: socket.id });
         socket.to(roomId).emit("user-disconnected", socket.id);

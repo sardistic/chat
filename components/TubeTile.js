@@ -27,6 +27,7 @@ export default function TubeTile({
     const [searchResults, setSearchResults] = useState([]);
     const [retryKey, setRetryKey] = useState(0);
     const [loadTimeout, setLoadTimeout] = useState(false);
+    const [forceSyncTrigger, setForceSyncTrigger] = useState(0);
 
     const ignorePauseRef = useRef(false);
     const ytPlayerRef = useRef(null);
@@ -110,10 +111,10 @@ export default function TubeTile({
             }
 
             if (window.YT && window.YT.Player) {
-                // Wait one tick to ensure DOM is flush
+                // Wait a bit to ensure target DIV is truly in DOM
                 setTimeout(() => {
                     if (!playerContainerRef.current) return;
-
+                    console.log("[Tube-Init] Initializing YT Player for:", embedId);
                     ytPlayerRef.current = new window.YT.Player('tube-player-target', {
                         height: '100%',
                         width: '100%',
@@ -139,7 +140,7 @@ export default function TubeTile({
                             }
                         }
                     });
-                }, 50);
+                }, 200);
             } else {
                 const checkYT = setInterval(() => {
                     if (window.YT && window.YT.Player) {
@@ -172,15 +173,15 @@ export default function TubeTile({
         const currentTime = ytPlayerRef.current.getCurrentTime();
 
         // --- SOURCE OF TRUTH CHECK ---
-        // If we are the owner, we are the master clock. 
-        // We should NEVER seek ourselves based on server echoes (to avoid feedback loops).
         if (isOwner) return;
 
         // Ensure we have a server timestamp to synchronize with
-        if (!tubeState.serverTime) return;
+        if (!tubeState.serverTime || !tubeState.lastUpdate) {
+            console.log("[Tube-Sync] Missing sync data:", { serverTime: tubeState.serverTime, lastUpdate: tubeState.lastUpdate });
+            return;
+        }
 
         // STABLE SYNC CALCULATION
-        // 1. Calculate the clock offset once per state update
         const offset = tubeState.serverTime - receivedAt;
         const estimatedServerNow = Date.now() + offset;
         const timeSinceUpdate = (estimatedServerNow - tubeState.lastUpdate) / 1000;
@@ -188,13 +189,19 @@ export default function TubeTile({
 
         const drift = Math.abs(currentTime - serverVideoTime);
 
-        if (drift > 3) {
-            console.log(`[Tube-Sync] Drift: ${drift.toFixed(2)}s. Seeking to ${serverVideoTime.toFixed(2)}s. (Offset: ${offset}ms)`);
+        if (drift > 2 || forceSyncTrigger > 0) {
+            console.log(`[Tube-Sync] Correcting position. Drift: ${drift.toFixed(2)}s. Target: ${serverVideoTime.toFixed(2)}s. ForceSync: ${forceSyncTrigger}`);
             ignorePauseRef.current = true;
             ytPlayerRef.current.seekTo(serverVideoTime, true);
             setTimeout(() => { ignorePauseRef.current = false; }, 1000);
+
+            // If we were force syncing, reset the intent
+            if (forceSyncTrigger > 0) {
+                // We'll let the dependency array handle the run, but we want to know we did it
+                console.log("[Tube-Sync] Force sync completed.");
+            }
         }
-    }, [tubeState, isReady, receivedAt, isOwner]);
+    }, [tubeState, isReady, receivedAt, isOwner, forceSyncTrigger]);
 
     // Owner Heartbeat: Periodically sync progress to server
     useEffect(() => {
@@ -452,8 +459,19 @@ export default function TubeTile({
                                 }}
                                 onClick={() => {
                                     if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
-                                        ytPlayerRef.current.playVideo();
-                                        ytPlayerRef.current.unMute();
+                                        console.log("[Tube-UI] JOIN PLAYBACK clicked. Forcing sync...");
+                                        try {
+                                            ytPlayerRef.current.unMute();
+                                            ytPlayerRef.current.playVideo();
+                                            // Some browsers need a second nudge
+                                            setTimeout(() => ytPlayerRef.current.playVideo(), 100);
+                                        } catch (e) {
+                                            console.error("[Tube-UI] Play failed:", e);
+                                        }
+                                        setForceSyncTrigger(prev => prev + 1);
+                                        setTimeout(() => setForceSyncTrigger(0), 1000);
+                                    } else {
+                                        console.warn("[Tube-UI] Player not ready for Join Playback");
                                     }
                                 }}
                             >
@@ -469,13 +487,14 @@ export default function TubeTile({
             <div className="tile-name" style={{
                 position: 'absolute', bottom: '8px', left: '8px',
                 background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px',
-                fontSize: '12px', fontWeight: '600', color: 'white',
+                fontSize: '11px', fontWeight: '600', color: 'white',
                 display: 'flex', alignItems: 'center', gap: '6px',
                 pointerEvents: 'none',
-                zIndex: 10
+                zIndex: 10,
+                border: isOwner ? '1px solid #ff0000' : '1px solid rgba(255,255,255,0.2)'
             }}>
-                <Icon icon="fa:youtube" color="#ff0000" />
-                {isOwner ? 'You are DJ' : 'Following Host'}
+                <Icon icon={isOwner ? "fa:user-circle" : "fa:link"} color={isOwner ? "#ff0000" : "#00f2ff"} />
+                {isOwner ? 'YOU ARE DJ' : 'SYNCED TO HOST'}
             </div>
 
             {/* DJ Controls Overlay (Top Right) */}
