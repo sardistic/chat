@@ -31,21 +31,39 @@ export default function TubeTile({
     const ignorePauseRef = useRef(false);
 
     // Sync Logic
+    // Sync Logic
     useEffect(() => {
         if (!playerRef.current || !tubeState.videoId || !isReady) return;
 
-        const player = playerRef.current;
-        const serverTime = tubeState.timestamp + (tubeState.isPlaying ? (Date.now() - tubeState.lastUpdate) / 1000 : 0);
-        const localTime = player.getCurrentTime();
+        const checkSync = () => {
+            const player = playerRef.current;
+            // Calculate where we SHOULD be
+            const timeSinceUpdate = (Date.now() - tubeState.lastUpdate) / 1000;
+            const serverTime = tubeState.timestamp + (tubeState.isPlaying ? timeSinceUpdate : 0);
+            const localTime = player.getCurrentTime();
 
-        // Sync if drift > 2s
-        if (Math.abs(localTime - serverTime) > 2) {
-            // Set ignore flag so the resulting 'pause' event from seeking doesn't stop playback server-side
-            ignorePauseRef.current = true;
-            player.seekTo(serverTime, 'seconds');
-            // Clear flag after short delay (seeking takes time)
-            setTimeout(() => { ignorePauseRef.current = false; }, 1000);
-        }
+            // 1. Check Playback State
+            // ReactPlayer prop 'playing' handles this usually, but if we drift or get stuck:
+            // If server is playing, we should be playing.
+
+            // 2. Check Time Drift
+            const drift = Math.abs(localTime - serverTime);
+
+            // If drift is massive (> 5s), hard seek
+            // If drift is moderate (> 2s), seek
+            if (drift > 2) {
+                console.log(`[Tube] Drift detected (${drift.toFixed(2)}s). Seeking to ${serverTime.toFixed(2)}s`);
+                ignorePauseRef.current = true;
+                player.seekTo(serverTime, 'seconds');
+                setTimeout(() => { ignorePauseRef.current = false; }, 1000);
+            }
+        };
+
+        // Run sync check immediately then interval
+        checkSync();
+        const interval = setInterval(checkSync, 1000);
+        return () => clearInterval(interval);
+
     }, [tubeState, isReady]);
 
 
