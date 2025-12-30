@@ -4,6 +4,7 @@ const next = require("next");
 const { Server } = require("socket.io");
 const IRCBridge = require("./lib/ircBridge");
 const { PrismaClient } = require("@prisma/client");
+const ytsr = require("ytsr");
 
 const prisma = new PrismaClient();
 
@@ -425,6 +426,29 @@ app.prepare().then(() => {
 
       // Broadcast to everyone in room including sender (to confirm sync)
       io.to(roomId).emit('tube-state', tubeState);
+    });
+
+    // Handle Tube Search
+    socket.on("tube-search", async ({ query }, callback) => {
+      try {
+        console.log(`[Tube] Searching for: ${query}`);
+        const searchResults = await ytsr(query, { limit: 10 });
+        // Filter only videos
+        const videos = searchResults.items
+          .filter(item => item.type === 'video')
+          .map(item => ({
+            title: item.title,
+            url: item.url,
+            thumbnail: item.bestThumbnail.url,
+            duration: item.duration,
+            author: item.author.name
+          }));
+
+        if (callback) callback({ success: true, videos });
+      } catch (err) {
+        console.error('[Tube] Search failed:', err);
+        if (callback) callback({ success: false, error: 'Search failed' });
+      }
     });
 
     // Fetch Profile Stats

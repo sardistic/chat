@@ -4,26 +4,32 @@ import { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 import { Icon } from '@iconify/react';
+import { useSocket } from '@/lib/socket';
 
 export default function TubeTile({
     tubeState, // { videoId, isPlaying, timestamp, lastUpdate }
     isOwner,   // If true, shows controls to change video
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
-    onSync,    // Callback when player reports progress/state (for owner to broadcast)
+    onSync,    // Callback when player reports progress/state
     onChangeVideo, // Callback to change video
     width,
     height
 }) {
+    const { socket } = useSocket();
     const playerRef = useRef(null);
     const [isReady, setIsReady] = useState(false);
-    const [inputValue, setInputValue] = useState('');
+    const [hasError, setHasError] = useState(false);
+
+    // UI State
     const [showInput, setShowInput] = useState(false);
+    const [inputValue, setInputValue] = useState('');
+    const [startSeconds, setStartSeconds] = useState(0); // For handling ?t=X
+
+    // Search State
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
 
     // Sync Logic
-    // We strictly follow tubeState unless we are the owner interacting?
-    // Actually, for a simple sync, everyone follows the server state.
-    // Sync drift correction is handled by checking player.getCurrentTime() vs tubeState.timestamp + (now - lastUpdate)
-
     useEffect(() => {
         if (!playerRef.current || !tubeState.videoId || !isReady) return;
 
@@ -31,26 +37,61 @@ export default function TubeTile({
         const serverTime = tubeState.timestamp + (tubeState.isPlaying ? (Date.now() - tubeState.lastUpdate) / 1000 : 0);
         const localTime = player.getCurrentTime();
 
-        // Seek if drift is > 2 seconds
+        // Sync if drift > 2s
         if (Math.abs(localTime - serverTime) > 2) {
             player.seekTo(serverTime, 'seconds');
         }
-
-        // Sync Play/Pause
-        // ReactPlayer 'playing' prop handles this effectively mostly, but we can enforce
     }, [tubeState, isReady]);
+
+    // Error Reset when video changes
+    useEffect(() => {
+        setHasError(false);
+        setIsReady(false);
+    }, [tubeState.videoId]);
 
     const handleDuration = (duration) => {
         // console.log('onDuration', duration)
     };
 
+    const handleSearch = (query) => {
+        if (!socket) return;
+        setIsSearching(true);
+        setSearchResults([]);
+
+        socket.emit('tube-search', { query }, (response) => {
+            setIsSearching(false);
+            if (response && response.success) {
+                setSearchResults(response.videos);
+            } else {
+                setSearchResults([]); // Handle error via UI feedback if needed
+            }
+        });
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (inputValue.trim()) {
-            onChangeVideo(inputValue.trim());
+        const val = inputValue.trim();
+        if (!val) return;
+
+        // Check if URL
+        const isUrl = val.startsWith('http') || val.includes('youtube.com') || val.includes('youtu.be');
+
+        if (isUrl) {
+            onChangeVideo(val);
             setShowInput(false);
             setInputValue('');
+            setSearchResults([]);
+        } else {
+            // It's a search term
+            handleSearch(val);
         }
+    };
+
+    const handleSelectResult = (video) => {
+        onChangeVideo(video.url);
+        setShowInput(false);
+        setInputValue('');
+        setSearchResults([]);
     };
 
     // Calculate tile dimensions style
@@ -67,73 +108,125 @@ export default function TubeTile({
         boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
     };
 
-    if (!tubeState?.videoId) {
-        return (
-            <div className="tile" style={style}>
-                <div style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'radial-gradient(ellipse at center, #2a0000 0%, #000 100%)',
-                    flexDirection: 'column',
-                    gap: '12px',
-                    color: 'rgba(255,255,255,0.7)'
-                }}>
-                    <Icon icon="fa:youtube-play" width="48" color="#ff0000" />
-                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>THE TUBE</div>
-                    {isOwner ? (
-                        <button
-                            onClick={() => setShowInput(true)}
-                            className="btn primary"
-                            style={{ fontSize: '12px', padding: '6px 12px' }}
-                        >
-                            Load Video
-                        </button>
-                    ) : (
-                        <div style={{ fontSize: '12px', opacity: 0.5 }}>Waiting for video...</div>
-                    )}
+    const renderPlaceholder = () => (
+        <div className="tile" style={style}>
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'radial-gradient(ellipse at center, #2a0000 0%, #000 100%)',
+                flexDirection: 'column',
+                gap: '12px',
+                color: 'rgba(255,255,255,0.7)',
+                textAlign: 'center',
+                padding: '20px'
+            }}>
+                <Icon icon={hasError ? "fa:exclamation-triangle" : "fa:youtube-play"} width="48" color={hasError ? "#eab308" : "#ff0000"} />
+                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                    {hasError ? "VIDEO UNAVAILABLE" : "THE TUBE"}
                 </div>
+                {hasError && <div style={{ fontSize: '12px', opacity: 0.7 }}>This video cannot be played (or is restricted).</div>}
 
-                {/* URL Input Modal Overlay */}
-                {showInput && (
-                    <div style={{
-                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10
-                    }}>
-                        <form onSubmit={handleSubmit} style={{ width: '80%', display: 'flex', gap: '8px' }}>
-                            <input
-                                type="text"
-                                placeholder="Paste YouTube URL..."
-                                value={inputValue}
-                                onChange={e => setInputValue(e.target.value)}
-                                style={{
-                                    flex: 1,
-                                    background: 'rgba(255,255,255,0.1)',
-                                    border: '1px solid rgba(255,255,255,0.2)',
-                                    borderRadius: '4px',
-                                    padding: '8px',
-                                    color: 'white',
-                                    fontSize: '12px',
-                                    outline: 'none'
-                                }}
-                                autoFocus
-                            />
-                            <button type="submit" className="btn primary" style={{ padding: '8px' }}>
-                                <Icon icon="fa:play" />
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowInput(false)}
-                                style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}
-                            >
-                                <Icon icon="fa:times" />
-                            </button>
-                        </form>
-                    </div>
+                {isOwner ? (
+                    <button
+                        onClick={() => { setShowInput(true); setHasError(false); }}
+                        className="btn primary"
+                        style={{ fontSize: '12px', padding: '6px 12px', marginTop: '8px' }}
+                    >
+                        {hasError ? "Try Another Video" : "Load Video"}
+                    </button>
+                ) : (
+                    <div style={{ fontSize: '12px', opacity: 0.5 }}>Waiting for video...</div>
                 )}
             </div>
+            {renderInputModal()}
+        </div>
+    );
+
+    const renderInputModal = () => {
+        if (!showInput) return null;
+        return (
+            <div style={{
+                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.95)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '24px', zIndex: 50, overflowY: 'auto'
+            }}>
+                <div style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
+                        <h3 style={{ margin: 0, fontSize: '14px' }}>Load Video</h3>
+                        <button onClick={() => setShowInput(false)} style={{ background: 'transparent', border: 'none', color: 'gray', cursor: 'pointer' }}>
+                            <Icon icon="fa:times" />
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                            type="text"
+                            placeholder="Paste URL or Search..."
+                            value={inputValue}
+                            onChange={e => setInputValue(e.target.value)}
+                            style={{
+                                flex: 1,
+                                background: 'rgba(255,255,255,0.1)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                borderRadius: '4px',
+                                padding: '8px',
+                                color: 'white',
+                                fontSize: '12px',
+                                outline: 'none'
+                            }}
+                            autoFocus
+                        />
+                        <button type="submit" className="btn primary" style={{ padding: '8px 12px' }} disabled={isSearching}>
+                            {isSearching ? <Icon icon="eos-icons:loading" /> : <Icon icon="fa:search" />}
+                        </button>
+                    </form>
+
+                    {/* Search Results */}
+                    {searchResults.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                            {searchResults.map((video, idx) => (
+                                <div
+                                    key={idx}
+                                    onClick={() => handleSelectResult(video)}
+                                    style={{
+                                        display: 'flex', gap: '10px', padding: '8px',
+                                        background: 'rgba(255,255,255,0.05)', borderRadius: '8px',
+                                        cursor: 'pointer', transition: 'background 0.2s'
+                                    }}
+                                    className="search-result-item"
+                                >
+                                    <div style={{ width: '60px', height: '34px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0 }}>
+                                        <img src={video.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                                        <div style={{ color: 'white', fontSize: '11px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {video.title}
+                                        </div>
+                                        <div style={{ color: 'gray', fontSize: '10px', display: 'flex', gap: '6px' }}>
+                                            <span>{video.author}</span>
+                                            <span>•</span>
+                                            <span>{video.duration}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
         );
+    };
+
+    if (!tubeState?.videoId || hasError && !isOwner) {
+        return renderPlaceholder();
+    }
+
+    // If owner has error, we show player but inside it handle it?
+    // Actually easier to just replace content with error placeholder
+    if (hasError && isOwner) {
+        return renderPlaceholder();
     }
 
     return (
@@ -144,15 +237,17 @@ export default function TubeTile({
                     url={tubeState.videoId.startsWith('http') ? tubeState.videoId : `https://www.youtube.com/watch?v=${tubeState.videoId}`}
                     width="100%"
                     height="100%"
-                    controls={isOwner} // Only owner sees native controls? Or custom controls? Native is easier for now.
+                    controls={isOwner}
                     playing={tubeState.isPlaying}
                     muted={settings.isLocallyMuted || settings.volume === 0}
                     volume={settings.volume}
                     onReady={() => setIsReady(true)}
+                    onError={(e) => {
+                        console.error("Tube Error:", e);
+                        setHasError(true);
+                    }}
                     onProgress={(state) => {
                         if (isOwner && onSync) {
-                            // Only owner broadcasts progress updates periodically?
-                            // Actually, onProgress fires every second. we can debounce this up stack.
                             onSync({ ...state, type: 'progress' });
                         }
                     }}
@@ -188,48 +283,22 @@ export default function TubeTile({
                         }}
                         title="Change Video"
                     >
+                        <Icon icon="fa:search" />
+                    </button>
+                    <button
+                        onClick={() => onChangeVideo('')} // Clear video
+                        style={{
+                            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                            color: 'white', padding: '4px', cursor: 'pointer'
+                        }}
+                        title="Stop / Eject"
+                    >
                         <Icon icon="fa:eject" />
                     </button>
                 </div>
             )}
 
-            {/* Modal for changing video (duped from empty state, should extract but inline is fine for speed) */}
-            {showInput && (
-                <div style={{
-                    position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20
-                }}>
-                    <form onSubmit={handleSubmit} style={{ width: '80%', display: 'flex', gap: '8px' }}>
-                        <input
-                            type="text"
-                            placeholder="Paste YouTube URL..."
-                            value={inputValue}
-                            onChange={e => setInputValue(e.target.value)}
-                            style={{
-                                flex: 1,
-                                background: 'rgba(255,255,255,0.1)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                borderRadius: '4px',
-                                padding: '8px',
-                                color: 'white',
-                                fontSize: '12px',
-                                outline: 'none'
-                            }}
-                            autoFocus
-                        />
-                        <button type="submit" className="btn primary" style={{ padding: '8px' }}>
-                            <Icon icon="fa:play" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setShowInput(false)}
-                            style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}
-                        >
-                            <Icon icon="fa:times" />
-                        </button>
-                    </form>
-                </div>
-            )}
+            {renderInputModal()}
         </div>
     );
 }
