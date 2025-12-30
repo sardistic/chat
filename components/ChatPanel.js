@@ -224,87 +224,107 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                     </div>
                 )}
 
-                {messageGroups.map((group, groupIndex) => (
-                    <div
-                        key={`group-${groupIndex}`}
-                        className="message-group"
-                        style={{
-                            display: 'flex',
-                            gap: '12px',
-                            marginBottom: '16px',
-                            padding: '4px 0',
-                        }}
-                    >
-                        {/* Avatar */}
-                        <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            background: group.senderColor || '#5865F2',
-                            flexShrink: 0,
-                            overflow: 'hidden',
-                            cursor: 'pointer'
-                        }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                const foundUser = users.find(u => u.name === group.sender) ||
-                                    ircUsers.find(u => u.name === group.sender) ||
-                                    // Fallback minimal object if not found (e.g. offline user)
-                                    { name: group.sender, avatar: group.senderAvatar, color: group.senderColor };
-                                onUserClick(foundUser, e);
-                            }}>
-                            <img
-                                src={group.senderAvatar || `/api/avatar/${group.sender}`}
-                                alt={group.sender}
+                {/* Calculate last group indices for typing animation */}
+                {(() => {
+                    const lastGroupIndices = {};
+                    messageGroups.forEach((g, i) => lastGroupIndices[g.sender] = i);
+
+                    return messageGroups.map((group, groupIndex) => {
+                        const isTypingUser = typingUsers.includes(group.sender);
+                        const isMostRecentCallback = lastGroupIndices[group.sender] === groupIndex;
+                        const shouldAnimate = isTypingUser && isMostRecentCallback;
+
+                        return (
+                            <div
+                                key={`group-${groupIndex}`}
+                                className="message-group"
                                 style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
+                                    display: 'flex',
+                                    gap: '12px',
+                                    marginBottom: '16px',
+                                    padding: '4px 0',
                                 }}
-                                onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentElement.innerHTML = `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:16px;font-weight:bold;color:white">${group.sender?.charAt(0)?.toUpperCase() || '?'}</span>`;
+                            >
+                                {/* Avatar */}
+                                <div style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '50%',
+                                    background: group.senderColor || '#5865F2',
+                                    flexShrink: 0,
+                                    overflow: 'hidden',
+                                    cursor: 'pointer'
                                 }}
-                            />
-                        </div>
-
-                        {/* Content */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            {/* Header: Username + Timestamp */}
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                                <span style={{
-                                    fontWeight: '600',
-                                    color: group.senderColor || 'var(--text-primary)',
-                                    fontSize: '15px'
-                                }}>
-                                    {group.sender}
-                                </span>
-                                <span style={{
-                                    fontSize: '11px',
-                                    color: 'var(--text-muted)',
-                                }}>
-                                    {formatTime(group.timestamp)}
-                                </span>
-                            </div>
-
-                            {/* Messages */}
-                            {group.messages.map((msg) => (
-                                <div
-                                    key={msg.id}
-                                    style={{
-                                        marginBottom: '4px',
-                                        lineHeight: '1.4',
-                                    }}
-                                >
-                                    <MessageContent
-                                        text={msg.text}
-                                        onMentionClick={(username) => onUserClick({ name: username })}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const foundUser = users.find(u => u.name === group.sender) ||
+                                            ircUsers.find(u => u.name === group.sender) ||
+                                            // Fallback minimal object if not found (e.g. offline user)
+                                            { name: group.sender, avatar: group.senderAvatar, color: group.senderColor };
+                                        onUserClick(foundUser, e);
+                                    }}>
+                                    <img
+                                        src={(() => {
+                                            const base = group.senderAvatar || `/api/avatar/${group.sender}`;
+                                            // Only animate if it's our internal avatar API
+                                            if (shouldAnimate && base.includes('/api/avatar')) {
+                                                const hasQuery = base.includes('?');
+                                                return `${base}${hasQuery ? '&' : '?'}expr=typing`;
+                                            }
+                                            return base;
+                                        })()}
+                                        alt={group.sender}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                        }}
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.parentElement.innerHTML = `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:16px;font-weight:bold;color:white">${group.sender?.charAt(0)?.toUpperCase() || '?'}</span>`;
+                                        }}
                                     />
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                ))}
+
+                                {/* Content */}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    {/* Header: Username + Timestamp */}
+                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                                        <span style={{
+                                            fontWeight: '600',
+                                            color: group.senderColor || 'var(--text-primary)',
+                                            fontSize: '15px'
+                                        }}>
+                                            {group.sender}
+                                        </span>
+                                        <span style={{
+                                            fontSize: '11px',
+                                            color: 'var(--text-muted)',
+                                        }}>
+                                            {formatTime(group.timestamp)}
+                                        </span>
+                                    </div>
+
+                                    {/* Messages */}
+                                    {group.messages.map((msg) => (
+                                        <div
+                                            key={msg.id}
+                                            style={{
+                                                marginBottom: '4px',
+                                                lineHeight: '1.4',
+                                            }}
+                                        >
+                                            <MessageContent
+                                                text={msg.text}
+                                                onMentionClick={(username) => onUserClick({ name: username })}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    });
+                })()}
 
                 {typingUsers.length > 0 && (
                     <div style={{
@@ -416,7 +436,14 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                     }}>
                         {/* User Avatar */}
                         <img
-                            src={user?.avatar || user?.image || `/api/avatar/${user?.name || 'guest'}`}
+                            src={(() => {
+                                const base = user?.avatar || user?.image || `/api/avatar/${user?.name || 'guest'}`;
+                                if (isTyping && base.includes('/api/avatar')) {
+                                    const hasQuery = base.includes('?');
+                                    return `${base}${hasQuery ? '&' : '?'}expr=typing`;
+                                }
+                                return base;
+                            })()}
                             alt=""
                             style={{
                                 width: '32px',
