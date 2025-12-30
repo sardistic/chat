@@ -327,17 +327,13 @@ export default function TubeTile({
                 <Icon icon="fa:youtube-play" width="48" color="#ff0000" />
                 <div style={{ fontSize: '14px', fontWeight: 'bold' }}>THE TUBE</div>
 
-                {isOwner ? (
-                    <button
-                        onClick={() => setShowInput(true)}
-                        className="btn primary"
-                        style={{ fontSize: '12px', padding: '6px 12px', marginTop: '8px' }}
-                    >
-                        Load Video
-                    </button>
-                ) : (
-                    <div style={{ fontSize: '12px', opacity: 0.5 }}>Waiting for video...</div>
-                )}
+                <button
+                    onClick={() => setShowInput(true)}
+                    className="btn primary"
+                    style={{ fontSize: '12px', padding: '6px 12px', marginTop: '8px' }}
+                >
+                    {tubeState?.videoId ? 'Change Video' : 'Load Video'}
+                </button>
             </div>
             {renderInputModal()}
         </div>
@@ -350,7 +346,7 @@ export default function TubeTile({
 
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
-            <div style={{ width: '100%', height: '100%', pointerEvents: isOwner ? 'auto' : 'none', position: 'relative' }}>
+            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                 {/* The div that gets replaced by the iframe */}
                 <div id="tube-player-iframe" style={{ width: '100%', height: '100%' }}></div>
 
@@ -388,37 +384,35 @@ export default function TubeTile({
                 zIndex: 10
             }}>
                 <Icon icon="fa:youtube" color="#ff0000" />
-                Channel 1
+                {isOwner ? 'You are DJ' : 'Following Host'}
             </div>
 
-            {/* Admin Controls Overlay (Top Right) */}
-            {isOwner && (
-                <div style={{
-                    position: 'absolute', top: '8px', right: '8px',
-                    display: 'flex', gap: '4px', zIndex: 10
-                }}>
-                    <button
-                        onClick={() => setShowInput(true)}
-                        style={{
-                            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-                            color: 'white', padding: '4px', cursor: 'pointer'
-                        }}
-                        title="Change Video"
-                    >
-                        <Icon icon="fa:search" />
-                    </button>
-                    <button
-                        onClick={() => onChangeVideo('')} // Clear video
-                        style={{
-                            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-                            color: 'white', padding: '4px', cursor: 'pointer'
-                        }}
-                        title="Stop / Eject"
-                    >
-                        <Icon icon="fa:eject" />
-                    </button>
-                </div>
-            )}
+            {/* DJ Controls Overlay (Top Right) - Show for everyone to allow "Taking Control" */}
+            <div style={{
+                position: 'absolute', top: '8px', right: '8px',
+                display: 'flex', gap: '4px', zIndex: 10
+            }}>
+                <button
+                    onClick={() => setShowInput(true)}
+                    style={{
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title="Change Video"
+                >
+                    <Icon icon="fa:search" />
+                </button>
+                <button
+                    onClick={() => onChangeVideo('')} // Clear video
+                    style={{
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title="Stop / Eject"
+                >
+                    <Icon icon="fa:eject" />
+                </button>
+            </div>
 
             {renderInputModal()}
         </div>
