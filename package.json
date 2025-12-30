@@ -29,7 +29,8 @@
     "simple-peer": "^9.11.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "ytsr": "^3.8.4"
   },
   "devDependencies": {
     "eslint": "^9",
