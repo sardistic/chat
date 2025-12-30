@@ -586,7 +586,7 @@ export default function VideoGrid({
                     <TubeTile
                         tubeState={tubeState}
                         isOwner={isTubeOwner}
-                        settings={{ volume: 1, isLocallyMuted: false, isVideoHidden: false }} // Tube settings could be separate? For now use defaults/dummy
+                        settings={{ volume: 0.5, isLocallyMuted: true, isVideoHidden: false }} // Tube settings default to muted for autoplay policy
                         onSync={(update) => {
                             if (update.type === 'play') onUpdateTubeState({ isPlaying: true, timestamp: update.playedSeconds });
                             if (update.type === 'pause') onUpdateTubeState({ isPlaying: false, timestamp: update.playedSeconds });
