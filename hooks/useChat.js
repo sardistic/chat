@@ -124,5 +124,6 @@ export function useChat(roomId, user) {
         sendMessage,
         handleTyping,
         typingUsers: Array.from(typingUsers),
+        isTyping
     };
 }
