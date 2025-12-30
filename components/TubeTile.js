@@ -26,12 +26,114 @@ export default function TubeTile({
     const [searchResults, setSearchResults] = useState([]);
 
     const ignorePauseRef = useRef(false);
+    const ytPlayerRef = useRef(null);
 
+    // Load YouTube API
+    useEffect(() => {
+        if (!window.YT || !window.YT.Player) {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+    }, []);
 
+    // Initialize Player when API is ready and videoID exists
+    useEffect(() => {
+        if (!tubeState?.videoId) return;
 
+        // Extract ID
+        let embedId = tubeState.videoId;
+        if (tubeState.videoId.includes('v=')) {
+            embedId = tubeState.videoId.split('v=')[1].split('&')[0];
+        } else if (tubeState.videoId.includes('youtu.be/')) {
+            embedId = tubeState.videoId.split('youtu.be/')[1].split('?')[0];
+        }
 
+        const onPlayerReady = (event) => {
+            setIsReady(true);
+            if (tubeState.isPlaying) {
+                event.target.playVideo();
+            }
+            // Set initial volume
+            if (settings.isLocallyMuted) {
+                event.target.mute();
+            } else {
+                event.target.setVolume(settings.volume * 100);
+            }
+        };
 
+        const onPlayerStateChange = (event) => {
+            if (event.data === 1) { // Playing
+                if (isOwner && onSync) onSync({ type: 'play' });
+            } else if (event.data === 2) { // Paused
+                if (ignorePauseRef.current) return;
+                if (isOwner && onSync) onSync({ type: 'pause' });
+            }
+        };
 
+        const initPlayer = () => {
+            if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+                const currentUrl = ytPlayerRef.current.getVideoUrl ? ytPlayerRef.current.getVideoUrl() : '';
+                if (!currentUrl || !currentUrl.includes(embedId)) {
+                    ytPlayerRef.current.loadVideoById(embedId);
+                }
+                return;
+            }
+
+            if (window.YT && window.YT.Player) {
+                ytPlayerRef.current = new window.YT.Player('tube-player-iframe', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: embedId,
+                    playerVars: {
+                        'playsinline': 1,
+                        'controls': 1,
+                        'modestbranding': 1,
+                        'rel': 0,
+                        'origin': typeof window !== 'undefined' ? window.location.origin : '',
+                        'autoplay': 1,
+                        'mute': 1
+                    },
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange,
+                        'onError': (e) => { console.error("[TubeTile-Native] Error:", e); setHasError(true); }
+                    }
+                });
+            } else {
+                const checkYT = setInterval(() => {
+                    if (window.YT && window.YT.Player) {
+                        clearInterval(checkYT);
+                        initPlayer();
+                    }
+                }, 100);
+            }
+        };
+        initPlayer();
+    }, [tubeState?.videoId]);
+
+    // Sync Effect (Native)
+    useEffect(() => {
+        if (!ytPlayerRef.current || !isReady || !ytPlayerRef.current.getPlayerState) return;
+
+        const playerState = ytPlayerRef.current.getPlayerState();
+        if (tubeState.isPlaying && playerState !== 1 && playerState !== 3) {
+            ytPlayerRef.current.playVideo();
+        } else if (!tubeState.isPlaying && playerState === 1) {
+            ytPlayerRef.current.pauseVideo();
+        }
+
+        const currentTime = ytPlayerRef.current.getCurrentTime();
+        const timeSinceUpdate = (Date.now() - tubeState.lastUpdate) / 1000;
+        const serverTime = tubeState.timestamp + (tubeState.isPlaying ? timeSinceUpdate : 0);
+
+        if (Math.abs(currentTime - serverTime) > 2) {
+            ignorePauseRef.current = true;
+            ytPlayerRef.current.seekTo(serverTime, true);
+            setTimeout(() => { ignorePauseRef.current = false; }, 1000);
+        }
+    }, [tubeState, isReady]);
 
     // Error Reset when video changes
     useEffect(() => {
@@ -49,7 +151,7 @@ export default function TubeTile({
             if (response && response.success) {
                 setSearchResults(response.videos);
             } else {
-                setSearchResults([]); // Handle error via UI feedback if needed
+                setSearchResults([]);
             }
         });
     };
@@ -202,149 +304,10 @@ export default function TubeTile({
         </div>
     );
 
-    // Initial Empty State
+    // Initial Empty State - MUST BE AFTER ALL HOOKS
     if (!tubeState?.videoId) {
         return renderPlaceholder();
     }
-
-    // URL Ref for iframe
-    const iframeRef = useRef(null);
-    const ytPlayerRef = useRef(null);
-
-    // Load YouTube API
-    useEffect(() => {
-        if (!window.YT) {
-            const tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        }
-    }, []);
-
-    // Initialize Player when API is ready and videoID exists
-    useEffect(() => {
-        if (!tubeState.videoId) return;
-
-        // Extract ID
-        let embedId = tubeState.videoId;
-        if (tubeState.videoId.includes('v=')) {
-            embedId = tubeState.videoId.split('v=')[1].split('&')[0];
-        } else if (tubeState.videoId.includes('youtu.be/')) {
-            embedId = tubeState.videoId.split('youtu.be/')[1].split('?')[0];
-        }
-
-        const onPlayerReady = (event) => {
-            console.log("[TubeTile-Native] Player Ready");
-            setIsReady(true);
-            if (tubeState.isPlaying) {
-                event.target.playVideo();
-            }
-            // Set initial volume
-            if (settings.isLocallyMuted) {
-                event.target.mute();
-            } else {
-                event.target.setVolume(settings.volume * 100);
-            }
-        };
-
-        const onPlayerStateChange = (event) => {
-            // YT.PlayerState: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued).
-            console.log("[TubeTile-Native] State Change:", event.data);
-            if (event.data === 1) { // Playing
-                if (isOwner && onSync) onSync({ type: 'play' });
-            } else if (event.data === 2) { // Paused
-                if (ignorePauseRef.current) return;
-                if (isOwner && onSync) onSync({ type: 'pause' });
-            }
-        };
-
-        const initPlayer = () => {
-            // If player already exists, just load new video
-            if (ytPlayerRef.current) {
-                // If it's a different video or we forced a reload
-                const currentUrl = ytPlayerRef.current.getVideoUrl();
-                if (!currentUrl || !currentUrl.includes(embedId)) {
-                    ytPlayerRef.current.loadVideoById(embedId);
-                }
-                return;
-            }
-
-            // Create new player
-            // 'tube-player-iframe' is the ID of the div/iframe to replace
-            if (window.YT && window.YT.Player) {
-                ytPlayerRef.current = new window.YT.Player('tube-player-iframe', {
-                    height: '100%',
-                    width: '100%',
-                    videoId: embedId,
-                    playerVars: {
-                        'playsinline': 1,
-                        'controls': 1,
-                        'modestbranding': 1,
-                        'rel': 0,
-                        'origin': window.location.origin,
-                        'autoplay': 1, // Try autoplay
-                        'mute': 1      // Start muted to allow autoplay
-                    },
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange,
-                        'onError': (e) => { console.error("[TubeTile-Native] Error:", e); setHasError(true); }
-                    }
-                });
-            } else {
-                // Poll for API
-                const checkYT = setInterval(() => {
-                    if (window.YT && window.YT.Player) {
-                        clearInterval(checkYT);
-                        initPlayer();
-                    }
-                }, 100);
-            }
-        };
-
-        initPlayer();
-
-        // Cleanup? Not necessarily, we want to keep the instance. 
-        // But if component unmounts:
-        return () => {
-            // We generally want to cache it or destroy it? 
-            // Start simple: destroy on unmount to prevent leaks
-            if (ytPlayerRef.current) {
-                // ytPlayerRef.current.destroy(); 
-                // ytPlayerRef.current = null;
-            }
-        };
-
-    }, [tubeState.videoId]); // Re-init if video ID changes hard
-
-    // Sync Effect (Native)
-    useEffect(() => {
-        if (!ytPlayerRef.current || !isReady || !ytPlayerRef.current.getPlayerState) return;
-
-        // Sync Play/Pause
-        const playerState = ytPlayerRef.current.getPlayerState(); // 1 playing, 2 paused
-
-        if (tubeState.isPlaying && playerState !== 1 && playerState !== 3) {
-            console.log("[TubeTile-Native] Sync: Force Play");
-            ytPlayerRef.current.playVideo();
-        } else if (!tubeState.isPlaying && playerState === 1) {
-            console.log("[TubeTile-Native] Sync: Force Pause");
-            ytPlayerRef.current.pauseVideo();
-        }
-
-        // Sync Time
-        const currentTime = ytPlayerRef.current.getCurrentTime();
-        const timeSinceUpdate = (Date.now() - tubeState.lastUpdate) / 1000;
-        const serverTime = tubeState.timestamp + (tubeState.isPlaying ? timeSinceUpdate : 0);
-
-        if (Math.abs(currentTime - serverTime) > 2) {
-            console.log("[TubeTile-Native] Sync: Seek to", serverTime);
-            ignorePauseRef.current = true;
-            ytPlayerRef.current.seekTo(serverTime, true);
-            setTimeout(() => { ignorePauseRef.current = false; }, 1000);
-        }
-
-    }, [tubeState, isReady]);
 
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
