@@ -26,6 +26,7 @@ export default function TubeTile({
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
     const [retryKey, setRetryKey] = useState(0);
+    const [loadTimeout, setLoadTimeout] = useState(false);
 
     const ignorePauseRef = useRef(false);
     const ytPlayerRef = useRef(null);
@@ -61,6 +62,7 @@ export default function TubeTile({
 
         const onPlayerReady = (event) => {
             setIsReady(true);
+            setLoadTimeout(false);
             if (tubeState.isPlaying) {
                 event.target.playVideo();
             }
@@ -102,39 +104,42 @@ export default function TubeTile({
                 return;
             }
 
-            // Create fresh player DIV inside the container
-            playerContainerRef.current.innerHTML = '<div id="tube-player-target" style="width:100%;height:100%;"></div>';
+            // Create fresh player DIV inside the container if needed
+            if (!document.getElementById('tube-player-target')) {
+                playerContainerRef.current.innerHTML = '<div id="tube-player-target" style="width:100%;height:100%;"></div>';
+            }
 
             if (window.YT && window.YT.Player) {
-                ytPlayerRef.current = new window.YT.Player('tube-player-target', {
-                    height: '100%',
-                    width: '100%',
-                    videoId: embedId,
-                    playerVars: {
-                        'playsinline': 1,
-                        'controls': 1,
-                        'modestbranding': 1,
-                        'rel': 0,
-                        'origin': typeof window !== 'undefined' ? window.location.origin : '',
-                        'autoplay': 1,
-                        'mute': 1,
-                        'enablejsapi': 1
-                    },
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange,
-                        'onError': (e) => {
-                            console.error("[TubeTile-Native] Error:", e);
-                            // Error 5 is often just a transient HTML5 player issue on mobile
-                            if (e.data === 101 || e.data === 150) {
-                                setHasError(true);
-                            } else if (e.data === 100) {
-                                // Video not found, only owner sees real error
-                                setHasError(true);
+                // Wait one tick to ensure DOM is flush
+                setTimeout(() => {
+                    if (!playerContainerRef.current) return;
+
+                    ytPlayerRef.current = new window.YT.Player('tube-player-target', {
+                        height: '100%',
+                        width: '100%',
+                        videoId: embedId,
+                        playerVars: {
+                            'playsinline': 1,
+                            'controls': 1,
+                            'modestbranding': 1,
+                            'rel': 0,
+                            'origin': typeof window !== 'undefined' ? window.location.origin : '',
+                            'autoplay': 1,
+                            'mute': 1,
+                            'enablejsapi': 1
+                        },
+                        events: {
+                            'onReady': onPlayerReady,
+                            'onStateChange': onPlayerStateChange,
+                            'onError': (e) => {
+                                console.error("[TubeTile-Native] Error:", e);
+                                if (e.data === 101 || e.data === 150 || e.data === 100) {
+                                    setHasError(true);
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }, 50);
             } else {
                 const checkYT = setInterval(() => {
                     if (window.YT && window.YT.Player) {
@@ -144,8 +149,14 @@ export default function TubeTile({
                 }, 500);
             }
         };
+
+        const checkTimeout = setTimeout(() => {
+            if (!isReady) setLoadTimeout(true);
+        }, 8000);
+
         initPlayer();
-    }, [tubeState?.videoId, retryKey]); // Added retryKey to force re-init
+        return () => clearTimeout(checkTimeout);
+    }, [tubeState?.videoId, retryKey, isReady]);
 
     // Sync Effect (Native)
     useEffect(() => {
@@ -368,9 +379,30 @@ export default function TubeTile({
                     <div
                         ref={playerContainerRef}
                         style={{ width: '100%', height: '100%' }}
-                        /* We tell React to ignore this node's children */
                         id="yt-player-container"
                     ></div>
+
+                    {!isReady && !hasError && (
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: '#0a0a0a',
+                            flexDirection: 'column', gap: '12px', color: 'rgba(255,255,255,0.5)',
+                            zIndex: 1
+                        }}>
+                            <Icon icon="eos-icons:bubble-loading" width="32" />
+                            <div style={{ fontSize: '12px' }}>Loading Player...</div>
+                            {loadTimeout && (
+                                <button
+                                    onClick={() => setRetryKey(k => k + 1)}
+                                    className="btn primary"
+                                    style={{ fontSize: '10px', padding: '4px 8px', marginTop: '8px' }}
+                                >
+                                    Force Start
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     {hasError && (
                         <div style={{
