@@ -367,15 +367,14 @@ function VideoTile({
                                     padding: '4px',
                                     lineHeight: 1
                                 }}
-                                title="Send ❤️"
+                                title="React"
                             >
-                                ❤️
+                                {showPicker ? '✕' : '❤️'}
                             </button>
-                            {/* More emojis on hover/toggle */}
-                            {showPicker && ['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+                            {showPicker && ['❤️', '🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
                                 <button
                                     key={emoji}
-                                    onClick={(e) => { e.stopPropagation(); handleReactionClick(e, emoji); }}
+                                    onClick={(e) => { e.stopPropagation(); onReaction(emoji); setShowPicker(false); }}
                                     style={{
                                         background: 'transparent',
                                         border: 'none',
