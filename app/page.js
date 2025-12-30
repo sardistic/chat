@@ -40,6 +40,7 @@ function MainApp({ user, onLeaveRoom }) {
   const [selectedProfileUser, setSelectedProfileUser] = useState(null);
   const [modalPosition, setModalPosition] = useState(null);
   const [peerSettings, setPeerSettings] = useState({}); // { [userId]: { volume: 1, muted: false, hidden: false } }
+  const [typingUsers, setTypingUsers] = useState([]);
 
   const handleUpdatePeerSettings = (userId, newSettings) => {
     setPeerSettings(prev => ({
@@ -237,21 +238,25 @@ function MainApp({ user, onLeaveRoom }) {
               ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
               return Array.from(uniqueMap.values())
                 .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
-                .map((u, i) => (
-                  <div
-                    key={u.name + i}
-                    className="aquarium-avatar"
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => handleProfileClick(u, e)}
-                    title={u.name}
-                  >
-                    <img
-                      src={u.avatar || `/api/avatar/${u.name}`}
-                      alt={u.name}
-                      style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
-                    />
-                  </div>
-                ));
+                .map((u, i) => {
+                  const isUserTyping = typingUsers.includes(u.name);
+                  const avatarUrl = u.avatar || `/api/avatar/${u.name}${isUserTyping ? '?expr=typing' : ''}`;
+                  return (
+                    <div
+                      key={u.name + i}
+                      className="aquarium-avatar"
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => handleProfileClick(u, e)}
+                      title={u.name}
+                    >
+                      <img
+                        src={avatarUrl}
+                        alt={u.name}
+                        style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  )
+                });
             })()}
           </div>
 
@@ -356,6 +361,7 @@ function MainApp({ user, onLeaveRoom }) {
             peerSettings={peerSettings}
             onUpdatePeerSettings={handleUpdatePeerSettings}
             onProfileClick={handleProfileClick}
+            typingUsers={typingUsers}
           />
 
 
@@ -403,6 +409,7 @@ function MainApp({ user, onLeaveRoom }) {
                   users={Array.from(peers.values())}
                   ircUsers={Array.from(ircUsers.values())}
                   onUserClick={handleProfileClick}
+                  onTypingUsersChange={setTypingUsers}
                 />
               </div>
             ) : (

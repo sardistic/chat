@@ -425,7 +425,8 @@ export default function VideoGrid({
     roomId,
     peerSettings = {},
     onUpdatePeerSettings = () => { },
-    onProfileClick = () => { }
+    onProfileClick = () => { },
+    typingUsers = []
 }) {
     const { socket } = useSocket();
     const [incomingReactions, setIncomingReactions] = useState(new Map());
@@ -533,6 +534,7 @@ export default function VideoGrid({
                     incomingReactions={incomingReactions.get(localUser?.id || socket?.id) || []}
                     // Local user doesn't really need settings, but we pass defaults
                     settings={{ volume: 0, isLocallyMuted: true, isVideoHidden: false }}
+                    isTyping={typingUsers.includes(localUser?.name)}
                     width={layout.width}
                     height={layout.height}
                 />
@@ -561,6 +563,7 @@ export default function VideoGrid({
                             incomingReactions={incomingReactions.get(userId) || []}
                             settings={mySettings}
                             onUpdateSettings={(newVals) => onUpdatePeerSettings(userId, newVals)}
+                            isTyping={typingUsers.includes(peerData.user?.name)}
                             width={layout.width}
                             height={layout.height}
                         />

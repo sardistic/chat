@@ -35,7 +35,7 @@ function groupMessages(messages) {
     return groups;
 }
 
-export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onUserClick = () => { } }) {
+export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onUserClick = () => { }, onTypingUsersChange = () => { } }) {
     const { messages, sendMessage, isLoading, typingUsers, handleTyping } = useChat(roomId, user);
     const [inputValue, setInputValue] = useState('');
     const [showGifPicker, setShowGifPicker] = useState(false);
@@ -66,6 +66,11 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, typingUsers]);
+
+    // Propagate typing users to parent
+    useEffect(() => {
+        onTypingUsersChange(typingUsers);
+    }, [typingUsers, onTypingUsersChange]);
 
     // Reset mention selection when filtered list changes
     useEffect(() => {
