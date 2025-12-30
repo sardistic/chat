@@ -28,6 +28,13 @@ export default function TubeTile({
 
     const ignorePauseRef = useRef(false);
     const ytPlayerRef = useRef(null);
+    const playerContainerRef = useRef(null);
+    const isOwnerRef = useRef(isOwner);
+
+    // Sync isOwner ref
+    useEffect(() => {
+        isOwnerRef.current = isOwner;
+    }, [isOwner]);
 
     // Load YouTube API
     useEffect(() => {
@@ -65,7 +72,8 @@ export default function TubeTile({
         };
 
         const onPlayerStateChange = (event) => {
-            if (!isOwner) return; // Only owner reports state changes
+            // Use ref to avoid stale closure / re-init loops
+            if (!isOwnerRef.current) return;
 
             const currentTime = event.target.getCurrentTime();
             if (event.data === 1) { // Playing
@@ -77,16 +85,27 @@ export default function TubeTile({
         };
 
         const initPlayer = () => {
+            if (!playerContainerRef.current) return;
+
+            // If player exists, just update video
             if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
-                const currentUrl = ytPlayerRef.current.getVideoUrl ? ytPlayerRef.current.getVideoUrl() : '';
-                if (!currentUrl || !currentUrl.includes(embedId)) {
-                    ytPlayerRef.current.loadVideoById(embedId);
+                try {
+                    const currentUrl = ytPlayerRef.current.getVideoUrl ? ytPlayerRef.current.getVideoUrl() : '';
+                    if (!currentUrl || !currentUrl.includes(embedId)) {
+                        ytPlayerRef.current.loadVideoById(embedId);
+                    }
+                } catch (err) {
+                    console.error("[Tube-Sync] Load Error:", err);
+                    setHasError(true);
                 }
                 return;
             }
 
+            // Create fresh player DIV inside the container
+            playerContainerRef.current.innerHTML = '<div id="tube-player-target" style="width:100%;height:100%;"></div>';
+
             if (window.YT && window.YT.Player) {
-                ytPlayerRef.current = new window.YT.Player('tube-player-iframe', {
+                ytPlayerRef.current = new window.YT.Player('tube-player-target', {
                     height: '100%',
                     width: '100%',
                     videoId: embedId,
@@ -97,12 +116,16 @@ export default function TubeTile({
                         'rel': 0,
                         'origin': typeof window !== 'undefined' ? window.location.origin : '',
                         'autoplay': 1,
-                        'mute': 1
+                        'mute': 1,
+                        'enablejsapi': 1
                     },
                     events: {
                         'onReady': onPlayerReady,
                         'onStateChange': onPlayerStateChange,
-                        'onError': (e) => { console.error("[TubeTile-Native] Error:", e); setHasError(true); }
+                        'onError': (e) => {
+                            console.error("[TubeTile-Native] Error:", e);
+                            if (e.data === 5 || e.data === 100 || e.data === 150) setHasError(true);
+                        }
                     }
                 });
             } else {
@@ -111,11 +134,11 @@ export default function TubeTile({
                         clearInterval(checkYT);
                         initPlayer();
                     }
-                }, 100);
+                }, 200);
             }
         };
         initPlayer();
-    }, [tubeState?.videoId, isOwner]);
+    }, [tubeState?.videoId]);
 
     // Sync Effect (Native)
     useEffect(() => {
@@ -305,67 +328,99 @@ export default function TubeTile({
         );
     };
 
-    const renderPlaceholder = () => (
-        <div className="tile" style={style}>
-            <div style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'radial-gradient(ellipse at center, #2a0000 0%, #000 100%)',
-                flexDirection: 'column',
-                gap: '12px',
-                color: 'rgba(255,255,255,0.7)',
-                textAlign: 'center',
-                padding: '20px'
-            }}>
-                <Icon icon="fa:youtube-play" width="48" color="#ff0000" />
-                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>THE TUBE</div>
-
-                <button
-                    onClick={() => setShowInput(true)}
-                    className="btn primary"
-                    style={{ fontSize: '12px', padding: '6px 12px', marginTop: '8px' }}
-                >
-                    {tubeState?.videoId ? 'Change Video' : 'Load Video'}
-                </button>
-            </div>
-            {renderInputModal()}
-        </div>
-    );
-
-    // Initial Empty State - MUST BE AFTER ALL HOOKS
-    if (!tubeState?.videoId) {
-        return renderPlaceholder();
-    }
-
     return (
-        <div className="tile video-tile" style={{ ...style, borderColor: tubeState.isPlaying ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
-            <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                {/* The div that gets replaced by the iframe */}
-                <div id="tube-player-iframe" style={{ width: '100%', height: '100%' }}></div>
+        <div className="tile video-tile" style={{ ...style, borderColor: (tubeState?.videoId && tubeState.isPlaying) ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
+            {!tubeState?.videoId ? (
+                <div style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'radial-gradient(ellipse at center, #2a0000 0%, #000 100%)',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    color: 'rgba(255,255,255,0.7)',
+                    textAlign: 'center',
+                    padding: '20px'
+                }}>
+                    <Icon icon="fa:youtube-play" width="48" color="#ff0000" />
+                    <div style={{ fontSize: '14px', fontWeight: 'bold' }}>THE TUBE</div>
 
-                {hasError && (
-                    <div style={{
-                        position: 'absolute', inset: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'rgba(0,0,0,0.8)',
-                        flexDirection: 'column', gap: '12px', color: '#eab308',
-                        zIndex: 5
-                    }}>
-                        <Icon icon="fa:exclamation-triangle" width="48" />
-                        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>CONNECTION ISSUE</div>
-                        <button
-                            onClick={() => { setHasError(false); setIsReady(false); setTimeout(() => window.location.reload(), 100); }}
-                            className="btn primary"
-                            style={{ fontSize: '12px', padding: '6px 12px' }}
-                        >
-                            Refresh Player
-                        </button>
-                        <div style={{ fontSize: '12px', opacity: 0.7 }}>Mobile browsers may need a refresh to start.</div>
-                    </div>
-                )}
-            </div>
+                    <button
+                        onClick={() => setShowInput(true)}
+                        className="btn primary"
+                        style={{ fontSize: '12px', padding: '6px 12px', marginTop: '8px' }}
+                    >
+                        Load Video
+                    </button>
+                </div>
+            ) : (
+                <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    {/* Persistent Isolated Container for YT Iframe */}
+                    <div
+                        ref={playerContainerRef}
+                        style={{ width: '100%', height: '100%' }}
+                        /* We tell React to ignore this node's children */
+                        id="yt-player-container"
+                    ></div>
+
+                    {hasError && (
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'rgba(0,0,0,0.8)',
+                            flexDirection: 'column', gap: '12px', color: '#eab308',
+                            zIndex: 5
+                        }}>
+                            <Icon icon="fa:exclamation-triangle" width="48" />
+                            <div style={{ fontSize: '14px', fontWeight: 'bold' }}>CONNECTION ISSUE</div>
+                            <button
+                                onClick={() => { setHasError(false); setIsReady(false); setTimeout(() => window.location.reload(), 100); }}
+                                className="btn primary"
+                                style={{ fontSize: '12px', padding: '6px 12px' }}
+                            >
+                                Refresh Player
+                            </button>
+                            <div style={{ fontSize: '12px', opacity: 0.7 }}>Mobile browsers may need a refresh to start.</div>
+                        </div>
+                    )}
+
+                    {/* Tap to Sync / Join Playback (Mainly for Mobile Autoplay Policy) */}
+                    {!isOwner && isReady && !hasError && (
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'rgba(0,0,0,0.1)',
+                            zIndex: 2,
+                            pointerEvents: 'none'
+                        }}>
+                            <button
+                                className="btn primary"
+                                style={{
+                                    pointerEvents: 'auto',
+                                    padding: '8px 16px',
+                                    borderRadius: '20px',
+                                    background: '#ff0000',
+                                    fontWeight: 'bold',
+                                    boxShadow: '0 4px 15px rgba(255,0,0,0.4)',
+                                    fontSize: '13px'
+                                }}
+                                onClick={() => {
+                                    if (ytPlayerRef.current) {
+                                        ytPlayerRef.current.playVideo();
+                                        ytPlayerRef.current.unMute();
+                                        // Trigger a re-sync
+                                        if (onSync) onSync({ type: 'progress', playedSeconds: ytPlayerRef.current.getCurrentTime() });
+                                    }
+                                }}
+                            >
+                                <Icon icon="fa:play" style={{ marginRight: '8px' }} />
+                                JOIN PLAYBACK
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Name Label */}
             <div className="tile-name" style={{
@@ -380,43 +435,7 @@ export default function TubeTile({
                 {isOwner ? 'You are DJ' : 'Following Host'}
             </div>
 
-            {/* Tap to Sync / Join Playback (Mainly for Mobile Autoplay Policy) */}
-            {!isOwner && isReady && !hasError && (
-                <div style={{
-                    position: 'absolute', inset: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(0,0,0,0.1)',
-                    zIndex: 2,
-                    pointerEvents: 'none'
-                }}>
-                    <button
-                        className="btn primary"
-                        style={{
-                            pointerEvents: 'auto',
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            background: '#ff0000',
-                            fontWeight: 'bold',
-                            boxShadow: '0 4px 15px rgba(255,0,0,0.4)',
-                            fontSize: '13px'
-                        }}
-                        onClick={() => {
-                            if (ytPlayerRef.current) {
-                                ytPlayerRef.current.playVideo();
-                                ytPlayerRef.current.unMute();
-                                // Trigger a re-sync
-                                setReceivedAt(0); // This forces the sync effect to re-run next render
-                                setTimeout(() => setReceivedAt(Date.now()), 50);
-                            }
-                        }}
-                    >
-                        <Icon icon="fa:play" style={{ marginRight: '8px' }} />
-                        JOIN PLAYBACK
-                    </button>
-                </div>
-            )}
-
-            {/* DJ Controls Overlay (Top Right) - Show for everyone to allow "Taking Control" */}
+            {/* DJ Controls Overlay (Top Right) */}
             <div style={{
                 position: 'absolute', top: '8px', right: '8px',
                 display: 'flex', gap: '4px', zIndex: 10
