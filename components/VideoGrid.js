@@ -33,8 +33,9 @@ function calculateLayout(containerWidth, containerHeight, videoCount, aspectRati
     if (videoCount === 0) return bestLayout;
 
     // Deduct padding/gap (approx 24px padding + 12px gap)
-    const paddingX = 24;
-    const paddingY = 24;
+    // Increase safeguards to prevent overflow
+    const paddingX = 48; // Was 24, increased to account for scrollbars/margins
+    const paddingY = 48; // Was 24, increased to account for headers/footers
     const gap = 12;
 
     for (let cols = 1; cols <= videoCount; cols++) {
