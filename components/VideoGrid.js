@@ -353,6 +353,7 @@ function VideoTile({
                             }}
                             onMouseEnter={() => setShowPicker(true)}
                             onMouseLeave={() => setShowPicker(false)}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <button
                                 className="reaction-btn"
@@ -381,7 +382,7 @@ function VideoTile({
                             {showPicker && ['🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
                                 <button
                                     key={emoji}
-                                    onClick={(e) => handleReactionClick(e, emoji)}
+                                    onClick={(e) => { e.stopPropagation(); handleReactionClick(e, emoji); }}
                                     style={{
                                         background: 'transparent',
                                         border: 'none',
