@@ -543,7 +543,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                 overflowY: 'auto',
                                 overflowX: 'hidden',
                                 whiteSpace: 'pre-wrap',
-                                overflowWrap: 'break-word',
+                                overflowWrap: 'anywhere',
                                 wordBreak: 'break-word'
                             }}
                         />

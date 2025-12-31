@@ -270,7 +270,7 @@ export default function MessageContent({ text, onMentionClick }) {
     }, [text, urls]);
 
     return (
-        <div className="message-content">
+        <div className="message-content" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
             {/* Text content with mentions */}
             {formattedContent && formattedContent.map((part, i) => {
                 if (part.type === 'mention') {
