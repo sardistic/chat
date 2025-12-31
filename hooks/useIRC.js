@@ -22,10 +22,8 @@ export function useIRC(user) {
 
                 console.log(`[IRC] Initializing client for ${nick}...`);
 
-                // We need to import the browser version explicitly if possible, 
-                // but standard import usually works with Next.js webpack config.
-                // If it fails, we might need 'irc-framework/browser'.
-                const { Client } = await import('irc-framework/browser');
+                // Try standard import - bundler should resolve 'browser' field in package.json
+                const { Client } = await import('irc-framework');
 
                 client = new Client();
                 clientRef.current = client;
