@@ -247,6 +247,12 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 newPeers.set(socketId, { stream: null, userId: socketId, user: joinedUser });
                 return newPeers;
             });
+
+            // If we are broadcasting, connect to the new user immediately
+            if (peerManagerRef.current && localStreamRef.current) {
+                console.log(`📹 Auto-connecting to new user ${socketId} as broadcaster`);
+                peerManagerRef.current.createPeer(socketId, true);
+            }
         };
 
         const handleExistingUsers = ({ users }) => {
@@ -377,6 +383,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             socket.off('user-left', handleUserLeft);
             socket.off('user-updated', handleUserUpdated);
             socket.off('connect-to-peer', handleConnectToPeer);
+            leaveRoom();
         };
     }, [socket, isConnected, roomId]);
 
