@@ -33,8 +33,10 @@ export function useIRC(user) {
                     nick: nick,
                     username: nick,
                     gecos: 'CamRooms Web Client',
+                    // Ergo Testnet WebSocket is on port 443 (standard HTTPS/WSS)
+                    // URL: wss://testnet.ergo.chat/webirc
                     host: 'testnet.ergo.chat',
-                    port: 6697,
+                    port: 443,
                     path: '/webirc',
                     ssl: true,
                     web_socket: true
