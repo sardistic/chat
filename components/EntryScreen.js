@@ -181,8 +181,8 @@ export default function EntryScreen({ onJoin }) {
             guestToken: guestToken,
             ircConfig: {
                 useIRC: true,
-                host: 'irc.gamesurge.net',
-                port: 6667,
+                host: 'testnet.ergo.chat',
+                port: 6697,
                 nick: sanitizeUsername(username),
                 channel: '#camsrooms',
                 username: sanitizeUsername(username)
@@ -327,8 +327,8 @@ export default function EntryScreen({ onJoin }) {
                                     isGuest: false,
                                     ircConfig: {
                                         useIRC: true,
-                                        host: 'irc.gamesurge.net',
-                                        port: 6667,
+                                        host: 'testnet.ergo.chat',
+                                        port: 6697,
                                         nick: sanitizeUsername(session.user.globalName || session.user.displayName || session.user.name),
                                         channel: '#camsrooms',
                                         username: sanitizeUsername(session.user.globalName || session.user.displayName || session.user.name)
@@ -393,7 +393,7 @@ export default function EntryScreen({ onJoin }) {
                 </div>
 
                 <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Joining chat on irc.gamesurge.net
+                    Joining chat on testnet.ergo.chat
                 </div>
             </div>
         </div>
