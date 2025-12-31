@@ -34,7 +34,7 @@ export function useIRC(user) {
                     nick: nick,
                     username: nick,
                     gecos: 'CamRooms Web Client',
-                    transport: 'websocket', // Request WebSocket transport
+                    // transport: 'websocket', // Caused 'transport is not a constructor' error
                     // Use a known public websocket gateway that forwards to standard IRC networks
                     // KiwiIRC's gateway is robust for this.
                     // Format: wss://kiwiirc.com/webirc/[network_host]/[port]/
