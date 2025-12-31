@@ -1,84 +1,154 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSocket } from "@/lib/socket";
-
-// IRC users are provided by the server's HistoryBot via socket events
-// The HistoryBot maintains a persistent IRC connection and broadcasts user list changes
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export function useIRC(user) {
-    const { socket, isConnected } = useSocket();
     const [ircUsers, setIrcUsers] = useState(new Map());
+    const [isConnected, setIsConnected] = useState(false);
+    const [error, setError] = useState(null);
+    const clientRef = useRef(null);
 
     useEffect(() => {
-        if (!socket || !isConnected) return;
+        if (!user || !user.name) return;
 
-        // Handle full user list from IRC
-        const handleUserList = ({ channel, users }) => {
-            const userMap = new Map();
-            users.forEach((u) => {
-                userMap.set(u.nick, { name: u.nick, isIRC: true, modes: u.modes });
-            });
-            setIrcUsers(userMap);
+        // Dynamic import to avoid SSR issues with irc-framework
+        let client;
+
+        const connectIRC = async () => {
+            try {
+                // Determine nickname (sanitize spaces)
+                const nick = user.name.replace(/\s+/g, '_').substring(0, 16);
+                const channel = '#camrooms';
+
+                console.log(`[IRC] Initializing client for ${nick}...`);
+
+                // We need to import the browser version explicitly if possible, 
+                // but standard import usually works with Next.js webpack config.
+                // If it fails, we might need 'irc-framework/browser'.
+                const { Client } = await import('irc-framework/browser');
+
+                client = new Client();
+                clientRef.current = client;
+
+                client.connect({
+                    host: 'irc.gamesurge.net',
+                    port: 6667,
+                    nick: nick,
+                    username: nick,
+                    gecos: 'CamRooms Web Client',
+                    transport: 'websocket', // Request WebSocket transport
+                    // Use a known public websocket gateway that forwards to standard IRC networks
+                    // KiwiIRC's gateway is robust for this.
+                    // Format: wss://kiwiirc.com/webirc/[network_host]/[port]/
+                    // Note: direct websocket to irc.gamesurge.net often fails if they don't expose it.
+                    // Using Kiwi Gateway:
+                    web_socket: true,
+                    url: 'wss://kiwiirc.com/webirc/irc.gamesurge.net/6667/'
+                });
+
+                client.on('registered', () => {
+                    console.log('[IRC] Registered!');
+                    setIsConnected(true);
+                    client.join(channel);
+                });
+
+                client.on('join', (event) => {
+                    if (event.nick === client.user.nick) {
+                        console.log(`[IRC] Joined ${event.channel}`);
+                    }
+                    setIrcUsers(prev => {
+                        const next = new Map(prev);
+                        next.set(event.nick, { name: event.nick, isIRC: true });
+                        return next;
+                    });
+                });
+
+                client.on('part', (event) => {
+                    setIrcUsers(prev => {
+                        const next = new Map(prev);
+                        next.delete(event.nick);
+                        return next;
+                    });
+                });
+
+                client.on('quit', (event) => {
+                    setIrcUsers(prev => {
+                        const next = new Map(prev);
+                        next.delete(event.nick);
+                        return next;
+                    });
+                });
+
+                client.on('nick', (event) => {
+                    setIrcUsers(prev => {
+                        const next = new Map(prev);
+                        const userData = next.get(event.nick);
+                        if (userData) {
+                            next.delete(event.nick);
+                            next.set(event.new_nick, { ...userData, name: event.new_nick });
+                        }
+                        return next;
+                    });
+                });
+
+                client.on('userlist', (event) => {
+                    console.log(`[IRC] Userlist for ${event.channel}: ${event.users.length}`);
+                    const userMap = new Map();
+                    event.users.forEach(u => {
+                        userMap.set(u.nick, { name: u.nick, isIRC: true, modes: u.modes });
+                    });
+                    setIrcUsers(userMap);
+                });
+
+                client.on('privmsg', (event) => {
+                    // For now, we don't strictly need to handle incoming messages here 
+                    // because the design might still rely on the backend socket for UNITY?
+                    // BUT: The user effectively wants "client side".
+                    // If we want to show messages, we need to expose them.
+                    // However, the current hook only returns `ircUsers`. 
+                    // To keep it simple and fulfill the "G-line" fix first (presence),
+                    // we stick to userlist. 
+                    // If messages are needed in the UI, we'll need to expand this hook 
+                    // to return a `messages` array or an `onMessage` callback.
+                });
+
+                client.on('error', (err) => {
+                    console.error('[IRC Error]', err);
+                    setError(err.message);
+                });
+
+                client.on('close', () => {
+                    setIsConnected(false);
+                    console.log('[IRC] Disconnected');
+                });
+
+            } catch (err) {
+                console.error('Failed to init IRC:', err);
+                setError(err.message);
+            }
         };
 
-        // Handle single user join
-        const handleUserJoined = ({ nick }) => {
-            setIrcUsers((prev) => {
-                const next = new Map(prev);
-                next.set(nick, { name: nick, isIRC: true });
-                return next;
-            });
-        };
-
-        // Handle single user left
-        const handleUserLeft = ({ nick }) => {
-            setIrcUsers((prev) => {
-                const next = new Map(prev);
-                next.delete(nick);
-                return next;
-            });
-        };
-
-        // Handle nick change
-        const handleNickChange = ({ oldNick, newNick }) => {
-            setIrcUsers((prev) => {
-                const next = new Map(prev);
-                const userData = next.get(oldNick);
-                if (userData) {
-                    next.delete(oldNick);
-                    next.set(newNick, { ...userData, name: newNick });
-                }
-                return next;
-            });
-        };
-
-        const handleConnected = ({ nick, channel }) => {
-            console.log(`[IRC] Bot connected as ${nick} to ${channel}`);
-        };
-
-        const handleError = (error) => {
-            console.error('[IRC] Connection Error:', error);
-        };
-
-        socket.on("irc-userlist", handleUserList);
-        socket.on("irc-user-joined", handleUserJoined);
-        socket.on("irc-user-left", handleUserLeft);
-        socket.on("irc-nick-change", handleNickChange);
-        socket.on("irc-connected", handleConnected);
-        socket.on("irc-error", handleError);
+        connectIRC();
 
         return () => {
-            socket.off("irc-userlist", handleUserList);
-            socket.off("irc-user-joined", handleUserJoined);
-            socket.off("irc-user-left", handleUserLeft);
-            socket.off("irc-nick-change", handleNickChange);
-            socket.off("irc-connected", handleConnected);
-            socket.off("irc-error", handleError);
+            if (clientRef.current) {
+                console.log('[IRC] Cleaning up connection...');
+                clientRef.current.quit('Page closed');
+                clientRef.current = null;
+            }
         };
-    }, [socket, isConnected]);
+    }, [user?.name]); // Re-connect only if user name changes significantly
+
+    const sendMessage = useCallback((text) => {
+        if (clientRef.current && isConnected) {
+            clientRef.current.say('#camrooms', text);
+        }
+    }, [isConnected]);
 
     return {
         ircUsers,
+        isConnected,
+        sendMessage, // Export this so the UI can use it if we wire it up
+        error
     };
 }
