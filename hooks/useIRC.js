@@ -32,13 +32,9 @@ export function useIRC(user) {
                     nick: nick,
                     username: nick,
                     gecos: 'CamRooms Web Client',
-
-                    // Connect to KiwiIRC's public gateway
-                    // Trying port 6697 (SSL) to avoid potential plaintext blocking or mismatches
-                    host: 'kiwiirc.com',
-                    port: 443,
-                    ssl: true,
-                    path: '/webirc/irc.gamesurge.net/6697/',
+                    // Native WSS endpoint for Ergo Testnet
+                    // This avoids the need for a public gateway and works directly from the browser.
+                    url: 'wss://testnet.ergo.chat/webirc',
                     web_socket: true
                 });
 
