@@ -29,15 +29,14 @@ export function useIRC(user) {
                 clientRef.current = client;
 
                 client.connect({
-                    host: 'irc.gamesurge.net',
-                    port: 443,
                     nick: nick,
                     username: nick,
                     gecos: 'CamRooms Web Client',
                     // Use a known public websocket gateway that forwards to standard IRC networks
                     // KiwiIRC's gateway is robust for this.
                     web_socket: true,
-                    ssl: true,
+                    // When 'url' is provided with wss://, we should NOT provide host/port/ssl
+                    // as they might override or confuse the transport.
                     // KiwiIRC gateway URL - must use wss:// for HTTPS pages
                     url: 'wss://kiwiirc.com/webirc/irc.gamesurge.net/6667/'
                 });
