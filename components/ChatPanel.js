@@ -81,6 +81,14 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
         setSelectedMentionIndex(0);
     }, [filteredMentions.length]);
 
+    // Auto-resize textarea
+    useEffect(() => {
+        if (inputRef.current) {
+            inputRef.current.style.height = 'auto';
+            inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 200) + 'px';
+        }
+    }, [inputValue]);
+
     const handleSend = () => {
         if (inputValue.trim()) {
             sendMessage(inputValue);
@@ -524,11 +532,14 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                 outline: 'none',
                                 color: 'var(--text-primary)',
                                 fontSize: '15px',
+                                fontSize: '15px',
                                 resize: 'none',
-                                height: '24px',
+                                maxHeight: '200px',
+                                height: 'auto',
+                                minHeight: '24px',
                                 lineHeight: '1.5',
                                 padding: '2px 0',
-                                overflow: 'hidden'
+                                overflowY: 'auto'
                             }}
                         />
 

@@ -222,9 +222,11 @@ function MainApp({ user, onLeaveRoom }) {
 
   useEffect(() => {
     if (isResizing) {
+      document.body.classList.add('resizing');
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
+        document.body.classList.remove('resizing');
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
