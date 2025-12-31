@@ -450,7 +450,7 @@ function MainApp({ user, onLeaveRoom }) {
             </button>
           </div>
 
-          <div className="side-content" style={{ padding: 0 }}>
+          <div className="side-content" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
             {activeTab === 'logs' ? (
               /* Chat Panel */
               <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>

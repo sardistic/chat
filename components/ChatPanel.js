@@ -84,8 +84,8 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
     // Auto-resize textarea
     useEffect(() => {
         if (inputRef.current) {
-            inputRef.current.style.height = 'auto';
-            inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 200) + 'px';
+            inputRef.current.style.height = 'auto'; // Reset to re-calculate shrink
+            inputRef.current.style.height = (inputRef.current.scrollHeight) + 'px';
         }
     }, [inputValue]);
 
@@ -491,7 +491,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                     {/* Top row: Avatar + Input + Send */}
                     <div style={{
                         display: 'flex',
-                        alignItems: 'flex-start',
+                        alignItems: 'center', // Center vertically
                         gap: '10px',
                         padding: '8px 12px 6px'
                     }}>
@@ -538,8 +538,9 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                 height: 'auto',
                                 minHeight: '24px',
                                 lineHeight: '1.5',
-                                padding: '2px 0',
-                                overflowY: 'auto'
+                                padding: '2px 0 2px 4px', // Add left padding so text doesn't touch edge
+                                overflowY: 'auto', // Allow scroll if max height reached 
+                                overflowX: 'hidden' // No horizontal scroll
                             }}
                         />
 
