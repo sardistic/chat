@@ -527,20 +527,24 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                             rows={1}
                             style={{
                                 flex: 1,
+                                display: 'block',
+                                width: '100%',
                                 background: 'transparent',
                                 border: 'none',
                                 outline: 'none',
                                 color: 'var(--text-primary)',
-                                fontSize: '15px',
                                 fontSize: '15px',
                                 resize: 'none',
                                 maxHeight: '200px',
                                 height: 'auto',
                                 minHeight: '24px',
                                 lineHeight: '1.5',
-                                padding: '2px 0 2px 4px', // Add left padding so text doesn't touch edge
-                                overflowY: 'auto', // Allow scroll if max height reached 
-                                overflowX: 'hidden' // No horizontal scroll
+                                padding: '2px 0 2px 4px',
+                                overflowY: 'auto',
+                                overflowX: 'hidden',
+                                whiteSpace: 'pre-wrap',
+                                overflowWrap: 'break-word',
+                                wordBreak: 'break-word'
                             }}
                         />
 
