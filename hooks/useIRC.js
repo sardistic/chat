@@ -28,13 +28,15 @@ export function useIRC(user) {
                 client = new Client();
                 clientRef.current = client;
 
+                // Native WSS endpoint for Ergo Testnet
                 client.connect({
                     nick: nick,
                     username: nick,
                     gecos: 'CamRooms Web Client',
-                    // Native WSS endpoint for Ergo Testnet
-                    // This avoids the need for a public gateway and works directly from the browser.
-                    url: 'wss://testnet.ergo.chat/webirc',
+                    host: 'testnet.ergo.chat',
+                    port: 6697,
+                    path: '/webirc',
+                    ssl: true,
                     web_socket: true
                 });
 
