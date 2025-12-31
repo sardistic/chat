@@ -30,17 +30,15 @@ export function useIRC(user) {
 
                 client.connect({
                     host: 'irc.gamesurge.net',
-                    port: 6667,
+                    port: 443,
                     nick: nick,
                     username: nick,
                     gecos: 'CamRooms Web Client',
-                    // transport: 'websocket', // Caused 'transport is not a constructor' error
                     // Use a known public websocket gateway that forwards to standard IRC networks
                     // KiwiIRC's gateway is robust for this.
-                    // Format: wss://kiwiirc.com/webirc/[network_host]/[port]/
-                    // Note: direct websocket to irc.gamesurge.net often fails if they don't expose it.
-                    // Using Kiwi Gateway:
                     web_socket: true,
+                    ssl: true,
+                    // KiwiIRC gateway URL - must use wss:// for HTTPS pages
                     url: 'wss://kiwiirc.com/webirc/irc.gamesurge.net/6667/'
                 });
 
