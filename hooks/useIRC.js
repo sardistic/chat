@@ -18,7 +18,7 @@ export function useIRC(user) {
             try {
                 // Determine nickname (sanitize spaces)
                 const nick = user.name.replace(/\s+/g, '_').substring(0, 16);
-                const channel = '#camrooms';
+                const channel = '#camsrooms';
 
                 console.log(`[IRC] Initializing client for ${nick}...`);
 
@@ -137,7 +137,7 @@ export function useIRC(user) {
 
     const sendMessage = useCallback((text) => {
         if (clientRef.current && isConnected) {
-            clientRef.current.say('#camrooms', text);
+            clientRef.current.say('#camsrooms', text);
         }
     }, [isConnected]);
 
