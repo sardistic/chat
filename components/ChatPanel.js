@@ -35,7 +35,7 @@ function groupMessages(messages) {
     return groups;
 }
 
-export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onUserClick = () => { }, onTypingUsersChange = () => { } }) {
+export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onUserClick = () => { }, onTypingUsersChange = () => { }, sendToIRC = () => { } }) {
     const { messages, sendMessage, isLoading, typingUsers, handleTyping, isTyping } = useChat(roomId, user);
     const [inputValue, setInputValue] = useState('');
     const [showGifPicker, setShowGifPicker] = useState(false);
@@ -92,6 +92,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
     const handleSend = () => {
         if (inputValue.trim()) {
             sendMessage(inputValue);
+            sendToIRC(inputValue); // Send to IRC via client
             setInputValue('');
             setShowMentions(false);
             setShowGifPicker(false);
@@ -121,6 +122,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
         sendingRef.current = true;
 
         sendMessage(gifUrl);
+        sendToIRC(gifUrl); // Send to IRC via client
         setShowGifPicker(false);
         setGifQuery('');
         setInputValue('');

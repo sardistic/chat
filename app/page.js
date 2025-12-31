@@ -28,7 +28,7 @@ function MainApp({ user, onLeaveRoom }) {
     stopBroadcast,
     error
   } = useWebRTC(roomId, user, false);
-  const { ircUsers } = useIRC(user);
+  const { ircUsers, sendMessage: sendToIRC } = useIRC(user);
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
@@ -461,6 +461,7 @@ function MainApp({ user, onLeaveRoom }) {
                   ircUsers={Array.from(ircUsers.values())}
                   onUserClick={handleProfileClick}
                   onTypingUsersChange={setTypingUsers}
+                  sendToIRC={sendToIRC}
                 />
               </div>
             ) : (
