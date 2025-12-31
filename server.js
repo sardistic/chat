@@ -252,6 +252,8 @@ app.prepare().then(() => {
         }
       };
 
+      /* 
+      // DISABLED: User IRC connections now handled client-side to prevent G-lines
       queueIrcConnection(socket, user, userIrcConfig, (err, bridge) => {
         if (err) {
           console.error(`[IRC] Failed to create bridge for ${user.name}:`, err);
@@ -260,6 +262,7 @@ app.prepare().then(() => {
           console.log(`[IRC] ✅ Bridge created for ${user.name}`);
         }
       }, bridgeOptions);
+      */
 
       console.log(`✅ ${user.name} joined room. Total users: ${room.size}`);
     });
