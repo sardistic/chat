@@ -34,10 +34,11 @@ export function useIRC(user) {
                     gecos: 'CamRooms Web Client',
 
                     // Connect to KiwiIRC's public gateway
+                    // Trying port 6697 (SSL) to avoid potential plaintext blocking or mismatches
                     host: 'kiwiirc.com',
                     port: 443,
                     ssl: true,
-                    path: '/webirc/irc.gamesurge.net/6667/',
+                    path: '/webirc/irc.gamesurge.net/6697/',
                     web_socket: true
                 });
 
