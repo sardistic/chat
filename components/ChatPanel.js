@@ -298,7 +298,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                     style={{ marginBottom: '12px' }}
                                 >
                                     {group.messages.map(msg => (
-                                        <SystemMessage key={msg.id || Date.now()} message={msg} />
+                                        <SystemMessage key={msg.id || Date.now()} message={msg} onUserClick={onUserClick} />
                                     ))}
                                 </motion.div>
                             );

@@ -2,7 +2,7 @@ import { Icon } from '@iconify/react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion'; // [NEW]
 
-export default function SystemMessage({ message }) {
+export default function SystemMessage({ message, onUserClick = () => { } }) {
     const { systemType, text, metadata } = message;
 
     // Minimal style for join/leave events with optional Avatars
@@ -37,7 +37,13 @@ export default function SystemMessage({ message }) {
                                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                                 className="relative group"
                                 title={u.name}
-                                style={{ position: 'relative' }}
+                                style={{ position: 'relative', cursor: 'pointer' }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUserClick({ name: u.name, avatar: u.avatar || u.image, color: u.color }, e);
+                                }}
+                                whileHover={{ scale: 1.15 }}
+                                whileTap={{ scale: 0.95 }}
                             >
                                 <img
                                     src={u.avatar || u.image || `/api/avatar/${u.name}`}
