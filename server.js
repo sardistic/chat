@@ -846,6 +846,11 @@ app.prepare().then(async () => {
         saveMessageToDB(updateMsg);
         io.to(roomId).emit('chat-message-update', updateMsg);
       } else {
+        // Check if user already joined recently (prevent duplicate "popped in" on refresh)
+        // If there's an active bundle, we might want to just update it even if it's "expired" for new users?
+        // Better: Check if THIS user is already in the last join message if it's recent enough to be relevant.
+        // Actually, just expanding the bundle logic is safer.
+
         joinMsgId = `sys-${Date.now()}`;
         const users = [userMeta];
         const joinMsg = {

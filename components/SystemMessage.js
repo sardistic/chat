@@ -240,7 +240,11 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
                 {/* Build Logs Terminal (Cinematic) */}
                 {metadata && metadata.logs && metadata.logs.length > 0 && (
-                    <CinematicScanline logs={metadata.logs} timestamp={message.timestamp} />
+                    <CinematicScanline
+                        logs={metadata.logs}
+                        timestamp={message.timestamp}
+                        type={message.systemType}
+                    />
                 )}
 
                 {/* Extended Metadata (Commit info, etc.) */}
@@ -350,12 +354,19 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
     );
 }
 
-function CinematicScanline({ logs, timestamp }) {
+function CinematicScanline({ logs, timestamp, type }) {
     const [displayIndex, setDisplayIndex] = useState(0);
     const [isComplete, setIsComplete] = useState(false);
 
     // Auto-scroll logic
     useEffect(() => {
+        // 0. Immediate completion for finished states
+        if (type === 'deploy-success' || type === 'deploy-fail') {
+            setDisplayIndex(logs.length - 1);
+            setIsComplete(true);
+            return;
+        }
+
         // 1. Skip animation for old messages (older than 5 minutes)
         if (timestamp) {
             const age = Date.now() - new Date(timestamp).getTime();
