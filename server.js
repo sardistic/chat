@@ -5,6 +5,10 @@ const { Server } = require("socket.io");
 const IRCBridge = require("./lib/ircBridge");
 const { PrismaClient } = require("@prisma/client");
 const ytsr = require("ytsr");
+const fs = require('fs');
+const path = require('path');
+
+const HISTORY_FILE = path.join(__dirname, 'chat-history.json');
 
 const prisma = new PrismaClient();
 
@@ -77,20 +81,39 @@ const queueIrcConnection = (socket, user, ircConfig, callback) => {
 };
 
 // Store message history per room (limit 200)
-const messageHistory = new Map(); // roomId -> Array of messages
+let messageHistory = {}; // roomId -> Array of messages (Changed to Object for JSON serialization)
+
+// Load History on Start
+try {
+  if (fs.existsSync(HISTORY_FILE)) {
+    messageHistory = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+    console.log('📚 Loaded chat history from file.');
+  }
+} catch (err) {
+  console.error('Failed to load chat history:', err);
+}
+
+// Save History Helper
+const saveHistory = () => {
+  try {
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(messageHistory, null, 2));
+  } catch (err) {
+    console.error('Failed to save chat history:', err);
+  }
+};
 
 // Helper to store messages
 const storeMessage = (roomId, message) => {
-  if (!messageHistory.has(roomId)) {
-    messageHistory.set(roomId, []);
+  if (!messageHistory[roomId]) {
+    messageHistory[roomId] = [];
   }
-  const history = messageHistory.get(roomId);
-  history.push(message);
+  messageHistory[roomId].push(message);
 
-  // Limit to last 200 messages
-  if (history.length > 200) {
-    history.shift(); // Remove oldest
+  // Limit to last 50 messages (User requested lower limit previously/implicit from memory usage)
+  if (messageHistory[roomId].length > 50) {
+    messageHistory[roomId].shift();
   }
+  saveHistory(); // Persist on every save
 };
 
 // Tube Sync State
@@ -282,6 +305,35 @@ app.prepare().then(() => {
   // Run stats update every 60 seconds
   setInterval(updateStats, 60000);
 
+  // --- Smart Bundling State ---
+  // Store active bundles: { roomId: { join: { id, timestamp, users: [] }, cam: { ... } } }
+  const messageBundles = new Map();
+
+  const getBundle = (roomId, type) => {
+    if (!messageBundles.has(roomId)) messageBundles.set(roomId, {});
+    const roomBundles = messageBundles.get(roomId);
+
+    const bundle = roomBundles[type];
+    if (bundle) {
+      const now = Date.now();
+      if (now - bundle.timestamp < 60000) { // 60s window
+        return bundle;
+      }
+      // Expired
+      delete roomBundles[type];
+    }
+    return null;
+  };
+
+  const setBundle = (roomId, type, id, users) => {
+    if (!messageBundles.has(roomId)) messageBundles.set(roomId, {});
+    messageBundles.get(roomId)[type] = {
+      id,
+      timestamp: Date.now(),
+      users // Array of user objects
+    };
+  };
+
   const io = new Server(httpServer, {
     path: "/api/socket/io",
     addTrailingSlash: false,
@@ -332,16 +384,56 @@ app.prepare().then(() => {
       socket.to(roomId).emit("user-connected", { socketId: socket.id, user }); // Keep compatibility
 
       // System Message: Join
-      const joinMsg = {
-        roomId,
-        id: `sys-${Date.now()}`,
-        sender: 'System',
-        text: `✨ ${user.name} popped in!`,
-        type: 'system',
-        timestamp: new Date().toISOString()
-      };
-      storeMessage(roomId, joinMsg);
-      io.to(roomId).emit('chat-message', joinMsg);
+      // System Message: Join (Smart Bundling)
+      const activeBundle = getBundle(roomId, 'join');
+      let joinMsgId;
+      const userMeta = { ...user, action: 'joined', timestamp: Date.now() };
+
+      if (activeBundle) {
+        joinMsgId = activeBundle.id;
+        if (!activeBundle.users.some(u => u.name === user.name)) {
+          activeBundle.users.push(userMeta);
+        }
+        const uniqueUsers = activeBundle.users.length;
+
+        const updateMsg = {
+          id: joinMsgId,
+          roomId,
+          sender: 'System',
+          text: `✨ ${uniqueUsers} Users popped in!`,
+          type: 'system',
+          systemType: 'join-leave',
+          metadata: { users: activeBundle.users },
+          timestamp: new Date().toISOString()
+        };
+
+        if (messageHistory[roomId]) {
+          const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
+          if (idx !== -1) {
+            messageHistory[roomId][idx] = updateMsg;
+            saveHistory();
+          }
+        }
+        io.to(roomId).emit('chat-message-update', updateMsg);
+      } else {
+        joinMsgId = `sys-${Date.now()}`;
+        const users = [userMeta];
+        const joinMsg = {
+          roomId,
+          id: joinMsgId,
+          sender: 'System',
+          text: `✨ ${user.name} popped in!`,
+          type: 'system',
+          systemType: 'join-leave',
+          metadata: { users },
+          timestamp: new Date().toISOString()
+        };
+        setBundle(roomId, 'join', joinMsgId, users);
+        storeMessage(roomId, joinMsg);
+        io.to(roomId).emit('chat-message', joinMsg);
+      }
+
+      socket.data.joinMsgId = joinMsgId;
 
       // Create per-user IRC connection via rate-limited queue
       // Each user gets their own IRC connection like KiwiIRC/Twitch
@@ -465,6 +557,106 @@ app.prepare().then(() => {
         sender: socket.id,
         payload: data.payload
       });
+    });
+
+    // Handle User Updates (e.g. formatting, cam status)
+    socket.on('update-user', (updates) => {
+      const { roomId, user } = socket.data;
+      if (!roomId || !rooms.has(roomId)) return;
+
+      const room = rooms.get(roomId);
+      const userData = room.get(socket.id);
+
+      if (userData) {
+        // Check for Cam Toggle
+        const wasVideoEnabled = userData.isVideoEnabled;
+        const isVideoEnabled = updates.isVideoEnabled;
+        const camToggled = (isVideoEnabled !== undefined) && (isVideoEnabled !== wasVideoEnabled);
+
+        // Apply Updates
+        Object.assign(userData, updates);
+        room.set(socket.id, userData); // Update map
+
+        // Broadcast Update to others
+        socket.to(roomId).emit('user-updated', { socketId: socket.id, updates });
+
+        // --- Smart Bundling: CAM ---
+        if (camToggled) {
+          const action = isVideoEnabled ? 'cam-up' : 'cam-down';
+          const activeBundle = getBundle(roomId, 'cam');
+          let bundleId;
+
+          const userMeta = { ...user, action, timestamp: Date.now() };
+
+          if (activeBundle) {
+            // Update Bundle
+            bundleId = activeBundle.id;
+            const userInBundle = activeBundle.users.find(u => u.name === user.name);
+            if (userInBundle) {
+              // Overwrite previous action if recent? OR append?
+              // "A started... and stopped" -> action: 'cam-flash'
+              if (userInBundle.action !== action) {
+                // E.g. cam-up + cam-down = cam-flash?
+                // Or just update to latest state?
+                userInBundle.action = action; // Just update to latest
+              }
+            } else {
+              activeBundle.users.push(userMeta);
+            }
+
+            const total = activeBundle.users.length;
+            const up = activeBundle.users.filter(u => u.action === 'cam-up').length;
+
+            // Text Logic: "3 Users updated camera" or "3 Users live!"
+            let text = `📸 ${total} Users updated camera`;
+            if (up === total) text = `📸 ${total} Users went live!`;
+            else text = `📸 Cam check: ${up} live, ${total - up} off`;
+
+            const updateMsg = {
+              id: bundleId,
+              roomId,
+              sender: 'System',
+              text,
+              type: 'system',
+              systemType: 'join-leave', // Use same minimal style
+              metadata: { users: activeBundle.users },
+              timestamp: new Date().toISOString()
+            };
+
+            if (messageHistory[roomId]) {
+              const idx = messageHistory[roomId].findIndex(m => m.id === bundleId);
+              if (idx !== -1) {
+                messageHistory[roomId][idx] = updateMsg;
+                saveHistory();
+              }
+            }
+            io.to(roomId).emit('chat-message-update', updateMsg);
+
+          } else {
+            // Create New Bundle
+            bundleId = `sys-cam-${Date.now()}`;
+            const users = [userMeta];
+
+            let text = `📸 ${user.name} went live!`;
+            if (!isVideoEnabled) text = `📷 ${user.name} turned off camera.`;
+
+            const camMsg = {
+              roomId,
+              id: bundleId,
+              sender: 'System',
+              text,
+              type: 'system',
+              systemType: 'join-leave', // Use minimal style
+              metadata: { users },
+              timestamp: new Date().toISOString()
+            };
+
+            setBundle(roomId, 'cam', bundleId, users);
+            storeMessage(roomId, camMsg);
+            io.to(roomId).emit('chat-message', camMsg);
+          }
+        }
+      }
     });
 
     // Chat Messages
@@ -628,7 +820,7 @@ app.prepare().then(() => {
     // Disconnect
     socket.on("disconnect", () => {
       console.log("Client disconnected:", socket.id);
-      const { roomId, user } = socket.data;
+      const { roomId, user, joinMsgId } = socket.data;
 
       if (roomId) {
         const room = rooms.get(roomId);
@@ -636,10 +828,8 @@ app.prepare().then(() => {
           room.delete(socket.id);
           if (room.size === 0) {
             rooms.delete(roomId);
-            // If room is empty, reset tube state partially
             tubeState.ownerId = null;
           } else if (tubeState.ownerId === socket.id) {
-            // Handover to someone else
             const nextOwnerId = room.keys().next().value;
             tubeState.ownerId = nextOwnerId;
             console.log(`[Tube] Handed over ownership to ${nextOwnerId}`);
@@ -649,19 +839,46 @@ app.prepare().then(() => {
         socket.to(roomId).emit("user-left", { socketId: socket.id });
         socket.to(roomId).emit("user-disconnected", socket.id);
 
-        // System Message: Disconnect
+        // System Message: Disconnect (Smart Bundling)
         if (user) {
-          console.log(`User left room ${roomId}:`, user.name);
-          const leaveMsg = {
-            roomId,
-            id: `sys-${Date.now()}`,
-            sender: 'System',
-            text: `💨 ${user.name} floated away...`,
-            type: 'system',
-            timestamp: new Date().toISOString()
-          };
-          storeMessage(roomId, leaveMsg);
-          io.to(roomId).emit('chat-message', leaveMsg);
+          const activeBundle = getBundle(roomId, 'join');
+
+          if (activeBundle && joinMsgId && activeBundle.id === joinMsgId) {
+            // Update Bundle
+            const userInBundle = activeBundle.users.find(u => u.name === user.name);
+            if (userInBundle) {
+              userInBundle.action = 'joined-left';
+            } else {
+              activeBundle.users.push({ ...user, action: 'left', timestamp: Date.now() });
+            }
+
+            const total = activeBundle.users.length;
+            const active = activeBundle.users.filter(u => u.action === 'joined').length;
+
+            const updateMsg = {
+              id: joinMsgId,
+              roomId,
+              sender: 'System',
+              text: `✨ ${total} Users visited (${active} active)`,
+              type: 'system',
+              systemType: 'join-leave',
+              metadata: { users: activeBundle.users },
+              timestamp: new Date().toISOString()
+            };
+
+            if (messageHistory[roomId]) {
+              const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
+              if (idx !== -1) {
+                messageHistory[roomId][idx] = updateMsg;
+                saveHistory();
+              }
+            }
+            io.to(roomId).emit('chat-message-update', updateMsg);
+
+          } else {
+            // Minimal fallback - skip explicit message for old sessions
+            console.log(`User left room ${roomId}:`, user.name);
+          }
         }
       }
 

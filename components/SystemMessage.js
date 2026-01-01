@@ -2,7 +2,61 @@ import { Icon } from '@iconify/react';
 import ReactMarkdown from 'react-markdown';
 
 export default function SystemMessage({ message }) {
-    const { systemType, text } = message;
+    const { systemType, text, metadata } = message;
+
+    // Minimal style for join/leave events with optional Avatars
+    if (systemType === 'join-leave') {
+        const users = metadata?.users || [];
+
+        return (
+            <div style={{
+                padding: '6px 0',
+                fontSize: '11px',
+                color: '#6b7280', // Gray-500
+                fontStyle: 'italic',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                justifyContent: 'center',
+                opacity: 0.9
+            }}>
+                {/* Avatar Stripe */}
+                {users.length > 0 && (
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '2px' }}>
+                        {users.map((u, i) => (
+                            <div key={i} className="relative group" title={u.name}>
+                                <img
+                                    src={`https://api.dicebear.com/9.x/dylan/svg?seed=${u.name}`}
+                                    alt={u.name}
+                                    style={{
+                                        width: '20px',
+                                        height: '20px',
+                                        borderRadius: '50%',
+                                        border: u.action && u.action.includes('left') ? '1px solid #666' : '1px solid #10b981',
+                                        opacity: u.action && u.action.includes('left') ? 0.5 : 1,
+                                        filter: u.action && u.action.includes('left') ? 'grayscale(100%)' : 'none'
+                                    }}
+                                />
+                                {u.action === 'cam-up' && (
+                                    <div style={{
+                                        position: 'absolute', bottom: -2, right: -2,
+                                        width: '8px', height: '8px',
+                                        background: '#f43f5e', borderRadius: '50%', border: '1px solid #000'
+                                    }} />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Icon icon="mdi:account-group-outline" width="14" />
+                    <span>{text}</span>
+                </div>
+            </div>
+        );
+    }
 
     // Configuration for different message types
     const config = {
@@ -12,7 +66,8 @@ export default function SystemMessage({ message }) {
             bgColor: 'rgba(245, 158, 11, 0.1)',
             borderColor: 'rgba(245, 158, 11, 0.4)',
             kicker: 'MISSION CONTROL',
-            animation: 'pulse-border'
+            animation: 'pulse-border',
+            showProgress: true
         },
         'deploy-success': {
             icon: 'mdi:rocket-launch',
@@ -87,18 +142,33 @@ export default function SystemMessage({ message }) {
                 fontSize: '13px',
                 lineHeight: '1.5'
             }}>
-                {/* Using ReactMarkdown to render the links and bold text safely */}
                 <ReactMarkdown
                     components={{
-                        p: ({ node, ...props }) => <div {...props} />, // Render paragraphs as divs to avoid margin issues
+                        p: ({ node, ...props }) => <div {...props} />, // Render paragraphs as divs
                         a: ({ node, ...props }) => <a {...props} style={{ color: style.color, textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer" />
                     }}
                 >
                     {text}
                 </ReactMarkdown>
+
+                {/* Extended Metadata (Commit info, etc.) */}
+                {metadata && (
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.1)', fontSize: '11px', color: '#888' }}>
+                        {metadata.commit && <div>Commit: <span style={{ color: '#ccc' }}>{metadata.commit}</span></div>}
+                        {metadata.author && <div>Author: <span style={{ color: '#ccc' }}>{metadata.author}</span></div>}
+                        {metadata.duration && <div>Duration: <span style={{ color: '#ccc' }}>{metadata.duration}</span></div>}
+                    </div>
+                )}
             </div>
 
-            {/* CSS Styles for Animations - Injected here for component isolation */}
+            {/* Progress Bar for Deploying */}
+            {style.showProgress && (
+                <div className="progress-bar-container">
+                    <div className="progress-bar-fill"></div>
+                </div>
+            )}
+
+            {/* CSS Styles for Animations */}
             <style jsx>{`
         @keyframes pulse-border {
           0% { box-shadow: 0 0 0 0 ${style.borderColor}; }
@@ -121,6 +191,31 @@ export default function SystemMessage({ message }) {
           animation: spin 3s linear infinite;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Progress Bar Animation */
+        .progress-bar-container {
+            height: 4px;
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                ${style.borderColor},
+                ${style.borderColor} 10px,
+                ${style.color} 10px,
+                ${style.color} 20px
+            );
+            animation: progress-slide 1s linear infinite;
+        }
+        @keyframes progress-slide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); } /* Simplified infinite slide */
+        }
       `}</style>
         </div>
     );
