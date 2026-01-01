@@ -116,16 +116,23 @@ async function loadHistoryFromDB() {
       take: 100 // Last 100 messages
     });
 
-    messageHistory['default-room'] = messages.map(m => ({
-      id: m.id,
-      roomId: m.roomId,
-      sender: m.sender,
-      text: m.text,
-      type: m.type,
-      systemType: m.systemType,
-      metadata: m.metadata,
-      timestamp: m.timestamp.toISOString()
-    }));
+    messageHistory['default-room'] = messages.map(m => {
+      const meta = m.metadata || {};
+      return {
+        id: m.id,
+        roomId: m.roomId,
+        sender: m.sender,
+        text: m.text,
+        type: m.type,
+        systemType: m.systemType,
+        metadata: m.metadata,
+        timestamp: m.timestamp.toISOString(),
+        // Restore IRC-specific fields from metadata
+        source: meta.source,
+        senderColor: meta.senderColor,
+        channel: meta.channel
+      };
+    });
 
     console.log(`📚 Loaded ${messages.length} messages from database.`);
   } catch (err) {
@@ -145,7 +152,13 @@ async function saveMessageToDB(message) {
         text: message.text,
         type: message.type || 'user',
         systemType: message.systemType || null,
-        metadata: message.metadata || null,
+        metadata: {
+          ...(message.metadata || {}),
+          // Preserve IRC-specific fields in metadata
+          source: message.source,
+          senderColor: message.senderColor,
+          channel: message.channel
+        },
         timestamp: new Date(message.timestamp)
       },
       update: {
