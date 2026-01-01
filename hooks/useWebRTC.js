@@ -78,15 +78,18 @@ export function useWebRTC(roomId, user, autoStart = true) {
             });
 
             // 4. Update PeerManager
+            // 4. Update PeerManager
             if (peerManagerRef.current) {
-                console.log('🔄 Updating existing peer connections with new stream');
-                peerManagerRef.current.updateLocalStream(stream);
+                console.log('🔄 Updating existing peer connections with new stream (Hard Reconnect)');
+                // Set the internal stream so peer manager uses it for connections
+                peerManagerRef.current.localStream = stream;
 
-                // Connect to any missing peers
-                const activePeers = peerManagerRef.current.getPeerIds();
+                // Force Reconnect to ALL known peers
+                // This ensures renegotiation happens cleanly with the new stream
+                // instead of relying on unreliable addStream renegotiation
                 peers.forEach((peerData, peerId) => {
-                    if (!activePeers.includes(peerId)) {
-                        console.log('➕ Connecting to new peer during broadcast:', peerId);
+                    if (peerId !== socket.id) {
+                        console.log('📡 Re-establishing connection to', peerId);
                         peerManagerRef.current.createPeer(peerId, true);
                     }
                 });
