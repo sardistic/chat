@@ -580,16 +580,55 @@ app.prepare().then(() => {
       socket.to(roomId).emit("user-disconnected", socket.id);
 
       // System Message: Leave
-      const leaveMsg = {
-        roomId,
-        id: `sys-${Date.now()}`,
-        sender: 'System',
-        text: `💨 ${userName} floated away...`,
-        type: 'system',
-        timestamp: new Date().toISOString()
-      };
-      storeMessage(roomId, leaveMsg);
-      io.to(roomId).emit('chat-message', leaveMsg);
+      // System Message: Leave (Smart Bundling)
+      const activeBundle = getBundle(roomId, 'leave');
+      let leaveMsgId;
+      const userMeta = { name: userName, action: 'left', timestamp: Date.now() };
+
+      if (activeBundle) {
+        leaveMsgId = activeBundle.id;
+        activeBundle.users.push(userMeta);
+        const uniqueUsers = activeBundle.users.length;
+
+        let text = `💨 ${uniqueUsers} Users floated away...`;
+        // Optional: List names if small count? "A, B left..." - User asked to match join style "X Users..."
+
+        const updateMsg = {
+          id: leaveMsgId,
+          roomId,
+          sender: 'System',
+          text,
+          type: 'system',
+          systemType: 'join-leave',
+          metadata: { users: activeBundle.users },
+          timestamp: new Date().toISOString()
+        };
+
+        if (messageHistory[roomId]) {
+          const idx = messageHistory[roomId].findIndex(m => m.id === leaveMsgId);
+          if (idx !== -1) {
+            messageHistory[roomId][idx] = updateMsg;
+            saveHistory();
+          }
+        }
+        io.to(roomId).emit('chat-message-update', updateMsg);
+      } else {
+        leaveMsgId = `sys-${Date.now()}`;
+        const users = [userMeta];
+        const leaveMsg = {
+          roomId,
+          id: leaveMsgId,
+          sender: 'System',
+          text: `💨 ${userName} floated away...`,
+          type: 'system',
+          systemType: 'join-leave',
+          metadata: { users },
+          timestamp: new Date().toISOString()
+        };
+        setBundle(roomId, 'leave', leaveMsgId, users);
+        storeMessage(roomId, leaveMsg);
+        io.to(roomId).emit('chat-message', leaveMsg);
+      }
 
       // Cleanup IRC
       if (socket.data.ircBridge) {
