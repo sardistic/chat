@@ -124,8 +124,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             bgColor: 'rgba(16, 185, 129, 0.1)',
             borderColor: 'rgba(16, 185, 129, 0.5)',
             kicker: 'DEPLOYMENT SUCCESSFUL',
-            animation: 'none',
-            compact: true // Make deploy-success compact
+            animation: 'none'
         },
         'deploy-fail': {
             icon: 'mdi:alert-octagon',
