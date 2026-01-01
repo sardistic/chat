@@ -815,7 +815,21 @@ app.prepare().then(async () => {
 
       // System Message: Join
       // System Message: Join (Smart Bundling)
-      const activeBundle = getBundle(roomId, 'join');
+      // System Message: Join (Smart Bundling)
+      let activeBundle = getBundle(roomId, 'join');
+
+      // Attempt rehydration from history (Fix for server restarts/refresh creating duplicates)
+      if (!activeBundle && messageHistory[roomId] && messageHistory[roomId].length > 0) {
+        const lastMsg = messageHistory[roomId][messageHistory[roomId].length - 1];
+        if (lastMsg.systemType === 'join-leave') {
+          const logTime = new Date(lastMsg.timestamp).getTime();
+          if (Date.now() - logTime < 120000) { // 2 minute window for rehydration
+            console.log(`[SmartBundle] Rehydrating join bundle ${lastMsg.id} from history`);
+            setBundle(roomId, 'join', lastMsg.id, lastMsg.metadata?.users || []);
+            activeBundle = getBundle(roomId, 'join');
+          }
+        }
+      }
       let joinMsgId;
       const userMeta = { ...user, action: 'joined', timestamp: Date.now() };
 
