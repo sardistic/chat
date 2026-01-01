@@ -79,7 +79,8 @@ export default function TubeTile({
             // Use ref to avoid stale closure / re-init loops
             if (!isOwnerRef.current) return;
 
-            const currentTime = event.target.getCurrentTime();
+            // Safety check: Ensure target has the method (it might be missing on error events)
+            const currentTime = event.target?.getCurrentTime ? event.target.getCurrentTime() : 0;
             if (event.data === 1) { // Playing
                 if (onSync) onSync({ type: 'play', playedSeconds: currentTime });
             } else if (event.data === 2) { // Paused

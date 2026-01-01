@@ -12,6 +12,7 @@ export function useChat(roomId, user) {
 
     // Track seen message IDs to prevent duplicates
     const seenIdsRef = useRef(new Set());
+    const messagesRef = useRef([]);
 
     // Send a message
     const sendMessage = useCallback((text) => {
@@ -76,22 +77,35 @@ export function useChat(roomId, user) {
         }
 
         const handleMessage = (msg) => {
-            // Ignore duplicates based on ID
+            // 1. Strict Deduplication (ID mismatch)
             if (seenIdsRef.current.has(msg.id)) {
-                // console.log(`🛑 Ignored duplicate: ${msg.id}`); // Reduce noise
                 return;
             }
 
-            // Client-Side Duplicate Suppression for IRC Echoes
-            // If the message is from me, but comes via IRC (source='irc'), ignore it
-            // because I already have the Optimistic Web version.
+            // 2. Client-Side Duplicate Suppression for IRC Echoes
             if (user && msg.sender === user.name && msg.source === 'irc') {
                 console.log(`🛡️ Suppressed self-echo from IRC: ${msg.id}`);
-                seenIdsRef.current.add(msg.id); // Mark seen so we don't process it again
+                seenIdsRef.current.add(msg.id);
+                return;
+            }
+
+            // 3. Fuzzy Deduplication (Sender + Text + Time Window)
+            // Prevents "same message, different ID" (e.g. Web ID vs IRC ID race)
+            const isFuzzyDuplicate = messagesRef.current.some(existing => {
+                const timeDiff = Math.abs(new Date(existing.timestamp) - new Date(msg.timestamp));
+                return existing.sender === msg.sender &&
+                    existing.text === msg.text &&
+                    timeDiff < 2000; // 2 second window
+            });
+
+            if (isFuzzyDuplicate) {
+                console.log(`🛡️ Suppressed fuzzy duplicate: ${msg.id} (${msg.text})`);
+                seenIdsRef.current.add(msg.id);
                 return;
             }
 
             seenIdsRef.current.add(msg.id);
+            messagesRef.current.push(msg); // Keep ref synced for immediate checks
             setMessages((prev) => [...prev, msg]);
         };
 
@@ -135,6 +149,7 @@ export function useChat(roomId, user) {
             });
 
             setMessages(uniqueHistory);
+            messagesRef.current = uniqueHistory;
         };
 
         const handleUpdate = (updatedMsg) => {
