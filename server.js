@@ -208,38 +208,60 @@ app.prepare().then(() => {
           console.log('[Webhook] 📨 Received payload:', payload);
 
           let systemMessage = null;
+          let metadata = {};
           // --- Railway Deployment ---
           const type = payload.type;
           let systemType = 'info';
 
+          // Extract commit info from Railway payload (if available)
+          const details = payload.details || {};
+          const commitHash = details.commitHash?.substring(0, 7) || payload.deployment?.meta?.commit?.id?.substring(0, 7);
+          const commitMessage = details.message || payload.deployment?.meta?.commit?.message;
+          const commitAuthor = details.author || payload.deployment?.meta?.commit?.author?.name;
+          const serviceName = details.serviceName || payload.project?.name || 'Application';
+
           if (type && (type.startsWith('Deployment') || type.startsWith('Build'))) {
-            const project = payload.project?.name || 'Application';
+            metadata = { commitHash, commitMessage, commitAuthor, serviceName };
 
             // Build Events
             if (type === 'Build.building' || type === 'Deployment.building') {
-              systemMessage = `🚧 **Deploying**: A new build for *${project}* has started.`;
+              let text = `🚧 **Building** *${serviceName}*`;
+              if (commitMessage) text += `: "${commitMessage}"`;
+              if (commitAuthor) text += ` by ${commitAuthor}`;
+              systemMessage = text;
               systemType = 'deploy-start';
             }
             // Success Events
             else if (type === 'Deployment.success') {
-              systemMessage = `✅ **Deployed**: *${project}* is now live! (Refresh for updates)`;
+              let text = `✅ **Deployed** *${serviceName}*`;
+              if (commitMessage) text += `: "${commitMessage}"`;
+              if (commitHash) text += ` \`${commitHash}\``;
+              text += ' — Refresh for updates!';
+              systemMessage = text;
               systemType = 'deploy-success';
             }
             // Failure Events
             else if (type === 'Build.failed' || type === 'Deployment.failed' || type === 'Deployment.crashed') {
-              systemMessage = `❌ **Deploy Failed**: The build for *${project}* encountered an error.`;
+              let text = `❌ **Deploy Failed** *${serviceName}*`;
+              if (commitMessage) text += `: "${commitMessage}"`;
+              systemMessage = text;
               systemType = 'deploy-fail';
             }
           }
-          // --- GitHub Push (simplified) ---
+          // --- GitHub Push ---
           else if (payload.pusher) {
             const pusher = payload.pusher.name;
-            const commitMsg = payload.head_commit?.message || 'No commit message';
+            const commitMsg = payload.head_commit?.message?.split('\n')[0] || 'No commit message'; // First line only
             const commitUrl = payload.head_commit?.url || '#';
             const shortHash = payload.head_commit?.id?.substring(0, 7) || '???';
+            const branch = payload.ref?.replace('refs/heads/', '') || 'main';
+            const totalCommits = payload.commits?.length || 1;
 
-            systemMessage = `💾 **Git Push**: ${pusher} pushed to main: "${commitMsg}" ([${shortHash}](${commitUrl}))`;
+            let text = `💾 **${pusher}** pushed ${totalCommits > 1 ? `${totalCommits} commits` : ''} to \`${branch}\``;
+            text += `: "${commitMsg}" [\`${shortHash}\`](${commitUrl})`;
+            systemMessage = text;
             systemType = 'git-push';
+            metadata = { pusher, commitMsg, branch, commitUrl, shortHash, totalCommits };
           }
           // --- Generic Text Fallback ---
           else if (type && type.startsWith('VolumeAlert')) {
@@ -285,17 +307,8 @@ app.prepare().then(() => {
               text: systemMessage,
               type: 'system',
               systemType: systemType,
-              // Maintain or update metadata? 
-              // If we had commit info in start, we might want to keep it or simple overwrite.
-              // For now simpler to overwrite or merge if needed. 
-              // Let's pass metadata if we have it (extracted previously but not used in this block? 
-              // Wait, I see metadata extraction in previous ViewFile Step 1234 but it's not in the block I'm replacing?
-              // Ah, it was higher up or lower? 
-              // In Step 1440 lines 140-250, I don't see metadata extraction. It might have been lost or I'm looking at wrong lines.
-              // I will just use basics for now to fix the "Stuck" status.
-              timestamp: isUpdate ? new Date().toISOString() : new Date().toISOString() // Update timestamp to bump? Or keep original?
-              // Usually updates keep original ID but might want to bump position? 
-              // If we update, we don't bump position usually unless we delete/re-add.
+              metadata: metadata,
+              timestamp: new Date().toISOString()
               // Let's just update content.
             };
 
