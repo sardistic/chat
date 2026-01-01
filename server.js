@@ -485,7 +485,7 @@ app.prepare().then(() => {
           id: joinMsgId,
           roomId,
           sender: 'System',
-          text: `✨ ${uniqueUsers} Users popped in!`,
+          text: `${uniqueUsers} Users popped in!`,
           type: 'system',
           systemType: 'join-leave',
           metadata: { users: activeBundle.users },
@@ -507,7 +507,7 @@ app.prepare().then(() => {
           roomId,
           id: joinMsgId,
           sender: 'System',
-          text: `✨ ${user.name} popped in!`,
+          text: `${user.name} popped in!`,
           type: 'system',
           systemType: 'join-leave',
           metadata: { users },
@@ -716,9 +716,9 @@ app.prepare().then(() => {
             const up = activeBundle.users.filter(u => u.action === 'cam-up').length;
 
             // Text Logic: "3 Users updated camera" or "3 Users live!"
-            let text = `📸 ${total} Users updated camera`;
-            if (up === total) text = `📸 ${total} Users went live!`;
-            else text = `📸 Cam check: ${up} live, ${total - up} off`;
+            let text = `${total} Users updated camera`;
+            if (up === total) text = `${total} Users went live!`;
+            else text = `Cam check: ${up} live, ${total - up} off`;
 
             const updateMsg = {
               id: bundleId,
@@ -745,8 +745,8 @@ app.prepare().then(() => {
             bundleId = `sys-cam-${Date.now()}`;
             const users = [userMeta];
 
-            let text = `📸 ${user.name} went live!`;
-            if (!isVideoEnabled) text = `📷 ${user.name} turned off camera.`;
+            let text = `${user.name} went live!`;
+            if (!isVideoEnabled) text = `${user.name} turned off camera.`;
 
             const camMsg = {
               roomId,
@@ -973,7 +973,7 @@ app.prepare().then(() => {
               id: joinMsgId,
               roomId,
               sender: 'System',
-              text: `✨ ${total} Users visited (${active} active)`,
+              text: `${total} Users visited (${active} active)`,
               type: 'system',
               systemType: 'join-leave',
               metadata: { users: activeBundle.users },

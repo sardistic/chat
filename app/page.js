@@ -95,17 +95,7 @@ function MainApp({ user, onLeaveRoom }) {
       try {
         await startBroadcast();
         setIsBroadcasting(true);
-
-        // System Notification
-        if (socket) {
-          socket.emit('chat-message', {
-            roomId,
-            sender: 'System',
-            text: `🔴 ${user.name} is now LIVE!`,
-            type: 'system',
-            timestamp: new Date().toISOString()
-          });
-        }
+        // Server handles cam status notification via update-user handler
       } catch (err) {
         console.error("Error starting broadcast:", err);
         setIsBroadcasting(false);
