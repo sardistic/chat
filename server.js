@@ -268,29 +268,6 @@ app.prepare().then(async () => {
               systemMessage = text;
               systemType = 'deploy-start';
 
-              // Show simulated progress messages
-              if (io) {
-                const progressMsgs = [
-                  '📦 Installing dependencies...',
-                  '🔧 Compiling source...',
-                  '🚀 Starting server...'
-                ];
-                let i = 0;
-                const timer = setInterval(() => {
-                  if (i >= progressMsgs.length) { clearInterval(timer); return; }
-                  io.to('default-room').emit('chat-message', {
-                    roomId: 'default-room',
-                    id: `prog-${Date.now()}`,
-                    sender: 'System',
-                    text: progressMsgs[i++],
-                    type: 'system',
-                    systemType: 'deploy-log',
-                    timestamp: new Date().toISOString()
-                  });
-                }, 4000);
-                setTimeout(() => clearInterval(timer), 120000);
-              }
-
               // Start streaming build logs if we have a deployment ID and API token
               if (deploymentId && process.env.RAILWAY_API_TOKEN && io) {
                 let logBuffer = [];
