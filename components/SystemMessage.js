@@ -247,6 +247,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                             return (
                                 <div key={i}
                                     style={{
+                                        animation: 'slideIn 0.2s ease-out backwards',
                                         opacity: isBoring ? 0.35 : 1,
                                         paddingLeft: line.startsWith(' ') ? '4px' : '0',
                                         whiteSpace: 'pre-wrap',
@@ -301,10 +302,15 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                  to { box-shadow: 0 0 20px ${style.color}; }
             }
             
-            .spin {
+            :global(.spin) {
                 animation: spin 1s linear infinite;
+                display: inline-block; /* Ensure rotation works */
             }
             @keyframes spin { 100% { transform: rotate(360deg); } }
+
+            @keyframes slideIn {
+                from { opacity: 0; transform: translateX(-5px); }
+            }
 
             /* Progress Bar Animation */
             .progress-bar-container {
