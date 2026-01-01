@@ -186,42 +186,43 @@ app.prepare().then(() => {
             systemMessage = `📢 **Test Notification**: Volume Alert (${payload.severity || 'test'})`;
             systemType = 'info';
           }
-        }
           else if (payload.message) {
-      systemMessage = `📢 **System**: ${payload.message}`;
-      systemType = 'info';
-    }
+            systemMessage = `📢 **System**: ${payload.message}`;
+            systemType = 'info';
+          }
+          systemType = 'info';
+        }
 
     // 2. Broadcast to Chat
     if (systemMessage) {
-      const msg = {
-        roomId: 'default-room',
-        id: `sys-${Date.now()}`,
-        sender: 'System',
-        text: systemMessage,
-        type: 'system',
-        systemType: systemType,
-        timestamp: new Date().toISOString()
-      };
+          const msg = {
+            roomId: 'default-room',
+            id: `sys-${Date.now()}`,
+            sender: 'System',
+            text: systemMessage,
+            type: 'system',
+            systemType: systemType,
+            timestamp: new Date().toISOString()
+          };
 
-      // Log and Send
-      storeMessage('default-room', msg);
-      if (io) io.to('default-room').emit('chat-message', msg);
+          // Log and Send
+          storeMessage('default-room', msg);
+          if (io) io.to('default-room').emit('chat-message', msg);
 
-      console.log('[Webhook] 📢 Broadcasted:', systemMessage);
-    }
+          console.log('[Webhook] 📢 Broadcasted:', systemMessage);
+        }
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true }));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
 
-  } catch (err) {
-    console.error('[Webhook] ❌ Error processing:', err);
-    res.writeHead(400, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Invalid Payload' }));
-  }
-});
-return;
-    }
+      } catch (err) {
+        console.error('[Webhook] ❌ Error processing:', err);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid Payload' }));
+      }
+    });
+  return;
+}
 
 // Default Next.js Handler
 handle(req, res, parsedUrl);
