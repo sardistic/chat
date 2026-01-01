@@ -758,13 +758,13 @@ app.prepare().then(async () => {
   checkAndBackfillLogs(io);
 
   // --- HistoryBot: Single IRC connection that logs all messages to DB ---
-  // NOTE: Does NOT broadcast (no `io`) - users get messages from their own IRC connections
+  // Broadcasts to all web clients since browser-side IRC is unreliable
   const historyBot = new IRCBridge(null, {
     nick: 'ChatLogBot',
     username: 'chatlogbot',
     channel: '#camsrooms'
   }, {
-    // io: io, // DISABLED - causes duplicates since users have their own IRC connections
+    io: io, // Re-enabled: Broadcast to all connected clients
     onMessage: (message) => {
       // Persist IRC messages to database
       storeMessage(message.roomId, message);
