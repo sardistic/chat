@@ -361,25 +361,33 @@ app.prepare().then(async () => {
                   // Clean ANSI codes and empty lines
                   const lines = logBuffer
                     .map(line => stripAnsi(line).trim())
-                    .filter(l => l.length > 0)
-                    .slice(-3)
-                    .join('\n');
+                    .filter(l => l.length > 0);
 
                   logBuffer = [];
 
-                  if (!lines) return;
+                  if (lines.length === 0) return;
 
-                  const logMsg = {
-                    roomId: 'default-room',
-                    id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                    sender: 'System',
-                    text: lines,
-                    type: 'system',
-                    systemType: 'deploy-log',
-                    timestamp: new Date().toISOString()
-                  };
+                  // Find the active deployment message
+                  let msgId = activeDeployments.get(deploymentId);
 
-                  io.to('default-room').emit('chat-message', logMsg);
+                  if (msgId) {
+                    const history = messageHistory['default-room'];
+                    const idx = history?.findIndex(m => m.id === msgId);
+
+                    if (idx !== -1) {
+                      const msg = history[idx];
+                      const newLogs = [...(msg.metadata?.logs || []), ...lines];
+
+                      const updatedMsg = {
+                        ...msg,
+                        metadata: { ...msg.metadata, logs: newLogs }
+                      };
+
+                      history[idx] = updatedMsg;
+                      saveMessageToDB(updatedMsg);
+                      io.to('default-room').emit('chat-message-update', updatedMsg);
+                    }
+                  }
                 };
 
                 const buildStream = new RailwayBuildStream(
@@ -498,6 +506,12 @@ app.prepare().then(async () => {
               }
             }
 
+            // Preserve logs if updating
+            let existingLogs = [];
+            if (isUpdate && existingStartMsg?.metadata?.logs) {
+              existingLogs = existingStartMsg.metadata.logs;
+            }
+
             const msg = {
               roomId: 'default-room',
               id: msgId,
@@ -505,10 +519,14 @@ app.prepare().then(async () => {
               text: systemMessage,
               type: 'system',
               systemType: systemType,
-              metadata: metadata,
+              metadata: { ...metadata, logs: existingLogs },
               timestamp: new Date().toISOString()
-              // Let's just update content.
             };
+
+            // Track active deployment message for log appending
+            if (systemType === 'deploy-start' && metadata?.deploymentId) {
+              activeDeployments.set(metadata.deploymentId, msgId);
+            }
 
             if (isUpdate) {
               // Update in history
@@ -604,6 +622,8 @@ app.prepare().then(async () => {
   // --- Smart Bundling State ---
   // Store active bundles: { roomId: { join: { id, timestamp, users: [] }, cam: { ... } } }
   const messageBundles = new Map();
+  // Store active deployment messages: { deploymentId: messageId }
+  const activeDeployments = new Map();
 
   const getBundle = (roomId, type) => {
     if (!messageBundles.has(roomId)) messageBundles.set(roomId, {});

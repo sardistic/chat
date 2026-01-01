@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react';
 import ReactMarkdown from 'react-markdown';
-import { motion } from 'framer-motion'; // [NEW]
+import { motion } from 'framer-motion';
 
 export default function SystemMessage({ message, onUserClick = () => { } }) {
     const { systemType, text, metadata } = message;
@@ -215,8 +215,31 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     {text}
                 </ReactMarkdown>
 
+                {/* Build Logs Terminal */}
+                {metadata && metadata.logs && metadata.logs.length > 0 && (
+                    <div style={{
+                        marginTop: '12px',
+                        padding: '8px',
+                        background: '#111',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        color: '#aaa',
+                        whiteSpace: 'pre-wrap',
+                        display: 'flex',
+                        flexDirection: 'column-reverse' // Auto-scroll to bottom usually? Or just bottom-up.
+                    }}>
+                        {metadata.logs.map((line, i) => (
+                            <div key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '1px 0' }}>{line}</div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Extended Metadata (Commit info, etc.) */}
-                {metadata && (
+                {metadata && !metadata.logs && (
                     <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.1)', fontSize: '11px', color: '#888' }}>
                         {metadata.commit && <div>Commit: <span style={{ color: '#ccc' }}>{metadata.commit}</span></div>}
                         {metadata.author && <div>Author: <span style={{ color: '#ccc' }}>{metadata.author}</span></div>}
@@ -232,55 +255,59 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 </div>
             )}
 
-            {/* CSS Styles for Animations */}
+            {/* CSS Variables for Animation */}
             <style jsx>{`
-        @keyframes pulse-border {
-          0% { box-shadow: 0 0 0 0 ${style.borderColor}; }
-          70% { box-shadow: 0 0 0 4px rgba(0, 0, 0, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
-        }
-        @keyframes success-glow {
-          0% { box-shadow: 0 0 5px ${style.color}; transform: scale(0.98); }
-          50% { box-shadow: 0 0 20px ${style.color}; transform: scale(1.01); }
-          100% { box-shadow: 0 0 10px ${style.color}; transform: scale(1); }
-        }
-        .pulse-border {
-          animation: pulse-border 2s infinite;
-        }
-        .success-glow {
-          animation: success-glow 1.5s ease-out;
-          border-color: ${style.color} !important;
-        }
-        .spin-slow {
-          animation: spin 3s linear infinite;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+            .system-message-card {
+                 transition: border-color 0.5s ease, box-shadow 0.5s ease;
+            }
+            .pulse-border {
+                box-shadow: 0 0 0 0 ${style.borderColor};
+                animation: pulse-border-anim 2s infinite;
+            }
+            @keyframes pulse-border-anim {
+                0% { box-shadow: 0 0 0 0 ${style.borderColor}; }
+                70% { box-shadow: 0 0 0 4px rgba(0, 0, 0, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+            }
+            .success-glow {
+                box-shadow: 0 0 15px ${style.color};
+                animation: success-glow-anim 1.5s ease-out infinite alternate;
+            }
+            @keyframes success-glow-anim {
+                 from { box-shadow: 0 0 10px ${style.color}; }
+                 to { box-shadow: 0 0 20px ${style.color}; }
+            }
+            
+            .spin-slow {
+                animation: spin 3s linear infinite;
+            }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Progress Bar Animation */
-        .progress-bar-container {
-            height: 4px;
-            width: 100%;
-            background: rgba(0,0,0,0.3);
-            overflow: hidden;
-            position: relative;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            width: 100%;
-            background: repeating-linear-gradient(
-                45deg,
-                ${style.borderColor},
-                ${style.borderColor} 10px,
-                ${style.color} 10px,
-                ${style.color} 20px
-            );
-            animation: progress-slide 1s linear infinite;
-        }
-        @keyframes progress-slide {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); } /* Simplified infinite slide */
-        }
-      `}</style>
+            /* Progress Bar Animation */
+            .progress-bar-container {
+                height: 4px;
+                width: 100%;
+                background: rgba(0,0,0,0.3);
+                overflow: hidden;
+                position: relative;
+            }
+            .progress-bar-fill {
+                height: 100%;
+                width: 100%;
+                background: repeating-linear-gradient(
+                    45deg,
+                    ${style.borderColor},
+                    ${style.borderColor} 10px,
+                    ${style.color} 10px,
+                    ${style.color} 20px
+                );
+                animation: progress-slide 1s linear infinite;
+            }
+            @keyframes progress-slide {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(100%); }
+            }
+            `}</style>
         </div>
     );
 }
