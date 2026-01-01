@@ -499,25 +499,30 @@ app.prepare().then(async () => {
           if (systemMessage) {
             let msgId = `sys-${Date.now()}`;
             let isUpdate = false;
+            let existingStartMsg = null;
 
             // Attempt to find existing "Deploying" message to update
             if (systemType === 'deploy-success' || systemType === 'deploy-fail') {
-              // Searching for a "deploy-start" message within the last 30 minutes
-              // that matches this project/environment?
-              // Actually just searched for the last "deploy-start" message?
-              // Let's filter by project name if possible, or just take the last system message of that type.
-              const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
-              const existingStartMsg = messageHistory['default-room']
-                ?.slice()
-                .reverse()
-                .find(m =>
-                  m.systemType === 'deploy-start' &&
-                  new Date(m.timestamp).getTime() > thirtyMinutesAgo
-                );
-
-              if (existingStartMsg) {
-                msgId = existingStartMsg.id;
-                isUpdate = true;
+              // 1. Try Map lookup (Most accurate)
+              if (metadata?.deploymentId && activeDeployments.has(metadata.deploymentId)) {
+                msgId = activeDeployments.get(metadata.deploymentId);
+                existingStartMsg = messageHistory['default-room']?.find(m => m.id === msgId);
+                isUpdate = !!existingStartMsg;
+              }
+              // 2. Fallback to heuristic (Last deploy-start within 30m)
+              if (!isUpdate) {
+                const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
+                existingStartMsg = messageHistory['default-room']
+                  ?.slice()
+                  .reverse()
+                  .find(m =>
+                    m.systemType === 'deploy-start' &&
+                    new Date(m.timestamp).getTime() > thirtyMinutesAgo
+                  );
+                if (existingStartMsg) {
+                  msgId = existingStartMsg.id;
+                  isUpdate = true;
+                }
               }
             }
 
