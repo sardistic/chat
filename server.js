@@ -1195,7 +1195,10 @@ app.prepare().then(async () => {
       socket.emit('tube-state', { ...tubeState, serverTime: Date.now() });
     });
 
-    socket.on('tube-update', (newState) => {
+    socket.on('tube-update', (payload) => {
+      const roomId = payload.roomId || socket.data.roomId || 'default-room';
+      const newState = payload; // Aliasing for existing logic
+
       // Security: Only the owner should be able to update progress heartbeats,
       // but anyone can change the video or toggle play/pause (Collaborative DJ).
       // If there's no owner, the first person to update takes it.
@@ -1207,6 +1210,7 @@ app.prepare().then(async () => {
       let systemMsg = null;
 
       // Detect Changes for System Messages
+
       if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
         // New Video
         const title = newState.title || newState.videoId; // Use title if sent, else ID
