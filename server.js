@@ -83,6 +83,28 @@ const queueIrcConnection = (socket, user, ircConfig, callback) => {
 // Store message history per room (limit 200)
 let messageHistory = {}; // roomId -> Array of messages (Changed to Object for JSON serialization)
 
+// Bundling Storage
+const bundles = new Map(); // roomId -> { type: { id, users, timestamp } }
+
+function getBundle(roomId, type) {
+  if (!bundles.has(roomId)) return null;
+  const roomBundles = bundles.get(roomId);
+  const bundle = roomBundles[type];
+  if (!bundle) return null;
+  // Check freshness (e.g. 1 hour)
+  if (Date.now() - bundle.timestamp > 60 * 60 * 1000) {
+    delete roomBundles[type];
+    return null;
+  }
+  return bundle;
+}
+
+function setBundle(roomId, type, id, users) {
+  if (!bundles.has(roomId)) bundles.set(roomId, {});
+  const roomBundles = bundles.get(roomId);
+  roomBundles[type] = { id, users, timestamp: Date.now() };
+}
+
 // Load History on Start
 try {
   if (fs.existsSync(HISTORY_FILE)) {
@@ -423,8 +445,8 @@ app.prepare().then(() => {
       if (!rooms.has(roomId)) {
         rooms.set(roomId, new Map());
       }
-      if (!messageHistory.has(roomId)) {
-        messageHistory.set(roomId, []);
+      if (!messageHistory[roomId]) {
+        messageHistory[roomId] = [];
       }
 
       const room = rooms.get(roomId);
@@ -440,7 +462,7 @@ app.prepare().then(() => {
 
       // Send initial data to joining user
       socket.emit("existing-users", { users: existingUsers });
-      socket.emit("chat-history", messageHistory.get(roomId) || []); // Send history
+      socket.emit("chat-history", messageHistory[roomId] || []); // Send history
 
       // Notify others
       socket.to(roomId).emit("user-joined", { socketId: socket.id, user });
