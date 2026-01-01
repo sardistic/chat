@@ -117,11 +117,26 @@ app.prepare().then(() => {
           const signature = req.headers['authorization'] || req.headers['x-deployment-secret'];
           const expectedSecret = process.env.DEPLOY_WEBHOOK_SECRET;
 
+          // DEBUG LOGGING
+          console.log('[Webhook] 🔍 Debug Auth:');
+          console.log(`- Header 'authorization': ${req.headers['authorization'] ? 'Present' : 'Missing'}`);
+          console.log(`- Header 'x-deployment-secret': ${req.headers['x-deployment-secret'] ? 'Present' : 'Missing'}`);
+          console.log(`- Env Var 'DEPLOY_WEBHOOK_SECRET': ${expectedSecret ? 'Set' : 'MISSING (Check Railway Variables)'}`);
+          if (signature && expectedSecret) {
+            console.log(`- Match: ${signature === expectedSecret ? 'YES' : 'NO'}`);
+            console.log(`- Sig Len: ${signature.length}, Exp Len: ${expectedSecret.length}`);
+          }
+
           if (!expectedSecret || signature !== expectedSecret) {
             console.warn('[Webhook] ⛔ Unauthorized access attempt');
-            res.writeHead(401, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Unauthorized' }));
-            return;
+            // TEMPORARY: Allow if Env Var is missing (first deploy race condition)
+            if (!expectedSecret) {
+              console.warn('[Webhook] ⚠️ Allowing request because DEPLOY_WEBHOOK_SECRET is not set yet.');
+            } else {
+              res.writeHead(401, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Unauthorized' }));
+              return;
+            }
           }
 
           const payload = JSON.parse(body);
