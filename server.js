@@ -578,7 +578,7 @@ app.prepare().then(() => {
         room.set(socket.id, userData); // Update map
 
         // Broadcast Update to others
-        socket.to(roomId).emit('user-updated', { socketId: socket.id, updates });
+        socket.to(roomId).emit('user-updated', { socketId: socket.id, user: userData });
 
         // --- Smart Bundling: CAM ---
         if (camToggled) {

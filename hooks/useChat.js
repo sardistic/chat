@@ -99,17 +99,25 @@ export function useChat(roomId, user) {
         };
 
         const handleHistory = (history) => {
+            // Populate seen IDs from history to prevent duplicates
+            history.forEach(msg => seenIdsRef.current.add(msg.id));
             setMessages(history);
+        };
+
+        const handleUpdate = (updatedMsg) => {
+            setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
         };
 
         socket.on('chat-message', handleMessage);
         socket.on('chat-history', handleHistory);
+        socket.on('chat-message-update', handleUpdate);
         socket.on('user-typing', handleUserTyping);
         socket.on('user-stop-typing', handleUserStopTyping);
 
         return () => {
             socket.off('chat-message', handleMessage);
             socket.off('chat-history', handleHistory);
+            socket.off('chat-message-update', handleUpdate);
             socket.off('user-typing', handleUserTyping);
             socket.off('user-stop-typing', handleUserStopTyping);
 
