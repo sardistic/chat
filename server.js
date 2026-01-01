@@ -176,6 +176,10 @@ app.prepare().then(() => {
           else if (type && type.startsWith('VolumeAlert')) {
             // Ignore volume alerts to avoid spam
           }
+          // --- Generic / Test Fallback ---
+          else if (type && type.startsWith('VolumeAlert')) {
+            // Ignore volume alerts to avoid spam
+          }
           else if (payload.message) {
             systemMessage = `📢 **System**: ${payload.message}`;
             systemType = 'info';
