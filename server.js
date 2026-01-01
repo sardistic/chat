@@ -361,7 +361,7 @@ app.prepare().then(async () => {
               if (deploymentId && process.env.RAILWAY_API_TOKEN && io) {
                 let logBuffer = [];
                 let lastEmit = 0;
-                const THROTTLE_MS = 800; // Emit batch every 800ms max
+                const THROTTLE_MS = 200; // Emit batch faster (200ms)
 
                 const flushLogs = () => {
                   if (logBuffer.length === 0) return;
@@ -385,9 +385,17 @@ app.prepare().then(async () => {
                       const msg = history[idx];
                       const newLogs = [...(msg.metadata?.logs || []), ...lines];
 
+                      // Detect build phase from logs for UI feedback
+                      const combinedLogs = lines.join('\n').toLowerCase();
+                      let phase = msg.metadata?.phase;
+                      if (combinedLogs.includes('npm install') || combinedLogs.includes('yarn install')) phase = 'INSTALLING DEPENDENCIES';
+                      else if (combinedLogs.includes('build') || combinedLogs.includes('compile')) phase = 'COMPILING ASSETS';
+                      else if (combinedLogs.includes('pruning')) phase = 'PRUNING';
+                      else if (combinedLogs.includes('upload')) phase = 'UPLOADING';
+
                       const updatedMsg = {
                         ...msg,
-                        metadata: { ...msg.metadata, logs: newLogs }
+                        metadata: { ...msg.metadata, logs: newLogs, phase: phase || msg.metadata?.phase }
                       };
 
                       history[idx] = updatedMsg;

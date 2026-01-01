@@ -203,7 +203,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 textTransform: 'uppercase'
             }}>
                 <Icon icon={style.icon} width="14" className={systemType === 'deploy-start' ? 'spin' : ''} />
-                {style.kicker}
+                {metadata?.phase || style.kicker}
             </div>
 
             {/* Content Body */}
