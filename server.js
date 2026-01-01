@@ -268,32 +268,75 @@ app.prepare().then(async () => {
               systemMessage = text;
               systemType = 'deploy-start';
 
+              // Show simulated progress messages
+              if (io) {
+                const progressMsgs = [
+                  '📦 Installing dependencies...',
+                  '🔧 Compiling source...',
+                  '🚀 Starting server...'
+                ];
+                let i = 0;
+                const timer = setInterval(() => {
+                  if (i >= progressMsgs.length) { clearInterval(timer); return; }
+                  io.to('default-room').emit('chat-message', {
+                    roomId: 'default-room',
+                    id: `prog-${Date.now()}`,
+                    sender: 'System',
+                    text: progressMsgs[i++],
+                    type: 'system',
+                    systemType: 'deploy-log',
+                    timestamp: new Date().toISOString()
+                  });
+                }, 4000);
+                setTimeout(() => clearInterval(timer), 120000);
+              }
+
               // Start streaming build logs if we have a deployment ID and API token
               if (deploymentId && process.env.RAILWAY_API_TOKEN && io) {
+                let logBuffer = [];
+                let lastEmit = 0;
+                const THROTTLE_MS = 800; // Emit batch every 800ms max
+
+                const flushLogs = () => {
+                  if (logBuffer.length === 0) return;
+
+                  // Take last 3 lines only to avoid spam
+                  const lines = logBuffer.slice(-3).join('\n');
+                  logBuffer = [];
+
+                  const logMsg = {
+                    roomId: 'default-room',
+                    id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    sender: 'System',
+                    text: lines,
+                    type: 'system',
+                    systemType: 'deploy-log',
+                    timestamp: new Date().toISOString()
+                  };
+
+                  io.to('default-room').emit('chat-message', logMsg);
+                };
+
                 const buildStream = new RailwayBuildStream(
                   process.env.RAILWAY_API_TOKEN,
-                  // onLog callback - send log lines to chat
+                  // onLog callback - buffer and throttle
                   (message, severity) => {
-                    // Filter out noisy/empty lines
                     const trimmed = message?.trim();
                     if (!trimmed || trimmed.length < 3) return;
 
-                    // Create a log message (use deploy-log systemType for subtle styling)
-                    const logMsg = {
-                      roomId: 'default-room',
-                      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                      sender: 'System',
-                      text: `\`[build]\` ${trimmed}`,
-                      type: 'system',
-                      systemType: 'deploy-log',
-                      timestamp: new Date().toISOString()
-                    };
+                    // Add to buffer
+                    logBuffer.push(trimmed);
 
-                    // Emit but don't persist log lines (too noisy for history)
-                    io.to('default-room').emit('chat-message', logMsg);
+                    // Throttle emissions
+                    const now = Date.now();
+                    if (now - lastEmit >= THROTTLE_MS) {
+                      lastEmit = now;
+                      flushLogs();
+                    }
                   },
                   // onComplete callback
                   () => {
+                    flushLogs(); // Final flush
                     console.log('[Railway] Build log stream completed');
                   },
                   // onError callback
@@ -307,7 +350,10 @@ app.prepare().then(async () => {
                   if (connected) {
                     buildStream.subscribeToBuildLogs(deploymentId);
                     // Auto-cleanup after 10 minutes max
-                    setTimeout(() => buildStream.disconnect(), 10 * 60 * 1000);
+                    setTimeout(() => {
+                      flushLogs();
+                      buildStream.disconnect();
+                    }, 10 * 60 * 1000);
                   }
                 });
               }
