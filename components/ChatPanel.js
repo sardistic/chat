@@ -317,9 +317,9 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                 className="message-group"
                                 style={{
                                     display: 'flex',
-                                    gap: '12px',
-                                    marginBottom: '16px',
-                                    padding: '4px 0',
+                                    gap: '10px',
+                                    marginBottom: '8px',
+                                    padding: '2px 0',
                                 }}
                             >
                                 {/* Avatar */}
@@ -423,7 +423,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
             </div>
 
             {/* Input Area */}
-            <div className="input-area" style={{ position: 'relative', padding: '0 16px 16px' }}>
+            <div className="input-area" style={{ position: 'relative', padding: '0 4px 8px' }}>
                 {/* GIF Picker with search */}
                 {showGifPicker && (
                     <div style={{
