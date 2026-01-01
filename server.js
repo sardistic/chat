@@ -471,6 +471,30 @@ app.prepare().then(async () => {
               systemType = 'deploy-fail';
             }
           }
+          // --- GitHub Deployment Status (sent by Railway via GitHub) ---
+          else if (payload.deployment_status && payload.action === 'created') {
+            const status = payload.deployment_status;
+            const state = status.state; // 'success', 'failure', 'in_progress', 'pending'
+            const environment = status.environment || payload.deployment?.environment || 'production';
+            const targetUrl = status.target_url || '';
+            const deploymentId = payload.deployment?.id?.toString();
+
+            console.log(`[Webhook] GitHub Deployment Status: ${state} for ${environment}`);
+
+            if (state === 'success') {
+              let text = `✅ **Deployed** *${environment}*`;
+              text += ' — Refresh for updates!';
+              systemMessage = text;
+              systemType = 'deploy-success';
+              metadata = { deploymentId, environment, targetUrl };
+            } else if (state === 'failure' || state === 'error') {
+              let text = `❌ **Deploy Failed** *${environment}*`;
+              systemMessage = text;
+              systemType = 'deploy-fail';
+              metadata = { deploymentId, environment, targetUrl };
+            }
+            // 'in_progress' and 'pending' are ignored (we use Railway's deploy-start instead)
+          }
           // --- GitHub Push ---
           else if (payload.pusher) {
             const pusher = payload.pusher.name;
