@@ -4,11 +4,10 @@ const next = require("next");
 const { Server } = require("socket.io");
 const IRCBridge = require("./lib/ircBridge");
 const { PrismaClient } = require("@prisma/client");
+const { RailwayBuildStream } = require("./lib/railwayLogs");
 const ytsr = require("ytsr");
 const fs = require('fs');
 const path = require('path');
-
-const HISTORY_FILE = path.join(__dirname, 'chat-history.json');
 
 const prisma = new PrismaClient();
 
@@ -258,6 +257,9 @@ app.prepare().then(async () => {
           if (type && (type.startsWith('Deployment') || type.startsWith('Build'))) {
             metadata = { commitHash, commitMessage, commitAuthor, serviceName };
 
+            // Extract deployment ID for log streaming
+            const deploymentId = details.deploymentId || payload.deployment?.id;
+
             // Build Events
             if (type === 'Build.building' || type === 'Deployment.building') {
               let text = `🚧 **Building** *${serviceName}*`;
@@ -265,6 +267,50 @@ app.prepare().then(async () => {
               if (commitAuthor) text += ` by ${commitAuthor}`;
               systemMessage = text;
               systemType = 'deploy-start';
+
+              // Start streaming build logs if we have a deployment ID and API token
+              if (deploymentId && process.env.RAILWAY_API_TOKEN && io) {
+                const buildStream = new RailwayBuildStream(
+                  process.env.RAILWAY_API_TOKEN,
+                  // onLog callback - send log lines to chat
+                  (message, severity) => {
+                    // Filter out noisy/empty lines
+                    const trimmed = message?.trim();
+                    if (!trimmed || trimmed.length < 3) return;
+
+                    // Create a log message (use deploy-log systemType for subtle styling)
+                    const logMsg = {
+                      roomId: 'default-room',
+                      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                      sender: 'System',
+                      text: `\`[build]\` ${trimmed}`,
+                      type: 'system',
+                      systemType: 'deploy-log',
+                      timestamp: new Date().toISOString()
+                    };
+
+                    // Emit but don't persist log lines (too noisy for history)
+                    io.to('default-room').emit('chat-message', logMsg);
+                  },
+                  // onComplete callback
+                  () => {
+                    console.log('[Railway] Build log stream completed');
+                  },
+                  // onError callback
+                  (err) => {
+                    console.error('[Railway] Build log stream error:', err.message);
+                  }
+                );
+
+                // Connect and subscribe
+                buildStream.connect().then(connected => {
+                  if (connected) {
+                    buildStream.subscribeToBuildLogs(deploymentId);
+                    // Auto-cleanup after 10 minutes max
+                    setTimeout(() => buildStream.disconnect(), 10 * 60 * 1000);
+                  }
+                });
+              }
             }
             // Success Events
             else if (type === 'Deployment.success') {

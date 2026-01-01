@@ -135,10 +135,39 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             borderColor: 'rgba(59, 130, 246, 0.3)',
             kicker: 'SYSTEM INFO',
             animation: 'none'
+        },
+        'deploy-log': {
+            icon: 'mdi:console-line',
+            color: '#6b7280', // Gray
+            bgColor: 'rgba(107, 114, 128, 0.05)',
+            borderColor: 'rgba(107, 114, 128, 0.2)',
+            kicker: null, // No kicker for log lines
+            animation: 'none',
+            compact: true // Special flag for minimal styling
         }
     };
 
     const style = config[systemType] || config['info'];
+
+    // Compact rendering for build log lines
+    if (style.compact) {
+        return (
+            <div style={{
+                margin: '2px 0',
+                padding: '2px 8px',
+                background: style.bgColor,
+                borderLeft: `2px solid ${style.borderColor}`,
+                fontSize: '11px',
+                fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", monospace',
+                color: '#9ca3af',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+                opacity: 0.85
+            }}>
+                {text}
+            </div>
+        );
+    }
 
     return (
         <div className={`system-message-card ${style.animation}`} style={{
