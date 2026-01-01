@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useChat } from '@/hooks/useChat';
 import MessageContent from './MessageContent';
 import SystemMessage from './SystemMessage';
@@ -63,9 +64,12 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
         ? allUsers.filter(u => u.name.toLowerCase().startsWith(mentionQuery.toLowerCase()))
         : allUsers;
 
-    // Auto-scroll to bottom
+    // Auto-scroll to bottom with slight delay to account for layout/animation changes
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const timer = setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
+        return () => clearTimeout(timer);
     }, [messages, typingUsers]);
 
     // Propagate typing users to parent (include self if typing)
@@ -166,30 +170,6 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
             ':fire': '🔥'
         };
 
-        // Check for text replacement
-        let processedValue = value;
-        // Only replace if the last character typed was space or end of string
-        // And ensure we don't break existing emoji codes or URLs
-        Object.entries(emojiMap).forEach(([text, emoji]) => {
-            if (processedValue.endsWith(text + ' ')) {
-                processedValue = processedValue.slice(0, -(text.length + 1)) + emoji + ' ';
-            } else if (processedValue === text) {
-                // Don't replace partial typing instantly unless it's a known exact match after a space (handled above)
-                // But user asked for ":D". If I type ":D", it should become 😃.
-                // Let's stick to safe replacement on space or exact match if it feels right.
-                // Actually, simpler: replace if the pattern exists at the end?
-                // No, that interrupts typing ":Dog".
-                // Let's replace ONLY on Space or Enter (but Enter sends).
-                // User request: "replace :expresions that represent emojis with emojis like :D"
-                // This usually means while typing.
-            }
-        });
-
-        // Simple instant replacement for standalone smileys if desired?
-        // Let's implement keydown handler approach or input change check.
-        // Actually, let's just do simple replaceAll for known safe patterns
-        // that are preceded by space or start of string.
-
         let newValue = value;
         Object.entries(emojiMap).forEach(([code, emoji]) => {
             // Replace code if it's followed by a space
@@ -198,8 +178,23 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
 
         if (newValue !== value) {
             setInputValue(newValue);
-            return; // Skip other checks if we modified input
         }
+
+        // Handle Mentions
+        const cursorPos = e.target.selectionStart;
+        const textBeforeCursor = newValue.slice(0, cursorPos);
+        const lastAt = textBeforeCursor.lastIndexOf('@');
+
+        if (lastAt !== -1) {
+            const query = textBeforeCursor.slice(lastAt + 1);
+            // Check if there's a space after @
+            if (!query.includes(' ')) {
+                setMentionQuery(query);
+                setShowMentions(true);
+                return;
+            }
+        }
+        setShowMentions(false);
 
         if (!value.startsWith('/gif')) {
             // Check for :word pattern logic
@@ -212,100 +207,77 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                 setShowGifPicker(false);
             }
         }
-
-        // Check for @ mentions (only if not in gif mode)
-        if (!value.startsWith('/gif')) {
-            const cursorPos = e.target.selectionStart;
-            const textBeforeCursor = value.slice(0, cursorPos);
-            const lastAtIndex = textBeforeCursor.lastIndexOf('@');
-
-            if (lastAtIndex !== -1) {
-                const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
-                if ((lastAtIndex === 0 || textBeforeCursor[lastAtIndex - 1] === ' ') && !textAfterAt.includes(' ')) {
-                    setShowMentions(true);
-                    setMentionQuery(textAfterAt);
-                } else {
-                    setShowMentions(false);
-                }
-            } else {
-                setShowMentions(false);
-            }
-        }
     };
 
     const handleKeyDown = (e) => {
-        if (showMentions && filteredMentions.length > 0) {
-            if (e.key === 'Tab' || e.key === 'ArrowDown') {
-                e.preventDefault();
-                setSelectedMentionIndex(prev => (prev + 1) % filteredMentions.length);
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                setSelectedMentionIndex(prev => (prev - 1 + filteredMentions.length) % filteredMentions.length);
-            } else if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            if (showMentions && filteredMentions.length > 0) {
                 e.preventDefault();
                 insertMention(filteredMentions[selectedMentionIndex].name);
-            } else if (e.key === 'Escape') {
-                setShowMentions(false);
+                return;
             }
-        } else if (e.key === 'Escape' && showGifPicker) {
-            setShowGifPicker(false);
-            setInputValue('');
-        } else if (e.key === 'Enter' && !e.shiftKey && !showGifPicker) {
+            if (showGifPicker) return; // Don't send if searching gif
+
             e.preventDefault();
             handleSend();
         }
-    };
 
-    const formatTime = (timestamp) => {
-        const date = new Date(timestamp);
-        const today = new Date();
-        const isToday = date.toDateString() === today.toDateString();
-
-        if (isToday) {
-            return `Today at ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+        if (showMentions) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedMentionIndex(prev => (prev + 1) % Math.min(filteredMentions.length, 10));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSelectedMentionIndex(prev => (prev - 1 + Math.min(filteredMentions.length, 10)) % Math.min(filteredMentions.length, 10));
+            } else if (e.key === 'Escape') {
+                setShowMentions(false);
+            }
         }
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
     };
+
+    function formatTime(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Scroll to bottom whenever messages change
+    // Using a separate effect for 'messages' specifically to ensure it triggers after render
+    // Already handled in the combined effect above.
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-            <div className="msgs" style={{ padding: '16px', overflowX: 'hidden', overflowY: 'auto' }}>
-                {messages.length === 0 && (
-                    <div style={{
-                        textAlign: 'center',
-                        padding: '32px',
-                        color: 'var(--text-muted)',
-                        fontStyle: 'italic'
-                    }}>
-                        No messages yet. Start the conversation!
-                    </div>
-                )}
+        <div className="chat-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Messages Area - Flex Grow */}
+            <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                scrollBehavior: 'smooth'
+            }}>
+                {/* Intro / Spacer at top */}
+                <div style={{ marginTop: 'auto' }}></div>
 
-                {/* DEBUG OVERLAY - FORCED VISIBLE */}
+                {/* DEBUG OVERLAY */}
                 <div style={{
                     position: 'absolute',
                     top: 0,
                     right: 0,
-                    background: 'rgba(255,0,0,0.8)', // Red for visibility
-                    color: '#fff',
-                    fontSize: '12px',
-                    padding: '8px',
+                    fontSize: '10px',
+                    background: 'rgba(0,0,0,0.8)',
+                    color: 'lime',
+                    padding: '4px',
                     zIndex: 9999,
                     pointerEvents: 'none',
                     maxWidth: '200px',
                     overflow: 'hidden',
-                    border: '2px solid yellow'
+                    border: '2px solid yellow',
+                    display: 'none' // Hidden for polish
                 }}>
                     <div style={{ fontWeight: 'bold' }}>DEBUG v2.0</div>
                     <div>Count: {messages.length}</div>
                     <div>Groups: {messageGroups.length}</div>
-                    <div style={{ whiteSpace: 'nowrap' }}>Last: {messages[messages.length - 1]?.id}</div>
                     <div>Sys: {messages.filter(m => m.sender === 'System').length}</div>
                 </div>
 
@@ -318,11 +290,17 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                         // Check if this is a System group
                         if (group.sender === 'System') {
                             return (
-                                <div key={`group-${groupIndex}`} style={{ marginBottom: '12px' }}>
+                                <motion.div
+                                    key={group.messages[0]?.id || `group-${groupIndex}`}
+                                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                    style={{ marginBottom: '12px' }}
+                                >
                                     {group.messages.map(msg => (
                                         <SystemMessage key={msg.id || Date.now()} message={msg} />
                                     ))}
-                                </div>
+                                </motion.div>
                             );
                         }
 
@@ -331,8 +309,11 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                         const shouldAnimate = isTypingUser && isMostRecentCallback;
 
                         return (
-                            <div
-                                key={`group-${groupIndex}`}
+                            <motion.div
+                                key={group.messages[0]?.id || `group-${groupIndex}`}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 24 }}
                                 className="message-group"
                                 style={{
                                     display: 'flex',
@@ -417,20 +398,25 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </motion.div>
                         );
                     });
                 })()}
 
                 {typingUsers.length > 0 && (
-                    <div style={{
-                        fontSize: '13px',
-                        color: 'var(--text-muted)',
-                        fontStyle: 'italic',
-                        padding: '8px 0',
-                    }}>
+                    <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            fontSize: '13px',
+                            color: 'var(--text-muted)',
+                            fontStyle: 'italic',
+                            padding: '8px 0',
+                        }}
+                    >
                         {typingUsers.join(', ')} is typing...
-                    </div>
+                    </motion.div>
                 )}
 
                 <div ref={messagesEndRef} />

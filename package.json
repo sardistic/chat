@@ -18,6 +18,7 @@
     "@tabler/icons-react": "^3.36.0",
     "cookies-next": "^6.1.1",
     "emoji-regex": "^10.6.0",
+    "framer-motion": "^12.23.26",
     "irc-framework": "^4.14.0",
     "next": "16.1.1",
     "next-auth": "^4.24.13",
