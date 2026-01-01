@@ -122,3 +122,21 @@ enum Role {
   MODERATOR
   ADMIN
 }
+
+// ============================================
+// Chat Messages (Persistent)
+// ============================================
+
+model ChatMessage {
+  id          String   @id
+  roomId      String
+  sender      String
+  text        String   @db.Text
+  type        String   @default("user") // user, system
+  systemType  String?  // join-leave, deploy-start, deploy-success, etc.
+  metadata    Json?    // For bundling, commit info, etc.
+  timestamp   DateTime @default(now())
+  
+  @@index([roomId, timestamp])
+  @@index([systemType])
+}

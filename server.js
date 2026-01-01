@@ -105,26 +105,60 @@ function setBundle(roomId, type, id, users) {
   roomBundles[type] = { id, users, timestamp: Date.now() };
 }
 
-// Load History on Start
-try {
-  if (fs.existsSync(HISTORY_FILE)) {
-    messageHistory = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
-    console.log('📚 Loaded chat history from file.');
+// Load History from Database on Start
+async function loadHistoryFromDB() {
+  try {
+    const messages = await prisma.chatMessage.findMany({
+      where: { roomId: 'default-room' },
+      orderBy: { timestamp: 'asc' },
+      take: 100 // Last 100 messages
+    });
+
+    messageHistory['default-room'] = messages.map(m => ({
+      id: m.id,
+      roomId: m.roomId,
+      sender: m.sender,
+      text: m.text,
+      type: m.type,
+      systemType: m.systemType,
+      metadata: m.metadata,
+      timestamp: m.timestamp.toISOString()
+    }));
+
+    console.log(`📚 Loaded ${messages.length} messages from database.`);
+  } catch (err) {
+    console.error('Failed to load chat history from DB:', err);
   }
-} catch (err) {
-  console.error('Failed to load chat history:', err);
 }
 
-// Save History Helper
-const saveHistory = () => {
+// Save message to Database
+async function saveMessageToDB(message) {
   try {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(messageHistory, null, 2));
+    await prisma.chatMessage.upsert({
+      where: { id: message.id },
+      create: {
+        id: message.id,
+        roomId: message.roomId,
+        sender: message.sender,
+        text: message.text,
+        type: message.type || 'user',
+        systemType: message.systemType || null,
+        metadata: message.metadata || null,
+        timestamp: new Date(message.timestamp)
+      },
+      update: {
+        text: message.text,
+        systemType: message.systemType || null,
+        metadata: message.metadata || null,
+        timestamp: new Date(message.timestamp)
+      }
+    });
   } catch (err) {
-    console.error('Failed to save chat history:', err);
+    console.error('Failed to save message to DB:', err.message);
   }
-};
+}
 
-// Helper to store messages
+// Helper to store messages (in-memory + DB)
 const storeMessage = (roomId, message) => {
   if (!messageHistory[roomId]) {
     messageHistory[roomId] = [];
@@ -134,24 +168,22 @@ const storeMessage = (roomId, message) => {
   const existingIdx = messageHistory[roomId].findIndex(m => m.id === message.id);
 
   if (existingIdx !== -1) {
-    // Update existing message (e.g. for deployment updates or bundling)
+    // Update existing message
     messageHistory[roomId][existingIdx] = message;
   } else {
     // Add new message
     messageHistory[roomId].push(message);
   }
 
-  // Limit to last 50 messages (User requested lower limit previously/implicit from memory usage)
-  if (messageHistory[roomId].length > 50) {
-    // We can just slice for simplicity and safety, though shift loop is fine ensuring we don't over-prune if bulk added?
-    // Wait, if we just push one, shift one is fine.
-    // But let's use slice to be safe if multiple added or logic changes.
-    // Actually existing shim is fine:
-    while (messageHistory[roomId].length > 50) {
+  // Limit in-memory to last 100 messages
+  if (messageHistory[roomId].length > 100) {
+    while (messageHistory[roomId].length > 100) {
       messageHistory[roomId].shift();
     }
   }
-  saveHistory(); // Persist on every save
+
+  // Async save to DB (don't block)
+  saveMessageToDB(message);
 };
 
 // Tube Sync State
@@ -163,7 +195,10 @@ const tubeState = {
   ownerId: null
 };
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
+  // Load chat history from database
+  await loadHistoryFromDB();
+
   const httpServer = createServer((req, res) => {
     // --- Parse incoming URL ---
     const parsedUrl = parse(req.url, true);
@@ -319,9 +354,9 @@ app.prepare().then(() => {
                 const idx = history.findIndex(m => m.id === msgId);
                 if (idx !== -1) {
                   history[idx] = { ...history[idx], ...msg }; // Merge to keep other props
-                  saveHistory();
                 }
               }
+              saveMessageToDB(msg); // Persist to DB
               if (io) io.to('default-room').emit('chat-message-update', msg);
               console.log(`[Webhook] 🔄 Updated message ${msgId}:`, systemMessage);
             } else {
