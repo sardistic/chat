@@ -92,7 +92,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
     const handleSend = () => {
         if (inputValue.trim()) {
             sendMessage(inputValue);
-            // sendToIRC(inputValue); // Send to IRC via client disabled to test duplicates
+            sendToIRC(inputValue); // Send to IRC via client
             setInputValue('');
             setShowMentions(false);
             setShowGifPicker(false);

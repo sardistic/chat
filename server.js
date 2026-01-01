@@ -237,15 +237,21 @@ app.prepare().then(() => {
 
             // Attempt to find existing "Deploying" message to update
             if (systemType === 'deploy-success' || systemType === 'deploy-fail') {
-              const history = messageHistory['default-room'] || [];
-              // Look for last deploy-start within 10 mins
-              const lastDeploy = history.slice().reverse().find(m =>
-                m.systemType === 'deploy-start' &&
-                (Date.now() - new Date(m.timestamp).getTime() < 10 * 60 * 1000)
-              );
+              // Searching for a "deploy-start" message within the last 30 minutes
+              // that matches this project/environment?
+              // Actually just searched for the last "deploy-start" message?
+              // Let's filter by project name if possible, or just take the last system message of that type.
+              const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
+              const existingStartMsg = messageHistory['default-room']
+                ?.slice()
+                .reverse()
+                .find(m =>
+                  m.systemType === 'deploy-start' &&
+                  new Date(m.timestamp).getTime() > thirtyMinutesAgo
+                );
 
-              if (lastDeploy) {
-                msgId = lastDeploy.id;
+              if (existingStartMsg) {
+                msgId = existingStartMsg.id;
                 isUpdate = true;
               }
             }
