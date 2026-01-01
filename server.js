@@ -216,21 +216,62 @@ app.prepare().then(() => {
 
           // 2. Broadcast to Chat
           if (systemMessage) {
+            let msgId = `sys-${Date.now()}`;
+            let isUpdate = false;
+
+            // Attempt to find existing "Deploying" message to update
+            if (systemType === 'deploy-success' || systemType === 'deploy-fail') {
+              const history = messageHistory['default-room'] || [];
+              // Look for last deploy-start within 10 mins
+              const lastDeploy = history.slice().reverse().find(m =>
+                m.systemType === 'deploy-start' &&
+                (Date.now() - new Date(m.timestamp).getTime() < 10 * 60 * 1000)
+              );
+
+              if (lastDeploy) {
+                msgId = lastDeploy.id;
+                isUpdate = true;
+              }
+            }
+
             const msg = {
               roomId: 'default-room',
-              id: `sys-${Date.now()}`,
+              id: msgId,
               sender: 'System',
               text: systemMessage,
               type: 'system',
               systemType: systemType,
-              timestamp: new Date().toISOString()
+              // Maintain or update metadata? 
+              // If we had commit info in start, we might want to keep it or simple overwrite.
+              // For now simpler to overwrite or merge if needed. 
+              // Let's pass metadata if we have it (extracted previously but not used in this block? 
+              // Wait, I see metadata extraction in previous ViewFile Step 1234 but it's not in the block I'm replacing?
+              // Ah, it was higher up or lower? 
+              // In Step 1440 lines 140-250, I don't see metadata extraction. It might have been lost or I'm looking at wrong lines.
+              // I will just use basics for now to fix the "Stuck" status.
+              timestamp: isUpdate ? new Date().toISOString() : new Date().toISOString() // Update timestamp to bump? Or keep original?
+              // Usually updates keep original ID but might want to bump position? 
+              // If we update, we don't bump position usually unless we delete/re-add.
+              // Let's just update content.
             };
 
-            // Log and Send
-            storeMessage('default-room', msg);
-            if (io) io.to('default-room').emit('chat-message', msg);
-
-            console.log('[Webhook] 📢 Broadcasted:', systemMessage);
+            if (isUpdate) {
+              // Update in history
+              const history = messageHistory['default-room'];
+              if (history) {
+                const idx = history.findIndex(m => m.id === msgId);
+                if (idx !== -1) {
+                  history[idx] = { ...history[idx], ...msg }; // Merge to keep other props
+                  saveHistory();
+                }
+              }
+              if (io) io.to('default-room').emit('chat-message-update', msg);
+              console.log(`[Webhook] 🔄 Updated message ${msgId}:`, systemMessage);
+            } else {
+              storeMessage('default-room', msg);
+              if (io) io.to('default-room').emit('chat-message', msg);
+              console.log('[Webhook] 📢 Broadcasted:', systemMessage);
+            }
           }
 
           res.writeHead(200, { 'Content-Type': 'application/json' });

@@ -81,7 +81,6 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
     useEffect(() => {
         setSelectedMentionIndex(0);
     }, [filteredMentions.length]);
-
     // Auto-resize textarea
     useEffect(() => {
         if (inputRef.current) {
