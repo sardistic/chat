@@ -147,7 +147,6 @@ async function loadHistoryFromDB() {
 // Save message to Database
 async function saveMessageToDB(message) {
   try {
-    console.log(`[DB] 💾 Saving message ${message.id} from ${message.sender} (source: ${message.source || 'web'})`);
     await prisma.chatMessage.upsert({
       where: { id: message.id },
       create: {
@@ -173,9 +172,8 @@ async function saveMessageToDB(message) {
         timestamp: new Date(message.timestamp)
       }
     });
-    console.log(`[DB] ✅ Saved message ${message.id}`);
   } catch (err) {
-    console.error('[DB] ❌ Failed to save message to DB:', err.message);
+    console.log('[DATABASE] >> Write failed:', err.message);
   }
 }
 
@@ -320,22 +318,15 @@ app.prepare().then(async () => {
           const signature = querySecret || headerSecret;
           const expectedSecret = process.env.DEPLOY_WEBHOOK_SECRET;
 
-          // DEBUG LOGGING
-          console.log('[Webhook] 🔍 Debug Auth:');
-          console.log(`- Query Param 'secret': ${querySecret ? 'Present' : 'Missing'}`);
-          console.log(`- Header 'authorization': ${req.headers['authorization'] ? 'Present' : 'Missing'}`);
-          console.log(`- Header 'x-deployment-secret': ${req.headers['x-deployment-secret'] ? 'Present' : 'Missing'}`);
-          console.log(`- Env Var 'DEPLOY_WEBHOOK_SECRET': ${expectedSecret ? 'Set' : 'MISSING (Check Railway Variables)'}`);
-          if (signature && expectedSecret) {
-            console.log(`- Match: ${signature === expectedSecret ? 'YES' : 'NO'}`);
-            console.log(`- Sig Len: ${signature.length}, Exp Len: ${expectedSecret.length}`);
-          }
+          // Cinematic-style logging (sanitized)
+          console.log('[WEBHOOK] >> Incoming signal detected');
+          console.log('[WEBHOOK] >> Auth verification:', signature === expectedSecret ? 'AUTHORIZED' : 'CHECKING...');
 
           if (!expectedSecret || signature !== expectedSecret) {
-            console.warn('[Webhook] ⛔ Unauthorized access attempt');
+            console.log('[WEBHOOK] >> ACCESS DENIED');
             // TEMPORARY: Allow if Env Var is missing (first deploy race condition)
             if (!expectedSecret) {
-              console.warn('[Webhook] ⚠️ Allowing request because DEPLOY_WEBHOOK_SECRET is not set yet.');
+              console.log('[WEBHOOK] >> Override: Security key pending initialization');
             } else {
               res.writeHead(401, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Unauthorized' }));
@@ -344,7 +335,9 @@ app.prepare().then(async () => {
           }
 
           const payload = JSON.parse(body);
-          console.log('[Webhook] 📨 Received payload:', payload);
+          // Sanitized logging - only log type and safe identifiers
+          const safeType = payload.type || payload.action || 'unknown';
+          console.log(`[WEBHOOK] >> Signal type: ${safeType}`);
 
           let systemMessage = null;
           let metadata = {};
@@ -772,7 +765,6 @@ app.prepare().then(async () => {
     onMessage: (message) => {
       // Persist IRC messages to database
       storeMessage(message.roomId, message);
-      console.log(`[HistoryBot] 💾 Stored IRC message from ${message.sender}`);
     },
     shouldIgnoreSender: (senderNick) => {
       // Ignore messages from the bot itself
