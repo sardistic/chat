@@ -104,7 +104,92 @@ const tubeState = {
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
+    // --- Parse incoming URL ---
     const parsedUrl = parse(req.url, true);
+
+    // --- DEPLOYMENT WEBHOOK HANDLER ---
+    if (parsedUrl.pathname === '/api/webhooks/deploy' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', () => {
+        try {
+          // 1. Verify Secret
+          const signature = req.headers['authorization'] || req.headers['x-deployment-secret'];
+          const expectedSecret = process.env.DEPLOY_WEBHOOK_SECRET;
+
+          if (!expectedSecret || signature !== expectedSecret) {
+            console.warn('[Webhook] ⛔ Unauthorized access attempt');
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Unauthorized' }));
+            return;
+          }
+
+          const payload = JSON.parse(body);
+          console.log('[Webhook] 📨 Received payload:', payload);
+
+          let systemMessage = null;
+
+          // --- Railway Deployment ---
+          if (payload.type === 'RAILWAY' || payload.status) {
+            // Mapping Railway statuses
+            const status = payload.status?.toUpperCase();
+            const project = payload.project?.name || 'Application';
+
+            if (status === 'BUILDING') {
+              systemMessage = `🚧 **Deploying**: A new build for *${project}* has started.`;
+            } else if (status === 'SUCCESS') {
+              systemMessage = `✅ **Deployed**: *${project}* is now live! (Refresh for updates)`;
+            } else if (status === 'FAILED') {
+              systemMessage = `❌ **Deploy Failed**: The build for *${project}* encountered an error.`;
+            }
+          }
+          // --- GitHub Push (simplified) ---
+          else if (payload.pusher) {
+            const pusher = payload.pusher.name;
+            const commitMsg = payload.head_commit?.message || 'No commit message';
+            const commitUrl = payload.head_commit?.url || '#';
+            const shortHash = payload.head_commit?.id?.substring(0, 7) || '???';
+
+            systemMessage = `💾 **Git Push**: ${pusher} pushed to main: "${commitMsg}" ([${shortHash}](${commitUrl}))`;
+          }
+          // --- Generic Text Fallback ---
+          else if (payload.message) {
+            systemMessage = `📢 **System**: ${payload.message}`;
+          }
+
+          // 2. Broadcast to Chat
+          if (systemMessage) {
+            const msg = {
+              roomId: 'default-room',
+              id: `sys-${Date.now()}`,
+              sender: 'System',
+              text: systemMessage,
+              type: 'system',
+              timestamp: new Date().toISOString()
+            };
+
+            // Log and Send
+            storeMessage('default-room', msg);
+            if (io) io.to('default-room').emit('chat-message', msg);
+
+            // Also send to IRC History Bot (if active)
+            // Note: HistoryBot listens to io.emit so it should pick this up automatically via the bridge's onMessage logic!
+            console.log('[Webhook] 📢 Broadcasted:', systemMessage);
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+
+        } catch (err) {
+          console.error('[Webhook] ❌ Error processing:', err);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid Payload' }));
+        }
+      });
+      return;
+    }
+
+    // Default Next.js Handler
     handle(req, res, parsedUrl);
   });
 
