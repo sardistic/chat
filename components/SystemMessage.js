@@ -240,7 +240,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
                 {/* Build Logs Terminal (Cinematic) */}
                 {metadata && metadata.logs && metadata.logs.length > 0 && (
-                    <CinematicScanline logs={metadata.logs} />
+                    <CinematicScanline logs={metadata.logs} timestamp={message.timestamp} />
                 )}
 
                 {/* Extended Metadata (Commit info, etc.) */}
@@ -350,12 +350,22 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
     );
 }
 
-function CinematicScanline({ logs }) {
+function CinematicScanline({ logs, timestamp }) {
     const [displayIndex, setDisplayIndex] = useState(0);
     const [isComplete, setIsComplete] = useState(false);
 
     // Auto-scroll logic
     useEffect(() => {
+        // 1. Skip animation for old messages (older than 5 minutes)
+        if (timestamp) {
+            const age = Date.now() - new Date(timestamp).getTime();
+            if (age > 5 * 60 * 1000) {
+                setDisplayIndex(logs.length - 1);
+                setIsComplete(true);
+                return;
+            }
+        }
+
         // If we are already at the end, nothing to do (unless logs grew)
         if (displayIndex >= logs.length - 1) {
             setIsComplete(true);
@@ -366,14 +376,15 @@ function CinematicScanline({ logs }) {
 
         // Scan speed: faster if we are far behind, slower if we are caught up
         const distance = logs.length - displayIndex;
-        const delay = distance > 10 ? 50 : 150; // Speed up if lagging
+        // SLOW DOWN: 250ms base speed (was 150), speed up to 50ms if >10 lines behind
+        const delay = distance > 10 ? 50 : 250;
 
         const timer = setTimeout(() => {
             setDisplayIndex(prev => prev + 1);
         }, delay);
 
         return () => clearTimeout(timer);
-    }, [displayIndex, logs.length]);
+    }, [displayIndex, logs.length, timestamp]);
 
     const currentLine = logs[displayIndex] || '';
     const html = convert.toHtml(currentLine);
