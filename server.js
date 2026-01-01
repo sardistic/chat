@@ -329,7 +329,11 @@ app.prepare().then(async () => {
                 // Connect and subscribe
                 buildStream.connect().then(connected => {
                   if (connected) {
+                    console.log(`[Railway] Connected. Subscribing to Build and Deploy logs for ${deploymentId}`);
+                    // Subscribe to BOTH to ensure we catch output (build logs might be skipped if cached)
                     buildStream.subscribeToBuildLogs(deploymentId);
+                    buildStream.subscribeToDeployLogs(deploymentId);
+
                     // Auto-cleanup after 10 minutes max
                     setTimeout(() => {
                       flushLogs();
