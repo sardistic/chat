@@ -187,3 +187,4 @@ Built with:
 
 ## Deployment Status
 ![Railway](https://railway.app/badge/github/sardistic/chat)
+> Live updates enabled
