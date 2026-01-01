@@ -252,7 +252,7 @@ app.prepare().then(async () => {
           const commitHash = details.commitHash?.substring(0, 7) || payload.deployment?.meta?.commit?.id?.substring(0, 7);
           const commitMessage = details.message || payload.deployment?.meta?.commit?.message;
           const commitAuthor = details.author || payload.deployment?.meta?.commit?.author?.name;
-          const serviceName = details.serviceName || payload.project?.name || 'Application';
+          const serviceName = details.serviceName || payload.project?.name || 'Chat';
 
           if (type && (type.startsWith('Deployment') || type.startsWith('Build'))) {
             metadata = { commitHash, commitMessage, commitAuthor, serviceName };
