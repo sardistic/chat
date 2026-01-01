@@ -114,11 +114,15 @@ app.prepare().then(() => {
       req.on('end', () => {
         try {
           // 1. Verify Secret
-          const signature = req.headers['authorization'] || req.headers['x-deployment-secret'];
+          // Check Query Param first (Reliable), then Headers
+          const querySecret = parsedUrl.query.secret;
+          const headerSecret = req.headers['authorization'] || req.headers['x-deployment-secret'];
+          const signature = querySecret || headerSecret;
           const expectedSecret = process.env.DEPLOY_WEBHOOK_SECRET;
 
           // DEBUG LOGGING
           console.log('[Webhook] 🔍 Debug Auth:');
+          console.log(`- Query Param 'secret': ${querySecret ? 'Present' : 'Missing'}`);
           console.log(`- Header 'authorization': ${req.headers['authorization'] ? 'Present' : 'Missing'}`);
           console.log(`- Header 'x-deployment-secret': ${req.headers['x-deployment-secret'] ? 'Present' : 'Missing'}`);
           console.log(`- Env Var 'DEPLOY_WEBHOOK_SECRET': ${expectedSecret ? 'Set' : 'MISSING (Check Railway Variables)'}`);
