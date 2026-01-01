@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/react';
 import ReactMarkdown from 'react-markdown';
+import { motion } from 'framer-motion'; // [NEW]
 
 export default function SystemMessage({ message }) {
     const { systemType, text, metadata } = message;
@@ -13,7 +14,6 @@ export default function SystemMessage({ message }) {
                 padding: '6px 12px',
                 fontSize: '12px',
                 color: '#9ca3af', // Gray-400 (Lighter)
-                // fontStyle: 'italic', // Removed for readability
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -27,21 +27,46 @@ export default function SystemMessage({ message }) {
             }}>
                 {/* Avatar Stripe */}
                 {users.length > 0 && (
-                    <div style={{ display: 'flex', gap: '4px', marginBottom: '2px' }}>
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
                         {users.map((u, i) => (
-                            <div key={i} className="relative group" title={u.name}>
+                            <motion.div
+                                key={u.name || i} // Name is unique per bundle usually
+                                layout // Allow sliding when new items added
+                                initial={{ scale: 0, opacity: 0, y: 10 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                                className="relative group"
+                                title={u.name}
+                                style={{ position: 'relative' }}
+                            >
                                 <img
-                                    src={`https://api.dicebear.com/9.x/dylan/svg?seed=${u.name}`}
+                                    src={u.avatar || u.image || `/api/avatar/${u.name}`}
                                     alt={u.name}
                                     style={{
-                                        width: '20px',
-                                        height: '20px',
+                                        width: '24px',
+                                        height: '24px',
                                         borderRadius: '50%',
                                         border: u.action && u.action.includes('left') ? '1px solid #666' : '1px solid #10b981',
                                         opacity: u.action && u.action.includes('left') ? 0.5 : 1,
-                                        filter: u.action && u.action.includes('left') ? 'grayscale(100%)' : 'none'
+                                        filter: u.action && u.action.includes('left') ? 'grayscale(100%)' : 'none',
+                                        objectFit: 'cover'
+                                    }}
+                                    onError={(e) => {
+                                        // Fallback to initial
+                                        e.target.style.display = 'none';
+                                        e.target.parentNode.style.backgroundColor = '#333';
+                                        e.target.parentNode.style.display = 'flex';
+                                        e.target.parentNode.style.alignItems = 'center';
+                                        e.target.parentNode.style.justifyContent = 'center';
+                                        e.target.parentNode.innerText = u.name?.charAt(0) || '?';
+                                        e.target.parentNode.style.fontSize = '10px';
+                                        e.target.parentNode.style.fontWeight = 'bold';
+                                        e.target.parentNode.style.width = '24px';
+                                        e.target.parentNode.style.height = '24px';
+                                        e.target.parentNode.style.borderRadius = '50%';
                                     }}
                                 />
+                                {/* Status Indicator Dot */}
                                 {u.action === 'cam-up' && (
                                     <div style={{
                                         position: 'absolute', bottom: -2, right: -2,
@@ -49,7 +74,7 @@ export default function SystemMessage({ message }) {
                                         background: '#f43f5e', borderRadius: '50%', border: '1px solid #000'
                                     }} />
                                 )}
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 )}
