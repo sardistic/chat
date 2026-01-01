@@ -1362,64 +1362,6 @@ app.prepare().then(async () => {
   httpServer.listen(port, "0.0.0.0", () => {
     console.log(`> Ready on http://0.0.0.0:${port}`);
 
-    // --- History Bot Implementation ---
-    // Connects to IRC to log messages for history buffering.
-    // Wrapped in try-catch to prevent crashes if IRC is unreachable.
-    try {
-      console.log('[HistoryBot] Initializing...');
-      const historyConfig = {
-        nick: 'ChatLogBot',
-        username: 'cr_logger',
-        channel: '#camsrooms',
-        useIRC: true
-      };
-
-      const historyBridge = new IRCBridge(null, historyConfig, {
-        io, // Broadcast IRC events to all connected clients
-        onMessage: (message) => {
-          let isWebUser = false;
-          for (const room of rooms.values()) {
-            for (const userData of room.values()) {
-              if (userData.name === message.sender) {
-                isWebUser = true;
-                break;
-              }
-            }
-            if (isWebUser) break;
-          }
-
-          if (isWebUser) {
-            console.log(`[HistoryBot] 🛑 Filtered duplicate from Web User: ${message.sender}`);
-            return;
-          }
-
-          if (!message.timestamp) message.timestamp = new Date().toISOString();
-          console.log(`[HistoryBot] 💾 STORING IRC message from ${message.sender}: ${message.text}`);
-          storeMessage('default-room', message);
-
-          // Also broadcast IRC messages to all web clients
-          io.emit('chat-message', message);
-        }
-      });
-
-      historyBridge.connect();
-
-      // Auto-Reconnect Logic for History Bot (only if client exists)
-      if (historyBridge.client) {
-        historyBridge.client.on('close', () => {
-          console.warn('[HistoryBot] 🔴 Disconnected. Reconnecting in 10s...');
-          setTimeout(() => {
-            console.log('[HistoryBot] 🔄 Reconnecting...');
-            try { historyBridge.connect(); } catch (e) { console.error('[HistoryBot] Reconnect failed:', e); }
-          }, 10000);
-        });
-
-        historyBridge.client.on('error', (err) => {
-          console.error('[HistoryBot] ⚠️ Error:', err);
-        });
-      }
-    } catch (err) {
-      console.error('[HistoryBot] ❌ Failed to initialize (non-fatal):', err);
-    }
+    // HistoryBot is initialized earlier (after io setup) - no duplicate needed here
   });
 });
