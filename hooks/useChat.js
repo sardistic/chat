@@ -135,6 +135,12 @@ export function useChat(roomId, user) {
         socket.on('user-typing', handleUserTyping);
         socket.on('user-stop-typing', handleUserStopTyping);
 
+        // Request history manually to ensure we get it even if listeners attached late
+        if (roomId) {
+            console.log('📜 Requesting history for:', roomId);
+            socket.emit('get-history', { roomId });
+        }
+
         return () => {
             socket.off('chat-message', handleMessage);
             socket.off('chat-history', handleHistory);

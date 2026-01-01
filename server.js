@@ -714,6 +714,12 @@ app.prepare().then(() => {
       socket.to(roomId).emit("user-stop-typing", { user: socket.data.user?.name });
     });
 
+    // Manual History Request
+    socket.on('get-history', ({ roomId }) => {
+      const history = messageHistory[roomId] || [];
+      socket.emit('chat-history', history);
+    });
+
     // Reactions
     socket.on("reaction", ({ roomId, targetId, emoji }) => {
       // Broadcast to everyone in the room (including sender, simplifies logic)
