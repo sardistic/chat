@@ -113,15 +113,15 @@ app.prepare().then(() => {
       req.on('data', chunk => { body += chunk.toString(); });
       req.on('end', () => {
         try {
-          // 1. Verify Secret (Relaxed for Debugging)
+          // 1. Verify Secret
           const signature = req.headers['authorization'] || req.headers['x-deployment-secret'];
           const expectedSecret = process.env.DEPLOY_WEBHOOK_SECRET;
 
-          console.log('[Webhook] 🔍 Headers:', JSON.stringify(req.headers, null, 2));
-
           if (!expectedSecret || signature !== expectedSecret) {
-            console.warn('[Webhook] ⚠️ Secret mismatch or missing. Allowing for debug (will secure next).');
-            // res.writeHead(401, ...); return; // Commented out for first run
+            console.warn('[Webhook] ⛔ Unauthorized access attempt');
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Unauthorized' }));
+            return;
           }
 
           const payload = JSON.parse(body);
