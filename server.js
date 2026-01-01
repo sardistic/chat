@@ -104,6 +104,9 @@ function setBundle(roomId, type, id, users) {
   roomBundles[type] = { id, users, timestamp: Date.now() };
 }
 
+// Regex to strip ANSI escape codes from output
+const stripAnsi = (str) => str ? str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '') : '';
+
 // Load History from Database on Start
 async function loadHistoryFromDB() {
   try {
@@ -209,7 +212,7 @@ async function checkAndBackfillLogs(io) {
       orderBy: { timestamp: 'desc' }
     });
 
-    const existingLines = new Set(existingMessages.map(m => m.text.trim()));
+    const existingLines = new Set(existingMessages.map(m => stripAnsi(m.text).trim()));
 
     // 2. Fetch remote logs
     const stream = new RailwayBuildStream(apiToken);
@@ -225,7 +228,7 @@ async function checkAndBackfillLogs(io) {
     let addedCount = 0;
     // Iterate chronologically
     for (const log of logs) {
-      const line = log.message.trim();
+      const line = stripAnsi(log.message || '').trim();
       if (!line || existingLines.has(line)) continue;
 
       const logMsg = {
@@ -355,9 +358,16 @@ app.prepare().then(async () => {
                 const flushLogs = () => {
                   if (logBuffer.length === 0) return;
 
-                  // Take last 3 lines only to avoid spam
-                  const lines = logBuffer.slice(-3).join('\n');
+                  // Clean ANSI codes and empty lines
+                  const lines = logBuffer
+                    .map(line => stripAnsi(line).trim())
+                    .filter(l => l.length > 0)
+                    .slice(-3)
+                    .join('\n');
+
                   logBuffer = [];
+
+                  if (!lines) return;
 
                   const logMsg = {
                     roomId: 'default-room',
