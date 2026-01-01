@@ -96,7 +96,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
     // Configuration for different message types
     const config = {
         'deploy-start': {
-            icon: 'eos-icons:system-ok-outlined', // Spinning gear or similar
+            icon: 'mdi:loading', // Clear loading spinner
             color: '#f59e0b', // Amber/Orange
             bgColor: 'rgba(245, 158, 11, 0.1)',
             borderColor: 'rgba(245, 158, 11, 0.4)',
@@ -195,7 +195,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 letterSpacing: '1px',
                 textTransform: 'uppercase'
             }}>
-                <Icon icon={style.icon} width="14" className={systemType === 'deploy-start' ? 'spin-slow' : ''} />
+                <Icon icon={style.icon} width="14" className={systemType === 'deploy-start' ? 'spin' : ''} />
                 {style.kicker}
             </div>
 
@@ -278,8 +278,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                  to { box-shadow: 0 0 20px ${style.color}; }
             }
             
-            .spin-slow {
-                animation: spin 3s linear infinite;
+            .spin {
+                animation: spin 1s linear infinite;
             }
             @keyframes spin { 100% { transform: rotate(360deg); } }
 
