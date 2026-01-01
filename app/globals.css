@@ -1477,3 +1477,19 @@ body.resizing iframe {
     transform: rotate(360deg);
   }
 }
+
+/* --- Global Scrollbar Hiding --- */
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+html,
+body,
+.app {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
