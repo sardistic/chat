@@ -183,8 +183,8 @@ app.prepare().then(() => {
           // --- Generic Text Fallback ---
           else if (type && type.startsWith('VolumeAlert')) {
             // Enable for testing connectivity - TEMPORARILY
-            systemMessage = `📢 **Test Notification**: Volume Alert (${payload.severity || 'test'})`;
-            systemType = 'info';
+            // systemMessage = `📢 **Test Notification**: Volume Alert (${payload.severity || 'test'})`; 
+            // systemType = 'info';
           }
           else if (payload.message) {
             systemMessage = `📢 **System**: ${payload.message}`;
