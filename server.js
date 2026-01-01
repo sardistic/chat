@@ -172,12 +172,26 @@ app.prepare().then(() => {
             systemMessage = `💾 **Git Push**: ${pusher} pushed to main: "${commitMsg}" ([${shortHash}](${commitUrl}))`;
           }
           // --- Generic Text Fallback ---
+          // --- Generic / Test Fallback ---
+          else if (type && type.startsWith('VolumeAlert')) {
+            // Ignore volume alerts to avoid spam
+          }
           else if (payload.message) {
             systemMessage = `📢 **System**: ${payload.message}`;
+            systemType = 'info';
           }
 
           // 2. Broadcast to Chat
           if (systemMessage) {
+            const msg = {
+              roomId: 'default-room',
+              id: `sys-${Date.now()}`,
+              sender: 'System',
+              text: systemMessage,
+              type: 'system',
+              systemType: systemType,
+              timestamp: new Date().toISOString()
+            };
             const msg = {
               roomId: 'default-room',
               id: `sys-${Date.now()}`,
