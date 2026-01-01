@@ -260,7 +260,7 @@ app.prepare().then(async () => {
             // Extract deployment ID for log streaming
             const deploymentId = details.id || payload.resource?.deployment?.id || details.deploymentId || payload.deployment?.id;
 
-            // Build Events
+            // Build Events - Streams real-time logs via Railway GraphQL API
             if (type === 'Build.building' || type === 'Deployment.building') {
               let text = `🚧 **Building** *${serviceName}*`;
               if (commitMessage) text += `: "${commitMessage}"`;
