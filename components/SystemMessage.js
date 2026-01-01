@@ -1,6 +1,13 @@
 import { Icon } from '@iconify/react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
+import Convert from 'ansi-to-html';
+
+const convert = new Convert({
+    fg: '#ccc',
+    newline: false,
+    escapeXML: true
+});
 
 export default function SystemMessage({ message, onUserClick = () => { } }) {
     const { systemType, text, metadata } = message;
@@ -217,24 +224,40 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
                 {/* Build Logs Terminal */}
                 {metadata && metadata.logs && metadata.logs.length > 0 && (
-                    <div style={{
+                    <div className="terminal-window" style={{
                         marginTop: '12px',
-                        padding: '8px',
-                        background: '#111',
+                        padding: '12px',
+                        background: '#0d1117', // Github Dark Dimmed
                         border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '4px',
-                        fontFamily: 'monospace',
+                        borderRadius: '6px',
+                        fontFamily: '"JetBrains Mono", "Fira Code", monospace', // Nerd fonts if available
                         fontSize: '11px',
-                        maxHeight: '200px',
+                        maxHeight: '300px',
                         overflowY: 'auto',
-                        color: '#aaa',
-                        whiteSpace: 'pre-wrap',
+                        color: '#c9d1d9',
                         display: 'flex',
-                        flexDirection: 'column-reverse' // Auto-scroll to bottom usually? Or just bottom-up.
+                        flexDirection: 'column', // Standard top-to-bottom
+                        gap: '2px'
                     }}>
-                        {metadata.logs.map((line, i) => (
-                            <div key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '1px 0' }}>{line}</div>
-                        ))}
+                        {metadata.logs.map((line, i) => {
+                            // Heuristics for boring lines (progress bars, downloads, repetitive info)
+                            const isBoring = /^(npm|yarn|download|copy|fetch|progress|> |\[\d+\/\d+\])|^\s*$/i.test(line) || line.includes('modules');
+                            const html = convert.toHtml(line);
+
+                            return (
+                                <div key={i}
+                                    style={{
+                                        opacity: isBoring ? 0.35 : 1,
+                                        paddingLeft: line.startsWith(' ') ? '4px' : '0',
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-all',
+                                        lineHeight: '1.4'
+                                    }}
+                                    className="log-line"
+                                    dangerouslySetInnerHTML={{ __html: html }}
+                                />
+                            );
+                        })}
                     </div>
                 )}
 
@@ -306,6 +329,31 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             @keyframes progress-slide {
                 0% { transform: translateX(-100%); }
                 100% { transform: translateX(100%); }
+            }
+
+            /* Terminal Polish */
+            .terminal-window::-webkit-scrollbar {
+                width: 6px;
+                background: rgba(0,0,0,0.1);
+            }
+            .terminal-window::-webkit-scrollbar-thumb {
+                background: rgba(255,255,255,0.1);
+                border-radius: 3px;
+            }
+            .terminal-window::-webkit-scrollbar-thumb:hover {
+                background: rgba(255,255,255,0.2);
+            }
+            .job-header {
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+                letter-spacing: -0.5px;
+            }
+            :global(.log-line) {
+                transition: opacity 0.2s, background 0.1s;
+                border-radius: 2px;
+            }
+            :global(.log-line:hover) {
+                opacity: 1 !important;
+                background: rgba(255,255,255,0.05);
             }
             `}</style>
         </div>

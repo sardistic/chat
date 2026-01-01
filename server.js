@@ -201,61 +201,69 @@ async function checkAndBackfillLogs(io) {
   console.log(`[Backfill] Checking logs for deployment: ${deploymentId}`);
 
   try {
-    // 1. Get existing logs from DB
-    const existingMessages = await prisma.chatMessage.findMany({
-      where: {
-        roomId: 'default-room',
-        systemType: 'deploy-log'
-      },
-      // Optimization: Limit to recent logs? or filter in JS
-      take: 500,
+    // 1. Find existing Deployment Message
+    const recentMessages = await prisma.chatMessage.findMany({
+      where: { roomId: 'default-room', systemType: { in: ['deploy-start', 'deploy-success', 'deploy-fail'] } },
+      take: 20,
       orderBy: { timestamp: 'desc' }
     });
 
-    const existingLines = new Set(existingMessages.map(m => stripAnsi(m.text).trim()));
+    // Find matching deployment ID (manual filter for safety)
+    let deploymentMsg = recentMessages.find(m => m.metadata?.deploymentId === deploymentId);
+
+    if (!deploymentMsg) {
+      console.log('[Backfill] Parent deployment message not found. Skipping.');
+      return;
+    }
 
     // 2. Fetch remote logs
     const stream = new RailwayBuildStream(apiToken);
     const logs = await stream.fetchBuildLogs(deploymentId);
 
-    if (!logs || logs.length === 0) {
-      console.log('[Backfill] No remote logs found.');
-      return;
+    if (!logs || logs.length === 0) return;
+
+    const existingLogsSet = new Set(deploymentMsg.metadata?.logs || []);
+    const newLogs = [];
+
+    // Filter duplicates
+    for (const log of logs) {
+      // Keep indentation, don't strip ANSI
+      const line = (log.message || '').trimEnd();
+      if (!line.trim() || existingLogsSet.has(line)) continue;
+
+      newLogs.push(line);
+      existingLogsSet.add(line);
     }
 
-    console.log(`[Backfill] Found ${logs.length} remote logs. Analyzing...`);
+    if (newLogs.length > 0) {
+      // Update message
+      const currentLogs = Array.isArray(deploymentMsg.metadata?.logs) ? deploymentMsg.metadata.logs : [];
+      const updatedMetadata = { ...deploymentMsg.metadata, logs: [...currentLogs, ...newLogs] };
 
-    let addedCount = 0;
-    // Iterate chronologically
-    for (const log of logs) {
-      const line = stripAnsi(log.message || '').trim();
-      if (!line || existingLines.has(line)) continue;
+      // Update DB
+      await prisma.chatMessage.update({
+        where: { id: deploymentMsg.id },
+        data: { metadata: updatedMetadata }
+      });
 
-      const logMsg = {
-        roomId: 'default-room',
-        id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        sender: 'System',
-        text: line,
-        type: 'system',
-        systemType: 'deploy-log',
-        metadata: { deploymentId, backfilled: true },
-        timestamp: new Date().toISOString()
+      // Broadcast Update
+      const updatedMsg = {
+        ...deploymentMsg,
+        metadata: updatedMetadata,
+        timestamp: new Date(deploymentMsg.timestamp).toISOString()
       };
 
-      storeMessage('default-room', logMsg);
-      if (io) io.to('default-room').emit('chat-message', logMsg);
-      addedCount++;
+      // Update Memory
+      if (typeof messageHistory !== 'undefined' && messageHistory['default-room']) {
+        const idx = messageHistory['default-room'].findIndex(m => m.id === deploymentMsg.id);
+        if (idx !== -1) messageHistory['default-room'][idx] = updatedMsg;
+      }
 
-      // Add to set to prevent double insertion in this loop
-      existingLines.add(line);
+      if (io) io.to('default-room').emit('chat-message-update', updatedMsg);
 
-      // Small delay to prevent flood? No, backfill should be fast.
-    }
-
-    if (addedCount > 0) {
-      console.log(`[Backfill] Successfully backfilled ${addedCount} log lines.`);
+      console.log(`[Backfill] Appended ${newLogs.length} logs to message ${deploymentMsg.id}`);
     } else {
-      console.log('[Backfill] All logs already present.');
+      console.log('[Backfill] Logs up to date.');
     }
 
   } catch (err) {
@@ -358,10 +366,9 @@ app.prepare().then(async () => {
                 const flushLogs = () => {
                   if (logBuffer.length === 0) return;
 
-                  // Clean ANSI codes and empty lines
+                  // Keep ANSI codes for frontend rendering
                   const lines = logBuffer
-                    .map(line => stripAnsi(line).trim())
-                    .filter(l => l.length > 0);
+                    .filter(l => l && l.trim().length > 0);
 
                   logBuffer = [];
 

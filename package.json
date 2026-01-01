@@ -16,6 +16,7 @@
     "@iconify/react": "^6.0.2",
     "@prisma/client": "^5.22.0",
     "@tabler/icons-react": "^3.36.0",
+    "ansi-to-html": "^0.7.2",
     "cookies-next": "^6.1.1",
     "emoji-regex": "^10.6.0",
     "framer-motion": "^12.23.26",
