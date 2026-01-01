@@ -742,6 +742,25 @@ app.prepare().then(async () => {
   // --- Backfill Build Logs (if missed during restart) ---
   checkAndBackfillLogs(io);
 
+  // --- HistoryBot: Single IRC connection that logs all messages to DB ---
+  const historyBot = new IRCBridge(null, {
+    nick: 'ChatLogBot',
+    username: 'chatlogbot',
+    channel: '#camsrooms'
+  }, {
+    io: io, // Broadcast to all connected clients
+    onMessage: (message) => {
+      // Persist IRC messages to database
+      storeMessage(message.roomId, message);
+      console.log(`[HistoryBot] 💾 Stored IRC message from ${message.sender}`);
+    },
+    shouldIgnoreSender: (senderNick) => {
+      // Ignore messages from the bot itself
+      return senderNick === 'ChatLogBot' || senderNick.startsWith('ChatLogBot');
+    }
+  });
+  historyBot.connect();
+
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
 
