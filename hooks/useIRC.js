@@ -9,6 +9,11 @@ export function useIRC(user) {
     const clientRef = useRef(null);
 
     useEffect(() => {
+        // DISABLED: Browser-side IRC is replaced by server-side HistoryBot
+        // which broadcasts IRC messages via Socket.IO and persists to DB.
+        // This prevents duplicate messages.
+        return;
+
         if (!user || !user.name) return;
 
         // Dynamic import to avoid SSR issues with irc-framework
