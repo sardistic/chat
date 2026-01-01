@@ -475,7 +475,7 @@ app.prepare().then(async () => {
             }
             // Success Events
             else if (type === 'Deployment.success') {
-              let text = `✅ **Deployed** *${serviceName}*`;
+              let text = `**Deployed** *${serviceName}*`;
               if (commitMessage) text += `: "${commitMessage}"`;
               if (commitHash) text += ` \`${commitHash}\``;
               text += ' — Refresh for updates!';
@@ -484,7 +484,7 @@ app.prepare().then(async () => {
             }
             // Failure Events
             else if (type === 'Build.failed' || type === 'Deployment.failed' || type === 'Deployment.crashed') {
-              let text = `❌ **Deploy Failed** *${serviceName}*`;
+              let text = `**Deploy Failed** *${serviceName}*`;
               if (commitMessage) text += `: "${commitMessage}"`;
               systemMessage = text;
               systemType = 'deploy-fail';
@@ -501,13 +501,13 @@ app.prepare().then(async () => {
             console.log(`[Webhook] GitHub Deployment Status: ${state} for ${environment}`);
 
             if (state === 'success') {
-              let text = `✅ **Deployed** *${environment}*`;
+              let text = `**Deployed** *${environment}*`;
               text += ' — Refresh for updates!';
               systemMessage = text;
               systemType = 'deploy-success';
               metadata = { deploymentId, environment, targetUrl };
             } else if (state === 'failure' || state === 'error') {
-              let text = `❌ **Deploy Failed** *${environment}*`;
+              let text = `**Deploy Failed** *${environment}*`;
               systemMessage = text;
               systemType = 'deploy-fail';
               metadata = { deploymentId, environment, targetUrl };
@@ -523,7 +523,7 @@ app.prepare().then(async () => {
             const branch = payload.ref?.replace('refs/heads/', '') || 'main';
             const totalCommits = payload.commits?.length || 1;
 
-            let text = `💾 **${pusher}** pushed ${totalCommits > 1 ? `${totalCommits} commits` : ''} to \`${branch}\``;
+            let text = `**${pusher}** pushed ${totalCommits > 1 ? `${totalCommits} commits` : ''} to \`${branch}\``;
             text += `: "${commitMsg}" [\`${shortHash}\`](${commitUrl})`;
             systemMessage = text;
             systemType = 'git-push';
@@ -536,7 +536,7 @@ app.prepare().then(async () => {
             // systemType = 'info';
           }
           else if (payload.message) {
-            systemMessage = `📢 **System**: ${payload.message}`;
+            systemMessage = `**System**: ${payload.message}`;
             systemType = 'info';
           }
 
