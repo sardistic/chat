@@ -75,14 +75,24 @@ export function useChat(roomId, user) {
             // console.warn('⚠️ useChat: socket already has listeners');
         }
 
-        const handleMessage = (message) => {
-            if (seenIdsRef.current.has(message.id)) {
-                console.log('🛑 Ignored duplicate:', message.id);
+        const handleMessage = (msg) => {
+            // Ignore duplicates based on ID
+            if (seenIdsRef.current.has(msg.id)) {
+                // console.log(`🛑 Ignored duplicate: ${msg.id}`); // Reduce noise
                 return;
             }
-            console.log('📥 Received:', message.id, message.text);
-            seenIdsRef.current.add(message.id);
-            setMessages(prev => [...prev, message]);
+
+            // Client-Side Duplicate Suppression for IRC Echoes
+            // If the message is from me, but comes via IRC (source='irc'), ignore it
+            // because I already have the Optimistic Web version.
+            if (user && msg.sender === user.name && msg.source === 'irc') {
+                console.log(`🛡️ Suppressed self-echo from IRC: ${msg.id}`);
+                seenIdsRef.current.add(msg.id); // Mark seen so we don't process it again
+                return;
+            }
+
+            seenIdsRef.current.add(msg.id);
+            setMessages((prev) => [...prev, msg]);
         };
 
         const handleUserTyping = ({ user: typingUser }) => {

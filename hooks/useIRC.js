@@ -16,8 +16,8 @@ export function useIRC(user) {
 
         const connectIRC = async () => {
             try {
-                // Determine nickname (sanitize spaces)
-                const nick = user.name.replace(/\s+/g, '_').substring(0, 16);
+                // Determine nickname (sanitize spaces and specials to match server logic)
+                const nick = user.name.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 15);
                 const channel = '#camsrooms';
 
                 console.log(`[IRC] Initializing client for ${nick}...`);
