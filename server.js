@@ -110,11 +110,15 @@ const stripAnsi = (str) => str ? str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,
 // Load History from Database on Start
 async function loadHistoryFromDB() {
   try {
+    // Get the NEWEST 100 messages (order by desc, then reverse for display)
     const messages = await prisma.chatMessage.findMany({
       where: { roomId: 'default-room' },
-      orderBy: { timestamp: 'asc' },
-      take: 100 // Last 100 messages
+      orderBy: { timestamp: 'desc' },
+      take: 100
     });
+
+    // Reverse to get chronological order for display
+    messages.reverse();
 
     messageHistory['default-room'] = messages.map(m => {
       const meta = m.metadata || {};
