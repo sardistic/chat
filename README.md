@@ -183,3 +183,7 @@ Built with:
 - [irc-framework](https://github.com/kiwiirc/irc-framework)
 - [Next.js](https://nextjs.org/)
  
+- [Next.js](https://nextjs.org/)
+
+## Deployment Status
+![Railway](https://railway.app/badge/github/sardistic/chat)
