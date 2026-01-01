@@ -361,7 +361,7 @@ app.prepare().then(async () => {
 
             // Build Events - Streams real-time logs via Railway GraphQL API
             if (type === 'Build.building' || type === 'Deployment.building') {
-              let text = `🚧 **Building** *${serviceName}*`;
+              let text = `**Building** *${serviceName}*`;
               if (commitMessage) text += `: "${commitMessage}"`;
               if (commitAuthor) text += ` by ${commitAuthor}`;
               systemMessage = text;
@@ -1203,9 +1203,47 @@ app.prepare().then(async () => {
         tubeState.ownerId = socket.id;
       }
 
+      const userName = socket.data.user?.name || 'Someone';
+      let systemMsg = null;
+
+      // Detect Changes for System Messages
+      if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
+        // New Video
+        const title = newState.title || newState.videoId; // Use title if sent, else ID
+        systemMsg = {
+          text: `**${userName}** queued **${title}**`,
+          kicker: 'TUBE',
+          type: 'tube-video'
+        };
+      } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
+        // Play/Pause Toggle (debounce check?)
+        const action = newState.isPlaying ? 'resumed' : 'paused';
+        systemMsg = {
+          text: `**${userName}** ${action} the video`,
+          kicker: 'TUBE',
+          type: 'tube-video'
+        };
+      }
+
       if (newState.videoId !== undefined) tubeState.videoId = newState.videoId;
       if (newState.isPlaying !== undefined) tubeState.isPlaying = newState.isPlaying;
       if (newState.timestamp !== undefined) tubeState.timestamp = newState.timestamp;
+
+      // Emit System Message if significant change occurred
+      if (systemMsg) {
+        const msgPayload = {
+          id: `sys-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          roomId,
+          text: systemMsg.text,
+          sender: 'System',
+          type: 'system',
+          systemType: systemMsg.type,
+          metadata: { kicker: systemMsg.kicker },
+          timestamp: new Date().toISOString()
+        };
+        storeMessage(roomId, msgPayload);
+        io.to(roomId).emit('chat-message', msgPayload);
+      }
 
       // If the update includes an ownerId, only respect it if intentionally handed over
       // For now, we allow anyone to become owner if they send an update and CURRENT owner is missing.

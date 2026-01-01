@@ -110,21 +110,22 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
     // Configuration for different message types
     const config = {
         'deploy-start': {
-            icon: 'mdi:loading', // Clear loading spinner
+            icon: 'mdi:cog',
             color: '#f59e0b', // Amber/Orange
             bgColor: 'rgba(245, 158, 11, 0.1)',
             borderColor: 'rgba(245, 158, 11, 0.4)',
             kicker: 'MISSION CONTROL',
-            animation: 'pulse-border',
+            animation: 'building-progress',
             showProgress: true
         },
         'deploy-success': {
-            icon: 'mdi:rocket-launch',
+            icon: 'mdi:check-circle',
             color: '#10b981', // Emerald/Green
             bgColor: 'rgba(16, 185, 129, 0.1)',
             borderColor: 'rgba(16, 185, 129, 0.5)',
             kicker: 'DEPLOYMENT SUCCESSFUL',
-            animation: 'success-glow'
+            animation: 'none',
+            compact: true // Make deploy-success compact
         },
         'deploy-fail': {
             icon: 'mdi:alert-octagon',
@@ -132,7 +133,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             bgColor: 'rgba(239, 68, 68, 0.1)',
             borderColor: 'rgba(239, 68, 68, 0.4)',
             kicker: 'DEPLOYMENT FAILED',
-            animation: 'shake'
+            animation: 'none'
         },
         'git-push': {
             icon: 'mdi:git',
@@ -140,6 +141,14 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             bgColor: 'rgba(139, 92, 246, 0.1)',
             borderColor: 'rgba(139, 92, 246, 0.3)',
             kicker: 'CODE UPDATE',
+            animation: 'none'
+        },
+        'tube-video': {
+            icon: 'mdi:youtube',
+            color: '#ff0000', // YouTube Red
+            bgColor: 'rgba(255, 0, 0, 0.08)',
+            borderColor: 'rgba(255, 0, 0, 0.3)',
+            kicker: 'TUBE',
             animation: 'none'
         },
         'info': {
@@ -319,29 +328,32 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 from { opacity: 0; transform: translateX(-5px); }
             }
 
-            /* Progress Bar Animation */
+            /* Progress Bar Animation - Slow steady progress */
             .progress-bar-container {
-                height: 4px;
+                height: 3px;
                 width: 100%;
-                background: rgba(0,0,0,0.3);
+                background: rgba(0,0,0,0.5);
                 overflow: hidden;
                 position: relative;
             }
             .progress-bar-fill {
                 height: 100%;
-                width: 100%;
-                background: repeating-linear-gradient(
-                    45deg,
-                    ${style.borderColor},
-                    ${style.borderColor} 10px,
-                    ${style.color} 10px,
-                    ${style.color} 20px
-                );
-                animation: progress-slide 1s linear infinite;
+                width: 30%;
+                background: linear-gradient(90deg, transparent, ${style.color}, transparent);
+                animation: progress-sweep 3s ease-in-out infinite;
             }
-            @keyframes progress-slide {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(100%); }
+            @keyframes progress-sweep {
+                0% { transform: translateX(-100%); opacity: 0.5; }
+                50% { opacity: 1; }
+                100% { transform: translateX(400%); opacity: 0.5; }
+            }
+
+            /* Building Progress Animation - Slow cog rotation */
+            .building-progress .cog-icon {
+                animation: slow-spin 4s linear infinite;
+            }
+            @keyframes slow-spin {
+                100% { transform: rotate(360deg); }
             }
 
             /* Terminal Polish */
