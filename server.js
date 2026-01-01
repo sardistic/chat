@@ -923,10 +923,11 @@ app.prepare().then(async () => {
       console.log(`User ${socket.id} left room ${roomId}`);
 
       const room = rooms.get(roomId);
-      let userName = 'Someone';
+      // Get username from room map first, then socket.data as fallback
+      let userName = socket.data.user?.name || 'Someone';
       if (room) {
         const u = room.get(socket.id);
-        if (u) userName = u.name;
+        if (u?.name) userName = u.name;
         room.delete(socket.id);
         if (room.size === 0) rooms.delete(roomId);
       }
