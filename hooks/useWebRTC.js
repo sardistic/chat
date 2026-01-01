@@ -239,7 +239,8 @@ export function useWebRTC(roomId, user, autoStart = true) {
         const currentUser = userRef.current;
         console.log('🚀 Joining room:', roomId, 'as', currentUser.name);
 
-        // Listeners
+        // --- Handlers ---
+
         const handleUserJoined = ({ socketId, user: joinedUser }) => {
             console.log(`👋 User ${joinedUser.name} joined (${socketId})`);
             setPeers(prev => {
@@ -273,7 +274,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
             });
 
             // Create peer connections to users who are broadcasting
-            // We need to do this after a small delay to ensure PeerManager is created
             setTimeout(() => {
                 if (peerManagerRef.current && broadcastingPeers.length > 0) {
                     console.log('📡 Creating connections to broadcasting users:', broadcastingPeers);
@@ -284,6 +284,18 @@ export function useWebRTC(roomId, user, autoStart = true) {
                     });
                 }
             }, 100);
+        };
+
+        const handleUserUpdated = ({ socketId, user: updatedUser }) => {
+            console.log(`🔄 User updated: ${updatedUser.name} (${socketId})`, updatedUser);
+            setPeers(prev => {
+                const newPeers = new Map(prev);
+                const existing = newPeers.get(socketId);
+                if (existing) {
+                    newPeers.set(socketId, { ...existing, user: updatedUser });
+                }
+                return newPeers;
+            });
         };
 
         const handleSignal = ({ sender, payload }) => {
@@ -303,23 +315,15 @@ export function useWebRTC(roomId, user, autoStart = true) {
             }
         };
 
-        const handleUserUpdated = ({ socketId, user: updatedUser }) => {
-            console.log(`🔄 User updated: ${updatedUser.name} (${socketId})`, updatedUser);
-            setPeers(prev => {
-                const newPeers = new Map(prev);
-                const existing = newPeers.get(socketId);
-                if (existing) {
-                    newPeers.set(socketId, { ...existing, user: updatedUser });
-                }
-                return newPeers;
-            });
+        const handleConnectToPeer = ({ peerId }) => {
+            console.log(`📡 Broadcaster: Connecting to new peer ${peerId}`);
+            if (peerManagerRef.current && localStreamRef.current) {
+                // Create peer connection as initiator (we have the stream, they want it)
+                peerManagerRef.current.createPeer(peerId, true);
+            }
         };
 
-        socket.on('user-joined', handleUserJoined);
-        socket.on('existing-users', handleExistingUsers);
-        socket.on('signal', handleSignal);
-        socket.on('user-left', handleUserLeft);
-        socket.on('user-updated', handleUserUpdated);
+        // --- Logic ---
 
         // Create PeerManager early (even without local stream) so we can receive streams
         if (!peerManagerRef.current) {
@@ -348,40 +352,36 @@ export function useWebRTC(roomId, user, autoStart = true) {
             });
         }
 
-        // JOIN
+        // JOIN Room
         const { ircConfig, ...safeUser } = currentUser;
-        // Inject initial state
         const userWithState = {
             ...safeUser,
             isVideoEnabled: false,
             isAudioEnabled: false,
-            isDeafened: true // Initial deaf state
+            isDeafened: true
         };
         socket.emit('join-room', { roomId, user: userWithState, ircConfig });
         hasJoinedRoom.current = true;
 
-        // Request streams from any existing broadcasters after a short delay
+        // Request streams from existing broadcasters
         setTimeout(() => {
             socket.emit('request-streams', { roomId });
         }, 500);
 
-        // Handle broadcasters being asked to connect to new users
-        const handleConnectToPeer = ({ peerId }) => {
-            console.log(`📡 Broadcaster: Connecting to new peer ${peerId}`);
-            if (peerManagerRef.current && localStreamRef.current) {
-                // Create peer connection as initiator (we have the stream, they want it)
-                peerManagerRef.current.createPeer(peerId, true);
-            }
-        };
-
+        // --- Verify Listeners ---
+        socket.on('user-joined', handleUserJoined);
+        socket.on('existing-users', handleExistingUsers);
+        socket.on('user-updated', handleUserUpdated);
+        socket.on('signal', handleSignal);
+        socket.on('user-left', handleUserLeft);
         socket.on('connect-to-peer', handleConnectToPeer);
 
         return () => {
             socket.off('user-joined', handleUserJoined);
             socket.off('existing-users', handleExistingUsers);
+            socket.off('user-updated', handleUserUpdated);
             socket.off('signal', handleSignal);
             socket.off('user-left', handleUserLeft);
-            socket.off('user-updated', handleUserUpdated);
             socket.off('connect-to-peer', handleConnectToPeer);
             leaveRoom();
         };
