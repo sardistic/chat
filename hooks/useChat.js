@@ -71,16 +71,17 @@ export function useChat(roomId, user) {
     useEffect(() => {
         if (!socket || !isConnected) return;
 
+        if (socket.hasListeners('chat-message')) {
+            // console.warn('⚠️ useChat: socket already has listeners');
+        }
+
         const handleMessage = (message) => {
-            // Check if we've already seen this message (fast Set lookup)
             if (seenIdsRef.current.has(message.id)) {
-                return; // Skip duplicate
+                console.log('🛑 Ignored duplicate:', message.id);
+                return;
             }
-
-            // Mark as seen
+            console.log('📥 Received:', message.id, message.text);
             seenIdsRef.current.add(message.id);
-
-            // Add to messages
             setMessages(prev => [...prev, message]);
         };
 
@@ -98,14 +99,34 @@ export function useChat(roomId, user) {
             });
         };
 
+        // Duplicate listener prevention
+        if (socket.hasListeners('chat-message')) {
+            console.warn('⚠️ useChat: socket already has listeners, might be dupe mount');
+            // In strict mode, we might want to let it happen if cleanup worked?
+            // But if cleanup worked, hasListeners should be false?
+            // socket.io doesn't clear listeners on unmount unless we tell it.
+        }
+
+
+
         const handleHistory = (history) => {
-            // Populate seen IDs from history to prevent duplicates
+            console.log('📜 History loaded:', history.length);
             history.forEach(msg => seenIdsRef.current.add(msg.id));
             setMessages(history);
         };
 
         const handleUpdate = (updatedMsg) => {
-            setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+            console.log('🔄 Update received:', updatedMsg.id);
+            setMessages(prev => {
+                const exists = prev.some(m => m.id === updatedMsg.id);
+                if (!exists) {
+                    // If we don't have it, add it (upsert)
+                    // This handles the "missed join" case
+                    seenIdsRef.current.add(updatedMsg.id);
+                    return [...prev, updatedMsg].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                }
+                return prev.map(m => m.id === updatedMsg.id ? updatedMsg : m);
+            });
         };
 
         socket.on('chat-message', handleMessage);
