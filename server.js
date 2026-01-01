@@ -679,7 +679,7 @@ app.prepare().then(async () => {
       console.log('[Startup] Failed to rehydrate deployments:', e.message);
     }
   };
-  rehydrateDeployments();
+  await rehydrateDeployments();
 
   const getBundle = (roomId, type) => {
     if (!messageBundles.has(roomId)) messageBundles.set(roomId, {});

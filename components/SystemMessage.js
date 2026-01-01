@@ -4,9 +4,16 @@ import { motion } from 'framer-motion';
 import Convert from 'ansi-to-html';
 
 const convert = new Convert({
-    fg: '#ccc',
+    fg: '#c9d1d9',
+    bg: '#0d1117',
     newline: false,
-    escapeXML: true
+    escapeXML: true,
+    colors: {
+        0: '#000000', 1: '#ff5555', 2: '#50fa7b', 3: '#f1fa8c',
+        4: '#bd93f9', 5: '#ff79c6', 6: '#8be9fd', 7: '#f8f8f2',
+        8: '#6272a4', 9: '#ff6e6e', 10: '#69ff94', 11: '#ffffa5',
+        12: '#d6acff', 13: '#ff92df', 14: '#a4ffff', 15: '#ffffff'
+    }
 });
 
 export default function SystemMessage({ message, onUserClick = () => { } }) {
