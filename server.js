@@ -185,6 +185,81 @@ const storeMessage = (roomId, message) => {
   saveMessageToDB(message);
 };
 
+// Backfill build logs on startup
+async function checkAndBackfillLogs(io) {
+  const deploymentId = process.env.RAILWAY_DEPLOYMENT_ID;
+  const apiToken = process.env.RAILWAY_API_TOKEN;
+
+  if (!deploymentId || !apiToken) {
+    console.log('[Backfill] Skipping: No Deployment ID or API Token');
+    return;
+  }
+
+  console.log(`[Backfill] Checking logs for deployment: ${deploymentId}`);
+
+  try {
+    // 1. Get existing logs from DB
+    const existingMessages = await prisma.chatMessage.findMany({
+      where: {
+        roomId: 'default-room',
+        systemType: 'deploy-log'
+      },
+      // Optimization: Limit to recent logs? or filter in JS
+      take: 500,
+      orderBy: { timestamp: 'desc' }
+    });
+
+    const existingLines = new Set(existingMessages.map(m => m.text.trim()));
+
+    // 2. Fetch remote logs
+    const stream = new RailwayBuildStream(apiToken);
+    const logs = await stream.fetchBuildLogs(deploymentId);
+
+    if (!logs || logs.length === 0) {
+      console.log('[Backfill] No remote logs found.');
+      return;
+    }
+
+    console.log(`[Backfill] Found ${logs.length} remote logs. Analyzing...`);
+
+    let addedCount = 0;
+    // Iterate chronologically
+    for (const log of logs) {
+      const line = log.message.trim();
+      if (!line || existingLines.has(line)) continue;
+
+      const logMsg = {
+        roomId: 'default-room',
+        id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        sender: 'System',
+        text: line,
+        type: 'system',
+        systemType: 'deploy-log',
+        metadata: { deploymentId, backfilled: true },
+        timestamp: new Date().toISOString()
+      };
+
+      storeMessage('default-room', logMsg);
+      if (io) io.to('default-room').emit('chat-message', logMsg);
+      addedCount++;
+
+      // Add to set to prevent double insertion in this loop
+      existingLines.add(line);
+
+      // Small delay to prevent flood? No, backfill should be fast.
+    }
+
+    if (addedCount > 0) {
+      console.log(`[Backfill] Successfully backfilled ${addedCount} log lines.`);
+    } else {
+      console.log('[Backfill] All logs already present.');
+    }
+
+  } catch (err) {
+    console.error('[Backfill] Error:', err);
+  }
+}
+
 // Tube Sync State
 const tubeState = {
   videoId: null,
@@ -254,11 +329,12 @@ app.prepare().then(async () => {
           const commitAuthor = details.author || payload.deployment?.meta?.commit?.author?.name;
           const serviceName = details.serviceName || payload.project?.name || 'Chat';
 
-          if (type && (type.startsWith('Deployment') || type.startsWith('Build'))) {
-            metadata = { commitHash, commitMessage, commitAuthor, serviceName };
 
+          if (type && (type.startsWith('Deployment') || type.startsWith('Build'))) {
             // Extract deployment ID for log streaming
             const deploymentId = details.id || payload.resource?.deployment?.id || details.deploymentId || payload.deployment?.id;
+
+            metadata = { commitHash, commitMessage, commitAuthor, serviceName, deploymentId };
 
             // Build Events - Streams real-time logs via Railway GraphQL API
             if (type === 'Build.building' || type === 'Deployment.building') {
@@ -552,6 +628,9 @@ app.prepare().then(async () => {
       methods: ["GET", "POST"]
     }
   });
+
+  // --- Backfill Build Logs (if missed during restart) ---
+  checkAndBackfillLogs(io);
 
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
