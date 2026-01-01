@@ -890,6 +890,70 @@ app.prepare().then(async () => {
     socket.on('chat-message', (message) => {
       if (!message.timestamp) message.timestamp = new Date().toISOString();
 
+      // DEBUG: Manual command to trigger simulated build log stream
+      if (message.text === '/testlogs') {
+        const deploymentId = 'test-deploy-' + Date.now();
+        const serviceName = 'Chat';
+
+        // 1. Emit Building Start
+        const startMsg = {
+          roomId: message.roomId,
+          id: `sys-${Date.now()}`,
+          sender: 'System',
+          text: `🚧 **Building** *${serviceName}* (Test Simulation)`,
+          type: 'system',
+          systemType: 'deploy-start',
+          timestamp: new Date().toISOString()
+        };
+        storeMessage(message.roomId, startMsg);
+        io.to(message.roomId).emit('chat-message', startMsg);
+
+        // 2. Stream logs
+        const logLines = [
+          '📦 Installing dependencies...',
+          'RUN npm ci',
+          'added 86 packages, and audited 87 packages in 2s',
+          '🔧 Compiling source...',
+          'Creating an optimized production build...',
+          'Compiled successfully',
+          '🚀 Starting server...',
+          'Ready on http://localhost:3000'
+        ];
+
+        let i = 0;
+        const interval = setInterval(() => {
+          if (i >= logLines.length) {
+            clearInterval(interval);
+            // 3. Emit Success
+            const successMsg = {
+              roomId: message.roomId,
+              id: startMsg.id, // Update same message
+              sender: 'System',
+              text: `✅ **Deployed** *${serviceName}* (Test Simulation)`,
+              type: 'system',
+              systemType: 'deploy-success',
+              timestamp: new Date().toISOString()
+            };
+            storeMessage(message.roomId, successMsg);
+            io.to(message.roomId).emit('chat-message-update', successMsg);
+            return;
+          }
+
+          const logMsg = {
+            roomId: message.roomId,
+            id: `log-${Date.now()}-${i}`,
+            sender: 'System',
+            text: `[build] ${logLines[i]}`,
+            type: 'system',
+            systemType: 'deploy-log',
+            timestamp: new Date().toISOString()
+          };
+          io.to(message.roomId).emit('chat-message', logMsg);
+          i++;
+        }, 1000);
+        return; // Don't broadcast the command itself
+      }
+
       storeMessage(message.roomId, message);
       io.to(message.roomId).emit('chat-message', message);
 
