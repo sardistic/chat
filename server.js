@@ -300,6 +300,7 @@ app.prepare().then(async () => {
                   process.env.RAILWAY_API_TOKEN,
                   // onLog callback - buffer and throttle
                   (message, severity) => {
+                    console.log(`[Railway] Log received: ${message?.substring(0, 50)}...`); // DEBUG
                     const trimmed = message?.trim();
                     if (!trimmed || trimmed.length < 3) return;
 
@@ -320,7 +321,8 @@ app.prepare().then(async () => {
                   },
                   // onError callback
                   (err) => {
-                    console.error('[Railway] Build log stream error:', err.message);
+                    console.error('[Railway] Build log stream error:', err);
+                    if (err.errors) console.error('[Railway] GraphQL Errors:', JSON.stringify(err.errors, null, 2));
                   }
                 );
 
