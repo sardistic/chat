@@ -529,9 +529,17 @@ app.prepare().then(async () => {
             }
 
             // Preserve logs if updating
+            // Preserve logs if updating
             let existingLogs = [];
             if (isUpdate && existingStartMsg?.metadata?.logs) {
               existingLogs = existingStartMsg.metadata.logs;
+            } else if (!isUpdate && (!existingLogs || existingLogs.length === 0) && (metadata.commitMsg || metadata.shortHash)) {
+              // Pre-fill logs so the terminal isn't empty initially
+              existingLogs = [
+                `> Initializing deployment...`,
+                `> Commit: ${metadata.shortHash || 'Unknown'}`,
+                `> Subject: ${metadata.commitMsg || 'No message'}`
+              ];
             }
 
             const msg = {
@@ -650,6 +658,28 @@ app.prepare().then(async () => {
   const messageBundles = new Map();
   // Store active deployment messages: { deploymentId: messageId }
   const activeDeployments = new Map();
+
+  // Rehydrate active deployments from DB (Post-Server Restart)
+  const rehydrateDeployments = async () => {
+    try {
+      const recent = await prisma.chatMessage.findMany({
+        where: {
+          systemType: 'deploy-start',
+          timestamp: { gt: new Date(Date.now() - 30 * 60 * 1000) }
+        },
+        take: 5
+      });
+      for (const msg of recent) {
+        if (msg.systemType === 'deploy-start' && msg.metadata?.deploymentId) {
+          activeDeployments.set(msg.metadata.deploymentId, msg.id);
+          console.log(`[Startup] Rehydrated active deployment: ${msg.metadata.deploymentId}`);
+        }
+      }
+    } catch (e) {
+      console.log('[Startup] Failed to rehydrate deployments:', e.message);
+    }
+  };
+  rehydrateDeployments();
 
   const getBundle = (roomId, type) => {
     if (!messageBundles.has(roomId)) messageBundles.set(roomId, {});
