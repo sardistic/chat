@@ -1,4 +1,5 @@
 import { Icon } from '@iconify/react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import Convert from 'ansi-to-html';
@@ -237,44 +238,9 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     {text}
                 </ReactMarkdown>
 
-                {/* Build Logs Terminal */}
+                {/* Build Logs Terminal (Cinematic) */}
                 {metadata && metadata.logs && metadata.logs.length > 0 && (
-                    <div className="terminal-window" style={{
-                        marginTop: '8px',
-                        padding: '8px',
-                        background: '#0d1117', // Github Dark Dimmed
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '6px',
-                        fontFamily: '"JetBrains Mono", "Fira Code", monospace', // Nerd fonts if available
-                        fontSize: '11px',
-                        maxHeight: '300px',
-                        overflowY: 'auto',
-                        color: '#c9d1d9',
-                        display: 'flex',
-                        flexDirection: 'column', // Standard top-to-bottom
-                        gap: '2px'
-                    }}>
-                        {metadata.logs.map((line, i) => {
-                            // Heuristics for boring lines (progress bars, downloads, repetitive info)
-                            const isBoring = /^(npm|yarn|download|copy|fetch|progress|> |\[\d+\/\d+\])|^\s*$/i.test(line) || line.includes('modules');
-                            const html = convert.toHtml(line);
-
-                            return (
-                                <div key={i}
-                                    style={{
-                                        animation: 'slideIn 0.2s ease-out backwards',
-                                        opacity: isBoring ? 0.35 : 1,
-                                        paddingLeft: line.startsWith(' ') ? '4px' : '0',
-                                        whiteSpace: 'pre-wrap',
-                                        wordBreak: 'break-all',
-                                        lineHeight: '1.4'
-                                    }}
-                                    className="log-line"
-                                    dangerouslySetInnerHTML={{ __html: html }}
-                                />
-                            );
-                        })}
-                    </div>
+                    <CinematicScanline logs={metadata.logs} />
                 )}
 
                 {/* Extended Metadata (Commit info, etc.) */}
@@ -380,6 +346,91 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 background: rgba(255,255,255,0.05);
             }
             `}</style>
+        </div>
+    );
+}
+
+function CinematicScanline({ logs }) {
+    const [displayIndex, setDisplayIndex] = useState(0);
+    const [isComplete, setIsComplete] = useState(false);
+
+    // Auto-scroll logic
+    useEffect(() => {
+        // If we are already at the end, nothing to do (unless logs grew)
+        if (displayIndex >= logs.length - 1) {
+            setIsComplete(true);
+            return;
+        }
+
+        setIsComplete(false);
+
+        // Scan speed: faster if we are far behind, slower if we are caught up
+        const distance = logs.length - displayIndex;
+        const delay = distance > 10 ? 50 : 150; // Speed up if lagging
+
+        const timer = setTimeout(() => {
+            setDisplayIndex(prev => prev + 1);
+        }, delay);
+
+        return () => clearTimeout(timer);
+    }, [displayIndex, logs.length]);
+
+    const currentLine = logs[displayIndex] || '';
+    const html = convert.toHtml(currentLine);
+    const isBoring = /^(npm|yarn|download|copy|fetch|progress|> |\[\d+\/\d+\])|^\s*$/i.test(currentLine) || currentLine.includes('modules');
+
+    return (
+        <div style={{
+            marginTop: '8px',
+            padding: '12px',
+            background: '#0d1117',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '6px',
+            fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+            fontSize: '12px',
+            color: '#c9d1d9',
+            minHeight: '48px', // Fixed height to prevent jitter
+            display: 'flex',
+            alignItems: 'center',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
+            {/* Scanline Effect Overlay */}
+            <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(to bottom, transparent 50%, rgba(32, 255, 77, 0.05) 51%, transparent 51%)',
+                backgroundSize: '100% 4px',
+                pointerEvents: 'none'
+            }} />
+
+            <div className="flex-1" style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    alignItems: 'center',
+                    opacity: isBoring ? 0.7 : 1,
+                    transition: 'opacity 0.2s'
+                }}>
+                    <span style={{ color: '#2ecc71', fontSize: '10px' }}>➜</span>
+                    <span
+                        dangerouslySetInnerHTML={{ __html: html }}
+                        style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'monospace' }}
+                    />
+                </div>
+            </div>
+
+            {/* Progress Counter/Spinner */}
+            <div style={{
+                position: 'absolute',
+                bottom: '4px',
+                right: '6px',
+                fontSize: '9px',
+                color: '#444',
+                fontFamily: 'monospace'
+            }}>
+                LINE {displayIndex + 1}/{logs.length}
+                {!isComplete && <span className="animate-pulse ml-1">▋</span>}
+            </div>
         </div>
     );
 }
