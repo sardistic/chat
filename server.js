@@ -269,6 +269,8 @@ app.prepare().then(async () => {
               systemType = 'deploy-start';
 
               // Start streaming build logs if we have a deployment ID and API token
+              console.log(`[Railway] Stream attempt - DeployID: ${deploymentId}, Token: ${!!process.env.RAILWAY_API_TOKEN}`);
+
               if (deploymentId && process.env.RAILWAY_API_TOKEN && io) {
                 let logBuffer = [];
                 let lastEmit = 0;
