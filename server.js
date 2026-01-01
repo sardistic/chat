@@ -258,7 +258,7 @@ app.prepare().then(async () => {
             metadata = { commitHash, commitMessage, commitAuthor, serviceName };
 
             // Extract deployment ID for log streaming
-            const deploymentId = details.deploymentId || payload.deployment?.id;
+            const deploymentId = details.id || payload.resource?.deployment?.id || details.deploymentId || payload.deployment?.id;
 
             // Build Events
             if (type === 'Build.building' || type === 'Deployment.building') {
