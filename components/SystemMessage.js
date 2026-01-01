@@ -10,16 +10,20 @@ export default function SystemMessage({ message }) {
 
         return (
             <div style={{
-                padding: '6px 0',
-                fontSize: '11px',
-                color: '#6b7280', // Gray-500
-                fontStyle: 'italic',
+                padding: '6px 12px',
+                fontSize: '12px',
+                color: '#9ca3af', // Gray-400 (Lighter)
+                // fontStyle: 'italic', // Removed for readability
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '4px',
                 justifyContent: 'center',
-                opacity: 0.9
+                opacity: 1,
+                background: 'rgba(255,255,255,0.03)', // Subtle bg
+                borderRadius: '8px',
+                margin: '4px 0',
+                border: '1px solid rgba(255,255,255,0.05)'
             }}>
                 {/* Avatar Stripe */}
                 {users.length > 0 && (
