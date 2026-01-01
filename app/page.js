@@ -31,7 +31,7 @@ function MainApp({ user, onLeaveRoom }) {
   const { ircUsers, sendMessage: sendToIRC } = useIRC(user);
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [sidebarWidth, setSidebarWidth] = useState(340);
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
