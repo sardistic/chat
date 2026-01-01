@@ -287,6 +287,28 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                     </div>
                 )}
 
+                {/* DEBUG OVERLAY */}
+                {process.env.NODE_ENV !== 'production' && (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        background: 'rgba(0,0,0,0.8)',
+                        color: '#0f0',
+                        fontSize: '10px',
+                        padding: '4px',
+                        zIndex: 9999,
+                        pointerEvents: 'none',
+                        maxWidth: '200px',
+                        overflow: 'hidden'
+                    }}>
+                        <div>Count: {messages.length}</div>
+                        <div>Groups: {messageGroups.length}</div>
+                        <div style={{ whiteSpace: 'nowrap' }}>Last: {messages[messages.length - 1]?.id}</div>
+                        <div>Sys: {messages.filter(m => m.sender === 'System').length}</div>
+                    </div>
+                )}
+
                 {/* Calculate last group indices for typing animation */}
                 {(() => {
                     const lastGroupIndices = {};
