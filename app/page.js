@@ -451,146 +451,144 @@ function MainApp({ user, onLeaveRoom }) {
           </div>
 
           <div className="side-content" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-            {activeTab === 'logs' ? (
-              /* Chat Panel */
-              <div style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <ChatPanel
-                  roomId={roomId}
-                  user={user}
-                  users={Array.from(peers.values())}
-                  ircUsers={Array.from(ircUsers.values())}
-                  onUserClick={handleProfileClick}
-                  onTypingUsersChange={setTypingUsers}
-                  sendToIRC={sendToIRC}
-                />
-              </div>
-            ) : (
-              /* User List (Services) */
-              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {/* Local User */}
-                <div className="user-item">
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <img
-                      src={user.avatar || `/api/avatar/${user.name}`}
-                      alt={user.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                      <Icon icon="fa:circle" width="10" color="var(--status-online)" />
-                      {isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
-                      {!isAudioEnabled && <Icon icon="fa:microphone-slash" width="14" />}
-                      {isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
-                    </div>
+            {/* Chat Panel - Always mounted to preserve state */}
+            <div style={{ flex: 1, height: '100%', display: activeTab === 'logs' ? 'flex' : 'none', flexDirection: 'column' }}>
+              <ChatPanel
+                roomId={roomId}
+                user={user}
+                users={Array.from(peers.values())}
+                ircUsers={Array.from(ircUsers.values())}
+                onUserClick={handleProfileClick}
+                onTypingUsersChange={setTypingUsers}
+                sendToIRC={sendToIRC}
+              />
+            </div>
+
+            {/* User List (Services) - Always mounted for consistency */}
+            <div style={{ padding: '16px', display: activeTab === 'services' ? 'flex' : 'none', flexDirection: 'column', gap: '8px' }}>
+              {/* Local User */}
+              <div className="user-item">
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <img
+                    src={user.avatar || `/api/avatar/${user.name}`}
+                    alt={user.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                    <Icon icon="fa:circle" width="10" color="var(--status-online)" />
+                    {isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
+                    {!isAudioEnabled && <Icon icon="fa:microphone-slash" width="14" />}
+                    {isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
                   </div>
                 </div>
+              </div>
 
-                {/* Remote Users (WebRTC) */}
-                {Array.from(peers, ([socketId, p]) => {
-                  // Skip if it's the local user
-                  if (p.user?.name === user.name) return null;
+              {/* Remote Users (WebRTC) */}
+              {Array.from(peers, ([socketId, p]) => {
+                // Skip if it's the local user
+                if (p.user?.name === user.name) return null;
 
-                  return (
-                    <div key={socketId} className="user-item" onClick={(e) => handleProfileClick(p.user, e)} style={{ cursor: 'pointer' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <img
-                          src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
-                          alt={p.user?.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                          {p.user?.isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
-                          {p.user?.isAudioEnabled === false && <Icon icon="fa:microphone-slash" width="14" />}
-                          {p.user?.isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
-                          {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <Icon icon="fa:cloud" width="14" />}
-                        </div>
+                return (
+                  <div key={socketId} className="user-item" onClick={(e) => handleProfileClick(p.user, e)} style={{ cursor: 'pointer' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <img
+                        src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
+                        alt={p.user?.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                        {p.user?.isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
+                        {p.user?.isAudioEnabled === false && <Icon icon="fa:microphone-slash" width="14" />}
+                        {p.user?.isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
+                        {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <Icon icon="fa:cloud" width="14" />}
                       </div>
                     </div>
-                  )
-                })}
+                  </div>
+                )
+              })}
 
-                {/* IRC Users */}
-                {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
-                {/* IRC Users (Humans) */}
-                {Array.from(ircUsers.values())
-                  .filter(u => {
-                    const isBot = ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase());
-                    const isMe = u.name === user.name;
-                    const isPeer = Array.from(peers.values()).some(p => p.user?.name === u.name);
-                    return !isBot && !isMe && !isPeer;
-                  })
-                  .map((u) => (
-                    <div key={u.name} className="user-item" onClick={(e) => {
-                      setSelectedProfileUser(u);
-                      setModalPosition({ x: e.clientX, y: e.clientY });
-                    }} style={{ cursor: 'pointer' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <img
-                          src={u.avatar || `/api/avatar/${u.name}`}
-                          alt={u.name}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
+              {/* IRC Users */}
+              {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
+              {/* IRC Users (Humans) */}
+              {Array.from(ircUsers.values())
+                .filter(u => {
+                  const isBot = ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase());
+                  const isMe = u.name === user.name;
+                  const isPeer = Array.from(peers.values()).some(p => p.user?.name === u.name);
+                  return !isBot && !isMe && !isPeer;
+                })
+                .map((u) => (
+                  <div key={u.name} className="user-item" onClick={(e) => {
+                    setSelectedProfileUser(u);
+                    setModalPosition({ x: e.clientX, y: e.clientY });
+                  }} style={{ cursor: 'pointer' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <img
+                        src={u.avatar || `/api/avatar/${u.name}`}
+                        alt={u.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
+                        <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                        <Icon icon="fa:keyboard-o" width="14" />
+                        {u.modes && u.modes.length > 0 && <span>+{u.modes.join('')}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+              {/* System Bots */}
+              <div style={{ marginTop: '16px', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '10px', fontWeight: '800', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                System
+              </div>
+              {Array.from(ircUsers.values())
+                .filter(u => ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()))
+                .map((u) => {
+                  let displayName = u.name;
+                  let role = 'BOT';
+                  let description = 'System Bot';
+
+                  if (u.name.toLowerCase() === 'camroomslogbot' || u.name.toLowerCase() === 'chatlogbot') {
+                    displayName = 'LogBot';
+                    role = 'OFFICIAL';
+                    description = 'Archives & Logs';
+                  } else if (u.name.toLowerCase() === 'chanserv') {
+                    displayName = 'ChanServ';
+                    role = 'SERVICE';
+                    description = 'Channel Services';
+                  }
+
+                  let icon = 'fa:android';
+                  if (role === 'OFFICIAL') icon = 'fa:file-text-o';
+                  if (role === 'SERVICE') icon = 'fa:shield';
+
+                  return (
+                    <div key={u.name} className="user-item" style={{ background: 'rgba(79, 70, 229, 0.05)', borderColor: 'rgba(79, 70, 229, 0.2)' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(79, 70, 229, 0.4)' }}>
+                        <Icon icon={icon} width="16" color="white" />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
-                          <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
+                          <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: 'white', color: 'var(--accent-primary)', fontWeight: 'bold' }}>{role}</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                          <Icon icon="fa:keyboard-o" width="14" />
-                          {u.modes && u.modes.length > 0 && <span>+{u.modes.join('')}</span>}
-                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--accent-primary)' }}>{description}</div>
                       </div>
                     </div>
-                  ))}
-
-                {/* System Bots */}
-                <div style={{ marginTop: '16px', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '10px', fontWeight: '800', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  System
-                </div>
-                {Array.from(ircUsers.values())
-                  .filter(u => ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()))
-                  .map((u) => {
-                    let displayName = u.name;
-                    let role = 'BOT';
-                    let description = 'System Bot';
-
-                    if (u.name.toLowerCase() === 'camroomslogbot' || u.name.toLowerCase() === 'chatlogbot') {
-                      displayName = 'LogBot';
-                      role = 'OFFICIAL';
-                      description = 'Archives & Logs';
-                    } else if (u.name.toLowerCase() === 'chanserv') {
-                      displayName = 'ChanServ';
-                      role = 'SERVICE';
-                      description = 'Channel Services';
-                    }
-
-                    let icon = 'fa:android';
-                    if (role === 'OFFICIAL') icon = 'fa:file-text-o';
-                    if (role === 'SERVICE') icon = 'fa:shield';
-
-                    return (
-                      <div key={u.name} className="user-item" style={{ background: 'rgba(79, 70, 229, 0.05)', borderColor: 'rgba(79, 70, 229, 0.2)' }}>
-                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(79, 70, 229, 0.4)' }}>
-                          <Icon icon={icon} width="16" color="white" />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
-                            <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: 'white', color: 'var(--accent-primary)', fontWeight: 'bold' }}>{role}</span>
-                          </div>
-                          <div style={{ fontSize: '11px', color: 'var(--accent-primary)' }}>{description}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
+                  );
+                })}
+            </div>
           </div>
         </aside>
 
