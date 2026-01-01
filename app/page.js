@@ -79,17 +79,7 @@ function MainApp({ user, onLeaveRoom }) {
       } finally {
         setIsBroadcasting(false);
       }
-
-      // System Notification
-      if (socket) {
-        socket.emit('chat-message', {
-          roomId,
-          sender: 'System',
-          text: `💤 ${user.name} went offline.`,
-          type: 'system',
-          timestamp: new Date().toISOString()
-        });
-      }
+      // Server handles cam status notification via update-user handler
 
     } else {
       try {
