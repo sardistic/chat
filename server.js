@@ -147,19 +147,27 @@ app.prepare().then(() => {
           console.log('[Webhook] 📨 Received payload:', payload);
 
           let systemMessage = null;
-
           // --- Railway Deployment ---
-          if (payload.type === 'RAILWAY' || payload.status) {
-            // Mapping Railway statuses
-            const status = payload.status?.toUpperCase();
+          const type = payload.type;
+          let systemType = 'info';
+
+          if (type && (type.startsWith('Deployment') || type.startsWith('Build'))) {
             const project = payload.project?.name || 'Application';
 
-            if (status === 'BUILDING') {
+            // Build Events
+            if (type === 'Build.building' || type === 'Deployment.building') {
               systemMessage = `🚧 **Deploying**: A new build for *${project}* has started.`;
-            } else if (status === 'SUCCESS') {
+              systemType = 'deploy-start';
+            }
+            // Success Events
+            else if (type === 'Deployment.success') {
               systemMessage = `✅ **Deployed**: *${project}* is now live! (Refresh for updates)`;
-            } else if (status === 'FAILED') {
+              systemType = 'deploy-success';
+            }
+            // Failure Events
+            else if (type === 'Build.failed' || type === 'Deployment.failed' || type === 'Deployment.crashed') {
               systemMessage = `❌ **Deploy Failed**: The build for *${project}* encountered an error.`;
+              systemType = 'deploy-fail';
             }
           }
           // --- GitHub Push (simplified) ---
@@ -170,13 +178,9 @@ app.prepare().then(() => {
             const shortHash = payload.head_commit?.id?.substring(0, 7) || '???';
 
             systemMessage = `💾 **Git Push**: ${pusher} pushed to main: "${commitMsg}" ([${shortHash}](${commitUrl}))`;
+            systemType = 'git-push';
           }
           // --- Generic Text Fallback ---
-          // --- Generic / Test Fallback ---
-          else if (type && type.startsWith('VolumeAlert')) {
-            // Ignore volume alerts to avoid spam
-          }
-          // --- Generic / Test Fallback ---
           else if (type && type.startsWith('VolumeAlert')) {
             // Ignore volume alerts to avoid spam
           }
@@ -196,21 +200,11 @@ app.prepare().then(() => {
               systemType: systemType,
               timestamp: new Date().toISOString()
             };
-            const msg = {
-              roomId: 'default-room',
-              id: `sys-${Date.now()}`,
-              sender: 'System',
-              text: systemMessage,
-              type: 'system',
-              timestamp: new Date().toISOString()
-            };
 
             // Log and Send
             storeMessage('default-room', msg);
             if (io) io.to('default-room').emit('chat-message', msg);
 
-            // Also send to IRC History Bot (if active)
-            // Note: HistoryBot listens to io.emit so it should pick this up automatically via the bridge's onMessage logic!
             console.log('[Webhook] 📢 Broadcasted:', systemMessage);
           }
 
@@ -742,4 +736,3 @@ app.prepare().then(() => {
     }
   });
 });
-
