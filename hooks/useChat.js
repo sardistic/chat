@@ -140,14 +140,10 @@ export function useChat(roomId, user) {
         const handleUpdate = (updatedMsg) => {
             console.log('🔄 Update received:', updatedMsg.id);
             setMessages(prev => {
-                const exists = prev.some(m => m.id === updatedMsg.id);
-                if (!exists) {
-                    // If we don't have it, add it (upsert)
-                    // This handles the "missed join" case
-                    seenIdsRef.current.add(updatedMsg.id);
-                    return [...prev, updatedMsg].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                }
-                return prev.map(m => m.id === updatedMsg.id ? updatedMsg : m);
+                // Remove old version if exists, then append at end (so updated bundles appear at bottom)
+                const filtered = prev.filter(m => m.id !== updatedMsg.id);
+                seenIdsRef.current.add(updatedMsg.id);
+                return [...filtered, updatedMsg];
             });
         };
 
