@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useChat } from '@/hooks/useChat';
 import MessageContent from './MessageContent';
+import SystemMessage from './SystemMessage';
 import GifPicker from './GifPicker';
 
 // Group messages from the same sender within 5 minutes
@@ -293,6 +294,17 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                     messageGroups.forEach((g, i) => lastGroupIndices[g.sender] = i);
 
                     return messageGroups.map((group, groupIndex) => {
+                        // Check if this is a System group
+                        if (group.sender === 'System') {
+                            return (
+                                <div key={`group-${groupIndex}`} style={{ marginBottom: '12px' }}>
+                                    {group.messages.map(msg => (
+                                        <SystemMessage key={msg.id || Date.now()} message={msg} />
+                                    ))}
+                                </div>
+                            );
+                        }
+
                         const isTypingUser = typingUsers.includes(group.sender);
                         const isMostRecentCallback = lastGroupIndices[group.sender] === groupIndex;
                         const shouldAnimate = isTypingUser && isMostRecentCallback;
