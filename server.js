@@ -143,6 +143,7 @@ async function loadHistoryFromDB() {
 // Save message to Database
 async function saveMessageToDB(message) {
   try {
+    console.log(`[DB] 💾 Saving message ${message.id} from ${message.sender} (source: ${message.source || 'web'})`);
     await prisma.chatMessage.upsert({
       where: { id: message.id },
       create: {
@@ -168,8 +169,9 @@ async function saveMessageToDB(message) {
         timestamp: new Date(message.timestamp)
       }
     });
+    console.log(`[DB] ✅ Saved message ${message.id}`);
   } catch (err) {
-    console.error('Failed to save message to DB:', err.message);
+    console.error('[DB] ❌ Failed to save message to DB:', err.message);
   }
 }
 
