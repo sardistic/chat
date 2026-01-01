@@ -178,7 +178,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
     return (
         <div className={`system-message-card ${style.animation}`} style={{
-            margin: '12px 0',
+            margin: '8px 0', // Compact
             padding: '0',
             background: '#0a0a0a',
             border: `1px solid ${style.borderColor}`,
@@ -191,7 +191,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             {/* Kicker / Header Bar */}
             <div style={{
                 background: style.bgColor,
-                padding: '4px 12px',
+                padding: '4px 8px',
                 borderBottom: `1px solid ${style.borderColor}`,
                 display: 'flex',
                 alignItems: 'center',
@@ -208,7 +208,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
             {/* Content Body */}
             <div style={{
-                padding: '12px',
+                padding: '8px',
                 color: '#e5e5e5',
                 fontSize: '13px',
                 lineHeight: '1.5'
@@ -225,8 +225,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 {/* Build Logs Terminal */}
                 {metadata && metadata.logs && metadata.logs.length > 0 && (
                     <div className="terminal-window" style={{
-                        marginTop: '12px',
-                        padding: '12px',
+                        marginTop: '8px',
+                        padding: '8px',
                         background: '#0d1117', // Github Dark Dimmed
                         border: '1px solid rgba(255,255,255,0.1)',
                         borderRadius: '6px',

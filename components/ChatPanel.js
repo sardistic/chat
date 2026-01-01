@@ -317,9 +317,9 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                 className="message-group"
                                 style={{
                                     display: 'flex',
-                                    gap: '10px',
-                                    marginBottom: '8px',
-                                    padding: '2px 0',
+                                    gap: '8px',
+                                    marginBottom: '4px', // Reduced group margin
+                                    padding: '0',
                                 }}
                             >
                                 {/* Avatar */}
@@ -387,8 +387,8 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                         <div
                                             key={msg.id}
                                             style={{
-                                                marginBottom: '4px',
-                                                lineHeight: '1.4',
+                                                marginBottom: '2px', // Tighter lines
+                                                lineHeight: '1.35',
                                             }}
                                         >
                                             <MessageContent
