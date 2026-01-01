@@ -385,13 +385,15 @@ app.prepare().then(async () => {
                       const msg = history[idx];
                       const newLogs = [...(msg.metadata?.logs || []), ...lines];
 
-                      // Detect build phase from logs for UI feedback
-                      const combinedLogs = lines.join('\n').toLowerCase();
+                      // Detect build phase from logs (Strip ANSI for check)
+                      const cleanLogs = stripAnsi(lines.join('\n').toLowerCase());
                       let phase = msg.metadata?.phase;
-                      if (combinedLogs.includes('npm install') || combinedLogs.includes('yarn install')) phase = 'INSTALLING DEPENDENCIES';
-                      else if (combinedLogs.includes('build') || combinedLogs.includes('compile')) phase = 'COMPILING ASSETS';
-                      else if (combinedLogs.includes('pruning')) phase = 'PRUNING';
-                      else if (combinedLogs.includes('upload')) phase = 'UPLOADING';
+
+                      if (cleanLogs.includes('npm install') || cleanLogs.includes('yarn install')) phase = 'INSTALLING DEPENDENCIES';
+                      else if (cleanLogs.includes('build') || cleanLogs.includes('completing build')) phase = 'BUILDING';
+                      else if (cleanLogs.includes('docker-image') || cleanLogs.includes('exporting')) phase = 'PACKAGING CONTAINER';
+                      else if (cleanLogs.includes('npm run start') || cleanLogs.includes('starting')) phase = 'STARTING APP';
+                      else if (cleanLogs.includes('upload')) phase = 'UPLOADING';
 
                       const updatedMsg = {
                         ...msg,
@@ -542,6 +544,10 @@ app.prepare().then(async () => {
               metadata: { ...metadata, logs: existingLogs },
               timestamp: new Date().toISOString()
             };
+
+            // Clean up phase on success/fail so header uses default kicker
+            if (systemType === 'deploy-success') msg.metadata.phase = null; // Revert to "DEPLOYMENT SUCCESSFUL"
+            if (systemType === 'deploy-fail') msg.metadata.phase = 'FAILED';
 
             // Track active deployment message for log appending
             if (systemType === 'deploy-start' && metadata?.deploymentId) {
