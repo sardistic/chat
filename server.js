@@ -590,9 +590,9 @@ app.prepare().then(async () => {
           const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
           if (idx !== -1) {
             messageHistory[roomId][idx] = updateMsg;
-            saveHistory();
           }
         }
+        saveMessageToDB(updateMsg);
         io.to(roomId).emit('chat-message-update', updateMsg);
       } else {
         joinMsgId = `sys-${Date.now()}`;
@@ -724,9 +724,9 @@ app.prepare().then(async () => {
           const idx = messageHistory[roomId].findIndex(m => m.id === leaveMsgId);
           if (idx !== -1) {
             messageHistory[roomId][idx] = updateMsg;
-            saveHistory();
           }
         }
+        saveMessageToDB(updateMsg);
         io.to(roomId).emit('chat-message-update', updateMsg);
       } else {
         leaveMsgId = `sys-${Date.now()}`;
@@ -829,9 +829,9 @@ app.prepare().then(async () => {
               const idx = messageHistory[roomId].findIndex(m => m.id === bundleId);
               if (idx !== -1) {
                 messageHistory[roomId][idx] = updateMsg;
-                saveHistory();
               }
             }
+            saveMessageToDB(updateMsg);
             io.to(roomId).emit('chat-message-update', updateMsg);
 
           } else {
@@ -1078,9 +1078,9 @@ app.prepare().then(async () => {
               const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
               if (idx !== -1) {
                 messageHistory[roomId][idx] = updateMsg;
-                saveHistory();
               }
             }
+            saveMessageToDB(updateMsg);
             io.to(roomId).emit('chat-message-update', updateMsg);
 
           } else {
