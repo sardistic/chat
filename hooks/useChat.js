@@ -111,8 +111,20 @@ export function useChat(roomId, user) {
 
         const handleHistory = (history) => {
             console.log('📜 History loaded:', history.length);
-            history.forEach(msg => seenIdsRef.current.add(msg.id));
-            setMessages(history);
+            // Deduplicate incoming history against itself and existing seen IDs
+            // (Though usually history replaces all, so we just need to ensure the history array itself is unique)
+            const uniqueHistory = [];
+            const idsInBatch = new Set();
+
+            history.forEach(msg => {
+                if (!idsInBatch.has(msg.id)) {
+                    idsInBatch.add(msg.id);
+                    uniqueHistory.push(msg);
+                    seenIdsRef.current.add(msg.id);
+                }
+            });
+
+            setMessages(uniqueHistory);
         };
 
         const handleUpdate = (updatedMsg) => {

@@ -107,11 +107,27 @@ const storeMessage = (roomId, message) => {
   if (!messageHistory[roomId]) {
     messageHistory[roomId] = [];
   }
-  messageHistory[roomId].push(message);
+
+  // Check for existing message with same ID
+  const existingIdx = messageHistory[roomId].findIndex(m => m.id === message.id);
+
+  if (existingIdx !== -1) {
+    // Update existing message (e.g. for deployment updates or bundling)
+    messageHistory[roomId][existingIdx] = message;
+  } else {
+    // Add new message
+    messageHistory[roomId].push(message);
+  }
 
   // Limit to last 50 messages (User requested lower limit previously/implicit from memory usage)
   if (messageHistory[roomId].length > 50) {
-    messageHistory[roomId].shift();
+    // We can just slice for simplicity and safety, though shift loop is fine ensuring we don't over-prune if bulk added?
+    // Wait, if we just push one, shift one is fine.
+    // But let's use slice to be safe if multiple added or logic changes.
+    // Actually existing shim is fine:
+    while (messageHistory[roomId].length > 50) {
+      messageHistory[roomId].shift();
+    }
   }
   saveHistory(); // Persist on every save
 };
