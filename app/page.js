@@ -13,6 +13,8 @@ import { useSocket } from "@/lib/socket";
 import { useYouTubeSync } from "@/hooks/useYouTubeSync";
 import { useChat } from "@/hooks/useChat";
 import SettingsModal from "@/components/SettingsModal";
+import AdminModal from "@/components/AdminModal";
+
 
 function MainApp({ user, onLeaveRoom }) {
   const roomId = "default-room";
@@ -35,6 +37,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false); // Admin Modal
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
@@ -602,6 +605,31 @@ function MainApp({ user, onLeaveRoom }) {
         onClose={() => setIsSettingsOpen(false)}
         user={user}
       />
+
+      {/* Admin Modal */}
+      <AdminModal
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+      />
+
+      {/* Admin Button (Bottom Left, above Settings) */}
+      {(user?.role === 'ADMIN' || user?.role === 'MODERATOR' || user?.role === 'OWNER') && (
+        <button
+          onClick={() => setIsAdminOpen(true)}
+          className="btn icon-btn"
+          style={{
+            position: 'fixed', bottom: '70px', left: '20px', zIndex: 100,
+            width: '40px', height: '40px', borderRadius: '50%',
+            background: 'rgba(99, 102, 241, 0.8)', border: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', cursor: 'pointer', backdropFilter: 'blur(4px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          }}
+          title="Mission Control"
+        >
+          <Icon icon="fa:shield" width="18" />
+        </button>
+      )}
 
       {/* Settings Toggle (Fixed Bottom Left) */}
       <button
