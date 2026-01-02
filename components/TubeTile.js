@@ -30,6 +30,7 @@ export default function TubeTile({
     const [forceSyncTrigger, setForceSyncTrigger] = useState(0);
 
     const ignorePauseRef = useRef(false);
+    const ignorePlayRef = useRef(false); // Suppress duplicate play events on video load
     const ytPlayerRef = useRef(null);
     const playerContainerRef = useRef(null);
     const isOwnerRef = useRef(isOwner);
@@ -82,6 +83,11 @@ export default function TubeTile({
             // Safety check: Ensure target has the method (it might be missing on error events)
             const currentTime = event.target?.getCurrentTime ? event.target.getCurrentTime() : 0;
             if (event.data === 1) { // Playing
+                // Skip duplicate play event on video load (onChangeVideo already sent isPlaying: true)
+                if (ignorePlayRef.current) {
+                    ignorePlayRef.current = false;
+                    return;
+                }
                 if (onSync) onSync({ type: 'play', playedSeconds: currentTime });
             } else if (event.data === 2) { // Paused
                 if (ignorePauseRef.current) return;
@@ -99,6 +105,7 @@ export default function TubeTile({
                 try {
                     const currentUrl = ytPlayerRef.current.getVideoUrl ? ytPlayerRef.current.getVideoUrl() : '';
                     if (!currentUrl || !currentUrl.includes(embedId)) {
+                        ignorePlayRef.current = true; // Skip the first play event
                         ytPlayerRef.current.loadVideoById(embedId);
                     }
                 } catch (err) {
@@ -118,6 +125,7 @@ export default function TubeTile({
                 setTimeout(() => {
                     if (!playerContainerRef.current) return;
                     console.log("[Tube-Init] Initializing YT Player for:", embedId);
+                    ignorePlayRef.current = true; // Skip the first play event
                     ytPlayerRef.current = new window.YT.Player('tube-player-target', {
                         height: '100%',
                         width: '100%',
