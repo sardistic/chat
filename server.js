@@ -1424,15 +1424,18 @@ app.prepare().then(async () => {
       const roomId = payload.roomId || socket.data.roomId || 'default-room';
       const newState = payload;
 
+      // Extract video ID early for consistent comparison
+      const incomingVideoId = newState.videoId ? extractVideoId(newState.videoId) : null;
+
       // EARLY DEDUP: If this is a new video request, check if we JUST processed this video
-      if (newState.videoId && newState.videoId !== null) {
+      if (incomingVideoId) {
         const lastProcessedVideo = global._lastProcessedTubeVideo || {};
         const lastVideoKey = lastProcessedVideo[roomId];
         const lastVideoTime = global._lastProcessedTubeVideoTime?.[roomId] || 0;
 
-        // If same video was processed within last 5 seconds, skip
-        if (lastVideoKey === newState.videoId && (Date.now() - lastVideoTime) < 5000) {
-          console.log(`[Tube] Skipping duplicate videoId: ${newState.videoId}`);
+        // If same video was processed within last 5 seconds, skip ENTIRELY
+        if (lastVideoKey === incomingVideoId && (Date.now() - lastVideoTime) < 5000) {
+          console.log(`[Tube] Skipping duplicate videoId: ${incomingVideoId}`);
           // Still broadcast state but skip the system message
           io.to(roomId).emit('tube-state', {
             ...tubeState,
@@ -1442,10 +1445,10 @@ app.prepare().then(async () => {
           return;
         }
 
-        // Record this video as being processed
+        // Record this video as being processed (use extracted ID)
         if (!global._lastProcessedTubeVideo) global._lastProcessedTubeVideo = {};
         if (!global._lastProcessedTubeVideoTime) global._lastProcessedTubeVideoTime = {};
-        global._lastProcessedTubeVideo[roomId] = newState.videoId;
+        global._lastProcessedTubeVideo[roomId] = incomingVideoId;
         global._lastProcessedTubeVideoTime[roomId] = Date.now();
       }
 
@@ -1462,10 +1465,10 @@ app.prepare().then(async () => {
       const tubeMsgKey = `tube-${roomId}`;
       const lastTubeMsgId = global._lastTubeMsg?.[tubeMsgKey];
 
-      // Detect Changes for System Messages
-      if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
+      // Detect Changes for System Messages (compare extracted IDs)
+      if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
         // New Video - fetch info from YouTube asynchronously
-        const videoId = extractVideoId(newState.videoId);
+        const videoId = incomingVideoId;
 
         // Fetch video info (async, but we don't await to avoid blocking)
         getYouTubeVideoInfo(newState.videoId).then(videoInfo => {
