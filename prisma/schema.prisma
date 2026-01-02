@@ -90,6 +90,13 @@ model User {
   accounts      Account[]
   sessions      Session[]
   stats         UserStats?
+  
+  // Core Systems
+  settings      UserSettings?
+  blocks        Block[]       @relation("Blocks")
+  blockedBy     Block[]       @relation("BlockedBy")
+  mutes         Mute[]        @relation("Mutes")
+  mutedBy       Mute[]        @relation("MutedBy")
 
   @@index([discordId])
   @@index([guestToken])
@@ -139,4 +146,62 @@ model ChatMessage {
   
   @@index([roomId, timestamp])
   @@index([systemType])
+  @@index([systemType])
+}
+
+// ============================================
+// Core Systems: Moderation & Settings
+// ============================================
+
+model UserSettings {
+  userId       String  @id // One-to-one with User, so we can use userId as PK
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Preferences
+  volume       Int     @default(100)
+  autoDeafen   Boolean @default(false)
+  hideMuted    Boolean @default(true)
+  theme        String  @default("dark")
+  
+  // Privacy
+  dmEnabled    Boolean @default(true)
+  
+  updatedAt    DateTime @updatedAt
+}
+
+model Block {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker   User     @relation("Blocks", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("BlockedBy", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockerId])
+}
+
+model Mute {
+  muterId   String
+  mutedId   String
+  createdAt DateTime @default(now())
+
+  muter     User     @relation("Mutes", fields: [muterId], references: [id], onDelete: Cascade)
+  muted     User     @relation("MutedBy", fields: [mutedId], references: [id], onDelete: Cascade)
+
+  @@id([muterId, mutedId]) // Composite ID for mutes too
+  @@index([muterId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // BAN, KICK, PROMOTE, DEMOTE, SYSTEM_UPDATE
+  targetId    String?
+  actorId     String?  // Admin/Mod who performed the action
+  details     Json?    // Reason, metadata
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([action])
+  @@index([targetId])
 }
