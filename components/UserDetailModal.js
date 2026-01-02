@@ -1,11 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Icon } from '@iconify/react';
+import { motion, useDragControls } from "framer-motion";
 
 export default function UserDetailModal({ userId, onClose }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+    const dragControls = useDragControls();
 
     useEffect(() => {
         if (!userId) return;
@@ -62,9 +64,20 @@ export default function UserDetailModal({ userId, onClose }) {
 
     return (
         <div style={overlayStyle} onClick={onClose}>
-            <div style={modalStyle} onClick={e => e.stopPropagation()}>
+            <motion.div
+                drag
+                dragControls={dragControls}
+                dragListener={false}
+                dragMomentum={false}
+                dragElastic={0}
+                style={modalStyle}
+                onClick={e => e.stopPropagation()}
+            >
                 {/* Header */}
-                <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div
+                    onPointerDown={(e) => dragControls.start(e)}
+                    style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'grab' }}
+                >
                     <img
                         src={user.avatarUrl || user.image || `/api/avatar/${user.displayName || user.name || user.id}`}
                         alt=""
@@ -160,7 +173,7 @@ export default function UserDetailModal({ userId, onClose }) {
                     )}
                 </div>
 
-            </div>
+            </motion.div>
         </div>
     );
 }

@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Icon } from '@iconify/react';
 import UserDetailModal from "./UserDetailModal";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 
 export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const { data: session } = useSession();
@@ -16,6 +16,7 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
 
     const [selectedUserId, setSelectedUserId] = useState(null); // For Detail Modal
     const [actionLoading, setActionLoading] = useState(null); // userId being acted upon
+    const dragControls = useDragControls();
 
     // Fetch on open or search/filter change
     useEffect(() => {
@@ -105,6 +106,11 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                     onClick={onClose}
                 >
                     <motion.div
+                        drag
+                        dragControls={dragControls}
+                        dragListener={false}
+                        dragMomentum={false}
+                        dragElastic={0}
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -124,14 +130,18 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Header */}
-                        <div style={{
-                            padding: '24px 32px',
-                            borderBottom: '1px solid rgba(255,255,255,0.08)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            background: 'rgba(21, 22, 25, 0.4)'
-                        }}>
+                        <div
+                            onPointerDown={(e) => dragControls.start(e)}
+                            style={{
+                                padding: '24px 32px',
+                                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                background: 'rgba(21, 22, 25, 0.4)',
+                                cursor: 'grab'
+                            }}
+                        >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                                 <motion.div
                                     whileHover={{ rotate: 15 }}

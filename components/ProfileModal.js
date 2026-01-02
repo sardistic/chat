@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Icon } from '@iconify/react';
 import { useSocket } from "@/lib/socket";
+import { motion, useDragControls } from "framer-motion";
 
 // Discord badge flags
 const DISCORD_FLAGS = {
@@ -71,6 +72,7 @@ export default function ProfileModal({
 }) {
     const modalRef = useRef(null);
     const { socket } = useSocket();
+    const dragControls = useDragControls();
 
     // Close on Escape key
     useEffect(() => {
@@ -200,12 +202,28 @@ export default function ProfileModal({
 
     return (
         <div className="profile-modal-overlay" style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={onClose}>
-            <div ref={modalRef} className="profile-modal" style={modalStyle} onClick={e => e.stopPropagation()}>
+            <motion.div
+                ref={modalRef}
+                className="profile-modal"
+                drag
+                dragControls={dragControls}
+                dragListener={false}
+                dragMomentum={false}
+                dragElastic={0}
+                style={modalStyle}
+                onClick={e => e.stopPropagation()}
+            >
                 {/* Thin colored top strip */}
-                <div style={{ height: '4px', background: accentColor }} />
+                <div
+                    onPointerDown={(e) => dragControls.start(e)}
+                    style={{ height: '12px', background: accentColor, cursor: 'grab' }}
+                />
 
                 {/* Header: Compact, side-by-side */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', position: 'relative' }}>
+                <div
+                    onPointerDown={(e) => dragControls.start(e)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', position: 'relative', cursor: 'grab' }}
+                >
                     <div style={{ position: 'relative' }}>
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: `url(${avatarUrl}) center/cover`, border: `2px solid ${accentColor}` }} />
                         <div className={`profile-status-dot ${connectionStatus?.isOnline ? 'online' : 'offline'}`}
@@ -405,7 +423,7 @@ export default function ProfileModal({
                         </div>
                     )}
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }
