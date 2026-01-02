@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useChat } from '@/hooks/useChat';
+import { useEmotes } from '@/hooks/useEmotes';
 import MessageContent from './MessageContent';
 import SystemMessage from './SystemMessage';
 import GifPicker from './GifPicker';
@@ -39,6 +40,7 @@ function groupMessages(messages) {
 
 export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onUserClick = () => { }, onTypingUsersChange = () => { }, sendToIRC = () => { } }) {
     const { messages, sendMessage, isLoading, typingUsers, handleTyping, isTyping } = useChat(roomId, user);
+    const { emotes } = useEmotes(); // Load 7TV emotes
     const [inputValue, setInputValue] = useState('');
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -394,6 +396,7 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
                                             <MessageContent
                                                 text={msg.text}
                                                 onMentionClick={(username, e) => onUserClick({ name: username }, e)}
+                                                emotes={emotes}
                                             />
                                         </div>
                                     ))}

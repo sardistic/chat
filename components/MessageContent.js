@@ -226,7 +226,7 @@ function EmbedRenderer({ url }) {
 }
 
 // Parse message text and render with embeds
-export default function MessageContent({ text, onMentionClick }) {
+export default function MessageContent({ text, onMentionClick, emotes }) {
     // Find all URLs in the message
     const urls = useMemo(() => {
         const matches = text.match(URL_REGEX) || [];
@@ -234,7 +234,7 @@ export default function MessageContent({ text, onMentionClick }) {
         return [...new Set(matches)];
     }, [text]);
 
-    // Parse text with mentions and URLs
+    // Parse text with mentions, URLs, AND emotes
     const formattedContent = useMemo(() => {
         let processedText = text;
 
@@ -246,7 +246,7 @@ export default function MessageContent({ text, onMentionClick }) {
         processedText = processedText.trim();
         if (!processedText) return null;
 
-        // Split by @mentions - match @word
+        // 1. Split by @mentions - match @word
         const mentionRegex = /@(\w+)/g;
         const parts = [];
         let lastIndex = 0;
@@ -266,12 +266,34 @@ export default function MessageContent({ text, onMentionClick }) {
             parts.push({ type: 'text', content: processedText.slice(lastIndex) });
         }
 
+        // 2. Process Emotes within 'text' parts
+        if (emotes && emotes.size > 0) {
+            const emoteParts = [];
+            parts.forEach(part => {
+                if (part.type === 'text') {
+                    // Split by spaces to find emotes
+                    const words = part.content.split(/(\s+)/);
+                    words.forEach(word => {
+                        const trimmed = word.trim();
+                        if (emotes.has(trimmed)) {
+                            emoteParts.push({ type: 'emote', name: trimmed, url: emotes.get(trimmed) });
+                        } else {
+                            emoteParts.push({ type: 'text', content: word });
+                        }
+                    });
+                } else {
+                    emoteParts.push(part);
+                }
+            });
+            return emoteParts;
+        }
+
         return parts.length > 0 ? parts : [{ type: 'text', content: processedText }];
-    }, [text, urls]);
+    }, [text, urls, emotes]);
 
     return (
-        <div className="message-content" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
-            {/* Text content with mentions */}
+        <div className="message-content" style={{ overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: '1.5' }}>
+            {/* Text content with mentions and emotes */}
             {formattedContent && formattedContent.map((part, i) => {
                 if (part.type === 'mention') {
                     return (
@@ -291,6 +313,23 @@ export default function MessageContent({ text, onMentionClick }) {
                         </span>
                     );
                 }
+                if (part.type === 'emote') {
+                    return (
+                        <img
+                            key={i}
+                            src={part.url}
+                            alt={part.name}
+                            title={part.name}
+                            className="chat-emote"
+                            style={{
+                                verticalAlign: 'middle',
+                                height: '32px',
+                                margin: '0 2px',
+                                display: 'inline-block'
+                            }}
+                        />
+                    );
+                }
                 return <span key={i}>{part.content}</span>;
             })}
 
@@ -301,3 +340,4 @@ export default function MessageContent({ text, onMentionClick }) {
         </div>
     );
 }
+
