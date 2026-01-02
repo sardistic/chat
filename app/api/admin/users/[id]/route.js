@@ -1,50 +1,44 @@
-import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
-// Middleware to check admin access
-async function requireAdmin(req) {
+export async function GET(request, { params }) {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user) {
-        return { error: "Unauthorized", status: 401 };
-    }
-
-    if (session.user.role !== "ADMIN") {
-        return { error: "Forbidden - Admin access required", status: 403 };
-    }
-
-    return { user: session.user };
-}
-
-// GET: Get single user by ID
-export async function GET(req, { params }) {
-    const auth = await requireAdmin(req);
-    if (auth.error) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
+    // 1. Authorization
+    if (!session || !session.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
 
+    // Allow Mods, Admins, Owners
+    const userRole = session.user.role?.toUpperCase() || 'USER';
+    if (!['ADMIN', 'MODERATOR', 'OWNER'].includes(userRole)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     try {
+        // 2. Fetch User Details & Audit Logs
         const user = await prisma.user.findUnique({
             where: { id },
             include: {
-                accounts: {
-                    select: {
-                        provider: true,
-                        providerAccountId: true,
-                    },
+                // Include stats/settings if needed
+                stats: true,
+                // Include Audit Logs where this user was the TARGET (e.g. they were banned)
+                auditLogsTarget: {
+                    orderBy: { createdAt: 'desc' },
+                    include: {
+                        actor: { select: { name: true, image: true, role: true } }
+                    }
                 },
-                sessions: {
-                    select: {
-                        expires: true,
-                    },
-                    orderBy: { expires: "desc" },
-                    take: 5,
-                },
-            },
+                // Include Audit Logs where this user was the ACTOR (if they are staff)
+                auditLogsActor: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 50 // Limit actor logs
+                }
+            }
         });
 
         if (!user) {
@@ -52,71 +46,9 @@ export async function GET(req, { params }) {
         }
 
         return NextResponse.json({ user });
+
     } catch (error) {
-        console.error("Admin user get error:", error);
-        return NextResponse.json(
-            { error: "Failed to fetch user" },
-            { status: 500 }
-        );
-    }
-}
-
-// PATCH: Update user
-export async function PATCH(req, { params }) {
-    const auth = await requireAdmin(req);
-    if (auth.error) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
-    }
-
-    const { id } = await params;
-
-    try {
-        const body = await req.json();
-        const { displayName, role, isBanned, banReason, banExpires } = body;
-
-        const updateData = {};
-
-        if (displayName !== undefined) updateData.displayName = displayName;
-        if (role !== undefined) updateData.role = role;
-        if (isBanned !== undefined) updateData.isBanned = isBanned;
-        if (banReason !== undefined) updateData.banReason = banReason;
-        if (banExpires !== undefined) updateData.banExpires = banExpires ? new Date(banExpires) : null;
-
-        const user = await prisma.user.update({
-            where: { id },
-            data: updateData,
-        });
-
-        return NextResponse.json({ success: true, user });
-    } catch (error) {
-        console.error("Admin user update error:", error);
-        return NextResponse.json(
-            { error: "Failed to update user" },
-            { status: 500 }
-        );
-    }
-}
-
-// DELETE: Delete user
-export async function DELETE(req, { params }) {
-    const auth = await requireAdmin(req);
-    if (auth.error) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
-    }
-
-    const { id } = await params;
-
-    try {
-        await prisma.user.delete({
-            where: { id },
-        });
-
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Admin user delete error:", error);
-        return NextResponse.json(
-            { error: "Failed to delete user" },
-            { status: 500 }
-        );
+        console.error("User Detail API Error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

@@ -107,6 +107,18 @@ function setBundle(roomId, type, id, users) {
 // Regex to strip ANSI escape codes from output
 const stripAnsi = (str) => str ? str.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '') : '';
 
+// AUTOMOD: Basic Word Filter
+const BANNED_WORDS = ['badword', 'spam', 'scam']; // Extend this list or load from DB
+const filterProfanity = (text) => {
+  if (!text) return text;
+  let filtered = text;
+  BANNED_WORDS.forEach(word => {
+    const reg = new RegExp(`\\b${word}\\b`, 'gi');
+    filtered = filtered.replace(reg, '*'.repeat(word.length));
+  });
+  return filtered;
+};
+
 // Load History from Database on Start
 async function loadHistoryFromDB() {
   try {
@@ -629,6 +641,56 @@ app.prepare().then(async () => {
       return;
     }
 
+    // --- SOCKET ADMIN API (Internal) ---
+    // Allows Next.js API to trigger socket actions (Kick/Ban enforcement)
+    // This must be protected or only callable from localhost
+    if (parsedUrl.pathname === '/api/admin/socket-kick' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk.toString(); });
+      req.on('end', () => {
+        try {
+          // Simple local auth check or shared secret
+          if (req.headers['x-admin-secret'] !== process.env.NEXTAUTH_SECRET) {
+            // Allow development bypass if needed, but strictly enforce in prod
+            if (process.env.NODE_ENV === 'production') {
+              res.writeHead(401);
+              res.end(JSON.stringify({ error: 'Unauthorized' }));
+              return;
+            }
+          }
+
+          const { userId, reason, ban } = JSON.parse(body);
+          if (!userId) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Missing userId' }));
+            return;
+          }
+
+          console.log(`[SocketAdmin] Force disconnecting user ${userId} (Reason: ${reason})`);
+
+          let kickCount = 0;
+          io.sockets.sockets.forEach((socket) => {
+            if (socket.data.user && socket.data.user.id === userId) {
+              // Notify client
+              socket.emit('force-disconnect', { reason, ban });
+              // Force disconnect
+              socket.disconnect(true);
+              kickCount++;
+            }
+          });
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, kicked: kickCount }));
+
+        } catch (e) {
+          console.error('[SocketAdmin] Error:', e);
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    }
+
     // Default Next.js Handler
     handle(req, res, parsedUrl);
   });
@@ -1134,6 +1196,11 @@ app.prepare().then(async () => {
     // Chat Messages
     socket.on('chat-message', (message) => {
       if (!message.timestamp) message.timestamp = new Date().toISOString();
+
+      // Automod Filter
+      if (message.text) {
+        message.text = filterProfanity(message.text);
+      }
 
       storeMessage(message.roomId, message);
       io.to(message.roomId).emit('chat-message', message);

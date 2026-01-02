@@ -196,11 +196,24 @@ export function useChat(roomId, user) {
             });
         };
 
+        const handleForceDisconnect = async ({ reason, ban }) => {
+            console.warn(`⚠️ Force Disconnected: ${reason}`);
+            alert(`You have been disconnected: ${reason}`);
+
+            if (ban) {
+                const { signOut } = await import('next-auth/react');
+                signOut({ callbackUrl: '/auth/error?error=Banned' });
+            } else {
+                window.location.href = '/';
+            }
+        };
+
         socket.on('chat-message', handleMessage);
         socket.on('chat-history', handleHistory);
         socket.on('chat-message-update', handleUpdate);
         socket.on('user-typing', handleUserTyping);
         socket.on('user-stop-typing', handleUserStopTyping);
+        socket.on('force-disconnect', handleForceDisconnect);
 
         // Request history manually to ensure we get it even if listeners attached late
         if (roomId) {
@@ -213,7 +226,9 @@ export function useChat(roomId, user) {
             socket.off('chat-history', handleHistory);
             socket.off('chat-message-update', handleUpdate);
             socket.off('user-typing', handleUserTyping);
+            socket.off('user-typing', handleUserTyping);
             socket.off('user-stop-typing', handleUserStopTyping);
+            socket.off('force-disconnect', handleForceDisconnect);
 
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);

@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icon } from '@iconify/react';
+import UserDetailModal from "./UserDetailModal";
 
 export default function AdminDashboard() {
     const { data: session, status } = useSession();
@@ -17,6 +18,7 @@ export default function AdminDashboard() {
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
 
+    const [selectedUserId, setSelectedUserId] = useState(null); // For Detail Modal
     const [actionLoading, setActionLoading] = useState(null); // userId being acted upon
 
     useEffect(() => {
@@ -190,6 +192,15 @@ export default function AdminDashboard() {
                                     <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                         <button
                                             className="icon-btn"
+                                            title="View Details"
+                                            onClick={() => setSelectedUserId(user.id)}
+                                            style={{ marginRight: '8px' }}
+                                        >
+                                            <Icon icon="fa:eye" width="14" color="#888" />
+                                        </button>
+
+                                        <button
+                                            className="icon-btn"
                                             title="Promote/Demote"
                                             onClick={() => {
                                                 const newRole = user.role === 'MODERATOR' ? 'USER' : 'MODERATOR';
@@ -245,6 +256,10 @@ export default function AdminDashboard() {
                     </div>
 
                 </div>
+
+                {selectedUserId && (
+                    <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+                )}
 
             </div>
         </div>

@@ -68,16 +68,30 @@ export async function POST(request) {
                     }
                 });
 
-                // Note: Socket disconnection happens via client-side signal or separate server API check
-                // For now, this just persists the ban.
+                // Trigger socket disconnect (Force logout)
+                try {
+                    await fetch(`http://localhost:${process.env.PORT || 3000}/api/admin/socket-kick`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-secret': process.env.NEXTAUTH_SECRET },
+                        body: JSON.stringify({ userId, reason: 'Account Banned', ban: true })
+                    });
+                } catch (e) {
+                    console.error("Failed to trigger socket ban:", e.message);
+                }
                 break;
 
             case 'KICK':
-                // Kick is ephemeral, usually just a socket disconnect signal. 
-                // We'll log it. Client needs to handle the signal if we emit one, 
-                // or we can use a server-side trigger if we had a direct socket reference.
-                // For this implementation, we'll return success and let the frontend 
-                // emit a "force_disconnect" socket event if authorized.
+                // Trigger socket disconnect
+                try {
+                    await fetch(`http://localhost:${process.env.PORT || 3000}/api/admin/socket-kick`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-secret': process.env.NEXTAUTH_SECRET },
+                        body: JSON.stringify({ userId, reason: 'Kicked by Moderator', ban: false })
+                    });
+                } catch (e) {
+                    console.error("Failed to trigger socket kick:", e.message);
+                }
+
                 await prisma.auditLog.create({
                     data: {
                         action: 'USER_KICKED',

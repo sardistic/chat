@@ -401,5 +401,6 @@ export default function ProfileModal({
                     )}
                 </div>
             </div>
-            );
+        </div>
+    );
 }
