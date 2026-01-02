@@ -1520,7 +1520,6 @@ app.prepare().then(async () => {
               kicker: 'UP NEXT',
               videoId: incomingVideoId,
               title: queueItem.title,
-              thumbnail: queueItem.thumbnail,
               startedBy: userName
             },
             timestamp: new Date().toISOString()
