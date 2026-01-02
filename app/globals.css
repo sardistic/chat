@@ -1519,3 +1519,41 @@ body,
   animation: dance 1s infinite ease-in-out;
   transform-origin: bottom center;
 }
+
+/* --- Global Build Animations --- */
+@keyframes throb {
+
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+    filter: brightness(1.3);
+  }
+}
+
+@keyframes active-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 15px rgba(46, 204, 113, 0.6);
+    background: rgba(46, 204, 113, 0.8);
+  }
+}
+
+/* App Container Build Mode */
+.app.building-mode .starmap-bg {
+  animation: throb 4s ease-in-out infinite;
+}
+
+.drag-handle.active-pulse {
+  animation: active-pulse 2s ease-in-out infinite;
+}

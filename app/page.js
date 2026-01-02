@@ -11,6 +11,7 @@ import { useWebRTC } from "@/hooks/useWebRTC";
 import { useIRC } from "@/hooks/useIRC";
 import { useSocket } from "@/lib/socket";
 import { useYouTubeSync } from "@/hooks/useYouTubeSync";
+import { useChat } from "@/hooks/useChat";
 
 function MainApp({ user, onLeaveRoom }) {
   const roomId = "default-room";
@@ -29,6 +30,7 @@ function MainApp({ user, onLeaveRoom }) {
     error
   } = useWebRTC(roomId, user, false);
   const { ircUsers, sendMessage: sendToIRC } = useIRC(user);
+  const { isBuilding } = useChat(roomId, user);
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
@@ -214,7 +216,7 @@ function MainApp({ user, onLeaveRoom }) {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="app" style={{ '--dynamic-sidebar-w': `${sidebarWidth}px` }}>
+    <div className={`app ${isBuilding ? 'building-mode' : ''}`} style={{ '--dynamic-sidebar-w': `${sidebarWidth}px` }}>
 
       {/* Background Layer (Explicit) */}
       <div className="starmap-bg" />
@@ -402,7 +404,7 @@ function MainApp({ user, onLeaveRoom }) {
         <aside className="floating-sidebar">
           {/* Resize Handle */}
           <div
-            className="drag-handle"
+            className={`drag-handle ${isBuilding ? 'active-pulse' : ''}`}
             onMouseDown={handleMouseDown}
             style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
           />

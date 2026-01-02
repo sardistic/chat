@@ -387,8 +387,8 @@ function CinematicScanline({ logs, timestamp, type }) {
 
         // Scan speed: faster if we are far behind, slower if we are caught up
         const distance = logs.length - displayIndex;
-        // SLOW DOWN: 250ms base speed (was 150), speed up to 50ms if >10 lines behind
-        const delay = distance > 10 ? 50 : 250;
+        // SLOW DOWN: 400ms base speed (was 250), speed up to 50ms if >10 lines behind
+        const delay = distance > 10 ? 50 : 400;
 
         const timer = setTimeout(() => {
             setDisplayIndex(prev => prev + 1);
@@ -425,9 +425,17 @@ function CinematicScanline({ logs, timestamp, type }) {
                 pointerEvents: 'none'
             }} />
 
+            <style jsx>{`
+                @keyframes scanline-entry {
+                    0% { opacity: 0; transform: translateY(-4px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
+
             <div className="flex-1" style={{ position: 'relative', zIndex: 1 }}>
                 <div style={{
                     display: 'flex',
+                    animation: 'scanline-entry 0.4s ease-out forwards',
                     gap: '8px',
                     alignItems: 'center',
                     opacity: isBoring ? 0.7 : 1,

@@ -8,6 +8,7 @@ export function useChat(roomId, user) {
     const [messages, setMessages] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
     const [typingUsers, setTypingUsers] = useState(new Set());
+    const [isBuilding, setIsBuilding] = useState(false);
     const typingTimeoutRef = useRef(null);
 
     // Track seen message IDs to prevent duplicates
@@ -82,6 +83,10 @@ export function useChat(roomId, user) {
                 return;
             }
 
+            // Global Build State Tracking
+            if (msg.systemType === 'deploy-start') setIsBuilding(true);
+            if (msg.systemType === 'deploy-success' || msg.systemType === 'deploy-fail') setIsBuilding(false);
+
             // 2. Client-Side Duplicate Suppression for IRC Echoes
             if (user && msg.sender === user.name && msg.source === 'irc') {
                 console.log(`🛡️ Suppressed self-echo from IRC: ${msg.id}`);
@@ -150,6 +155,17 @@ export function useChat(roomId, user) {
 
             setMessages(uniqueHistory);
             messagesRef.current = uniqueHistory;
+
+            // Check history for active build state
+            // Find last deployment message
+            const lastDeployMsg = [...uniqueHistory].reverse().find(m =>
+                ['deploy-start', 'deploy-success', 'deploy-fail'].includes(m.systemType)
+            );
+            if (lastDeployMsg && lastDeployMsg.systemType === 'deploy-start') {
+                setIsBuilding(true);
+            } else {
+                setIsBuilding(false);
+            }
         };
 
         const handleUpdate = (updatedMsg) => {
@@ -195,6 +211,7 @@ export function useChat(roomId, user) {
         sendMessage,
         handleTyping,
         typingUsers: typingUsersList,
-        isTyping
+        isTyping,
+        isBuilding
     };
 }
