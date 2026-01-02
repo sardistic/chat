@@ -508,6 +508,19 @@ export default function TubeTile({
                 </button>
                 <button
                     onClick={() => {
+                        // Previous
+                        if (socket) socket.emit('tube-update', { roomId: 'default', action: 'prev' });
+                    }}
+                    style={{
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title="Previous"
+                >
+                    <Icon icon="fa:step-backward" />
+                </button>
+                <button
+                    onClick={() => {
                         const isPlaying = tubeState?.isPlaying;
                         if (onSync) onSync({ type: isPlaying ? 'pause' : 'play', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
                     }}
@@ -520,7 +533,20 @@ export default function TubeTile({
                     <Icon icon={tubeState?.isPlaying ? "fa:pause" : "fa:play"} />
                 </button>
                 <button
-                    onClick={() => onChangeVideo('')} // Clear video
+                    onClick={() => {
+                        // Next (Explicit Action)
+                        if (socket) socket.emit('tube-update', { roomId: 'default', action: 'next' });
+                    }} // Clear video -> Next
+                    style={{
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title="Next / Skip"
+                >
+                    <Icon icon="fa:step-forward" />
+                </button>
+                <button
+                    onClick={() => onChangeVideo('')} // Stop
                     style={{
                         background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
                         color: 'white', padding: '4px', cursor: 'pointer'
