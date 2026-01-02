@@ -398,7 +398,6 @@ function MainApp({ user, onLeaveRoom }) {
             tubeState={tubeState}
             receivedAt={receivedAt}
             onUpdateTubeState={updateTubeState}
-            onUpdateTubeState={updateTubeState}
             isTubeOwner={isTubeOwner}
             blockedIds={blockedIds}
           />

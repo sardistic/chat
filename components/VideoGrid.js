@@ -443,9 +443,6 @@ export default function VideoGrid({
     tubeState = null,
     receivedAt = 0,
     onUpdateTubeState = () => { },
-    tubeState = null,
-    receivedAt = 0,
-    onUpdateTubeState = () => { },
     isTubeOwner = false,
     blockedIds = new Set() // Passed from useChat
 }) {
@@ -635,7 +632,6 @@ export default function VideoGrid({
 
                     const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
                     const isRemoteMuted = peerData.user?.isAudioEnabled === false;
-                    const userId = peerData.user?.id || peerId;
 
                     // Get settings for this peer or default
                     const mySettings = peerSettings[userId] || { volume: 1, isLocallyMuted: false, isVideoHidden: false };
