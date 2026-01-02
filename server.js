@@ -1465,17 +1465,20 @@ app.prepare().then(async () => {
 
       // Track the last tube message ID for updates
       const tubeMsgKey = `tube-${roomId}`;
-      const lastTubeMsgId = global._lastTubeMsg?.[tubeMsgKey];
+      let lastTubeMsgId = global._lastTubeMsg?.[tubeMsgKey];
 
-      // Detect Changes for System Messages (compare extracted IDs)
+      // Build message payload - ALWAYS UPDATE existing message if it exists
+      let msgPayload = null;
+      let isUpdate = !!lastTubeMsgId;
+
+      // Detect Changes for System Messages
       if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
-        // New Video - emit message synchronously to avoid timing issues
+        // NEW VIDEO - update or create the tube message
         const videoId = incomingVideoId;
         const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 
-        // Use video ID as title (simpler, no async issues)
-        const msgPayload = {
-          id: `sys-tube-${Date.now()}`,
+        msgPayload = {
+          id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
           roomId,
           text: `**Now Playing**`,
           sender: 'System',
@@ -1491,148 +1494,95 @@ app.prepare().then(async () => {
           timestamp: new Date().toISOString()
         };
 
-        console.log(`[Tube] EMITTING Now Playing for ${videoId}`);
-        storeMessage(roomId, msgPayload);
-        io.to(roomId).emit('chat-message', msgPayload);
-
-        // Track this as the last tube message
-        if (!global._lastTubeMsg) global._lastTubeMsg = {};
-        global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
-
         // Update state
         tubeState.videoId = videoId;
         tubeState.title = `Video: ${videoId}`;
         tubeState.thumbnail = thumbnail;
         tubeState.pausedAt = 0;
+        tubeState.isPlaying = !!newState.isPlaying;
         if (newState.isPlaying) {
-          tubeState.isPlaying = true;
           tubeState.playStartedAt = Date.now();
         }
-        tubeState.lastUpdate = Date.now();
-        io.to(roomId).emit('tube-state', {
-          ...tubeState,
-          serverTime: Date.now(),
-          currentPosition: getTubePosition()
-        });
-        return; // Exit early
 
       } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
-        // Video Ended / Stopped
-        systemMsg = {
+        // STOPPED - update the existing message
+        msgPayload = {
+          id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+          roomId,
           text: `**Playback Stopped**`,
-          kicker: 'OFF AIR',
-          type: 'tube-stopped',
-          metadata: {}
+          sender: 'System',
+          type: 'system',
+          systemType: 'tube-stopped',
+          metadata: { kicker: 'OFF AIR' },
+          timestamp: new Date().toISOString()
         };
-        shouldUpdateExisting = !!lastTubeMsgId;
-      } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
-        // Play/Pause Toggle
-        if (newState.isPlaying) {
-          systemMsg = {
-            text: `**${userName}** resumed playback`,
-            kicker: 'PLAYING',
-            type: 'tube-resumed',
-            metadata: {}
-          };
-        } else {
-          systemMsg = {
-            text: `**${userName}** paused`,
-            kicker: 'PAUSED',
-            type: 'tube-paused',
-            metadata: {}
-          };
-        }
-        shouldUpdateExisting = !!lastTubeMsgId;
-      }
 
-      // Update tubeState with server-authoritative time tracking
-      if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
-        // New video: reset position
-        tubeState.videoId = newState.videoId;
-        tubeState.title = newState.title || null;
-        tubeState.thumbnail = newState.thumbnail || null;
-        tubeState.pausedAt = 0;
-        if (newState.isPlaying) {
-          tubeState.isPlaying = true;
-          tubeState.playStartedAt = Date.now();
-        } else {
-          tubeState.isPlaying = false;
-          tubeState.playStartedAt = 0;
-        }
+        // Clear state
+        tubeState.videoId = null;
+        tubeState.isPlaying = false;
+
       } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
+        // PLAY/PAUSE toggle - update the existing message
         if (newState.isPlaying) {
-          // Resume: store current position and start timer
+          msgPayload = {
+            id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**${userName}** resumed playback`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-resumed',
+            metadata: { kicker: 'PLAYING' },
+            timestamp: new Date().toISOString()
+          };
+          tubeState.isPlaying = true;
           if (newState.timestamp !== undefined) {
             tubeState.pausedAt = newState.timestamp;
           }
           tubeState.playStartedAt = Date.now();
-          tubeState.isPlaying = true;
         } else {
-          // Pause: calculate current position and store it
+          msgPayload = {
+            id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**${userName}** paused`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-paused',
+            metadata: { kicker: 'PAUSED' },
+            timestamp: new Date().toISOString()
+          };
+          tubeState.isPlaying = false;
           tubeState.pausedAt = getTubePosition();
           tubeState.playStartedAt = 0;
-          tubeState.isPlaying = false;
-        }
-      } else if (newState.timestamp !== undefined) {
-        // Seek: update position
-        tubeState.pausedAt = newState.timestamp;
-        if (tubeState.isPlaying) {
-          tubeState.playStartedAt = Date.now();
         }
       }
 
-      // Emit System Message if significant change occurred
-      if (systemMsg) {
-        let msgId;
+      // Emit message if we have one
+      if (msgPayload) {
+        console.log(`[Tube] ${isUpdate ? 'UPDATING' : 'CREATING'} message: ${msgPayload.systemType}`);
 
-        if (shouldUpdateExisting && lastTubeMsgId) {
-          // Update existing message
-          msgId = lastTubeMsgId;
-          const msgPayload = {
-            id: msgId,
-            roomId,
-            text: systemMsg.text,
-            sender: 'System',
-            type: 'system',
-            systemType: systemMsg.type,
-            metadata: { kicker: systemMsg.kicker, ...systemMsg.metadata },
-            timestamp: new Date().toISOString()
-          };
-
-          // Update in history
+        if (isUpdate) {
+          // Update existing message in history
           if (messageHistory[roomId]) {
-            const idx = messageHistory[roomId].findIndex(m => m.id === msgId);
+            const idx = messageHistory[roomId].findIndex(m => m.id === lastTubeMsgId);
             if (idx !== -1) {
               messageHistory[roomId][idx] = msgPayload;
             }
           }
-          saveMessageToDB(msgPayload);
           io.to(roomId).emit('chat-message-update', msgPayload);
         } else {
           // Create new message
-          msgId = `sys-tube-${Date.now()}`;
-          const msgPayload = {
-            id: msgId,
-            roomId,
-            text: systemMsg.text,
-            sender: 'System',
-            type: 'system',
-            systemType: systemMsg.type,
-            metadata: { kicker: systemMsg.kicker, ...systemMsg.metadata },
-            timestamp: new Date().toISOString()
-          };
           storeMessage(roomId, msgPayload);
           io.to(roomId).emit('chat-message', msgPayload);
-
-          // Track this as the last tube message
-          if (!global._lastTubeMsg) global._lastTubeMsg = {};
-          global._lastTubeMsg[tubeMsgKey] = msgId;
         }
+
+        // Track this message ID
+        if (!global._lastTubeMsg) global._lastTubeMsg = {};
+        global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
       }
 
       tubeState.lastUpdate = Date.now();
 
-      // Broadcast with server-calculated position
+      // Broadcast tube-state with server-calculated position
       io.to(roomId).emit('tube-state', {
         ...tubeState,
         serverTime: Date.now(),
