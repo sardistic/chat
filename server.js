@@ -1493,6 +1493,12 @@ app.prepare().then(async () => {
 
         // QUEUE LOGIC: If a video is ALREADY playing, add to queue instead of interrupting
         if (tubeState.videoId) {
+          // Prevent duplicates in queue
+          if (tubeState.queue.some(q => q.videoId === incomingVideoId)) {
+            console.log(`[Tube] Ignoring duplicate queue request for ${incomingVideoId}`);
+            return;
+          }
+
           const queueItem = {
             videoId: incomingVideoId,
             title: `Video: ${incomingVideoId}`,
