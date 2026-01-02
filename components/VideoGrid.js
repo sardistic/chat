@@ -659,7 +659,16 @@ export default function VideoGrid({
                             if (update.type === 'progress') onUpdateTubeState({ timestamp: update.playedSeconds });
                             if (update.type === 'ended') onUpdateTubeState({ type: 'ended', isPlaying: false, timestamp: 0 });
                         }}
-                        onChangeVideo={(url) => onUpdateTubeState({ videoId: url, isPlaying: true, timestamp: 0 })}
+                        onChangeVideo={(url) => {
+                            // Extract videoId BEFORE sending to ensure consistency with server
+                            let videoId = url;
+                            if (url.includes('v=')) {
+                                videoId = url.split('v=')[1].split('&')[0];
+                            } else if (url.includes('youtu.be/')) {
+                                videoId = url.split('youtu.be/')[1].split('?')[0];
+                            }
+                            onUpdateTubeState({ videoId, isPlaying: true, timestamp: 0 });
+                        }}
                         width={layout.width}
                         height={layout.height}
                     />
