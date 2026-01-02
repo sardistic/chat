@@ -248,23 +248,7 @@ async function loadHistoryFromDB() {
       console.log(`[Tube] Restored last tube message ID: ${lastTubeMsg.id}`);
     }
 
-    // RESTORE SERVER STATE FROM HISTORY
-    // Prevent duplicate "Now Playing" messages by finding the last one and tracking it
-    if (!global._lastTubeMsg) global._lastTubeMsg = {};
 
-    // Find last tube message
-    const lastTubeMsg = [...messageHistory['default-room']].reverse().find(m =>
-      m.systemType && m.systemType.startsWith('tube-')
-    );
-
-    if (lastTubeMsg) {
-      const tubeMsgKey = `tube-default-room`;
-      global._lastTubeMsg[tubeMsgKey] = lastTubeMsg.id;
-      console.log(`[Tube] Restored last tube message ID: ${lastTubeMsg.id}`);
-
-      // OPTIONAL: Restore tube state from message if needed?
-      // We'll trust the tube component to request state, but having the ID prevents duplicates.
-    }
   } catch (err) {
     console.error('Failed to load chat history from DB:', err);
   }
