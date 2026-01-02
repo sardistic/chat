@@ -70,6 +70,7 @@ body {
 }
 
 /* Base Starmap Layer (Explicit Element) */
+/* Base Starmap Layer (Explicit Element) */
 .starmap-bg {
   position: fixed;
   inset: 0;
@@ -81,6 +82,10 @@ body {
   background-image: radial-gradient(#1F2937 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
+
+  /* Optimization */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Highlight Layer (Pseudo of Starmap) */
@@ -97,6 +102,10 @@ body {
   /* The Flashlight Mask */
   -webkit-mask-image: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
   mask-image: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+
+  /* Optimization */
+  transform: translateZ(0);
+  will-change: mask-image;
 }
 
 .app {
