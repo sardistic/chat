@@ -34,6 +34,7 @@ export default function TubeTile({
     const ytPlayerRef = useRef(null);
     const playerContainerRef = useRef(null);
     const isOwnerRef = useRef(isOwner);
+    const currentVideoIdRef = useRef(null); // Track current video to prevent re-init loops
 
     // Sync isOwner ref
     useEffect(() => {
@@ -100,24 +101,25 @@ export default function TubeTile({
         const initPlayer = () => {
             if (!playerContainerRef.current) return;
 
-            // DESTROY existing player when video changes - more reliable than loadVideoById
+            // SKIP if already playing this video (prevent infinite loops)
+            if (currentVideoIdRef.current === embedId && ytPlayerRef.current) {
+                console.log("[Tube-Init] Same video, skipping reinit:", embedId);
+                return;
+            }
+
+            // DESTROY existing player when video changes
             if (ytPlayerRef.current) {
                 try {
-                    const currentUrl = ytPlayerRef.current.getVideoUrl ? ytPlayerRef.current.getVideoUrl() : '';
-                    if (currentUrl && currentUrl.includes(embedId)) {
-                        // Same video, no need to reload
-                        return;
-                    }
-                    // Different video - destroy and recreate
                     console.log("[Tube-Init] Destroying old player for new video");
                     ytPlayerRef.current.destroy();
-                    ytPlayerRef.current = null;
-                    setIsReady(false);
                 } catch (err) {
                     console.error("[Tube-Sync] Destroy Error:", err);
-                    ytPlayerRef.current = null;
                 }
+                ytPlayerRef.current = null;
             }
+
+            // Track this video ID
+            currentVideoIdRef.current = embedId;
 
             // Create fresh player DIV inside the container if needed
             if (!document.getElementById('tube-player-target')) {
@@ -172,7 +174,7 @@ export default function TubeTile({
 
         initPlayer();
         return () => clearTimeout(checkTimeout);
-    }, [tubeState?.videoId, retryKey, isReady]);
+    }, [tubeState?.videoId, retryKey]); // Removed isReady to prevent infinite loops
 
     // Sync Effect - Use server-calculated currentPosition
     useEffect(() => {
