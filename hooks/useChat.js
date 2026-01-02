@@ -188,6 +188,13 @@ export function useChat(roomId, user) {
 
         const handleUpdate = (updatedMsg) => {
             console.log('🔄 Update received:', updatedMsg.id);
+
+            // Global Build State Tracking (Update Case)
+            // Fixes bug where animations persist after "Deploy Success" update comes in
+            if (updatedMsg.systemType === 'deploy-success' || updatedMsg.systemType === 'deploy-fail') {
+                setIsBuilding(false);
+            }
+
             setMessages(prev => {
                 // Remove old version if exists, then append at end (so updated bundles appear at bottom)
                 const filtered = prev.filter(m => m.id !== updatedMsg.id);
