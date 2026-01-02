@@ -1469,49 +1469,40 @@ app.prepare().then(async () => {
 
       // Detect Changes for System Messages (compare extracted IDs)
       if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
-        // New Video - fetch info from YouTube asynchronously
+        // New Video - emit message synchronously to avoid timing issues
         const videoId = incomingVideoId;
+        const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 
-        // Fetch video info (async, but we don't await to avoid blocking)
-        getYouTubeVideoInfo(newState.videoId).then(videoInfo => {
-          const title = videoInfo.title || videoId;
-          const thumbnail = videoInfo.thumbnail || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-          const author = videoInfo.author || '';
+        // Use video ID as title (simpler, no async issues)
+        const msgPayload = {
+          id: `sys-tube-${Date.now()}`,
+          roomId,
+          text: `**Now Playing**`,
+          sender: 'System',
+          type: 'system',
+          systemType: 'tube-now-playing',
+          metadata: {
+            kicker: 'ON AIR',
+            videoId,
+            title: `Video: ${videoId}`,
+            thumbnail,
+            startedBy: userName
+          },
+          timestamp: new Date().toISOString()
+        };
 
-          // Store in tubeState for future reference
-          tubeState.title = title;
-          tubeState.thumbnail = thumbnail;
+        console.log(`[Tube] EMITTING Now Playing for ${videoId}`);
+        storeMessage(roomId, msgPayload);
+        io.to(roomId).emit('chat-message', msgPayload);
 
-          const displayTitle = author ? `${title} - ${author}` : title;
+        // Track this as the last tube message
+        if (!global._lastTubeMsg) global._lastTubeMsg = {};
+        global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
 
-          const msgPayload = {
-            id: `sys-tube-${Date.now()}`,
-            roomId,
-            text: `**Now Playing**: ${displayTitle}`,
-            sender: 'System',
-            type: 'system',
-            systemType: 'tube-now-playing',
-            metadata: {
-              kicker: 'ON AIR',
-              videoId,
-              title: displayTitle,
-              thumbnail,
-              startedBy: userName
-            },
-            timestamp: new Date().toISOString()
-          };
-
-          console.log(`[Tube] EMITTING Now Playing for ${videoId} at ${Date.now()}`);
-          storeMessage(roomId, msgPayload);
-          io.to(roomId).emit('chat-message', msgPayload);
-
-          // Track this as the last tube message
-          if (!global._lastTubeMsg) global._lastTubeMsg = {};
-          global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
-        });
-
-        // Update state immediately (don't wait for video info)
+        // Update state
         tubeState.videoId = videoId;
+        tubeState.title = `Video: ${videoId}`;
+        tubeState.thumbnail = thumbnail;
         tubeState.pausedAt = 0;
         if (newState.isPlaying) {
           tubeState.isPlaying = true;
@@ -1523,7 +1514,7 @@ app.prepare().then(async () => {
           serverTime: Date.now(),
           currentPosition: getTubePosition()
         });
-        return; // Exit early, async handler will emit message
+        return; // Exit early
 
       } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
         // Video Ended / Stopped
