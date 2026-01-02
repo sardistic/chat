@@ -171,6 +171,7 @@ export default function ProfileModal({
             top: Math.min(position.y, window.innerHeight - 400),
             left: Math.min(position.x, window.innerWidth - 320),
         } : {
+            // Default to center-right if no position provided (fallback)
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
@@ -290,116 +291,115 @@ export default function ProfileModal({
                     ))}
                 </div>
 
-            </div>
 
-            {/* Tab Content */}
-            <div style={{ padding: '16px', minHeight: '120px' }}>
-                {activeTab === 'Overview' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {customStatus && (
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px', fontSize: '12px' }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Status</span>
-                                {customStatus}
+                {/* Tab Content */}
+                <div style={{ padding: '16px', minHeight: '120px' }}>
+                    {activeTab === 'Overview' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {customStatus && (
+                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px', fontSize: '12px' }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Status</span>
+                                    {customStatus}
+                                </div>
+                            )}
+                            <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>About Me</div>
+                                <div style={{ fontSize: '13px', lineHeight: '1.4', color: 'rgba(255,255,255,0.8)' }}>
+                                    {isGuest ? "This is a guest user." : "No bio available."}
+                                </div>
                             </div>
-                        )}
-                        <div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>About Me</div>
-                            <div style={{ fontSize: '13px', lineHeight: '1.4', color: 'rgba(255,255,255,0.8)' }}>
-                                {isGuest ? "This is a guest user." : "No bio available."}
-                            </div>
+                            {!isGuest && (
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 'auto' }}>
+                                    ID: <span style={{ fontFamily: 'monospace' }}>{user.discordId}</span>
+                                </div>
+                            )}
                         </div>
-                        {!isGuest && (
-                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 'auto' }}>
-                                ID: <span style={{ fontFamily: 'monospace' }}>{user.discordId}</span>
-                            </div>
-                        )}
-                    </div>
-                )}
+                    )}
 
-                {activeTab === 'Activity' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <InfoChip label="Chat Points" value={stats?.chatPoints || 0} icon="fa:star" color="#FFD700" />
-                        <InfoChip label="Messages" value={stats?.messagesSent || 0} icon="fa:comment" />
-                        <InfoChip label="Emotes Sent" value={stats?.emotesGiven || 0} icon="fontelico:emo-wink" />
-                        <InfoChip label="Time Online" value={formatTime(stats?.timeOnSiteSeconds || 0)} icon="fa:clock-o" />
-                    </div>
-                )}
-
-                {activeTab === 'Actions' && userSettings && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div className="menu-label" style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Available Actions</div>
-
-                        {/* Volume */}
-                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
-                                <span>Volume</span>
-                                <span>{Math.round(userSettings.volume * 100)}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.1"
-                                value={userSettings.volume}
-                                onChange={handleVolumeChange}
-                                style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
-                            />
-                        </div>
-
-                        {/* Toggles */}
+                    {activeTab === 'Activity' && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            <button
-                                onClick={handleBlockToggle}
-                                className={`btn ${isBlocked ? 'secondary' : 'danger'}`}
-                                style={{ justifyContent: 'center' }}
-                            >
-                                <Icon icon="fa:ban" width="14" /> {isBlocked ? "Unblock" : "Block"}
-                            </button>
-
-                            <button className="btn secondary" style={{ justifyContent: 'center' }}>
-                                <Icon icon="fa:flag" width="14" /> Report
-                            </button>
+                            <InfoChip label="Chat Points" value={stats?.chatPoints || 0} icon="fa:star" color="#FFD700" />
+                            <InfoChip label="Messages" value={stats?.messagesSent || 0} icon="fa:comment" />
+                            <InfoChip label="Emotes Sent" value={stats?.emotesGiven || 0} icon="fontelico:emo-wink" />
+                            <InfoChip label="Time Online" value={formatTime(stats?.timeOnSiteSeconds || 0)} icon="fa:clock-o" />
                         </div>
+                    )}
 
-                        {/* Admin Actions Section - Need to check local user role, but for now we render placeholders if logic allows. 
+                    {activeTab === 'Actions' && userSettings && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div className="menu-label" style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Available Actions</div>
+
+                            {/* Volume */}
+                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                                    <span>Volume</span>
+                                    <span>{Math.round(userSettings.volume * 100)}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.1"
+                                    value={userSettings.volume}
+                                    onChange={handleVolumeChange}
+                                    style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
+                                />
+                            </div>
+
+                            {/* Toggles */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <button
+                                    onClick={handleBlockToggle}
+                                    className={`btn ${isBlocked ? 'secondary' : 'danger'}`}
+                                    style={{ justifyContent: 'center' }}
+                                >
+                                    <Icon icon="fa:ban" width="14" /> {isBlocked ? "Unblock" : "Block"}
+                                </button>
+
+                                <button className="btn secondary" style={{ justifyContent: 'center' }}>
+                                    <Icon icon="fa:flag" width="14" /> Report
+                                </button>
+                            </div>
+
+                            {/* Admin Actions Section - Need to check local user role, but for now we render placeholders if logic allows. 
                                 Ideally, we'd pass `localUserRole` prop or useSession. Assuming local user session available or passed. 
                                 For safety, we keep it client-side hidden but server enforced. 
                             */}
 
-                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
 
-                        {/* This section would ideally check if (session.user.role === 'ADMIN' | 'MODERATOR') */}
-                        <button
-                            className="btn danger"
-                            style={{ justifyContent: 'center' }}
-                            onClick={async () => {
-                                if (confirm("Kick this user?")) {
-                                    await fetch('/api/admin/actions', {
-                                        method: 'POST', body: JSON.stringify({ userId: user.id, action: 'KICK' })
-                                    });
-                                    onClose();
-                                }
-                            }}
-                        >
-                            <Icon icon="fa:ban" width="14" /> Kick User (Mod)
-                        </button>
-                        <button
-                            className="btn danger"
-                            style={{ justifyContent: 'center', marginTop: '4px' }}
-                            onClick={async () => {
-                                if (confirm("Ban this user?")) {
-                                    await fetch('/api/admin/actions', {
-                                        method: 'POST', body: JSON.stringify({ userId: user.id, action: 'BAN', value: true })
-                                    });
-                                    onClose();
-                                }
-                            }}
-                        >
-                            <Icon icon="fa:gavel" width="14" /> Ban User (Mod)
-                        </button>
-                    </div>
-                )}
+                            {/* This section would ideally check if (session.user.role === 'ADMIN' | 'MODERATOR') */}
+                            <button
+                                className="btn danger"
+                                style={{ justifyContent: 'center' }}
+                                onClick={async () => {
+                                    if (confirm("Kick this user?")) {
+                                        await fetch('/api/admin/actions', {
+                                            method: 'POST', body: JSON.stringify({ userId: user.id, action: 'KICK' })
+                                        });
+                                        onClose();
+                                    }
+                                }}
+                            >
+                                <Icon icon="fa:ban" width="14" /> Kick User (Mod)
+                            </button>
+                            <button
+                                className="btn danger"
+                                style={{ justifyContent: 'center', marginTop: '4px' }}
+                                onClick={async () => {
+                                    if (confirm("Ban this user?")) {
+                                        await fetch('/api/admin/actions', {
+                                            method: 'POST', body: JSON.stringify({ userId: user.id, action: 'BAN', value: true })
+                                        });
+                                        onClose();
+                                    }
+                                }}
+                            >
+                                <Icon icon="fa:gavel" width="14" /> Ban User (Mod)
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+            );
 }
