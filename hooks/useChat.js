@@ -164,11 +164,26 @@ export function useChat(roomId, user) {
             const idsInBatch = new Set();
 
             history.forEach(msg => {
-                if (!idsInBatch.has(msg.id)) {
-                    idsInBatch.add(msg.id);
-                    uniqueHistory.push(msg);
-                    seenIdsRef.current.add(msg.id);
+                // 1. Strict ID Check
+                if (idsInBatch.has(msg.id)) return;
+
+                // 2. Fuzzy Deduplication (Check against already added messages)
+                // Filters out DB duplicates (Same sender, same text, within 3s)
+                const isFuzzyDuplicate = uniqueHistory.some(existing => {
+                    if (existing.sender !== msg.sender || existing.text !== msg.text) return false;
+                    const diff = Math.abs(new Date(existing.timestamp).getTime() - new Date(msg.timestamp).getTime());
+                    return diff < 3000;
+                });
+
+                if (isFuzzyDuplicate) {
+                    // console.log(`🛡️ Suppressed history duplicate: ${msg.text}`);
+                    seenIdsRef.current.add(msg.id); // Mark seen
+                    return;
                 }
+
+                idsInBatch.add(msg.id);
+                uniqueHistory.push(msg);
+                seenIdsRef.current.add(msg.id);
             });
 
             setMessages(uniqueHistory);
