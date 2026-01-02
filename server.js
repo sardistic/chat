@@ -1489,8 +1489,65 @@ app.prepare().then(async () => {
       let msgPayload = null;
       let isUpdate = !!lastTubeMsgId;
 
-      // Detect Changes for System Messages
+      // --- PLAYBACK CONTROL ACTIONS (Next/Prev) ---
+      if (typeof incomingVideoId === 'undefined') {
+        // NEXT Action: Triggers "Queue -> Play" logic (same as Eject/Stop)
+        if (newState.action === 'next') {
+          console.log(`[Tube] Action: NEXT triggered by ${userName}`);
+          tubeState.isPlaying = false; // Will trigger queue check below
+        }
+
+        // PREVIOUS Action: Pop history -> Queue Current -> Play History
+        if (newState.action === 'prev') {
+          console.log(`[Tube] Action: PREVIOUS triggered by ${userName}`);
+          if (tubeState.history.length > 0) {
+            const prevVideo = tubeState.history.pop();
+
+            // If currently playing something, push it to QUEUE FRONT
+            if (tubeState.videoId) {
+              const currentAsQueue = {
+                videoId: tubeState.videoId,
+                title: tubeState.title || `Video: ${tubeState.videoId}`,
+                thumbnail: tubeState.thumbnail,
+                startedBy: tubeState.ownerId, // or keep original startedBy?
+                tstamp: Date.now()
+              };
+              tubeState.queue.unshift(currentAsQueue);
+            }
+
+            // Force play the previous video
+            tubeState.videoId = prevVideo.videoId;
+            tubeState.title = prevVideo.title;
+            tubeState.thumbnail = prevVideo.thumbnail;
+            tubeState.isPlaying = true;
+            tubeState.playStartedAt = Date.now();
+            tubeState.pausedAt = 0;
+
+            // Emit update immediately
+            io.to(roomId).emit('tube-state', {
+              ...tubeState,
+              serverTime: Date.now(),
+              currentPosition: 0
+            });
+            return; // Done
+          }
+        }
+      }
+
+      // Detect Changes for System Messages & History Tracking
       if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
+
+        // HISTORY LOGIC: Before switching, push CURRENT video to history
+        if (tubeState.videoId) {
+          tubeState.history.push({
+            videoId: tubeState.videoId,
+            title: tubeState.title,
+            thumbnail: tubeState.thumbnail,
+            startedBy: tubeState.ownerId // effectively who queued it
+          });
+          // Limit history size
+          if (tubeState.history.length > 20) tubeState.history.shift();
+        }
 
         // QUEUE LOGIC: If a video is ALREADY playing, add to queue instead of interrupting
         if (tubeState.videoId) {
