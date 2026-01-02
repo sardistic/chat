@@ -1676,285 +1676,285 @@ app.prepare().then(async () => {
             type: 'system',
             systemType: 'tube-stopped',
             metadata: { kicker: 'OFF AIR' },
-            timestamp: new Date().toISOString()
-      // Emit Tube State Update
-      io.to(roomId).emit('tube-state', {
-              ...tubeState,
-              serverTime: Date.now(),
-              currentPosition: getTubePosition()
-            });
-
-            // 5. Async Title Fetching (Fire and Forget)
-            if(tubeState.videoId && (!tubeState.title || tubeState.title.startsWith('Video:'))) {
-      getYouTubeVideoInfo(tubeState.videoId).then(info => {
-        if (info && info.title) {
-          console.log(`[Tube] Fetched title for ${tubeState.videoId}: ${info.title}`);
-          tubeState.title = info.title;
-          tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
-
-          // Update the system message if it exists
-          if (systemMsg) {
-            systemMsg.text = `**Now Playing**: [${info.title}](https://youtu.be/${tubeState.videoId})`;
-            if (systemMsg.metadata) {
-              systemMsg.metadata.title = info.title;
-              systemMsg.metadata.thumbnail = tubeState.thumbnail;
-            }
-            // Emit update for the message
-            io.to(roomId).emit('chat-message-update', systemMsg);
-          }
-
-          // Broadcast state update with new title
-          io.to(roomId).emit('tube-state', {
-            ...tubeState,
-            serverTime: Date.now(),
-            currentPosition: getTubePosition()
-          });
+          };
         }
-      }).catch(err => console.error("Title fetch error:", err));
-    }
+        io.to(roomId).emit('tube-state', {
+          ...tubeState,
+          serverTime: Date.now(),
+          currentPosition: getTubePosition()
+        });
 
-    // 6. Queue Title Fetching (Process new queue items)
-    tubeState.queue.forEach(item => {
-      if (!item.title || item.title.startsWith('Video:')) {
-        getYouTubeVideoInfo(item.videoId).then(info => {
-          if (info && info.title) {
-            item.title = info.title;
-            item.thumbnail = info.thumbnail || item.thumbnail;
-            // We don't broadcast immediately to avoid spam, it will update on next state change
+        // 5. Async Title Fetching (Fire and Forget)
+        if (tubeState.videoId && (!tubeState.title || tubeState.title.startsWith('Video:'))) {
+          getYouTubeVideoInfo(tubeState.videoId).then(info => {
+            if (info && info.title) {
+              console.log(`[Tube] Fetched title for ${tubeState.videoId}: ${info.title}`);
+              tubeState.title = info.title;
+              tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
+
+              // Update the system message if it exists
+              if (systemMsg) {
+                systemMsg.text = `**Now Playing**: [${info.title}](https://youtu.be/${tubeState.videoId})`;
+                if (systemMsg.metadata) {
+                  systemMsg.metadata.title = info.title;
+                  systemMsg.metadata.thumbnail = tubeState.thumbnail;
+                }
+                // Emit update for the message
+                io.to(roomId).emit('chat-message-update', systemMsg);
+              }
+
+              // Broadcast state update with new title
+              io.to(roomId).emit('tube-state', {
+                ...tubeState,
+                serverTime: Date.now(),
+                currentPosition: getTubePosition()
+              });
+            }
+          }).catch(err => console.error("Title fetch error:", err));
+        }
+
+        // 6. Queue Title Fetching (Process new queue items)
+        tubeState.queue.forEach(item => {
+          if (!item.title || item.title.startsWith('Video:')) {
+            getYouTubeVideoInfo(item.videoId).then(info => {
+              if (info && info.title) {
+                item.title = info.title;
+                item.thumbnail = info.thumbnail || item.thumbnail;
+                // We don't broadcast immediately to avoid spam, it will update on next state change
+              }
+            });
           }
         });
       }
-    });
-  }
 
 
 
-      } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
-  // PLAY/PAUSE toggle - update the existing message
-  if (newState.isPlaying) {
-    msgPayload = {
-      id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
-      roomId,
-      text: `**${userName}** resumed playback`,
-      sender: 'System',
-      type: 'system',
-      systemType: 'tube-resumed',
-      metadata: {
-        kicker: 'PLAYING',
-        videoId: tubeState.videoId,
-        title: tubeState.title || `Video: ${tubeState.videoId}`,
-        thumbnail: tubeState.thumbnail,
-        startedBy: userName
-      },
-      timestamp: new Date().toISOString()
-    };
-    tubeState.isPlaying = true;
-    if (newState.timestamp !== undefined) {
-      tubeState.pausedAt = newState.timestamp;
-    }
-    tubeState.playStartedAt = Date.now();
-  } else {
-    msgPayload = {
-      id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
-      roomId,
-      text: `**${userName}** paused`,
-      sender: 'System',
-      type: 'system',
-      systemType: 'tube-paused',
-      metadata: {
-        kicker: 'PAUSED',
-        videoId: tubeState.videoId,
-        title: tubeState.title || `Video: ${tubeState.videoId}`,
-        thumbnail: tubeState.thumbnail,
-        startedBy: userName
-      },
-      timestamp: new Date().toISOString()
-    };
-    tubeState.isPlaying = false;
-    tubeState.pausedAt = getTubePosition();
-    tubeState.playStartedAt = 0;
-  }
-}
-
-// Emit message if we have one
-if (msgPayload) {
-  console.log(`[Tube] ${isUpdate ? 'UPDATING' : 'CREATING'} message: ${msgPayload.systemType}`);
-
-  if (isUpdate) {
-    // Update existing message in history
-    if (messageHistory[roomId]) {
-      const idx = messageHistory[roomId].findIndex(m => m.id === lastTubeMsgId);
-      if (idx !== -1) {
-        messageHistory[roomId][idx] = msgPayload;
-      }
-    }
-    io.to(roomId).emit('chat-message-update', msgPayload);
-  } else {
-    // Create new message
-    storeMessage(roomId, msgPayload);
-    io.to(roomId).emit('chat-message', msgPayload);
-  }
-
-  // Track this message ID
-  if (!global._lastTubeMsg) global._lastTubeMsg = {};
-  global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
-}
-
-tubeState.lastUpdate = Date.now();
-
-// Broadcast tube-state with server-calculated position
-io.to(roomId).emit('tube-state', {
-  ...tubeState,
-  serverTime: Date.now(),
-  currentPosition: getTubePosition()
-});
-    });
-
-// Handle Tube Search
-socket.on("tube-search", async ({ query }, callback) => {
-  try {
-    console.log(`[Tube] Searching for: ${query}`);
-    const searchResults = await ytsr(query, { limit: 10 });
-    // Filter only videos
-    const videos = searchResults.items
-      .filter(item => item.type === 'video')
-      .map(item => ({
-        title: item.title,
-        url: item.url,
-        thumbnail: item.bestThumbnail.url,
-        duration: item.duration,
-        author: item.author.name
-      }));
-
-    if (callback) callback({ success: true, videos });
-  } catch (err) {
-    console.error('[Tube] Search failed:', err);
-    if (callback) callback({ success: false, error: 'Search failed' });
-  }
-});
-
-// Fetch Profile Stats
-socket.on("fetch-profile-stats", async ({ userId }, callback) => {
-  try {
-    if (!userId) {
-      callback({ error: "No User ID" });
-      return;
-    }
-
-    const stats = await prisma.userStats.findUnique({
-      where: { userId }
-    });
-
-    // Also calculate connection status
-    let isOnline = false;
-    let isIdle = true;
-    let lastSeen = null; // Could fetch from User table if needed
-
-    // Check if online in any room
-    for (const room of rooms.values()) {
-      for (const u of room.values()) {
-        if (u.id === userId) {
-          isOnline = true;
-          isIdle = false; // Simplified; real idle tracking requires more state
-          break;
-        }
-      }
-      if (isOnline) break;
-    }
-
-    callback({
-      stats: stats || { chatPoints: 0, timeOnSiteSeconds: 0, camTimeSeconds: 0, messagesSent: 0, emotesGiven: 0, emotesReceived: 0 },
-      status: { isOnline, isIdle }
-    });
-  } catch (e) {
-    console.error("Error fetching stats:", e);
-    callback({ error: "Server Error" });
-  }
-});
-
-// Disconnect
-socket.on("disconnect", () => {
-  console.log("Client disconnected:", socket.id);
-  const fallback = lastKnownUsers.get(socket.id);
-  const { roomId, user, joinMsgId } = {
-    roomId: socket.data.roomId || fallback?.roomId,
-    user: socket.data.user || fallback?.user,
-    joinMsgId: socket.data.joinMsgId
-  };
-
-  if (roomId) {
-    const room = rooms.get(roomId);
-    if (room) {
-      room.delete(socket.id);
-      if (room.size === 0) {
-        rooms.delete(roomId);
-        tubeState.ownerId = null;
-      } else if (tubeState.ownerId === socket.id) {
-        const nextOwnerId = room.keys().next().value;
-        tubeState.ownerId = nextOwnerId;
-        console.log(`[Tube] Handed over ownership to ${nextOwnerId}`);
-        io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });
-      }
-    }
-    socket.to(roomId).emit("user-left", { socketId: socket.id });
-    socket.to(roomId).emit("user-disconnected", socket.id);
-
-    // System Message: Disconnect (Smart Bundling)
-    if (user) {
-      const activeBundle = getBundle(roomId, 'join');
-
-      if (activeBundle && joinMsgId && activeBundle.id === joinMsgId) {
-        // Update Bundle
-        const userInBundle = activeBundle.users.find(u => u.name === user.name);
-        if (userInBundle) {
-          userInBundle.action = 'joined-left';
-        } else {
-          activeBundle.users.push({ ...user, action: 'left', timestamp: Date.now() });
-        }
-
-        const total = activeBundle.users.length;
-        const active = activeBundle.users.filter(u => u.action === 'joined').length;
-
-        const updateMsg = {
-          id: joinMsgId,
+    } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
+      // PLAY/PAUSE toggle - update the existing message
+      if (newState.isPlaying) {
+        msgPayload = {
+          id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
           roomId,
+          text: `**${userName}** resumed playback`,
           sender: 'System',
-          text: `${total} Users visited (${active} active)`,
           type: 'system',
-          systemType: 'join-leave',
-          metadata: { users: activeBundle.users },
+          systemType: 'tube-resumed',
+          metadata: {
+            kicker: 'PLAYING',
+            videoId: tubeState.videoId,
+            title: tubeState.title || `Video: ${tubeState.videoId}`,
+            thumbnail: tubeState.thumbnail,
+            startedBy: userName
+          },
           timestamp: new Date().toISOString()
         };
-
-        if (messageHistory[roomId]) {
-          const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
-          if (idx !== -1) {
-            messageHistory[roomId][idx] = updateMsg;
-          }
+        tubeState.isPlaying = true;
+        if (newState.timestamp !== undefined) {
+          tubeState.pausedAt = newState.timestamp;
         }
-        saveMessageToDB(updateMsg);
-        io.to(roomId).emit('chat-message-update', updateMsg);
-
+        tubeState.playStartedAt = Date.now();
       } else {
-        // Minimal fallback - skip explicit message for old sessions
-        console.log(`User left room ${roomId}:`, user.name);
+        msgPayload = {
+          id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+          roomId,
+          text: `**${userName}** paused`,
+          sender: 'System',
+          type: 'system',
+          systemType: 'tube-paused',
+          metadata: {
+            kicker: 'PAUSED',
+            videoId: tubeState.videoId,
+            title: tubeState.title || `Video: ${tubeState.videoId}`,
+            thumbnail: tubeState.thumbnail,
+            startedBy: userName
+          },
+          timestamp: new Date().toISOString()
+        };
+        tubeState.isPlaying = false;
+        tubeState.pausedAt = getTubePosition();
+        tubeState.playStartedAt = 0;
       }
     }
-  }
 
-  // Cleanup IRC
-  if (socket.data.ircBridge) {
-    console.log(`[Server] Disconnecting IRC Bridge for ${user?.name}`);
-    socket.data.ircBridge.disconnect();
-    socket.data.ircBridge = null;
-  }
+    // Emit message if we have one
+    if (msgPayload) {
+      console.log(`[Tube] ${isUpdate ? 'UPDATING' : 'CREATING'} message: ${msgPayload.systemType}`);
 
-  // Cleanup persistence cache
-  setTimeout(() => {
-    lastKnownUsers.delete(socket.id);
-  }, 5000); // 5s grace period for re-joins/updates
-});
+      if (isUpdate) {
+        // Update existing message in history
+        if (messageHistory[roomId]) {
+          const idx = messageHistory[roomId].findIndex(m => m.id === lastTubeMsgId);
+          if (idx !== -1) {
+            messageHistory[roomId][idx] = msgPayload;
+          }
+        }
+        io.to(roomId).emit('chat-message-update', msgPayload);
+      } else {
+        // Create new message
+        storeMessage(roomId, msgPayload);
+        io.to(roomId).emit('chat-message', msgPayload);
+      }
+
+      // Track this message ID
+      if (!global._lastTubeMsg) global._lastTubeMsg = {};
+      global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
+    }
+
+    tubeState.lastUpdate = Date.now();
+
+    // Broadcast tube-state with server-calculated position
+    io.to(roomId).emit('tube-state', {
+      ...tubeState,
+      serverTime: Date.now(),
+      currentPosition: getTubePosition()
+    });
   });
+
+  // Handle Tube Search
+  socket.on("tube-search", async ({ query }, callback) => {
+    try {
+      console.log(`[Tube] Searching for: ${query}`);
+      const searchResults = await ytsr(query, { limit: 10 });
+      // Filter only videos
+      const videos = searchResults.items
+        .filter(item => item.type === 'video')
+        .map(item => ({
+          title: item.title,
+          url: item.url,
+          thumbnail: item.bestThumbnail.url,
+          duration: item.duration,
+          author: item.author.name
+        }));
+
+      if (callback) callback({ success: true, videos });
+    } catch (err) {
+      console.error('[Tube] Search failed:', err);
+      if (callback) callback({ success: false, error: 'Search failed' });
+    }
+  });
+
+  // Fetch Profile Stats
+  socket.on("fetch-profile-stats", async ({ userId }, callback) => {
+    try {
+      if (!userId) {
+        callback({ error: "No User ID" });
+        return;
+      }
+
+      const stats = await prisma.userStats.findUnique({
+        where: { userId }
+      });
+
+      // Also calculate connection status
+      let isOnline = false;
+      let isIdle = true;
+      let lastSeen = null; // Could fetch from User table if needed
+
+      // Check if online in any room
+      for (const room of rooms.values()) {
+        for (const u of room.values()) {
+          if (u.id === userId) {
+            isOnline = true;
+            isIdle = false; // Simplified; real idle tracking requires more state
+            break;
+          }
+        }
+        if (isOnline) break;
+      }
+
+      callback({
+        stats: stats || { chatPoints: 0, timeOnSiteSeconds: 0, camTimeSeconds: 0, messagesSent: 0, emotesGiven: 0, emotesReceived: 0 },
+        status: { isOnline, isIdle }
+      });
+    } catch (e) {
+      console.error("Error fetching stats:", e);
+      callback({ error: "Server Error" });
+    }
+  });
+
+  // Disconnect
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
+    const fallback = lastKnownUsers.get(socket.id);
+    const { roomId, user, joinMsgId } = {
+      roomId: socket.data.roomId || fallback?.roomId,
+      user: socket.data.user || fallback?.user,
+      joinMsgId: socket.data.joinMsgId
+    };
+
+    if (roomId) {
+      const room = rooms.get(roomId);
+      if (room) {
+        room.delete(socket.id);
+        if (room.size === 0) {
+          rooms.delete(roomId);
+          tubeState.ownerId = null;
+        } else if (tubeState.ownerId === socket.id) {
+          const nextOwnerId = room.keys().next().value;
+          tubeState.ownerId = nextOwnerId;
+          console.log(`[Tube] Handed over ownership to ${nextOwnerId}`);
+          io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });
+        }
+      }
+      socket.to(roomId).emit("user-left", { socketId: socket.id });
+      socket.to(roomId).emit("user-disconnected", socket.id);
+
+      // System Message: Disconnect (Smart Bundling)
+      if (user) {
+        const activeBundle = getBundle(roomId, 'join');
+
+        if (activeBundle && joinMsgId && activeBundle.id === joinMsgId) {
+          // Update Bundle
+          const userInBundle = activeBundle.users.find(u => u.name === user.name);
+          if (userInBundle) {
+            userInBundle.action = 'joined-left';
+          } else {
+            activeBundle.users.push({ ...user, action: 'left', timestamp: Date.now() });
+          }
+
+          const total = activeBundle.users.length;
+          const active = activeBundle.users.filter(u => u.action === 'joined').length;
+
+          const updateMsg = {
+            id: joinMsgId,
+            roomId,
+            sender: 'System',
+            text: `${total} Users visited (${active} active)`,
+            type: 'system',
+            systemType: 'join-leave',
+            metadata: { users: activeBundle.users },
+            timestamp: new Date().toISOString()
+          };
+
+          if (messageHistory[roomId]) {
+            const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
+            if (idx !== -1) {
+              messageHistory[roomId][idx] = updateMsg;
+            }
+          }
+          saveMessageToDB(updateMsg);
+          io.to(roomId).emit('chat-message-update', updateMsg);
+
+        } else {
+          // Minimal fallback - skip explicit message for old sessions
+          console.log(`User left room ${roomId}:`, user.name);
+        }
+      }
+    }
+
+    // Cleanup IRC
+    if (socket.data.ircBridge) {
+      console.log(`[Server] Disconnecting IRC Bridge for ${user?.name}`);
+      socket.data.ircBridge.disconnect();
+      socket.data.ircBridge = null;
+    }
+
+    // Cleanup persistence cache
+    setTimeout(() => {
+      lastKnownUsers.delete(socket.id);
+    }, 5000); // 5s grace period for re-joins/updates
+  });
+});
 
 httpServer.listen(port, "0.0.0.0", () => {
   console.log(`> Ready on http://0.0.0.0:${port}`);
