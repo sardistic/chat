@@ -88,6 +88,28 @@ const bundles = new Map(); // roomId -> { type: { id, users, timestamp } }
 // Identity Persistence Cache
 const lastKnownUsers = new Map(); // socket.id -> { user, roomId }
 
+// Server-Authoritative Tube State
+// playStartedAt: server timestamp when play started (used to calculate current position)
+// pausedAt: position in seconds when paused
+const tubeState = {
+  videoId: null,
+  isPlaying: false,
+  pausedAt: 0,           // Position in seconds when paused
+  playStartedAt: 0,      // Server timestamp when play started
+  title: null,
+  thumbnail: null,
+  ownerId: null,
+  lastUpdate: 0
+};
+
+// Helper to calculate current video position from server state
+function getTubePosition() {
+  if (!tubeState.isPlaying) {
+    return tubeState.pausedAt;
+  }
+  return tubeState.pausedAt + (Date.now() - tubeState.playStartedAt) / 1000;
+}
+
 function getBundle(roomId, type) {
   if (!bundles.has(roomId)) return null;
   const roomBundles = bundles.get(roomId);
@@ -303,14 +325,7 @@ async function checkAndBackfillLogs(io) {
   }
 }
 
-// Tube Sync State
-const tubeState = {
-  videoId: null,
-  isPlaying: false,
-  timestamp: 0,
-  lastUpdate: Date.now(),
-  ownerId: null
-};
+// Tube Sync State is now defined globally at the top of the file
 
 app.prepare().then(async () => {
   // Load chat history from database
@@ -855,6 +870,19 @@ app.prepare().then(async () => {
   });
   historyBot.connect();
 
+  // --- Server-Authoritative Tube Sync Interval ---
+  // Broadcasts sync updates every 2 seconds when video is playing
+  setInterval(() => {
+    if (tubeState.videoId && tubeState.isPlaying) {
+      io.to('default-room').emit('tube-sync', {
+        videoId: tubeState.videoId,
+        isPlaying: tubeState.isPlaying,
+        currentPosition: getTubePosition(),
+        serverTime: Date.now()
+      });
+    }
+  }, 2000);
+
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
 
@@ -1328,7 +1356,12 @@ app.prepare().then(async () => {
       if (!tubeState.ownerId && tubeState.videoId) {
         tubeState.ownerId = socket.id;
       }
-      socket.emit('tube-state', { ...tubeState, serverTime: Date.now() });
+      // Include currentPosition for immediate sync on join
+      socket.emit('tube-state', {
+        ...tubeState,
+        serverTime: Date.now(),
+        currentPosition: getTubePosition()
+      });
     });
 
     socket.on('tube-update', (payload) => {
@@ -1393,9 +1426,41 @@ app.prepare().then(async () => {
         shouldUpdateExisting = !!lastTubeMsgId; // Update existing tube message
       }
 
-      if (newState.videoId !== undefined) tubeState.videoId = newState.videoId;
-      if (newState.isPlaying !== undefined) tubeState.isPlaying = newState.isPlaying;
-      if (newState.timestamp !== undefined) tubeState.timestamp = newState.timestamp;
+      // Update tubeState with server-authoritative time tracking
+      if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
+        // New video: reset position
+        tubeState.videoId = newState.videoId;
+        tubeState.title = newState.title || null;
+        tubeState.thumbnail = newState.thumbnail || null;
+        tubeState.pausedAt = 0;
+        if (newState.isPlaying) {
+          tubeState.isPlaying = true;
+          tubeState.playStartedAt = Date.now();
+        } else {
+          tubeState.isPlaying = false;
+          tubeState.playStartedAt = 0;
+        }
+      } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
+        if (newState.isPlaying) {
+          // Resume: store current position and start timer
+          if (newState.timestamp !== undefined) {
+            tubeState.pausedAt = newState.timestamp;
+          }
+          tubeState.playStartedAt = Date.now();
+          tubeState.isPlaying = true;
+        } else {
+          // Pause: calculate current position and store it
+          tubeState.pausedAt = getTubePosition();
+          tubeState.playStartedAt = 0;
+          tubeState.isPlaying = false;
+        }
+      } else if (newState.timestamp !== undefined) {
+        // Seek: update position
+        tubeState.pausedAt = newState.timestamp;
+        if (tubeState.isPlaying) {
+          tubeState.playStartedAt = Date.now();
+        }
+      }
 
       // Emit System Message if significant change occurred
       if (systemMsg) {
@@ -1447,7 +1512,13 @@ app.prepare().then(async () => {
       }
 
       tubeState.lastUpdate = Date.now();
-      io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });
+
+      // Broadcast with server-calculated position
+      io.to(roomId).emit('tube-state', {
+        ...tubeState,
+        serverTime: Date.now(),
+        currentPosition: getTubePosition()
+      });
     });
 
     // Handle Tube Search

@@ -162,7 +162,7 @@ export default function TubeTile({
         return () => clearTimeout(checkTimeout);
     }, [tubeState?.videoId, retryKey, isReady]);
 
-    // Sync Effect (Native)
+    // Sync Effect - Use server-calculated currentPosition
     useEffect(() => {
         if (!ytPlayerRef.current || !isReady || !ytPlayerRef.current.getPlayerState) return;
 
@@ -173,52 +173,26 @@ export default function TubeTile({
             ytPlayerRef.current.pauseVideo();
         }
 
-        const currentTime = ytPlayerRef.current.getCurrentTime();
-
-        // --- SOURCE OF TRUTH CHECK ---
+        // Skip sync correction for owner (they're the source)
         if (isOwner) return;
 
-        // Ensure we have a server timestamp to synchronize with
-        if (!tubeState.serverTime || !tubeState.lastUpdate) {
-            console.log("[Tube-Sync] Missing sync data:", { serverTime: tubeState.serverTime, lastUpdate: tubeState.lastUpdate });
-            return;
-        }
+        // Use server-provided currentPosition directly
+        const serverPosition = tubeState.currentPosition;
+        if (serverPosition === undefined || serverPosition === null) return;
 
-        // STABLE SYNC CALCULATION
-        const offset = tubeState.serverTime - receivedAt;
-        const estimatedServerNow = Date.now() + offset;
-        const timeSinceUpdate = (estimatedServerNow - tubeState.lastUpdate) / 1000;
-        const serverVideoTime = tubeState.timestamp + (tubeState.isPlaying ? timeSinceUpdate : 0);
+        const currentTime = ytPlayerRef.current.getCurrentTime();
+        const drift = Math.abs(currentTime - serverPosition);
 
-        const drift = Math.abs(currentTime - serverVideoTime);
-
-        if (drift > 2 || forceSyncTrigger > 0) {
-            console.log(`[Tube-Sync] Correcting position. Drift: ${drift.toFixed(2)}s. Target: ${serverVideoTime.toFixed(2)}s. ForceSync: ${forceSyncTrigger}`);
+        // Reduced threshold from 2s to 0.5s for tighter sync
+        if (drift > 0.5 || forceSyncTrigger > 0) {
+            console.log(`[Tube-Sync] Correcting. Drift: ${drift.toFixed(2)}s -> ${serverPosition.toFixed(2)}s`);
             ignorePauseRef.current = true;
-            ytPlayerRef.current.seekTo(serverVideoTime, true);
-            setTimeout(() => { ignorePauseRef.current = false; }, 1000);
-
-            // If we were force syncing, reset the intent
-            if (forceSyncTrigger > 0) {
-                // We'll let the dependency array handle the run, but we want to know we did it
-                console.log("[Tube-Sync] Force sync completed.");
-            }
+            ytPlayerRef.current.seekTo(serverPosition, true);
+            setTimeout(() => { ignorePauseRef.current = false; }, 500);
         }
-    }, [tubeState, isReady, receivedAt, isOwner, forceSyncTrigger]);
+    }, [tubeState, isReady, isOwner, forceSyncTrigger]);
 
-    // Owner Heartbeat: Periodically sync progress to server
-    useEffect(() => {
-        if (!isOwner || !isReady || !ytPlayerRef.current || !ytPlayerRef.current.getCurrentTime) return;
-
-        const heartbeat = setInterval(() => {
-            if (tubeState.isPlaying) {
-                const currentTime = ytPlayerRef.current.getCurrentTime();
-                if (onSync) onSync({ type: 'progress', playedSeconds: currentTime });
-            }
-        }, 5000); // Every 5 seconds
-
-        return () => clearInterval(heartbeat);
-    }, [isOwner, isReady, tubeState.isPlaying]);
+    // Owner heartbeat removed - server now handles sync broadcasts
 
     // Error Reset when video changes
     useEffect(() => {

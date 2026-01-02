@@ -7,7 +7,8 @@ export function useYouTubeSync(roomId, user) {
     const [tubeState, setTubeState] = useState({
         videoId: null,
         isPlaying: false,
-        timestamp: 0,
+        currentPosition: 0,  // Server-calculated position
+        pausedAt: 0,
         lastUpdate: 0,
         ownerId: null
     });
@@ -16,19 +17,36 @@ export function useYouTubeSync(roomId, user) {
     useEffect(() => {
         if (!socket) return;
 
+        // Full state updates (on join, video change, play/pause)
         const handleStateUpdate = (newState) => {
-            // console.log("TUBE: Received state", newState);
-            setTubeState(newState);
+            setTubeState(prev => ({
+                ...prev,
+                ...newState,
+                // Use currentPosition from server if available
+                currentPosition: newState.currentPosition ?? prev.currentPosition
+            }));
+            setReceivedAt(Date.now());
+        };
+
+        // Frequent sync updates (every 2 seconds during playback)
+        const handleSyncUpdate = (syncData) => {
+            setTubeState(prev => ({
+                ...prev,
+                currentPosition: syncData.currentPosition,
+                isPlaying: syncData.isPlaying
+            }));
             setReceivedAt(Date.now());
         };
 
         socket.on('tube-state', handleStateUpdate);
+        socket.on('tube-sync', handleSyncUpdate);
 
         // Request initial state on join
         socket.emit('tube-request-state', { roomId });
 
         return () => {
             socket.off('tube-state', handleStateUpdate);
+            socket.off('tube-sync', handleSyncUpdate);
         };
     }, [socket, roomId]);
 
@@ -41,15 +59,13 @@ export function useYouTubeSync(roomId, user) {
             ownerId: socket.id
         };
 
-        // OPTIMISTIC UPDATE: 
-        // We update locally for UI responsiveness, but we NEVER update lastUpdate here.
-        // We MUST wait for the server's echoed lastUpdate to maintain sync math.
+        // OPTIMISTIC UPDATE for UI responsiveness
         setTubeState(prev => ({ ...prev, ...newState }));
 
         socket.emit('tube-update', {
             roomId,
             ...newState,
-            timestamp: newState.timestamp !== undefined ? newState.timestamp : tubeState.timestamp
+            timestamp: newState.timestamp ?? newState.currentPosition ?? tubeState.currentPosition
         });
     }, [socket, roomId, tubeState]);
 
