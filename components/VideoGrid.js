@@ -371,7 +371,7 @@ function VideoTile({
                             return base;
                         })()}
                         alt={user?.name}
-                        className={isMusicPlaying ? 'dancing' : ''}
+                        className="dancing"
                         style={{
                             width: '80px',
                             height: '80px',

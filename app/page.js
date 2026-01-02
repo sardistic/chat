@@ -460,6 +460,7 @@ function MainApp({ user, onLeaveRoom }) {
                   <img
                     src={user.avatar || `/api/avatar/${user.name}`}
                     alt={user.name}
+                    className={tubeState?.playing ? 'dancing' : ''}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
@@ -485,6 +486,7 @@ function MainApp({ user, onLeaveRoom }) {
                       <img
                         src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
                         alt={p.user?.name}
+                        className={tubeState?.playing ? 'dancing' : ''}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     </div>
@@ -520,6 +522,7 @@ function MainApp({ user, onLeaveRoom }) {
                       <img
                         src={u.avatar || `/api/avatar/${u.name}`}
                         alt={u.name}
+                        className={tubeState?.playing ? 'dancing' : ''}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     </div>
