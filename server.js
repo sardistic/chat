@@ -1381,22 +1381,38 @@ app.prepare().then(async () => {
       const tubeMsgKey = `tube-${roomId}`;
       const lastTubeMsgId = global._lastTubeMsg?.[tubeMsgKey];
 
+      // Deduplicate: prevent duplicate "Now Playing" messages for same video
+      const recentTubeVideos = global._recentTubeVideos || new Map();
+      const now = Date.now();
+      // Clean old entries (older than 30 seconds)
+      for (const [key, time] of recentTubeVideos) {
+        if (now - time > 30000) recentTubeVideos.delete(key);
+      }
+      global._recentTubeVideos = recentTubeVideos;
+
       // Detect Changes for System Messages
       if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
-        // New Video (Now Playing)
-        const title = newState.title || newState.videoId;
-        const thumbnail = newState.thumbnail || `https://img.youtube.com/vi/${newState.videoId}/mqdefault.jpg`;
-        systemMsg = {
-          text: `🎬 **Now Playing**: ${title}`,
-          kicker: '▶ ON AIR',
-          type: 'tube-now-playing',
-          metadata: {
-            videoId: newState.videoId,
-            title,
-            thumbnail,
-            startedBy: userName
-          }
-        };
+        // Check if we recently played this exact video
+        const videoKey = `${roomId}-${newState.videoId}`;
+        if (recentTubeVideos.has(videoKey)) {
+          console.log(`[Tube] Duplicate Now Playing for ${newState.videoId}, skipping message.`);
+        } else {
+          recentTubeVideos.set(videoKey, now);
+          // New Video (Now Playing)
+          const title = newState.title || newState.videoId;
+          const thumbnail = newState.thumbnail || `https://img.youtube.com/vi/${newState.videoId}/mqdefault.jpg`;
+          systemMsg = {
+            text: `🎬 **Now Playing**: ${title}`,
+            kicker: '▶ ON AIR',
+            type: 'tube-now-playing',
+            metadata: {
+              videoId: newState.videoId,
+              title,
+              thumbnail,
+              startedBy: userName
+            }
+          };
+        }
       } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
         // Video Ended / Stopped
         systemMsg = {
