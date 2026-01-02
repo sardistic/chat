@@ -1,270 +1,285 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Icon } from '@iconify/react';
 
-export default function AdminPage() {
+export default function AdminDashboard() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const [activeTab, setActiveTab] = useState('users');
+
+    // User Management State
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 1 });
     const [search, setSearch] = useState("");
-    const [filter, setFilter] = useState({ role: "", isGuest: "" });
-    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+    const [roleFilter, setRoleFilter] = useState("");
 
-    // Check admin access
+    const [actionLoading, setActionLoading] = useState(null); // userId being acted upon
+
     useEffect(() => {
-        if (status === "loading") return;
-        if (!session?.user || session.user.role !== "ADMIN") {
+        if (status === "unauthenticated") {
             router.push("/");
+        } else if (status === "authenticated") {
+            // Check roles
+            const role = session.user?.role?.toUpperCase();
+            if (!['ADMIN', 'MODERATOR', 'OWNER'].includes(role)) {
+                router.push("/");
+            } else {
+                fetchUsers();
+            }
         }
-    }, [session, status, router]);
+    }, [status, session, router]);
 
-    // Fetch users
-    const fetchUsers = async () => {
+    const fetchUsers = async (page = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
-                page: pagination.page.toString(),
-                limit: "20",
+                page: page.toString(),
+                limit: "10",
+                search,
+                role: roleFilter
             });
-            if (search) params.set("search", search);
-            if (filter.role) params.set("role", filter.role);
-            if (filter.isGuest) params.set("isGuest", filter.isGuest);
-
             const res = await fetch(`/api/admin/users?${params}`);
             const data = await res.json();
-
             if (data.users) {
                 setUsers(data.users);
                 setPagination(data.pagination);
             }
-        } catch (err) {
-            console.error("Failed to fetch users:", err);
+        } catch (error) {
+            console.error("Failed to fetch users", error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
-    useEffect(() => {
-        if (session?.user?.role === "ADMIN") {
-            fetchUsers();
-        }
-    }, [session, pagination.page, search, filter]);
+    const handleAction = async (userId, action, value) => {
+        if (!confirm(`Are you sure you want to ${action.toLowerCase()} this user?`)) return;
 
-    // Action handlers
-    const handleRoleChange = async (userId, newRole) => {
+        setActionLoading(userId);
         try {
-            await fetch(`/api/admin/users/${userId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ role: newRole }),
+            const res = await fetch('/api/admin/actions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, action, value })
             });
-            fetchUsers();
-        } catch (err) {
-            console.error("Failed to update role:", err);
+
+            if (!res.ok) {
+                const err = await res.json();
+                alert(err.error || 'Action failed');
+                return;
+            }
+
+            // Refresh list
+            fetchUsers(pagination.page);
+        } catch (error) {
+            console.error(error);
+            alert('Network error');
+        } finally {
+            setActionLoading(null);
         }
     };
-
-    const handleBan = async (userId, isBanned, reason = "") => {
-        try {
-            await fetch(`/api/admin/users/${userId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isBanned, banReason: reason }),
-            });
-            fetchUsers();
-        } catch (err) {
-            console.error("Failed to update ban status:", err);
-        }
-    };
-
-    const handleDelete = async (userId) => {
-        if (!confirm("Are you sure you want to delete this user?")) return;
-        try {
-            await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
-            fetchUsers();
-        } catch (err) {
-            console.error("Failed to delete user:", err);
-        }
-    };
-
-    if (status === "loading" || (session?.user?.role !== "ADMIN" && status !== "unauthenticated")) {
-        return (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0a0a0a", color: "white" }}>
-                <div>Loading...</div>
-            </div>
-        );
-    }
 
     return (
-        <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "white", padding: "24px" }}>
-            <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-                {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                    <h1 style={{ fontSize: "24px", fontWeight: "bold" }}>👑 Admin Dashboard</h1>
-                    <button
-                        onClick={() => router.push("/")}
-                        style={{ background: "rgba(255,255,255,0.1)", border: "none", padding: "8px 16px", borderRadius: "8px", color: "white", cursor: "pointer" }}
-                    >
-                        ← Back to Chat
+        <div style={{ minHeight: '100vh', background: '#0f1115', color: '#e2e8f0', fontFamily: 'Inter, sans-serif' }}>
+
+            {/* Sidebar / Nav */}
+            <div style={{
+                height: '60px', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex', alignItems: 'center', padding: '0 24px',
+                background: '#1a1b1e'
+            }}>
+                <div style={{ fontWeight: '700', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Icon icon="fa:shield" color="var(--accent-primary)" />
+                    Mission Control
+                </div>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '16px' }}>
+                    <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Icon icon="fa:home" /> Back to App
                     </button>
                 </div>
+            </div>
 
-                {/* Stats */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-                    <div style={{ background: "rgba(255,255,255,0.05)", padding: "16px", borderRadius: "12px" }}>
-                        <div style={{ fontSize: "24px", fontWeight: "bold" }}>{pagination.total}</div>
-                        <div style={{ fontSize: "12px", color: "#888" }}>Total Users</div>
-                    </div>
-                    <div style={{ background: "rgba(255,255,255,0.05)", padding: "16px", borderRadius: "12px" }}>
-                        <div style={{ fontSize: "24px", fontWeight: "bold" }}>{users.filter(u => u.isGuest).length}</div>
-                        <div style={{ fontSize: "12px", color: "#888" }}>Guests (this page)</div>
-                    </div>
-                    <div style={{ background: "rgba(255,255,255,0.05)", padding: "16px", borderRadius: "12px" }}>
-                        <div style={{ fontSize: "24px", fontWeight: "bold" }}>{users.filter(u => u.discordId).length}</div>
-                        <div style={{ fontSize: "12px", color: "#888" }}>Discord Users (this page)</div>
-                    </div>
+            <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
+
+                {/* Stats Header (Placeholder) */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                    <StatCard label="Total Users" value={pagination.total} icon="fa:users" />
+                    <StatCard label="Online Now" value="--" icon="fa:circle" color="#10B981" />
+                    <StatCard label="Reports" value="0" icon="fa:flag" color="#EF4444" />
+                    <StatCard label="Server Status" value="Healthy" icon="fa:server" color="#3B82F6" />
                 </div>
 
-                {/* Filters */}
-                <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-                    <input
-                        type="text"
-                        placeholder="Search users..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white", flex: "1", minWidth: "200px" }}
-                    />
-                    <select
-                        value={filter.role}
-                        onChange={(e) => setFilter({ ...filter, role: e.target.value })}
-                        style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white" }}
-                    >
-                        <option value="">All Roles</option>
-                        <option value="USER">User</option>
-                        <option value="MODERATOR">Moderator</option>
-                        <option value="ADMIN">Admin</option>
-                    </select>
-                    <select
-                        value={filter.isGuest}
-                        onChange={(e) => setFilter({ ...filter, isGuest: e.target.value })}
-                        style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "white" }}
-                    >
-                        <option value="">All Types</option>
-                        <option value="true">Guests Only</option>
-                        <option value="false">Registered Only</option>
-                    </select>
-                </div>
+                {/* Main Content */}
+                <div style={{ background: '#1a1b1e', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
 
-                {/* Users Table */}
-                <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: "12px", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    {/* Toolbar */}
+                    <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
+                            <Icon icon="fa:search" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+                            <input
+                                type="text"
+                                placeholder="Search users..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                style={{
+                                    width: '100%', padding: '8px 12px 8px 36px',
+                                    background: '#24262b', border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '6px', color: 'white'
+                                }}
+                            />
+                        </div>
+
+                        <select
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                            style={{
+                                padding: '8px 12px', background: '#24262b',
+                                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'white'
+                            }}
+                        >
+                            <option value="">All Roles</option>
+                            <option value="USER">User</option>
+                            <option value="MODERATOR">Moderator</option>
+                            <option value="ADMIN">Admin</option>
+                        </select>
+                    </div>
+
+                    {/* Table */}
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                         <thead>
-                            <tr style={{ background: "rgba(255,255,255,0.05)" }}>
-                                <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600", color: "#888" }}>User</th>
-                                <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600", color: "#888" }}>Type</th>
-                                <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600", color: "#888" }}>Role</th>
-                                <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600", color: "#888" }}>Status</th>
-                                <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: "600", color: "#888" }}>Last Seen</th>
-                                <th style={{ padding: "12px", textAlign: "right", fontSize: "12px", fontWeight: "600", color: "#888" }}>Actions</th>
+                            <tr style={{ background: 'rgba(255,255,255,0.02)', textAlign: 'left', color: '#888' }}>
+                                <th style={{ padding: '12px 16px', fontWeight: '500' }}>User</th>
+                                <th style={{ padding: '12px 16px', fontWeight: '500' }}>Role</th>
+                                <th style={{ padding: '12px 16px', fontWeight: '500' }}>Status</th>
+                                <th style={{ padding: '12px 16px', fontWeight: '500' }}>Joined</th>
+                                <th style={{ padding: '12px 16px', fontWeight: '500', textAlign: 'right' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {loading ? (
-                                <tr><td colSpan={6} style={{ padding: "24px", textAlign: "center", color: "#888" }}>Loading...</td></tr>
-                            ) : users.length === 0 ? (
-                                <tr><td colSpan={6} style={{ padding: "24px", textAlign: "center", color: "#888" }}>No users found</td></tr>
-                            ) : users.map((user) => (
-                                <tr key={user.id} style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                                    <td style={{ padding: "12px" }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            {users.map(user => (
+                                <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                    <td style={{ padding: '12px 16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <img
-                                                src={user.image || user.avatarUrl || `/api/avatar/${user.displayName || user.name}?v=${user.avatarSeed || 0}`}
+                                                src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                                                 alt=""
-                                                style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#333" }}
+                                                style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#333' }}
                                             />
                                             <div>
-                                                <div style={{ fontWeight: "500" }}>{user.displayName || user.name || "Unknown"}</div>
-                                                <div style={{ fontSize: "11px", color: "#888" }}>{user.email || user.discordTag || user.id.slice(0, 8)}</div>
+                                                <div style={{ fontWeight: '500', color: 'white' }}>{user.name || 'Unknown'}</div>
+                                                <div style={{ fontSize: '12px', color: '#666' }}>{user.email || user.discordId}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td style={{ padding: "12px" }}>
-                                        {user.discordId ? (
-                                            <span style={{ background: "#5865F2", padding: "2px 8px", borderRadius: "4px", fontSize: "11px" }}>Discord</span>
-                                        ) : user.isGuest ? (
-                                            <span style={{ background: "#666", padding: "2px 8px", borderRadius: "4px", fontSize: "11px" }}>Guest</span>
-                                        ) : (
-                                            <span style={{ background: "#333", padding: "2px 8px", borderRadius: "4px", fontSize: "11px" }}>User</span>
-                                        )}
+                                    <td style={{ padding: '12px 16px' }}>
+                                        <Badge role={user.role} />
                                     </td>
-                                    <td style={{ padding: "12px" }}>
-                                        <select
-                                            value={user.role}
-                                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                            style={{ background: "rgba(255,255,255,0.1)", border: "none", padding: "4px 8px", borderRadius: "4px", color: "white", fontSize: "12px" }}
-                                        >
-                                            <option value="USER">User</option>
-                                            <option value="MODERATOR">Mod</option>
-                                            <option value="ADMIN">Admin</option>
-                                        </select>
-                                    </td>
-                                    <td style={{ padding: "12px" }}>
+                                    <td style={{ padding: '12px 16px' }}>
                                         {user.isBanned ? (
-                                            <span style={{ color: "#F87171" }}>🚫 Banned</span>
+                                            <span style={{ color: '#EF4444', background: 'rgba(239, 68, 68, 0.1)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600' }}>BANNED</span>
                                         ) : (
-                                            <span style={{ color: "#4ADE80" }}>✓ Active</span>
+                                            <span style={{ color: '#10B981', fontSize: '12px' }}>Active</span>
                                         )}
                                     </td>
-                                    <td style={{ padding: "12px", fontSize: "12px", color: "#888" }}>
-                                        {new Date(user.lastSeen).toLocaleDateString()}
+                                    <td style={{ padding: '12px 16px', color: '#888' }}>
+                                        {new Date(user.createdAt).toLocaleDateString()}
                                     </td>
-                                    <td style={{ padding: "12px", textAlign: "right" }}>
-                                        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                                    <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                        <button
+                                            className="icon-btn"
+                                            title="Promote/Demote"
+                                            onClick={() => {
+                                                const newRole = user.role === 'MODERATOR' ? 'USER' : 'MODERATOR';
+                                                handleAction(user.id, 'SET_ROLE', newRole);
+                                            }}
+                                            disabled={actionLoading === user.id}
+                                        >
+                                            <Icon icon="fa:shield" width="14" color={user.role === 'MODERATOR' ? '#3B82F6' : '#888'} />
+                                        </button>
+
+                                        {user.isBanned ? (
                                             <button
-                                                onClick={() => handleBan(user.id, !user.isBanned, user.isBanned ? "" : "Banned by admin")}
-                                                style={{ background: user.isBanned ? "#4ADE80" : "#F87171", border: "none", padding: "4px 8px", borderRadius: "4px", color: "white", fontSize: "11px", cursor: "pointer" }}
+                                                className="icon-btn"
+                                                title="Unban"
+                                                onClick={() => handleAction(user.id, 'BAN', false)}
+                                                disabled={actionLoading === user.id}
+                                                style={{ marginLeft: '8px', color: '#10B981' }}
                                             >
-                                                {user.isBanned ? "Unban" : "Ban"}
+                                                <Icon icon="fa:check" width="14" />
                                             </button>
+                                        ) : (
                                             <button
-                                                onClick={() => handleDelete(user.id)}
-                                                style={{ background: "rgba(255,255,255,0.1)", border: "none", padding: "4px 8px", borderRadius: "4px", color: "#888", fontSize: "11px", cursor: "pointer" }}
+                                                className="icon-btn danger"
+                                                title="Ban"
+                                                onClick={() => handleAction(user.id, 'BAN', true)}
+                                                disabled={actionLoading === user.id}
+                                                style={{ marginLeft: '8px' }}
                                             >
-                                                Delete
+                                                <Icon icon="fa:ban" width="14" />
                                             </button>
-                                        </div>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                </div>
 
-                {/* Pagination */}
-                {pagination.pages > 1 && (
-                    <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginTop: "16px" }}>
+                    {/* Pagination */}
+                    <div style={{ padding: '16px', display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                         <button
                             disabled={pagination.page === 1}
-                            onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-                            style={{ background: "rgba(255,255,255,0.1)", border: "none", padding: "8px 16px", borderRadius: "8px", color: "white", cursor: pagination.page === 1 ? "not-allowed" : "pointer", opacity: pagination.page === 1 ? 0.5 : 1 }}
-                        >
-                            Previous
-                        </button>
-                        <span style={{ padding: "8px 16px", color: "#888" }}>
+                            onClick={() => fetchUsers(pagination.page - 1)}
+                            className="btn secondary"
+                        >Previous</button>
+                        <span style={{ padding: '8px', fontSize: '14px', color: '#888' }}>
                             Page {pagination.page} of {pagination.pages}
                         </span>
                         <button
-                            disabled={pagination.page === pagination.pages}
-                            onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                            style={{ background: "rgba(255,255,255,0.1)", border: "none", padding: "8px 16px", borderRadius: "8px", color: "white", cursor: pagination.page === pagination.pages ? "not-allowed" : "pointer", opacity: pagination.page === pagination.pages ? 0.5 : 1 }}
-                        >
-                            Next
-                        </button>
+                            disabled={pagination.page >= pagination.pages}
+                            onClick={() => fetchUsers(pagination.page + 1)}
+                            className="btn secondary"
+                        >Next</button>
                     </div>
-                )}
+
+                </div>
+
             </div>
         </div>
+    );
+}
+
+function StatCard({ label, value, icon, color = '#6366F1' }) {
+    return (
+        <div style={{ background: '#1a1b1e', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: `${color}20`, color: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon icon={icon} width="24" />
+            </div>
+            <div>
+                <div style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', fontWeight: '600' }}>{label}</div>
+                <div style={{ fontSize: '24px', fontWeight: '700', color: 'white' }}>{value}</div>
+            </div>
+        </div>
+    );
+}
+
+function Badge({ role }) {
+    let color = '#888';
+    if (role === 'ADMIN') color = '#EF4444';
+    if (role === 'MODERATOR') color = '#3B82F6';
+    if (role === 'OWNER') color = '#F59E0B';
+
+    return (
+        <span style={{
+            color: color,
+            border: `1px solid ${color}40`,
+            padding: '2px 8px', borderRadius: '4px',
+            fontSize: '11px', fontWeight: '600',
+            textTransform: 'uppercase'
+        }}>
+            {role || 'USER'}
+        </span>
     );
 }
