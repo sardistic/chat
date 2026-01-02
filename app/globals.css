@@ -951,6 +951,22 @@ body {
 .tile {
   cursor: pointer;
   position: relative;
+  background: #050505;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tile .overlay {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+  padding: 12px;
+  justify-content: flex-end;
+  height: 60px;
+  bottom: 0;
+  top: auto;
+}
+
+.tile .name {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* ========================================

@@ -841,6 +841,15 @@ app.prepare().then(async () => {
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
 
+    // Send current IRC userlist if HistoryBot is active
+    if (historyBot && historyBot.isConnected) {
+      const users = Array.from(historyBot.userList.values());
+      socket.emit('irc-userlist', {
+        channel: historyBot.currentChannel,
+        users
+      });
+    }
+
     // Handle room joining (Unified)
     socket.on('join-room', ({ roomId, user, ircConfig }) => {
       console.log(`👤 User ${user.name} (${socket.id}) joining room ${roomId}`);

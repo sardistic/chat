@@ -102,10 +102,30 @@ function getSecondaryColor(oklchColor, shift = 40) {
     return `oklch(${l} ${c} ${newHue})`;
 }
 
+// Helper to inject alpha into OKLCH or hex
+function colorWithAlpha(color, alpha) {
+    if (color.startsWith('oklch')) {
+        return color.replace(')', ` / ${alpha})`);
+    }
+    // Handle hex
+    if (color.startsWith('#')) {
+        const a = Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        return color + a;
+    }
+    return color;
+}
+
 // Create a faded gradient background from a color
 function getFadedBackground(color) {
-    const secondary = getSecondaryColor(color, 30);
-    return `radial-gradient(ellipse at center, ${color}30 0%, ${secondary}15 40%, #0a0a0a 100%)`;
+    const secondary = getSecondaryColor(color, 40);
+    // Darken significantly for background
+    const darkColor = color.replace(/oklch\(\d+%/, 'oklch(15%');
+    const darkSecondary = secondary.replace(/oklch\(\d+%/, 'oklch(10%');
+
+    const c1 = colorWithAlpha(darkColor, 0.4);
+    const c2 = colorWithAlpha(darkSecondary, 0.2);
+
+    return `radial-gradient(ellipse at center, ${c1} 0%, ${c2} 40%, #050505 100%)`;
 }
 
 // Individual video tile with smart effects
@@ -292,14 +312,22 @@ function VideoTile({
             <div
                 className="tile-glow-border"
                 style={{
+                    zIndex: 20, // High z-index to stay above video
                     boxShadow: borderStyle.glowSize > 0
-                        ? `0 0 ${borderStyle.glowSize}px ${borderStyle.glowColor}66`
+                        ? `0 0 ${borderStyle.glowSize}px ${colorWithAlpha(borderStyle.glowColor, 0.4)}`
                         : 'none',
-                    // Use background for gradient borders
-                    background: borderStyle.borderColor.includes('gradient')
-                        ? `linear-gradient(transparent, transparent) padding-box, ${borderStyle.borderColor} border-box`
-                        : 'transparent',
-                    border: `${borderStyle.borderWidth}px solid ${borderStyle.borderColor.includes('gradient') ? 'transparent' : borderStyle.borderColor}`,
+                    // Use border-image for clean gradient borders that don't cover content
+                    border: `${borderStyle.borderWidth}px solid transparent`,
+                    borderImageSource: borderStyle.borderColor.includes('gradient')
+                        ? borderStyle.borderColor
+                        : 'none',
+                    borderImageSlice: 1,
+                    // If not gradient, fall back to solid border
+                    borderColor: borderStyle.borderColor.includes('gradient')
+                        ? 'transparent'
+                        : borderStyle.borderColor,
+                    background: 'transparent',
+                    pointerEvents: 'none'
                 }}
             />
 
@@ -317,6 +345,8 @@ function VideoTile({
                     className="video"
                     style={{
                         transform: isLocal ? 'scaleX(-1)' : 'none',
+                        zIndex: 2,
+                        position: 'relative'
                     }}
                 />
             ) : (
@@ -326,7 +356,9 @@ function VideoTile({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: 'transparent'
+                    background: 'transparent',
+                    zIndex: 2,
+                    position: 'relative'
                 }}>
                     <img
                         src={(() => {
@@ -351,7 +383,20 @@ function VideoTile({
             )}
 
             {/* Name & Controls Overlay */}
-            <div className="overlay" style={{ pointerEvents: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div className="overlay" style={{
+                pointerEvents: 'auto',
+                zIndex: 30, // Even higher than border
+                background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
+                height: '50px',
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0
+            }} onClick={(e) => e.stopPropagation()}>
                 <div className="name-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                     <div className="name" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span
@@ -419,14 +464,16 @@ function VideoTile({
 
             <div className="status-icons" style={{
                 position: 'absolute',
-                top: '8px',
-                right: '8px',
+                top: '10px',
+                left: '10px',
                 display: 'flex',
-                gap: '6px',
-                zIndex: 10,
-                background: 'rgba(0,0,0,0.5)',
-                padding: '4px 8px',
-                borderRadius: '6px'
+                gap: '8px',
+                zIndex: 40, // Top most
+                background: 'rgba(0,0,0,0.6)',
+                backdropFilter: 'blur(8px)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.1)'
             }}>
                 {!isAudioEnabled && <span><Icon icon="fa:microphone-slash" width="14" /></span>}
                 {!isLocal && user?.isDeafened && <span><Icon icon="fontelico:headphones" width="14" /></span>}
