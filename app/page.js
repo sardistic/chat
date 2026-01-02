@@ -597,15 +597,6 @@ function MainApp({ user, onLeaveRoom }) {
         onClose={() => setShowOwnProfile(false)}
       />
 
-      {/* Selected User Profile Modal */}
-      <ProfileModal
-        user={selectedProfileUser}
-        isOpen={!!selectedProfileUser}
-        onClose={() => setSelectedProfileUser(null)}
-        peerSettings={peerSettings}
-        onUpdatePeerSettings={handleUpdatePeerSettings}
-      />
-
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
