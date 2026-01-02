@@ -1368,6 +1368,31 @@ app.prepare().then(async () => {
       const roomId = payload.roomId || socket.data.roomId || 'default-room';
       const newState = payload;
 
+      // EARLY DEDUP: If this is a new video request, check if we JUST processed this video
+      if (newState.videoId && newState.videoId !== null) {
+        const lastProcessedVideo = global._lastProcessedTubeVideo || {};
+        const lastVideoKey = lastProcessedVideo[roomId];
+        const lastVideoTime = global._lastProcessedTubeVideoTime?.[roomId] || 0;
+
+        // If same video was processed within last 5 seconds, skip
+        if (lastVideoKey === newState.videoId && (Date.now() - lastVideoTime) < 5000) {
+          console.log(`[Tube] Skipping duplicate videoId: ${newState.videoId}`);
+          // Still broadcast state but skip the system message
+          io.to(roomId).emit('tube-state', {
+            ...tubeState,
+            serverTime: Date.now(),
+            currentPosition: getTubePosition()
+          });
+          return;
+        }
+
+        // Record this video as being processed
+        if (!global._lastProcessedTubeVideo) global._lastProcessedTubeVideo = {};
+        if (!global._lastProcessedTubeVideoTime) global._lastProcessedTubeVideoTime = {};
+        global._lastProcessedTubeVideo[roomId] = newState.videoId;
+        global._lastProcessedTubeVideoTime[roomId] = Date.now();
+      }
+
       if (!tubeState.ownerId) {
         tubeState.ownerId = socket.id;
       }
@@ -1381,38 +1406,22 @@ app.prepare().then(async () => {
       const tubeMsgKey = `tube-${roomId}`;
       const lastTubeMsgId = global._lastTubeMsg?.[tubeMsgKey];
 
-      // Deduplicate: prevent duplicate "Now Playing" messages for same video
-      const recentTubeVideos = global._recentTubeVideos || new Map();
-      const now = Date.now();
-      // Clean old entries (older than 30 seconds)
-      for (const [key, time] of recentTubeVideos) {
-        if (now - time > 30000) recentTubeVideos.delete(key);
-      }
-      global._recentTubeVideos = recentTubeVideos;
-
       // Detect Changes for System Messages
       if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
-        // Check if we recently played this exact video
-        const videoKey = `${roomId}-${newState.videoId}`;
-        if (recentTubeVideos.has(videoKey)) {
-          console.log(`[Tube] Duplicate Now Playing for ${newState.videoId}, skipping message.`);
-        } else {
-          recentTubeVideos.set(videoKey, now);
-          // New Video (Now Playing)
-          const title = newState.title || newState.videoId;
-          const thumbnail = newState.thumbnail || `https://img.youtube.com/vi/${newState.videoId}/mqdefault.jpg`;
-          systemMsg = {
-            text: `🎬 **Now Playing**: ${title}`,
-            kicker: '▶ ON AIR',
-            type: 'tube-now-playing',
-            metadata: {
-              videoId: newState.videoId,
-              title,
-              thumbnail,
-              startedBy: userName
-            }
-          };
-        }
+        // New Video (Now Playing) - early dedup already filtered duplicates
+        const title = newState.title || newState.videoId;
+        const thumbnail = newState.thumbnail || `https://img.youtube.com/vi/${newState.videoId}/mqdefault.jpg`;
+        systemMsg = {
+          text: `🎬 **Now Playing**: ${title}`,
+          kicker: '▶ ON AIR',
+          type: 'tube-now-playing',
+          metadata: {
+            videoId: newState.videoId,
+            title,
+            thumbnail,
+            startedBy: userName
+          }
+        };
       } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
         // Video Ended / Stopped
         systemMsg = {
