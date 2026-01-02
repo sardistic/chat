@@ -115,7 +115,8 @@ function VideoTile({
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
     onUpdateSettings = () => { },
     width,
-    height
+    height,
+    isMusicPlaying = false
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
@@ -324,7 +325,7 @@ function VideoTile({
                             return base;
                         })()}
                         alt={user?.name}
-                        className={(tubeState && tubeState.isPlaying) ? 'dancing' : ''}
+                        className={isMusicPlaying ? 'dancing' : ''}
                         style={{
                             width: '80px',
                             height: '80px',
@@ -621,6 +622,7 @@ export default function VideoGrid({
                     mentionCount={mentionCounts[localUser?.name] || 0}
                     width={layout.width}
                     height={layout.height}
+                    isMusicPlaying={tubeState?.isPlaying}
                 />
 
                 {/* Remote Peer Tiles */}
@@ -655,6 +657,7 @@ export default function VideoGrid({
                             mentionCount={mentionCounts[peerData.user?.name] || 0}
                             width={layout.width}
                             height={layout.height}
+                            isMusicPlaying={tubeState?.isPlaying}
                         />
                     );
                 })}
