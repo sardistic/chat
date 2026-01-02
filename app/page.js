@@ -607,10 +607,11 @@ function MainApp({ user, onLeaveRoom }) {
       />
 
       {/* Admin Modal */}
+      {/* Admin Modal */}
       <AdminModal
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
-        onlineCount={ircUsers.size}
+        onlineCount={peers.size + 1}
       />
 
       {/* Admin Button (Bottom Left, above Settings) */}
