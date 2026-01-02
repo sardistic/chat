@@ -531,11 +531,28 @@ app.prepare().then(async () => {
             const branch = payload.ref?.replace('refs/heads/', '') || 'main';
             const totalCommits = payload.commits?.length || 1;
 
-            let text = `**${pusher}** pushed ${totalCommits > 1 ? `${totalCommits} commits` : ''} to \`${branch}\``;
-            text += `: "${commitMsg}" [\`${shortHash}\`](${commitUrl})`;
-            systemMessage = text;
-            systemType = 'git-push';
-            metadata = { pusher, commitMsg, branch, commitUrl, shortHash, totalCommits };
+            // Deduplicate: Check if we already processed this exact commit recently
+            const pushKey = `${shortHash}-${branch}`;
+            const recentPushes = global._recentPushes || new Map();
+            const now = Date.now();
+
+            // Clean old entries (older than 2 minutes)
+            for (const [key, time] of recentPushes) {
+              if (now - time > 120000) recentPushes.delete(key);
+            }
+
+            if (recentPushes.has(pushKey)) {
+              console.log(`[Webhook] Duplicate git-push detected for ${pushKey}, ignoring.`);
+            } else {
+              recentPushes.set(pushKey, now);
+              global._recentPushes = recentPushes;
+
+              let text = `**${pusher}** pushed ${totalCommits > 1 ? `${totalCommits} commits` : ''} to \`${branch}\``;
+              text += `: "${commitMsg}" [\`${shortHash}\`](${commitUrl})`;
+              systemMessage = text;
+              systemType = 'git-push';
+              metadata = { pusher, commitMsg, branch, commitUrl, shortHash, totalCommits };
+            }
           }
           // --- Generic Text Fallback ---
           else if (type && type.startsWith('VolumeAlert')) {
