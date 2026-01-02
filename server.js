@@ -85,6 +85,9 @@ let messageHistory = {}; // roomId -> Array of messages (Changed to Object for J
 // Bundling Storage
 const bundles = new Map(); // roomId -> { type: { id, users, timestamp } }
 
+// Identity Persistence Cache
+const lastKnownUsers = new Map(); // socket.id -> { user, roomId }
+
 function getBundle(roomId, type) {
   if (!bundles.has(roomId)) return null;
   const roomBundles = bundles.get(roomId);
@@ -847,6 +850,7 @@ app.prepare().then(async () => {
       // Store user data on socket
       socket.data.user = user;
       socket.data.roomId = roomId;
+      lastKnownUsers.set(socket.id, { user, roomId });
 
       // Initialize room logic
       if (!rooms.has(roomId)) {
@@ -1016,7 +1020,8 @@ app.prepare().then(async () => {
 
       const room = rooms.get(roomId);
       // Get username from room map first, then socket.data as fallback
-      let userName = socket.data.user?.name || 'Someone';
+      const fallback = lastKnownUsers.get(socket.id);
+      let userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
       if (room) {
         const u = room.get(socket.id);
         if (u?.name) userName = u.name;
@@ -1291,7 +1296,8 @@ app.prepare().then(async () => {
         tubeState.ownerId = socket.id;
       }
 
-      const userName = socket.data.user?.name || 'Someone';
+      const fallback = lastKnownUsers.get(socket.id);
+      const userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
       let systemMsg = null;
 
       // Detect Changes for System Messages
@@ -1413,7 +1419,12 @@ app.prepare().then(async () => {
     // Disconnect
     socket.on("disconnect", () => {
       console.log("Client disconnected:", socket.id);
-      const { roomId, user, joinMsgId } = socket.data;
+      const fallback = lastKnownUsers.get(socket.id);
+      const { roomId, user, joinMsgId } = {
+        roomId: socket.data.roomId || fallback?.roomId,
+        user: socket.data.user || fallback?.user,
+        joinMsgId: socket.data.joinMsgId
+      };
 
       if (roomId) {
         const room = rooms.get(roomId);
@@ -1481,6 +1492,11 @@ app.prepare().then(async () => {
         socket.data.ircBridge.disconnect();
         socket.data.ircBridge = null;
       }
+
+      // Cleanup persistence cache
+      setTimeout(() => {
+        lastKnownUsers.delete(socket.id);
+      }, 5000); // 5s grace period for re-joins/updates
     });
   });
 

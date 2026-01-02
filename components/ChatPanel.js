@@ -383,6 +383,9 @@ export default function ChatPanel({
                                         <span style={{
                                             fontSize: '11px',
                                             color: 'var(--text-muted)',
+                                            opacity: 0.6,
+                                            fontWeight: '400',
+                                            marginLeft: '4px'
                                         }}>
                                             {formatTime(group.timestamp)}
                                         </span>
@@ -392,16 +395,35 @@ export default function ChatPanel({
                                     {group.messages.map((msg) => (
                                         <div
                                             key={msg.id}
+                                            className="message-row"
                                             style={{
                                                 marginBottom: '2px', // Tighter lines
                                                 lineHeight: '1.35',
+                                                display: 'flex',
+                                                alignItems: 'baseline',
+                                                gap: '8px',
+                                                position: 'relative'
                                             }}
                                         >
-                                            <MessageContent
-                                                text={msg.text}
-                                                onMentionClick={(username, e) => onUserClick({ name: username }, e)}
-                                                emotes={emotes}
-                                            />
+                                            <span className="line-timestamp" style={{
+                                                fontSize: '9px',
+                                                color: 'var(--text-muted)',
+                                                opacity: 0,
+                                                width: '32px',
+                                                flexShrink: 0,
+                                                textAlign: 'right',
+                                                userSelect: 'none',
+                                                transition: 'opacity 0.1s'
+                                            }}>
+                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                            </span>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <MessageContent
+                                                    text={msg.text}
+                                                    onMentionClick={(username, e) => onUserClick({ name: username }, e)}
+                                                    emotes={emotes}
+                                                />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -428,6 +450,15 @@ export default function ChatPanel({
 
                 <div ref={messagesEndRef} />
             </div>
+
+            <style jsx>{`
+                .message-row:hover .line-timestamp {
+                    opacity: 0.4 !important;
+                }
+                .message-group:hover .line-timestamp {
+                    opacity: 0.2;
+                }
+            `}</style>
 
             {/* Input Area */}
             <div className="input-area" style={{ position: 'relative', padding: '0 4px 8px' }}>

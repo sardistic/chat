@@ -76,25 +76,36 @@ function calculateLayout(containerWidth, containerHeight, videoCount, aspectRati
 }
 
 
-// Generate a deterministic color from a username (similar to avatar API)
+// Generate a deterministic color from a username using OKLCH for uniform brightness
 function getUserColor(name) {
-    if (!name) return '#6366F1';
+    if (!name) return 'oklch(60% 0.15 250)';
 
-    // Simple hash function
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
         hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        hash = hash & hash;
     }
 
-    // Generate HSL color with good saturation and lightness
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue}, 70%, 50%)`;
+    // Curated spectrum using OKLCH (Lightness 68%, Chroma 0.16)
+    const hues = [25, 65, 125, 185, 245, 305, 10, 150, 210, 280];
+    const hue = hues[Math.abs(hash) % hues.length];
+    const fineHue = (hue + (Math.abs(hash) % 20) - 10 + 360) % 360;
+
+    return `oklch(68% 0.16 ${fineHue})`;
+}
+
+// Get complementary/analogous color for gradients
+function getSecondaryColor(oklchColor, shift = 40) {
+    const match = oklchColor.match(/oklch\((\d+%) ([\d.]+) ([\d.]+)\)/);
+    if (!match) return oklchColor;
+    const [_, l, c, h] = match;
+    const newHue = (parseFloat(h) + shift + 360) % 360;
+    return `oklch(${l} ${c} ${newHue})`;
 }
 
 // Create a faded gradient background from a color
 function getFadedBackground(color) {
-    return `radial-gradient(ellipse at center, ${color}30 0%, ${color}15 40%, #1a1a1a 100%)`;
+    const secondary = getSecondaryColor(color, 30);
+    return `radial-gradient(ellipse at center, ${color}30 0%, ${secondary}15 40%, #0a0a0a 100%)`;
 }
 
 // Individual video tile with smart effects
@@ -221,23 +232,22 @@ function VideoTile({
         if (!mentionCount && chatActivity < 5 && !animation) {
             // Determine vibe from username deterministically
             const VIBES = ['hype', 'chill', 'happy', 'focused'];
-            // Use the same hash function as color
             let hash = 0;
             const name = user?.name || 'guest';
             for (let i = 0; i < name.length; i++) {
                 hash = name.charCodeAt(i) + ((hash << 5) - hash);
-                hash = hash & hash;
             }
             const vibe = VIBES[Math.abs(hash) % VIBES.length];
 
             animation = `vibe-${vibe}`;
 
-            // Adjust colors based on vibe if not already set by camera
             if (!isVideoEnabled || !dominantColor) {
-                if (vibe === 'hype') { borderColor = '#ff00ff'; glowColor = '#00ffff'; }
-                if (vibe === 'chill') { borderColor = '#6495ed'; glowColor = '#8a2be2'; }
-                if (vibe === 'happy') { borderColor = '#ffd700'; glowColor = '#ffa500'; }
-                if (vibe === 'focused') { borderColor = 'rgba(255,255,255,0.5)'; glowColor = 'rgba(255,255,255,0.2)'; }
+                const colorB = getSecondaryColor(userColor, 60);
+                borderColor = `linear-gradient(135deg, ${userColor}, ${colorB})`;
+                glowColor = userColor;
+
+                if (vibe === 'hype') { glowSize = 15; animation = 'hype-float'; }
+                if (vibe === 'chill') { glowSize = 8; opacity: 0.6; }
             }
         }
 
@@ -283,9 +293,13 @@ function VideoTile({
                 className="tile-glow-border"
                 style={{
                     boxShadow: borderStyle.glowSize > 0
-                        ? `0 0 ${borderStyle.glowSize}px ${borderStyle.glowColor}`
+                        ? `0 0 ${borderStyle.glowSize}px ${borderStyle.glowColor}66`
                         : 'none',
-                    border: `${borderStyle.borderWidth}px solid ${borderStyle.borderColor}`,
+                    // Use background for gradient borders
+                    background: borderStyle.borderColor.includes('gradient')
+                        ? `linear-gradient(#0a0a0a, #0a0a0a) padding-box, ${borderStyle.borderColor} border-box`
+                        : 'transparent',
+                    border: `${borderStyle.borderWidth}px solid ${borderStyle.borderColor.includes('gradient') ? 'transparent' : borderStyle.borderColor}`,
                 }}
             />
 

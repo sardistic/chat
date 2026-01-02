@@ -17,8 +17,13 @@ const convert = new Convert({
     }
 });
 
+function formatTime(timestamp) {
+    if (!timestamp) return '';
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export default function SystemMessage({ message, onUserClick = () => { } }) {
-    const { systemType, text, metadata } = message;
+    const { systemType, text, metadata, timestamp } = message;
 
     // Minimal style for join/leave events with optional Avatars
     if (systemType === 'join-leave') {
@@ -100,9 +105,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     </div>
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'center' }}>
                     <Icon icon="mdi:account-group-outline" width="14" />
                     <span>{text}</span>
+                    <span style={{ opacity: 0.4, fontSize: '10px', marginLeft: '4px' }}>{formatTime(timestamp)}</span>
                 </div>
             </div>
         );
@@ -219,7 +225,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 textTransform: 'uppercase'
             }}>
                 <Icon icon={style.icon} width="14" className={systemType === 'deploy-start' ? 'spin' : ''} />
-                {metadata?.phase || style.kicker}
+                <span>{metadata?.phase || style.kicker}</span>
+                <span style={{ marginLeft: 'auto', opacity: 0.5, fontWeight: 'normal' }}>
+                    {formatTime(timestamp)}
+                </span>
             </div>
 
             {/* Content Body */}
