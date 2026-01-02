@@ -121,6 +121,9 @@ export default function TubeTile({
             // Track this video ID
             currentVideoIdRef.current = embedId;
 
+            // ALWAYS suppress the first play event after loading a new video
+            ignorePlayRef.current = true;
+
             // Create fresh player DIV inside the container if needed
             if (!document.getElementById('tube-player-target')) {
                 playerContainerRef.current.innerHTML = '<div id="tube-player-target" style="width:100%;height:100%;"></div>';
