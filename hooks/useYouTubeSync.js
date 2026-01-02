@@ -81,7 +81,7 @@ export function useYouTubeSync(roomId, user) {
             ownerId: socket.id
         };
 
-        setTubeState(prev => ({ ...prev, ...newState }));
+
 
         socket.emit('tube-update', {
             roomId,
