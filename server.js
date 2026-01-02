@@ -1490,7 +1490,8 @@ app.prepare().then(async () => {
       let isUpdate = !!lastTubeMsgId;
 
       // --- PLAYBACK CONTROL ACTIONS (Next/Prev) ---
-      if (typeof incomingVideoId === 'undefined') {
+      // incomingVideoId is null when action is sent without a videoId
+      if (!incomingVideoId && newState.action) {
         // NEXT Action: Explicitly Advance Queue
         if (newState.action === 'next') {
           console.log(`[Tube] Action: NEXT triggered by ${userName}`);
