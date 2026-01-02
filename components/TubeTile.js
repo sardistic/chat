@@ -100,19 +100,23 @@ export default function TubeTile({
         const initPlayer = () => {
             if (!playerContainerRef.current) return;
 
-            // If player exists, just update video
-            if (ytPlayerRef.current && ytPlayerRef.current.loadVideoById) {
+            // DESTROY existing player when video changes - more reliable than loadVideoById
+            if (ytPlayerRef.current) {
                 try {
                     const currentUrl = ytPlayerRef.current.getVideoUrl ? ytPlayerRef.current.getVideoUrl() : '';
-                    if (!currentUrl || !currentUrl.includes(embedId)) {
-                        ignorePlayRef.current = true; // Skip the first play event
-                        ytPlayerRef.current.loadVideoById(embedId);
+                    if (currentUrl && currentUrl.includes(embedId)) {
+                        // Same video, no need to reload
+                        return;
                     }
+                    // Different video - destroy and recreate
+                    console.log("[Tube-Init] Destroying old player for new video");
+                    ytPlayerRef.current.destroy();
+                    ytPlayerRef.current = null;
+                    setIsReady(false);
                 } catch (err) {
-                    console.error("[Tube-Sync] Load Error:", err);
-                    setHasError(true);
+                    console.error("[Tube-Sync] Destroy Error:", err);
+                    ytPlayerRef.current = null;
                 }
-                return;
             }
 
             // Create fresh player DIV inside the container if needed
