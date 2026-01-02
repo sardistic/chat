@@ -1491,10 +1491,96 @@ app.prepare().then(async () => {
 
       // --- PLAYBACK CONTROL ACTIONS (Next/Prev) ---
       if (typeof incomingVideoId === 'undefined') {
-        // NEXT Action: Triggers "Queue -> Play" logic (same as Eject/Stop)
+        // NEXT Action: Explicitly Advance Queue
         if (newState.action === 'next') {
           console.log(`[Tube] Action: NEXT triggered by ${userName}`);
-          tubeState.isPlaying = false; // Will trigger queue check below
+
+          // Push current to history if playing
+          if (tubeState.videoId) {
+            tubeState.history.push({
+              videoId: tubeState.videoId,
+              title: tubeState.title,
+              thumbnail: tubeState.thumbnail,
+              startedBy: tubeState.ownerId
+            });
+            if (tubeState.history.length > 20) tubeState.history.shift();
+          }
+
+          if (tubeState.queue.length > 0) {
+            const nextVideo = tubeState.queue.shift();
+            tubeState.videoId = nextVideo.videoId;
+            tubeState.title = nextVideo.title;
+            tubeState.thumbnail = nextVideo.thumbnail;
+            tubeState.isPlaying = true;
+            tubeState.playStartedAt = Date.now();
+            tubeState.pausedAt = 0;
+
+            // Update System Message to "Now Playing"
+            msgPayload = {
+              id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+              roomId,
+              text: `**Now Playing**`,
+              sender: 'System',
+              type: 'system',
+              systemType: 'tube-now-playing',
+              metadata: {
+                kicker: 'ON AIR',
+                videoId: nextVideo.videoId,
+                title: nextVideo.title,
+                thumbnail: nextVideo.thumbnail,
+                startedBy: nextVideo.startedBy
+              },
+              timestamp: new Date().toISOString()
+            };
+          } else {
+            // Stop if queue empty
+            tubeState.isPlaying = false;
+            tubeState.videoId = null;
+            tubeState.title = null;
+            tubeState.thumbnail = null;
+
+            msgPayload = {
+              id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+              roomId,
+              text: `**Playback Stopped**`,
+              sender: 'System',
+              type: 'system',
+              systemType: 'tube-stopped',
+              metadata: { kicker: 'OFF AIR' },
+              timestamp: new Date().toISOString()
+            };
+          }
+
+          io.to(roomId).emit('tube-state', {
+            ...tubeState,
+            serverTime: Date.now(),
+            currentPosition: getTubePosition()
+          });
+
+          // Trigger Async Title Fetch for the new video
+          if (tubeState.videoId && (!tubeState.title || tubeState.title.startsWith('Video:'))) {
+            getYouTubeVideoInfo(tubeState.videoId).then(info => {
+              if (info && info.title) {
+                console.log(`[Tube] NEXT Action - Fetched title: ${info.title}`);
+                tubeState.title = info.title;
+                tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
+                // Update message
+                if (msgPayload) {
+                  // We have to emit the update because msgPayload might have been sent already? 
+                  // No, msgPayload is stored at end of function. 
+                  // But this async block runs later.
+                  // So we need to emit an update.
+                  const updatedMsg = {
+                    ...msgPayload,
+                    text: `**Now Playing**: [${info.title}](https://youtu.be/${tubeState.videoId})`,
+                    metadata: { ...msgPayload.metadata, title: info.title, thumbnail: tubeState.thumbnail }
+                  };
+                  io.to(roomId).emit('chat-message-update', updatedMsg);
+                }
+                io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition() });
+              }
+            });
+          }
         }
 
         // PREVIOUS Action: Pop history -> Queue Current -> Play History
@@ -1536,6 +1622,8 @@ app.prepare().then(async () => {
 
       // Detect Changes for System Messages & History Tracking
       if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
+        // ... (rest of existing logic)
+
 
         // HISTORY LOGIC: Before switching, push CURRENT video to history
         if (tubeState.videoId) {
