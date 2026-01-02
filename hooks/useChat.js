@@ -24,6 +24,7 @@ export function useChat(roomId, user) {
     // Track seen message IDs to prevent duplicates
     const seenIdsRef = useRef(new Set());
     const messagesRef = useRef([]);
+    const hasRequestedHistoryRef = useRef(false); // Prevent duplicate history requests
 
     // Send a message
     const sendMessage = useCallback((text) => {
@@ -238,8 +239,10 @@ export function useChat(roomId, user) {
         socket.on('force-disconnect', handleForceDisconnect);
 
         // Request history manually to ensure we get it even if listeners attached late
-        if (roomId) {
+        // BUT only request ONCE to prevent duplicates
+        if (roomId && !hasRequestedHistoryRef.current) {
             console.log('📜 Requesting history for:', roomId);
+            hasRequestedHistoryRef.current = true;
             socket.emit('get-history', { roomId });
         }
 
