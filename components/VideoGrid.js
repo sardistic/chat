@@ -297,7 +297,7 @@ function VideoTile({
                         : 'none',
                     // Use background for gradient borders
                     background: borderStyle.borderColor.includes('gradient')
-                        ? `linear-gradient(#0a0a0a, #0a0a0a) padding-box, ${borderStyle.borderColor} border-box`
+                        ? `linear-gradient(transparent, transparent) padding-box, ${borderStyle.borderColor} border-box`
                         : 'transparent',
                     border: `${borderStyle.borderWidth}px solid ${borderStyle.borderColor.includes('gradient') ? 'transparent' : borderStyle.borderColor}`,
                 }}
