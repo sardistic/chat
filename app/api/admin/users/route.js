@@ -70,6 +70,8 @@ export async function GET(request) {
                     discordId: true,
                     isBanned: true,
                     isGuest: true,
+                    ipAddress: true,
+                    lastSeen: true,
                     createdAt: true,
                 }
             }),

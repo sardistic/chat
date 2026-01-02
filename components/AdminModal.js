@@ -16,12 +16,16 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const [selectedUserId, setSelectedUserId] = useState(null); // For Detail Modal
     const [actionLoading, setActionLoading] = useState(null); // userId being acted upon
 
-    // Fetch on open
+    // Fetch on open or search/filter change
     useEffect(() => {
-        if (isOpen) {
-            fetchUsers();
-        }
-    }, [isOpen]);
+        if (!isOpen) return;
+
+        const timer = setTimeout(() => {
+            fetchUsers(1);
+        }, search ? 300 : 0); // Debounce search
+
+        return () => clearTimeout(timer);
+    }, [isOpen, search, roleFilter]);
 
     const fetchUsers = async (page = 1) => {
         setLoading(true);
@@ -46,6 +50,13 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
     };
 
     const handleAction = async (userId, action, value) => {
+        let reason = "";
+        if (action === 'BAN' && value === true) {
+            reason = prompt("Enter ban reason (optional):") || "No reason provided";
+        } else if (action === 'KICK') {
+            reason = prompt("Enter kick reason (optional):") || "No reason provided";
+        }
+
         if (!confirm(`Are you sure you want to ${action.toLowerCase()} this user?`)) return;
 
         setActionLoading(userId);
@@ -53,7 +64,7 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
             const res = await fetch('/api/admin/actions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, action, value })
+                body: JSON.stringify({ userId, action, value, reason })
             });
 
             if (!res.ok) {
@@ -200,6 +211,7 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                 <tr style={{ background: 'rgba(0,0,0,0.2)', textAlign: 'left', color: '#888' }}>
                                     <th style={{ padding: '12px 16px', fontWeight: '500' }}>User</th>
                                     <th style={{ padding: '12px 16px', fontWeight: '500' }}>Role</th>
+                                    <th style={{ padding: '12px 16px', fontWeight: '500' }}>Last IP</th>
                                     <th style={{ padding: '12px 16px', fontWeight: '500' }}>Status</th>
                                     <th style={{ padding: '12px 16px', fontWeight: '500' }}>Joined</th>
                                     <th style={{ padding: '12px 16px', fontWeight: '500', textAlign: 'right' }}>Actions</th>
@@ -207,9 +219,9 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>Loading users...</td></tr>
+                                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>Loading users...</td></tr>
                                 ) : users.length === 0 ? (
-                                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>No users found</td></tr>
+                                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>No users found</td></tr>
                                 ) : (
                                     users.map(user => (
                                         <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
@@ -230,6 +242,9 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                             </td>
                                             <td style={{ padding: '12px 16px' }}>
                                                 <Badge role={user.role} />
+                                            </td>
+                                            <td style={{ padding: '12px 16px', color: '#888', fontFamily: 'monospace', fontSize: '11px' }}>
+                                                {user.ipAddress || 'Unknown'}
                                             </td>
                                             <td style={{ padding: '12px 16px' }}>
                                                 {user.isBanned ? (

@@ -20,7 +20,8 @@ export async function POST(request) {
     }
 
     try {
-        const { action, userId, value } = await request.json();
+        const { action, userId, value, reason } = await request.json();
+        const ip = request.headers.get('x-forwarded-for') || request.ip || '127.0.0.1';
 
         if (!userId || !action) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -63,6 +64,8 @@ export async function POST(request) {
                 await prisma.auditLog.create({
                     data: {
                         action: value ? 'USER_BANNED' : 'USER_UNBANNED',
+                        details: { reason },
+                        ipAddress: ip,
                         targetId: userId,
                         actorId: session.user.id
                     }
@@ -73,7 +76,7 @@ export async function POST(request) {
                     await fetch(`http://localhost:${process.env.PORT || 3000}/api/admin/socket-kick`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'x-admin-secret': process.env.NEXTAUTH_SECRET },
-                        body: JSON.stringify({ userId, reason: 'Account Banned', ban: true })
+                        body: JSON.stringify({ userId, reason: reason || 'Account Banned', ban: true })
                     });
                 } catch (e) {
                     console.error("Failed to trigger socket ban:", e.message);
@@ -86,7 +89,7 @@ export async function POST(request) {
                     await fetch(`http://localhost:${process.env.PORT || 3000}/api/admin/socket-kick`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'x-admin-secret': process.env.NEXTAUTH_SECRET },
-                        body: JSON.stringify({ userId, reason: 'Kicked by Moderator', ban: false })
+                        body: JSON.stringify({ userId, reason: reason || 'Kicked by Moderator', ban: false })
                     });
                 } catch (e) {
                     console.error("Failed to trigger socket kick:", e.message);
@@ -95,6 +98,8 @@ export async function POST(request) {
                 await prisma.auditLog.create({
                     data: {
                         action: 'USER_KICKED',
+                        details: { reason },
+                        ipAddress: ip,
                         targetId: userId,
                         actorId: session.user.id
                     }
@@ -114,7 +119,8 @@ export async function POST(request) {
                 await prisma.auditLog.create({
                     data: {
                         action: 'ROLE_CHANGED',
-                        details: `Role set to ${value}`,
+                        details: { reason, newRole: value },
+                        ipAddress: ip,
                         targetId: userId,
                         actorId: session.user.id
                     }

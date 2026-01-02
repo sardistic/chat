@@ -119,6 +119,9 @@ export default function UserDetailModal({ userId, onClose }) {
                                 <div style={{ color: '#888' }}>Joined</div>
                                 <div>{new Date(user.createdAt).toLocaleString()}</div>
 
+                                <div style={{ color: '#888' }}>IP Address</div>
+                                <div style={{ fontFamily: 'monospace' }}>{user.ipAddress || 'Unknown'}</div>
+
                                 <div style={{ color: '#888' }}>Discord ID</div>
                                 <div>{user.discordId || 'N/A'}</div>
 
@@ -142,7 +145,9 @@ export default function UserDetailModal({ userId, onClose }) {
                                                 <span style={{ fontWeight: '600', color: log.action.includes('BAN') ? '#ef4444' : '#fff' }}>{log.action}</span>
                                                 <span style={{ color: '#666', fontSize: '11px' }}>{new Date(log.createdAt).toLocaleDateString()}</span>
                                             </div>
-                                            <div style={{ color: '#aaa', marginBottom: '8px' }}>{log.details || 'No details provided'}</div>
+                                            <div style={{ color: '#aaa', marginBottom: '8px' }}>
+                                                {typeof log.details === 'object' && log.details !== null ? (log.details.reason || log.details.newRole || 'No additional details') : (log.details || 'No details')}
+                                            </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#666' }}>
                                                 <Icon icon="fa:user-secret" />
                                                 By {log.actor?.name || 'System'}
