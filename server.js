@@ -1492,7 +1492,7 @@ app.prepare().then(async () => {
       if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
 
         // QUEUE LOGIC: If a video is ALREADY playing, add to queue instead of interrupting
-        if (tubeState.isPlaying && tubeState.videoId) {
+        if (tubeState.videoId) {
           const queueItem = {
             videoId: incomingVideoId,
             title: `Video: ${incomingVideoId}`,
