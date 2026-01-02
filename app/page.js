@@ -33,7 +33,8 @@ function MainApp({ user, onLeaveRoom }) {
     error
   } = useWebRTC(roomId, user, false);
   const { ircUsers, sendMessage: sendToIRC } = useIRC(user);
-  const { isBuilding, blockedIds } = useChat(roomId, user);
+  const chat = useChat(roomId, user);
+  const { isBuilding, blockedIds, typingUsers } = chat;
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -48,7 +49,6 @@ function MainApp({ user, onLeaveRoom }) {
   const [selectedProfileUser, setSelectedProfileUser] = useState(null);
   const [modalPosition, setModalPosition] = useState(null);
   const [peerSettings, setPeerSettings] = useState({}); // { [userId]: { volume: 1, muted: false, hidden: false } }
-  const [typingUsers, setTypingUsers] = useState([]);
   const [mentionCounts, setMentionCounts] = useState({});
   const [chatReactions, setChatReactions] = useState([]);
   const { tubeState, receivedAt, updateTubeState, isOwner: isTubeOwner } = useYouTubeSync(roomId, user);
@@ -447,8 +447,8 @@ function MainApp({ user, onLeaveRoom }) {
                 users={Array.from(peers.values())}
                 ircUsers={Array.from(ircUsers.values())}
                 onUserClick={handleProfileClick}
-                onTypingUsersChange={setTypingUsers}
                 sendToIRC={sendToIRC}
+                {...chat}
               />
             </div>
 

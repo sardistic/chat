@@ -38,8 +38,21 @@ function groupMessages(messages) {
     return groups;
 }
 
-export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onUserClick = () => { }, onTypingUsersChange = () => { }, sendToIRC = () => { } }) {
-    const { messages, sendMessage, isLoading, typingUsers, handleTyping, isTyping } = useChat(roomId, user);
+export default function ChatPanel({
+    roomId,
+    user,
+    users = [],
+    ircUsers = [],
+    onUserClick = () => { },
+    sendToIRC = () => { },
+    // Chat props passed from parent
+    messages,
+    sendMessage,
+    isLoading,
+    typingUsers,
+    handleTyping,
+    isTyping
+}) {
     const { emotes } = useEmotes(); // Load 7TV emotes
     const [inputValue, setInputValue] = useState('');
     const [showGifPicker, setShowGifPicker] = useState(false);
@@ -73,15 +86,6 @@ export default function ChatPanel({ roomId, user, users = [], ircUsers = [], onU
         }, 50);
         return () => clearTimeout(timer);
     }, [messages, typingUsers]);
-
-    // Propagate typing users to parent (include self if typing)
-    useEffect(() => {
-        if (isTyping && user?.name) {
-            onTypingUsersChange([...typingUsers, user.name]);
-        } else {
-            onTypingUsersChange(typingUsers);
-        }
-    }, [typingUsers, isTyping, user?.name, onTypingUsersChange]);
 
     // Reset mention selection when filtered list changes
     useEffect(() => {

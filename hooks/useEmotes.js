@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 
-// Default to a popular global set (7TV Global)
-const DEFAULT_EMOTE_SET = "62cdd34e72a832540de95857"; // 7TV Global Set
+// Default to a popular global set
+const DEFAULT_EMOTE_SET = "global";
 
 export function useEmotes(emoteSetId = DEFAULT_EMOTE_SET) {
     const [emotes, setEmotes] = useState(new Map());

@@ -248,7 +248,6 @@ export function useChat(roomId, user) {
             socket.off('chat-history', handleHistory);
             socket.off('chat-message-update', handleUpdate);
             socket.off('user-typing', handleUserTyping);
-            socket.off('user-typing', handleUserTyping);
             socket.off('user-stop-typing', handleUserStopTyping);
             socket.off('force-disconnect', handleForceDisconnect);
 
