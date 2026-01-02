@@ -1609,6 +1609,26 @@ app.prepare().then(async () => {
             tubeState.playStartedAt = Date.now();
             tubeState.pausedAt = 0;
 
+            // Emit Now Playing for the historical video
+            msgPayload = {
+              id: `sys-tube-${Date.now()}`, // New ID to force a new message (or reuse global if needed, but history jump usually warrants new context)
+              roomId,
+              text: `**Now Playing** (History)`,
+              sender: 'System',
+              type: 'system',
+              systemType: 'tube-now-playing',
+              metadata: {
+                kicker: 'REWIND',
+                videoId: prevVideo.videoId,
+                title: prevVideo.title,
+                thumbnail: prevVideo.thumbnail,
+                startedBy: prevVideo.startedBy
+              },
+              timestamp: new Date().toISOString()
+            };
+            storeMessage(roomId, msgPayload);
+            io.to(roomId).emit('chat-message', msgPayload);
+
             // Emit update immediately
             io.to(roomId).emit('tube-state', {
               ...tubeState,
