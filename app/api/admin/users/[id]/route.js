@@ -20,32 +20,41 @@ export async function GET(request, { params }) {
     }
 
     try {
-        // 2. Fetch User Details & Audit Logs
+        // 2. Fetch User & Stats
         const user = await prisma.user.findUnique({
             where: { id },
-            include: {
-                // Include stats/settings if needed
-                stats: true,
-                // Include Audit Logs where this user was the TARGET (e.g. they were banned)
-                auditLogsTarget: {
-                    orderBy: { createdAt: 'desc' },
-                    include: {
-                        actor: { select: { name: true, image: true, role: true } }
-                    }
-                },
-                // Include Audit Logs where this user was the ACTOR (if they are staff)
-                auditLogsActor: {
-                    orderBy: { createdAt: 'desc' },
-                    take: 50 // Limit actor logs
-                }
-            }
+            include: { stats: true }
         });
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ user });
+        // 3. Fetch Audit Logs where this user was the TARGET
+        const auditLogsTarget = await prisma.auditLog.findMany({
+            where: { targetId: id },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        });
+
+        // 4. Manually resolve actors for the logs
+        const logsWithActors = await Promise.all(auditLogsTarget.map(async log => {
+            if (log.actorId) {
+                const actor = await prisma.user.findUnique({
+                    where: { id: log.actorId },
+                    select: { name: true, image: true, role: true, displayName: true, avatarUrl: true }
+                });
+                return { ...log, actor };
+            }
+            return log;
+        }));
+
+        return NextResponse.json({
+            user: {
+                ...user,
+                auditLogsTarget: logsWithActors
+            }
+        });
 
     } catch (error) {
         console.error("User Detail API Error:", error);
