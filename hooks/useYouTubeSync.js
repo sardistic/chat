@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSocket } from '@/lib/socket';
 
 export function useYouTubeSync(roomId, user) {
@@ -7,28 +7,28 @@ export function useYouTubeSync(roomId, user) {
     const [tubeState, setTubeState] = useState({
         videoId: null,
         isPlaying: false,
-        currentPosition: 0,  // Server-calculated position
+        currentPosition: 0,
         pausedAt: 0,
         lastUpdate: 0,
         ownerId: null
     });
 
+    // Client-side dedup: track last sent videoId to prevent rapid duplicates
+    const lastSentVideoRef = useRef({ videoId: null, timestamp: 0 });
+
     // Listen for updates from server
     useEffect(() => {
         if (!socket) return;
 
-        // Full state updates (on join, video change, play/pause)
         const handleStateUpdate = (newState) => {
             setTubeState(prev => ({
                 ...prev,
                 ...newState,
-                // Use currentPosition from server if available
                 currentPosition: newState.currentPosition ?? prev.currentPosition
             }));
             setReceivedAt(Date.now());
         };
 
-        // Frequent sync updates (every 2 seconds during playback)
         const handleSyncUpdate = (syncData) => {
             setTubeState(prev => ({
                 ...prev,
@@ -41,7 +41,6 @@ export function useYouTubeSync(roomId, user) {
         socket.on('tube-state', handleStateUpdate);
         socket.on('tube-sync', handleSyncUpdate);
 
-        // Request initial state on join
         socket.emit('tube-request-state', { roomId });
 
         return () => {
@@ -54,12 +53,34 @@ export function useYouTubeSync(roomId, user) {
     const updateTubeState = useCallback((partialState) => {
         if (!socket) return;
 
+        // CLIENT-SIDE DEDUP: Block rapid duplicate video changes
+        if (partialState.videoId) {
+            const now = Date.now();
+            const lastSent = lastSentVideoRef.current;
+
+            // Extract video ID for consistent comparison
+            let videoId = partialState.videoId;
+            if (videoId.includes('v=')) {
+                videoId = videoId.split('v=')[1].split('&')[0];
+            } else if (videoId.includes('youtu.be/')) {
+                videoId = videoId.split('youtu.be/')[1].split('?')[0];
+            }
+
+            // If same video was sent within last 5 seconds, block
+            if (lastSent.videoId === videoId && (now - lastSent.timestamp) < 5000) {
+                console.log(`[useYouTubeSync] Blocking duplicate videoId: ${videoId}`);
+                return;
+            }
+
+            // Record this send
+            lastSentVideoRef.current = { videoId, timestamp: now };
+        }
+
         const newState = {
             ...partialState,
             ownerId: socket.id
         };
 
-        // OPTIMISTIC UPDATE for UI responsiveness
         setTubeState(prev => ({ ...prev, ...newState }));
 
         socket.emit('tube-update', {
@@ -69,7 +90,6 @@ export function useYouTubeSync(roomId, user) {
         });
     }, [socket, roomId, tubeState]);
 
-    // We are the owner if we set the last state OR if no owner exists
     const isOwner = !tubeState.ownerId || tubeState.ownerId === socket?.id;
 
     return {
