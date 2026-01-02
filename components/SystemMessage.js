@@ -162,6 +162,38 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             kicker: 'TUBE',
             animation: 'none'
         },
+        'tube-now-playing': {
+            icon: 'mdi:play-circle',
+            color: '#22c55e', // Green
+            bgColor: 'rgba(34, 197, 94, 0.1)',
+            borderColor: 'rgba(34, 197, 94, 0.4)',
+            kicker: '▶ ON AIR',
+            animation: 'pulse'
+        },
+        'tube-stopped': {
+            icon: 'mdi:stop-circle',
+            color: '#6b7280', // Gray
+            bgColor: 'rgba(107, 114, 128, 0.1)',
+            borderColor: 'rgba(107, 114, 128, 0.3)',
+            kicker: '◼ OFF AIR',
+            animation: 'none'
+        },
+        'tube-resumed': {
+            icon: 'mdi:play',
+            color: '#22c55e', // Green
+            bgColor: 'rgba(34, 197, 94, 0.08)',
+            borderColor: 'rgba(34, 197, 94, 0.3)',
+            kicker: '▶ PLAYING',
+            animation: 'none'
+        },
+        'tube-paused': {
+            icon: 'mdi:pause',
+            color: '#f59e0b', // Amber
+            bgColor: 'rgba(245, 158, 11, 0.1)',
+            borderColor: 'rgba(245, 158, 11, 0.3)',
+            kicker: '⏸ PAUSED',
+            animation: 'none'
+        },
         'info': {
             icon: 'mdi:information-variant',
             color: '#3b82f6', // Blue
@@ -262,11 +294,49 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 )}
 
                 {/* Extended Metadata (Commit info, etc.) */}
-                {metadata && !metadata.logs && (
+                {metadata && !metadata.logs && !metadata.thumbnail && (
                     <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed rgba(255,255,255,0.1)', fontSize: '11px', color: '#888' }}>
                         {metadata.commit && <div>Commit: <span style={{ color: '#ccc' }}>{metadata.commit}</span></div>}
                         {metadata.author && <div>Author: <span style={{ color: '#ccc' }}>{metadata.author}</span></div>}
                         {metadata.duration && <div>Duration: <span style={{ color: '#ccc' }}>{metadata.duration}</span></div>}
+                    </div>
+                )}
+
+                {/* YouTube Thumbnail for Now Playing */}
+                {metadata?.thumbnail && (
+                    <div style={{
+                        marginTop: '8px',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        aspectRatio: '16/9',
+                        maxWidth: '280px',
+                        background: '#111'
+                    }}>
+                        <img
+                            src={metadata.thumbnail}
+                            alt={metadata.title || 'Video thumbnail'}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                opacity: 0.9
+                            }}
+                        />
+                        {metadata.startedBy && (
+                            <div style={{
+                                position: 'absolute',
+                                bottom: '4px',
+                                right: '4px',
+                                background: 'rgba(0,0,0,0.75)',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '10px',
+                                color: '#aaa'
+                            }}>
+                                by {metadata.startedBy}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

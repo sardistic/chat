@@ -1333,11 +1333,8 @@ app.prepare().then(async () => {
 
     socket.on('tube-update', (payload) => {
       const roomId = payload.roomId || socket.data.roomId || 'default-room';
-      const newState = payload; // Aliasing for existing logic
+      const newState = payload;
 
-      // Security: Only the owner should be able to update progress heartbeats,
-      // but anyone can change the video or toggle play/pause (Collaborative DJ).
-      // If there's no owner, the first person to update takes it.
       if (!tubeState.ownerId) {
         tubeState.ownerId = socket.id;
       }
@@ -1345,31 +1342,55 @@ app.prepare().then(async () => {
       const fallback = lastKnownUsers.get(socket.id);
       const userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
       let systemMsg = null;
+      let shouldUpdateExisting = false;
+
+      // Track the last tube message ID for updates
+      const tubeMsgKey = `tube-${roomId}`;
+      const lastTubeMsgId = global._lastTubeMsg?.[tubeMsgKey];
 
       // Detect Changes for System Messages
       if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
         // New Video (Now Playing)
         const title = newState.title || newState.videoId;
+        const thumbnail = newState.thumbnail || `https://img.youtube.com/vi/${newState.videoId}/mqdefault.jpg`;
         systemMsg = {
-          text: `Now Playing: **${title}**`,
-          kicker: 'ON AIR',
-          type: 'tube-video'
+          text: `🎬 **Now Playing**: ${title}`,
+          kicker: '▶ ON AIR',
+          type: 'tube-now-playing',
+          metadata: {
+            videoId: newState.videoId,
+            title,
+            thumbnail,
+            startedBy: userName
+          }
         };
-      } else if (newState.type === 'ended') {
-        // Video Ended
+      } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
+        // Video Ended / Stopped
         systemMsg = {
-          text: `Video Ended`,
-          kicker: 'OFF AIR',
-          type: 'tube-video'
+          text: `⏹ **Playback Stopped**`,
+          kicker: '◼ OFF AIR',
+          type: 'tube-stopped',
+          metadata: {}
         };
+        shouldUpdateExisting = !!lastTubeMsgId; // Update the last message instead of new
       } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
-        // Play/Pause Toggle (debounce check?)
-        const action = newState.isPlaying ? 'resumed' : 'paused';
-        systemMsg = {
-          text: `**${userName}** ${action} the video`,
-          kicker: 'TUBE',
-          type: 'tube-video'
-        };
+        // Play/Pause Toggle
+        if (newState.isPlaying) {
+          systemMsg = {
+            text: `▶ **${userName}** resumed playback`,
+            kicker: '▶ PLAYING',
+            type: 'tube-resumed',
+            metadata: {}
+          };
+        } else {
+          systemMsg = {
+            text: `⏸ **${userName}** paused`,
+            kicker: '⏸ PAUSED',
+            type: 'tube-paused',
+            metadata: {}
+          };
+        }
+        shouldUpdateExisting = !!lastTubeMsgId; // Update existing tube message
       }
 
       if (newState.videoId !== undefined) tubeState.videoId = newState.videoId;
@@ -1378,25 +1399,54 @@ app.prepare().then(async () => {
 
       // Emit System Message if significant change occurred
       if (systemMsg) {
-        const msgPayload = {
-          id: `sys-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          roomId,
-          text: systemMsg.text,
-          sender: 'System',
-          type: 'system',
-          systemType: systemMsg.type,
-          metadata: { kicker: systemMsg.kicker },
-          timestamp: new Date().toISOString()
-        };
-        storeMessage(roomId, msgPayload);
-        io.to(roomId).emit('chat-message', msgPayload);
+        let msgId;
+
+        if (shouldUpdateExisting && lastTubeMsgId) {
+          // Update existing message
+          msgId = lastTubeMsgId;
+          const msgPayload = {
+            id: msgId,
+            roomId,
+            text: systemMsg.text,
+            sender: 'System',
+            type: 'system',
+            systemType: systemMsg.type,
+            metadata: { kicker: systemMsg.kicker, ...systemMsg.metadata },
+            timestamp: new Date().toISOString()
+          };
+
+          // Update in history
+          if (messageHistory[roomId]) {
+            const idx = messageHistory[roomId].findIndex(m => m.id === msgId);
+            if (idx !== -1) {
+              messageHistory[roomId][idx] = msgPayload;
+            }
+          }
+          saveMessageToDB(msgPayload);
+          io.to(roomId).emit('chat-message-update', msgPayload);
+        } else {
+          // Create new message
+          msgId = `sys-tube-${Date.now()}`;
+          const msgPayload = {
+            id: msgId,
+            roomId,
+            text: systemMsg.text,
+            sender: 'System',
+            type: 'system',
+            systemType: systemMsg.type,
+            metadata: { kicker: systemMsg.kicker, ...systemMsg.metadata },
+            timestamp: new Date().toISOString()
+          };
+          storeMessage(roomId, msgPayload);
+          io.to(roomId).emit('chat-message', msgPayload);
+
+          // Track this as the last tube message
+          if (!global._lastTubeMsg) global._lastTubeMsg = {};
+          global._lastTubeMsg[tubeMsgKey] = msgId;
+        }
       }
 
-      // If the update includes an ownerId, only respect it if intentionally handed over
-      // For now, we allow anyone to become owner if they send an update and CURRENT owner is missing.
-
       tubeState.lastUpdate = Date.now();
-      // Broadcast with server's current clock to allow drift calculation
       io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });
     });
 
