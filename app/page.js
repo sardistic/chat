@@ -590,11 +590,11 @@ function MainApp({ user, onLeaveRoom }) {
         </div>
       )}
 
-      {/* Own Profile Modal */}
       <ProfileModal
         user={{ ...user, customStatus }}
         isOpen={showOwnProfile}
         onClose={() => setShowOwnProfile(false)}
+        viewingUserRole={user.role} // Pass role for own profile (tho mostly irrelevant)
       />
 
       <SettingsModal
@@ -675,6 +675,7 @@ function MainApp({ user, onLeaveRoom }) {
         position={modalPosition}
         peerSettings={peerSettings}
         onUpdatePeerSettings={handleUpdatePeerSettings}
+        viewingUserRole={user.role} // Pass local user role
       />
     </div>
   );

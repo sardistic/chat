@@ -66,7 +66,8 @@ export default function ProfileModal({
     onClose,
     position,
     peerSettings = {},
-    onUpdatePeerSettings = () => { }
+    onUpdatePeerSettings = () => { },
+    viewingUserRole = "USER" // Default to normal user
 }) {
     const modalRef = useRef(null);
     const { socket } = useSocket();
@@ -368,35 +369,39 @@ export default function ProfileModal({
 
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
 
-                            {/* This section would ideally check if (session.user.role === 'ADMIN' | 'MODERATOR') */}
-                            <button
-                                className="btn danger"
-                                style={{ justifyContent: 'center' }}
-                                onClick={async () => {
-                                    if (confirm("Kick this user?")) {
-                                        await fetch('/api/admin/actions', {
-                                            method: 'POST', body: JSON.stringify({ userId: user.id, action: 'KICK' })
-                                        });
-                                        onClose();
-                                    }
-                                }}
-                            >
-                                <Icon icon="fa:ban" width="14" /> Kick User (Mod)
-                            </button>
-                            <button
-                                className="btn danger"
-                                style={{ justifyContent: 'center', marginTop: '4px' }}
-                                onClick={async () => {
-                                    if (confirm("Ban this user?")) {
-                                        await fetch('/api/admin/actions', {
-                                            method: 'POST', body: JSON.stringify({ userId: user.id, action: 'BAN', value: true })
-                                        });
-                                        onClose();
-                                    }
-                                }}
-                            >
-                                <Icon icon="fa:gavel" width="14" /> Ban User (Mod)
-                            </button>
+                            {/* Admin/Mod Actions */}
+                            {(viewingUserRole === 'ADMIN' || viewingUserRole === 'MODERATOR' || viewingUserRole === 'OWNER') && (
+                                <>
+                                    <button
+                                        className="btn danger"
+                                        style={{ justifyContent: 'center' }}
+                                        onClick={async () => {
+                                            if (confirm("Kick this user?")) {
+                                                await fetch('/api/admin/actions', {
+                                                    method: 'POST', body: JSON.stringify({ userId: user.id, action: 'KICK' })
+                                                });
+                                                onClose();
+                                            }
+                                        }}
+                                    >
+                                        <Icon icon="fa:ban" width="14" /> Kick User (Mod)
+                                    </button>
+                                    <button
+                                        className="btn danger"
+                                        style={{ justifyContent: 'center', marginTop: '4px' }}
+                                        onClick={async () => {
+                                            if (confirm("Ban this user?")) {
+                                                await fetch('/api/admin/actions', {
+                                                    method: 'POST', body: JSON.stringify({ userId: user.id, action: 'BAN', value: true })
+                                                });
+                                                onClose();
+                                            }
+                                        }}
+                                    >
+                                        <Icon icon="fa:gavel" width="14" /> Ban User (Mod)
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
