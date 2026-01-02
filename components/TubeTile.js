@@ -519,19 +519,34 @@ export default function TubeTile({
                 >
                     <Icon icon="fa:step-backward" />
                 </button>
-                <button
-                    onClick={() => {
-                        const isPlaying = tubeState?.isPlaying;
-                        if (onSync) onSync({ type: isPlaying ? 'pause' : 'play', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
-                    }}
-                    style={{
-                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-                        color: 'white', padding: '4px', cursor: 'pointer'
-                    }}
-                    title={tubeState?.isPlaying ? "Pause" : "Resume"}
-                >
-                    <Icon icon={tubeState?.isPlaying ? "fa:pause" : "fa:play"} />
-                </button>
+                {!tubeState?.isPlaying && (
+                    <button
+                        onClick={() => {
+                            if (onSync) onSync({ type: 'play', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
+                        }}
+                        style={{
+                            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                            color: 'white', padding: '4px', cursor: 'pointer'
+                        }}
+                        title="Resume"
+                    >
+                        <Icon icon="fa:play" />
+                    </button>
+                )}
+                {tubeState?.isPlaying && (
+                    <button
+                        onClick={() => {
+                            if (onSync) onSync({ type: 'pause', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
+                        }}
+                        style={{
+                            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                            color: 'white', padding: '4px', cursor: 'pointer'
+                        }}
+                        title="Pause"
+                    >
+                        <Icon icon="fa:pause" />
+                    </button>
+                )}
                 <button
                     onClick={() => {
                         // Next (Explicit Action)
