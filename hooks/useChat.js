@@ -230,6 +230,7 @@ export function useChat(roomId, user) {
         handleTyping,
         typingUsers: typingUsersList,
         isTyping,
-        isBuilding
+        isBuilding,
+        blockedIds // Expose for VideoGrid filtering
     };
 }

@@ -12,6 +12,7 @@ import { useIRC } from "@/hooks/useIRC";
 import { useSocket } from "@/lib/socket";
 import { useYouTubeSync } from "@/hooks/useYouTubeSync";
 import { useChat } from "@/hooks/useChat";
+import SettingsModal from "@/components/SettingsModal";
 
 function MainApp({ user, onLeaveRoom }) {
   const roomId = "default-room";
@@ -30,9 +31,10 @@ function MainApp({ user, onLeaveRoom }) {
     error
   } = useWebRTC(roomId, user, false);
   const { ircUsers, sendMessage: sendToIRC } = useIRC(user);
-  const { isBuilding } = useChat(roomId, user);
+  const { isBuilding, blockedIds } = useChat(roomId, user);
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(340);
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
@@ -396,7 +398,9 @@ function MainApp({ user, onLeaveRoom }) {
             tubeState={tubeState}
             receivedAt={receivedAt}
             onUpdateTubeState={updateTubeState}
+            onUpdateTubeState={updateTubeState}
             isTubeOwner={isTubeOwner}
+            blockedIds={blockedIds}
           />
         </div>
 
@@ -598,9 +602,34 @@ function MainApp({ user, onLeaveRoom }) {
       <ProfileModal
         user={selectedProfileUser}
         isOpen={!!selectedProfileUser}
-        onClose={() => { setSelectedProfileUser(null); setModalPosition(null); }}
-        position={modalPosition}
+        onClose={() => setSelectedProfileUser(null)}
+        peerSettings={peerSettings}
+        onUpdatePeerSettings={handleUpdatePeerSettings}
       />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={user}
+      />
+
+      {/* Settings Toggle (Fixed Bottom Left) */}
+      <button
+        onClick={() => setIsSettingsOpen(true)}
+        className="btn icon-btn"
+        style={{
+          position: 'fixed', bottom: '20px', left: '20px', zIndex: 100,
+          width: '40px', height: '40px', borderRadius: '50%',
+          background: 'rgba(15, 16, 19, 0.8)', border: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'rgba(255,255,255,0.7)', cursor: 'pointer', backdropFilter: 'blur(4px)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+        }}
+        title="Settings"
+      >
+        <Icon icon="fa:cog" width="18" />
+      </button>
+
 
       {/* Status Input Dialog */}
       {showStatusInput && (

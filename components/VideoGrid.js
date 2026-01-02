@@ -443,7 +443,11 @@ export default function VideoGrid({
     tubeState = null,
     receivedAt = 0,
     onUpdateTubeState = () => { },
-    isTubeOwner = false
+    tubeState = null,
+    receivedAt = 0,
+    onUpdateTubeState = () => { },
+    isTubeOwner = false,
+    blockedIds = new Set() // Passed from useChat
 }) {
     const { socket } = useSocket();
     const [incomingReactions, setIncomingReactions] = useState(new Map());
@@ -624,6 +628,11 @@ export default function VideoGrid({
 
                 {/* Remote Peer Tiles */}
                 {peerArray.map(([peerId, peerData]) => {
+                    const userId = peerData.user?.id || peerId;
+
+                    // Filter Blocked Users
+                    if (blockedIds.has(userId)) return null;
+
                     const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
                     const isRemoteMuted = peerData.user?.isAudioEnabled === false;
                     const userId = peerData.user?.id || peerId;
