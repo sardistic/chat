@@ -110,6 +110,62 @@ function getTubePosition() {
   return tubeState.pausedAt + (Date.now() - tubeState.playStartedAt) / 1000;
 }
 
+// Helper to extract video ID from URL
+function extractVideoId(input) {
+  if (!input) return null;
+  // Already a video ID (11 chars, alphanumeric + _ -)
+  if (/^[\w-]{11}$/.test(input)) return input;
+
+  // URL patterns
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/,
+    /youtube\.com\/embed\/([\w-]{11})/,
+    /youtube\.com\/v\/([\w-]{11})/
+  ];
+
+  for (const pattern of patterns) {
+    const match = input.match(pattern);
+    if (match) return match[1];
+  }
+  return input; // Return as-is if no match
+}
+
+// Helper to fetch video info from YouTube
+async function getYouTubeVideoInfo(videoIdOrUrl) {
+  try {
+    const videoId = extractVideoId(videoIdOrUrl);
+    if (!videoId) return { title: 'Unknown', videoId: null };
+
+    // Search for the video by ID
+    const results = await ytsr(`https://www.youtube.com/watch?v=${videoId}`, { limit: 1 });
+    const video = results.items.find(item => item.type === 'video');
+
+    if (video) {
+      return {
+        videoId,
+        title: video.title,
+        author: video.author?.name || '',
+        thumbnail: video.bestThumbnail?.url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+        duration: video.duration
+      };
+    }
+
+    return {
+      videoId,
+      title: videoId,
+      thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+    };
+  } catch (err) {
+    console.error('[YouTube] Failed to fetch video info:', err.message);
+    const videoId = extractVideoId(videoIdOrUrl);
+    return {
+      videoId,
+      title: videoId || 'Unknown',
+      thumbnail: videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null
+    };
+  }
+}
+
 function getBundle(roomId, type) {
   if (!bundles.has(roomId)) return null;
   const roomBundles = bundles.get(roomId);
@@ -1408,47 +1464,88 @@ app.prepare().then(async () => {
 
       // Detect Changes for System Messages
       if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
-        // New Video (Now Playing) - early dedup already filtered duplicates
-        const title = newState.title || newState.videoId;
-        const thumbnail = newState.thumbnail || `https://img.youtube.com/vi/${newState.videoId}/mqdefault.jpg`;
-        systemMsg = {
-          text: `🎬 **Now Playing**: ${title}`,
-          kicker: '▶ ON AIR',
-          type: 'tube-now-playing',
-          metadata: {
-            videoId: newState.videoId,
-            title,
-            thumbnail,
-            startedBy: userName
-          }
-        };
+        // New Video - fetch info from YouTube asynchronously
+        const videoId = extractVideoId(newState.videoId);
+
+        // Fetch video info (async, but we don't await to avoid blocking)
+        getYouTubeVideoInfo(newState.videoId).then(videoInfo => {
+          const title = videoInfo.title || videoId;
+          const thumbnail = videoInfo.thumbnail || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+          const author = videoInfo.author || '';
+
+          // Store in tubeState for future reference
+          tubeState.title = title;
+          tubeState.thumbnail = thumbnail;
+
+          const displayTitle = author ? `${title} - ${author}` : title;
+
+          const msgPayload = {
+            id: `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**Now Playing**: ${displayTitle}`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-now-playing',
+            metadata: {
+              kicker: 'ON AIR',
+              videoId,
+              title: displayTitle,
+              thumbnail,
+              startedBy: userName
+            },
+            timestamp: new Date().toISOString()
+          };
+
+          storeMessage(roomId, msgPayload);
+          io.to(roomId).emit('chat-message', msgPayload);
+
+          // Track this as the last tube message
+          if (!global._lastTubeMsg) global._lastTubeMsg = {};
+          global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
+        });
+
+        // Update state immediately (don't wait for video info)
+        tubeState.videoId = videoId;
+        tubeState.pausedAt = 0;
+        if (newState.isPlaying) {
+          tubeState.isPlaying = true;
+          tubeState.playStartedAt = Date.now();
+        }
+        tubeState.lastUpdate = Date.now();
+        io.to(roomId).emit('tube-state', {
+          ...tubeState,
+          serverTime: Date.now(),
+          currentPosition: getTubePosition()
+        });
+        return; // Exit early, async handler will emit message
+
       } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
         // Video Ended / Stopped
         systemMsg = {
-          text: `⏹ **Playback Stopped**`,
-          kicker: '◼ OFF AIR',
+          text: `**Playback Stopped**`,
+          kicker: 'OFF AIR',
           type: 'tube-stopped',
           metadata: {}
         };
-        shouldUpdateExisting = !!lastTubeMsgId; // Update the last message instead of new
+        shouldUpdateExisting = !!lastTubeMsgId;
       } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
         // Play/Pause Toggle
         if (newState.isPlaying) {
           systemMsg = {
-            text: `▶ **${userName}** resumed playback`,
-            kicker: '▶ PLAYING',
+            text: `**${userName}** resumed playback`,
+            kicker: 'PLAYING',
             type: 'tube-resumed',
             metadata: {}
           };
         } else {
           systemMsg = {
-            text: `⏸ **${userName}** paused`,
-            kicker: '⏸ PAUSED',
+            text: `**${userName}** paused`,
+            kicker: 'PAUSED',
             type: 'tube-paused',
             metadata: {}
           };
         }
-        shouldUpdateExisting = !!lastTubeMsgId; // Update existing tube message
+        shouldUpdateExisting = !!lastTubeMsgId;
       }
 
       // Update tubeState with server-authoritative time tracking
