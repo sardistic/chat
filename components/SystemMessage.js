@@ -66,7 +66,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                                 whileTap={{ scale: 0.95 }}
                             >
                                 <img
-                                    src={u.avatar || u.image || `/api/avatar/${u.name}`}
+                                    src={u.avatar || u.image || `/api/avatar/${u.name || 'guest'}`}
                                     alt={u.name}
                                     style={{
                                         width: '24px',
@@ -75,21 +75,26 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                                         border: u.action && u.action.includes('left') ? '1px solid #666' : '1px solid #10b981',
                                         opacity: u.action && u.action.includes('left') ? 0.5 : 1,
                                         filter: u.action && u.action.includes('left') ? 'grayscale(100%)' : 'none',
-                                        objectFit: 'cover'
+                                        objectFit: 'cover',
+                                        background: '#333'
                                     }}
                                     onError={(e) => {
-                                        // Fallback to initial
+                                        // Fallback to initial if image fails
+                                        const initials = u.name?.charAt(0).toUpperCase() || '?';
+                                        const parent = e.target.parentNode;
                                         e.target.style.display = 'none';
-                                        e.target.parentNode.style.backgroundColor = '#333';
-                                        e.target.parentNode.style.display = 'flex';
-                                        e.target.parentNode.style.alignItems = 'center';
-                                        e.target.parentNode.style.justifyContent = 'center';
-                                        e.target.parentNode.innerText = u.name?.charAt(0) || '?';
-                                        e.target.parentNode.style.fontSize = '10px';
-                                        e.target.parentNode.style.fontWeight = 'bold';
-                                        e.target.parentNode.style.width = '24px';
-                                        e.target.parentNode.style.height = '24px';
-                                        e.target.parentNode.style.borderRadius = '50%';
+                                        parent.style.backgroundColor = '#4f46e5'; // Indigo-600
+                                        parent.style.display = 'flex';
+                                        parent.style.alignItems = 'center';
+                                        parent.style.justifyContent = 'center';
+                                        parent.innerText = initials;
+                                        parent.style.fontSize = '11px';
+                                        parent.style.color = 'white';
+                                        parent.style.fontWeight = '800';
+                                        parent.style.width = '24px';
+                                        parent.style.height = '24px';
+                                        parent.style.borderRadius = '50%';
+                                        parent.style.border = '1px solid rgba(255,255,255,0.2)';
                                     }}
                                 />
                                 {/* Status Indicator Dot */}

@@ -900,7 +900,17 @@ app.prepare().then(async () => {
           const logTime = new Date(lastMsg.timestamp).getTime();
           if (Date.now() - logTime < 120000) { // 2 minute window for rehydration
             console.log(`[SmartBundle] Rehydrating join bundle ${lastMsg.id} from history`);
-            setBundle(roomId, 'join', lastMsg.id, lastMsg.metadata?.users || []);
+            const rawUsers = lastMsg.metadata?.users || [];
+            // Deduplicate rehydrated users by name just in case
+            const cleanUsers = [];
+            const seenNames = new Set();
+            rawUsers.forEach(u => {
+              if (u && u.name && !seenNames.has(u.name)) {
+                cleanUsers.push(u);
+                seenNames.add(u.name);
+              }
+            });
+            setBundle(roomId, 'join', lastMsg.id, cleanUsers);
             activeBundle = getBundle(roomId, 'join');
           }
         }
@@ -910,19 +920,29 @@ app.prepare().then(async () => {
 
       if (activeBundle) {
         joinMsgId = activeBundle.id;
-        if (!activeBundle.users.some(u => u.name === user.name)) {
+        // Strictly deduplicate by name or ID, and update latest info (avatar/role)
+        const existingIdx = activeBundle.users.findIndex(u => (u.id && u.id === user.id) || u.name === user.name);
+
+        if (existingIdx !== -1) {
+          // Update existing entry with freshest info
+          activeBundle.users[existingIdx] = { ...activeBundle.users[existingIdx], ...userMeta };
+        } else {
           activeBundle.users.push(userMeta);
         }
-        const uniqueUsers = activeBundle.users.length;
+
+        const total = activeBundle.users.length;
+        const activeCount = activeBundle.users.filter(u => u.action === 'joined').length;
 
         const updateMsg = {
           id: joinMsgId,
           roomId,
           sender: 'System',
-          text: `${uniqueUsers} Users popped in!`,
+          text: total === 1 && activeCount === 1
+            ? `${activeBundle.users[0].name} popped in!`
+            : `${total} Users visited (${activeCount} active)`,
           type: 'system',
           systemType: 'join-leave',
-          metadata: { users: activeBundle.users },
+          metadata: { users: [...activeBundle.users] },
           timestamp: new Date().toISOString()
         };
 
@@ -946,7 +966,7 @@ app.prepare().then(async () => {
           roomId,
           id: joinMsgId,
           sender: 'System',
-          text: `${user.name} popped in!`,
+          text: `${user.name || 'Someone'} popped in!`,
           type: 'system',
           systemType: 'join-leave',
           metadata: { users },
