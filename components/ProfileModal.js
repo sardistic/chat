@@ -96,6 +96,49 @@ export default function ProfileModal({
         }
     }, [isOpen, user, socket]);
 
+    // Check Block Status
+    const [isBlocked, setIsBlocked] = useState(false);
+    useEffect(() => {
+        if (isOpen && user?.id) {
+            fetch('/api/user/block').then(res => res.json()).then(blockedIds => {
+                if (Array.isArray(blockedIds)) {
+                    setIsBlocked(blockedIds.includes(user.id));
+                }
+            }).catch(err => console.error("Failed to fetch blocks", err));
+        }
+    }, [isOpen, user]);
+
+    const handleBlockToggle = async () => {
+        const action = isBlocked ? 'unblock' : 'block';
+        try {
+            await fetch('/api/user/block', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetId: user.id, action })
+            });
+            setIsBlocked(!isBlocked);
+        } catch (e) {
+            console.error("Block action failed", e);
+        }
+    };
+
+    const handleMuteToggle = async () => {
+        const isMuted = userSettings?.isLocallyMuted;
+        // 1. Update Local (Immediate)
+        onUpdatePeerSettings(user.id, { isLocallyMuted: !isMuted });
+
+        // 2. Persist to DB
+        try {
+            await fetch('/api/user/mute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetId: user.id, action: isMuted ? 'unmute' : 'mute' })
+            });
+        } catch (e) {
+            console.error("Mute persistence failed", e);
+        }
+    };
+
     const formatTime = (seconds) => {
         if (!seconds) return "0h";
         const h = Math.floor(seconds / 3600);
@@ -186,7 +229,7 @@ export default function ProfileModal({
                         {userSettings && (
                             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                                 <button
-                                    onClick={() => onUpdatePeerSettings(user.id, { isLocallyMuted: !userSettings.isLocallyMuted })}
+                                    onClick={handleMuteToggle}
                                     className={`icon-btn ${userSettings.isLocallyMuted ? 'danger' : 'secondary'}`}
                                     title={userSettings.isLocallyMuted ? "Unmute" : "Mute"}
                                     style={{
@@ -302,7 +345,34 @@ export default function ProfileModal({
                             </div>
 
                             {/* Toggles */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <button
+                                    onClick={async () => {
+                                        // Toggle Block
+                                        const action = 'block'; // Toggle logic needed? For now just block.
+                                        // TODO: Add state to track if blocked
+                                        try {
+                                            await fetch('/api/user/block', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ targetId: user.id, action: 'block' })
+                                            });
+                                            // Ideally, update local state or peer settings as well
+                                            onClose();
+                                        } catch (e) {
+                                            console.error("Block failed", e);
+                                        }
+                                    }}
+                                    className="btn danger"
+                                    style={{ justifyContent: 'center' }}
+                                >
+                                    <Icon icon="fa:ban" width="14" /> Block
+                                </button>
 
+                                <button className="btn secondary" style={{ justifyContent: 'center' }}>
+                                    <Icon icon="fa:flag" width="14" /> Report
+                                </button>
+                            </div>
 
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
 

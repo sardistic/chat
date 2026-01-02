@@ -11,6 +11,16 @@ export function useChat(roomId, user) {
     const [isBuilding, setIsBuilding] = useState(false);
     const typingTimeoutRef = useRef(null);
 
+    // Blocking State
+    const [blockedIds, setBlockedIds] = useState(new Set());
+    useEffect(() => {
+        if (user?.id) {
+            fetch('/api/user/block').then(res => res.json()).then(ids => {
+                if (Array.isArray(ids)) setBlockedIds(new Set(ids));
+            }).catch(e => console.error("Failed to load blocks", e));
+        }
+    }, [user?.id]);
+
     // Track seen message IDs to prevent duplicates
     const seenIdsRef = useRef(new Set());
     const messagesRef = useRef([]);
@@ -25,7 +35,9 @@ export function useChat(roomId, user) {
             id: messageId,
             roomId,
             text: text.trim(),
+            text: text.trim(),
             sender: user.name,
+            senderId: user.id, // Critical for blocking
             senderColor: user.color,
             senderAvatar: user.avatar || user.image || `/api/avatar/${user.name}`,
             timestamp: new Date().toISOString(),
@@ -80,6 +92,12 @@ export function useChat(roomId, user) {
         const handleMessage = (msg) => {
             // 1. Strict Deduplication (ID mismatch)
             if (seenIdsRef.current.has(msg.id)) {
+                return;
+            }
+
+            // 1.5 Block Filtering
+            if (msg.senderId && blockedIds.has(msg.senderId)) {
+                console.log(`🚫 Blocked message from ${msg.sender}`);
                 return;
             }
 

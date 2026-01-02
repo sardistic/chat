@@ -146,7 +146,6 @@ model ChatMessage {
   
   @@index([roomId, timestamp])
   @@index([systemType])
-  @@index([systemType])
 }
 
 // ============================================
