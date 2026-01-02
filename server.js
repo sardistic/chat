@@ -99,7 +99,8 @@ const tubeState = {
   title: null,
   thumbnail: null,
   ownerId: null,
-  lastUpdate: 0
+  lastUpdate: 0,
+  queue: [] // Array of { videoId, title, thumbnail, user }
 };
 
 // Helper to calculate current video position from server state
@@ -1473,10 +1474,60 @@ app.prepare().then(async () => {
 
       // Detect Changes for System Messages
       if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
-        // NEW VIDEO - update or create the tube message
+
+        // QUEUE LOGIC: If a video is ALREADY playing, add to queue instead of interrupting
+        if (tubeState.isPlaying && tubeState.videoId) {
+          const queueItem = {
+            videoId: incomingVideoId,
+            title: `Video: ${incomingVideoId}`,
+            thumbnail: `https://img.youtube.com/vi/${incomingVideoId}/mqdefault.jpg`,
+            startedBy: userName,
+            tstamp: Date.now()
+          };
+          tubeState.queue.push(queueItem);
+
+          // Emit "Queued" message (New message)
+          const queueMsg = {
+            id: `sys-queue-${Date.now()}`,
+            roomId,
+            text: `**Queued**: ${queueItem.title}`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-queue',
+            metadata: {
+              kicker: 'UP NEXT',
+              videoId: incomingVideoId,
+              title: queueItem.title,
+              thumbnail: queueItem.thumbnail,
+              startedBy: userName
+            },
+            timestamp: new Date().toISOString()
+          };
+          storeMessage(roomId, queueMsg);
+          io.to(roomId).emit('chat-message', queueMsg);
+
+          // Broadcast state update (queue changed)
+          io.to(roomId).emit('tube-state', {
+            ...tubeState,
+            serverTime: Date.now(),
+            currentPosition: getTubePosition()
+          });
+          return; // EXIT EARLY - Do not change current video
+        }
+
+        // NEW VIDEO (Immediate Play) - update or create the tube message
         const videoId = incomingVideoId;
         const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
 
+        // Update state
+        tubeState.videoId = videoId;
+        tubeState.title = `Video: ${videoId}`;
+        tubeState.thumbnail = thumbnail;
+        tubeState.pausedAt = 0;
+        tubeState.isPlaying = true; // Always auto-play new video
+        tubeState.playStartedAt = Date.now();
+
+        // Update/Create "Now Playing" Message
         msgPayload = {
           id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
           roomId,
@@ -1494,32 +1545,63 @@ app.prepare().then(async () => {
           timestamp: new Date().toISOString()
         };
 
-        // Update state
-        tubeState.videoId = videoId;
-        tubeState.title = `Video: ${videoId}`;
-        tubeState.thumbnail = thumbnail;
-        tubeState.pausedAt = 0;
-        tubeState.isPlaying = !!newState.isPlaying;
-        if (newState.isPlaying) {
+      } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
+        // STOPPED / ENDED / EJECTED
+
+        // Check Queue
+        if (tubeState.queue.length > 0) {
+          // PLAY NEXT FROM QUEUE
+          const nextVideo = tubeState.queue.shift();
+
+          tubeState.videoId = nextVideo.videoId;
+          tubeState.title = nextVideo.title;
+          tubeState.thumbnail = nextVideo.thumbnail;
+          tubeState.pausedAt = 0;
+          tubeState.isPlaying = true;
           tubeState.playStartedAt = Date.now();
+
+          // Re-use the existing Now Playing message logic to update it
+          msgPayload = {
+            id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**Now Playing**`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-now-playing',
+            metadata: {
+              kicker: 'ON AIR',
+              videoId: nextVideo.videoId,
+              title: nextVideo.title,
+              thumbnail: nextVideo.thumbnail,
+              startedBy: nextVideo.startedBy
+            },
+            timestamp: new Date().toISOString()
+          };
+
+        } else {
+          // EMPTY QUEUE - REALLY STOP
+          tubeState.isPlaying = false;
+          tubeState.playStartedAt = 0;
+          tubeState.pausedAt = 0;
+          if (newState.videoId === null) {
+            tubeState.videoId = null; // Clear video if explicitly ejected
+            tubeState.title = null;
+            tubeState.thumbnail = null;
+          }
+
+          msgPayload = {
+            id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**Playback Stopped**`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-stopped',
+            metadata: { kicker: 'OFF AIR' },
+            timestamp: new Date().toISOString()
+          };
         }
 
-      } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
-        // STOPPED - update the existing message
-        msgPayload = {
-          id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
-          roomId,
-          text: `**Playback Stopped**`,
-          sender: 'System',
-          type: 'system',
-          systemType: 'tube-stopped',
-          metadata: { kicker: 'OFF AIR' },
-          timestamp: new Date().toISOString()
-        };
 
-        // Clear state
-        tubeState.videoId = null;
-        tubeState.isPlaying = false;
 
       } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
         // PLAY/PAUSE toggle - update the existing message

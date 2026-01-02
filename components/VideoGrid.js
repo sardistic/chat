@@ -660,6 +660,12 @@ export default function VideoGrid({
                             if (update.type === 'ended') onUpdateTubeState({ type: 'ended', isPlaying: false, timestamp: 0 });
                         }}
                         onChangeVideo={(url) => {
+                            if (!url) {
+                                // Eject / Stop
+                                onUpdateTubeState({ videoId: null, isPlaying: false, timestamp: 0 });
+                                return;
+                            }
+
                             // Extract videoId BEFORE sending to ensure consistency with server
                             let videoId = url;
                             if (url.includes('v=')) {
