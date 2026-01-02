@@ -216,13 +216,15 @@ export default function AdminModal({ isOpen, onClose }) {
                                             <td style={{ padding: '12px 16px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <img
-                                                        src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                                                        src={user.avatarUrl || user.image || `/api/avatar/${user.displayName || user.name || user.id}`}
                                                         alt=""
-                                                        style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#333' }}
+                                                        style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#333', objectFit: 'cover' }}
                                                     />
                                                     <div>
-                                                        <div style={{ fontWeight: '500', color: 'white' }}>{user.name || 'Unknown'}</div>
-                                                        <div style={{ fontSize: '11px', color: '#666' }}>{user.email}</div>
+                                                        <div style={{ fontWeight: '500', color: 'white' }}>
+                                                            {user.displayName || user.name || 'Unknown'} {user.isGuest && <span style={{ opacity: 0.5, fontSize: '10px' }}>(Guest)</span>}
+                                                        </div>
+                                                        <div style={{ fontSize: '11px', color: '#666' }}>{user.email || user.discordId || 'No Email'}</div>
                                                     </div>
                                                 </div>
                                             </td>

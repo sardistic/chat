@@ -35,10 +35,11 @@ export async function GET(request) {
         // 3. Build Where Clause
         const where = {
             AND: [
-                // Search (Name or ID)
+                // Search (Name, DisplayName, Email, ID)
                 search ? {
                     OR: [
                         { name: { contains: search, mode: 'insensitive' } },
+                        { displayName: { contains: search, mode: 'insensitive' } },
                         { discordId: { contains: search } },
                         { email: { contains: search, mode: 'insensitive' } }
                     ]
@@ -47,7 +48,6 @@ export async function GET(request) {
                 roleFilter ? { role: roleFilter } : {},
                 // Status Filter
                 statusFilter === 'banned' ? { isBanned: true } : {},
-                // statusFilter === 'muted' ? { mutes: { some: {} } } : {} // Complex, skip for now
             ]
         };
 
@@ -61,11 +61,15 @@ export async function GET(request) {
                 select: {
                     id: true,
                     name: true,
+                    displayName: true,
                     image: true,
+                    avatarUrl: true,
+                    avatarSeed: true,
                     email: true,
                     role: true,
                     discordId: true,
                     isBanned: true,
+                    isGuest: true,
                     createdAt: true,
                 }
             }),

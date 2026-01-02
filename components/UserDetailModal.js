@@ -66,20 +66,24 @@ export default function UserDetailModal({ userId, onClose }) {
                 {/* Header */}
                 <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <img
-                        src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                        src={user.avatarUrl || user.image || `/api/avatar/${user.displayName || user.name || user.id}`}
                         alt=""
-                        style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#333' }}
+                        style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#333', objectFit: 'cover' }}
                     />
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700' }}>{user.name}</h2>
+                        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700' }}>
+                            {user.displayName || user.name || 'Unknown'}
+                            {user.isGuest && <span style={{ opacity: 0.5, fontSize: '14px', fontWeight: '400', marginLeft: '8px' }}>(Guest)</span>}
+                        </h2>
                         <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                            {user.email || 'No Email'} • <span style={{ fontFamily: 'monospace' }}>{user.id}</span>
+                            {user.email || user.discordId || 'No Email'} • <span style={{ fontFamily: 'monospace' }}>{user.id}</span>
                         </div>
                     </div>
                     <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}>
                         <Icon icon="fa:times" width="20" />
                     </button>
                 </div>
+
 
                 {/* Tabs */}
                 <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '0 24px' }}>
