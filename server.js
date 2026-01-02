@@ -100,7 +100,8 @@ const tubeState = {
   thumbnail: null,
   ownerId: null,
   lastUpdate: 0,
-  queue: [] // Array of { videoId, title, thumbnail, user }
+  queue: [], // Array of { videoId, title, thumbnail, user }
+  history: [] // Array of { videoId, title, thumbnail, startedBy }
 };
 
 // Helper to calculate current video position from server state
