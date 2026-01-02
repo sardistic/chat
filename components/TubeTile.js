@@ -86,6 +86,8 @@ export default function TubeTile({
             } else if (event.data === 2) { // Paused
                 if (ignorePauseRef.current) return;
                 if (onSync) onSync({ type: 'pause', playedSeconds: currentTime });
+            } else if (event.data === 0) { // Ended
+                if (onSync) onSync({ type: 'ended', playedSeconds: 0 });
             }
         };
 

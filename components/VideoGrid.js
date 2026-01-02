@@ -324,6 +324,7 @@ function VideoTile({
                             return base;
                         })()}
                         alt={user?.name}
+                        className={(tubeState && tubeState.isPlaying) ? 'dancing' : ''}
                         style={{
                             width: '80px',
                             height: '80px',
@@ -593,6 +594,7 @@ export default function VideoGrid({
                             if (update.type === 'play') onUpdateTubeState({ isPlaying: true, timestamp: update.playedSeconds });
                             if (update.type === 'pause') onUpdateTubeState({ isPlaying: false, timestamp: update.playedSeconds });
                             if (update.type === 'progress') onUpdateTubeState({ timestamp: update.playedSeconds });
+                            if (update.type === 'ended') onUpdateTubeState({ type: 'ended', isPlaying: false, timestamp: 0 });
                         }}
                         onChangeVideo={(url) => onUpdateTubeState({ videoId: url, isPlaying: true, timestamp: 0 })}
                         width={layout.width}

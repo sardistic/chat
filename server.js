@@ -1228,13 +1228,19 @@ app.prepare().then(async () => {
       let systemMsg = null;
 
       // Detect Changes for System Messages
-
       if (newState.videoId !== undefined && newState.videoId !== tubeState.videoId) {
-        // New Video
-        const title = newState.title || newState.videoId; // Use title if sent, else ID
+        // New Video (Now Playing)
+        const title = newState.title || newState.videoId;
         systemMsg = {
-          text: `**${userName}** queued **${title}**`,
-          kicker: 'TUBE',
+          text: `Now Playing: **${title}**`,
+          kicker: 'ON AIR',
+          type: 'tube-video'
+        };
+      } else if (newState.type === 'ended') {
+        // Video Ended
+        systemMsg = {
+          text: `Video Ended`,
+          kicker: 'OFF AIR',
           type: 'tube-video'
         };
       } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
