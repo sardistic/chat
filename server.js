@@ -1424,6 +1424,8 @@ app.prepare().then(async () => {
       const roomId = payload.roomId || socket.data.roomId || 'default-room';
       const newState = payload;
 
+      console.log(`[Tube] tube-update received:`, { videoId: newState.videoId, isPlaying: newState.isPlaying, type: newState.type });
+
       // Extract video ID early for consistent comparison
       const incomingVideoId = newState.videoId ? extractVideoId(newState.videoId) : null;
 
@@ -1499,6 +1501,7 @@ app.prepare().then(async () => {
             timestamp: new Date().toISOString()
           };
 
+          console.log(`[Tube] EMITTING Now Playing for ${videoId} at ${Date.now()}`);
           storeMessage(roomId, msgPayload);
           io.to(roomId).emit('chat-message', msgPayload);
 
