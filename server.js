@@ -1613,7 +1613,13 @@ app.prepare().then(async () => {
             sender: 'System',
             type: 'system',
             systemType: 'tube-resumed',
-            metadata: { kicker: 'PLAYING' },
+            metadata: {
+              kicker: 'PLAYING',
+              videoId: tubeState.videoId,
+              title: tubeState.title || `Video: ${tubeState.videoId}`,
+              thumbnail: tubeState.thumbnail,
+              startedBy: userName
+            },
             timestamp: new Date().toISOString()
           };
           tubeState.isPlaying = true;
@@ -1629,7 +1635,13 @@ app.prepare().then(async () => {
             sender: 'System',
             type: 'system',
             systemType: 'tube-paused',
-            metadata: { kicker: 'PAUSED' },
+            metadata: {
+              kicker: 'PAUSED',
+              videoId: tubeState.videoId,
+              title: tubeState.title || `Video: ${tubeState.videoId}`,
+              thumbnail: tubeState.thumbnail,
+              startedBy: userName
+            },
             timestamp: new Date().toISOString()
           };
           tubeState.isPlaying = false;
