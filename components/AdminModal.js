@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Icon } from '@iconify/react';
 import UserDetailModal from "./UserDetailModal";
 
-export default function AdminModal({ isOpen, onClose }) {
+export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const { data: session } = useSession();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -140,7 +140,7 @@ export default function AdminModal({ isOpen, onClose }) {
                     {/* Stats */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
                         <StatCard label="Total Users" value={pagination.total} icon="fa:users" />
-                        <StatCard label="Online" value="--" icon="fa:circle" color="#10B981" />
+                        <StatCard label="Online" value={onlineCount || 0} icon="fa:circle" color="#10B981" />
                         <StatCard label="Reports" value="0" icon="fa:flag" color="#EF4444" />
                         <StatCard label="Status" value="OK" icon="fa:server" color="#3B82F6" />
                     </div>
