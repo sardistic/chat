@@ -507,6 +507,19 @@ export default function TubeTile({
                     <Icon icon="fa:search" />
                 </button>
                 <button
+                    onClick={() => {
+                        const isPlaying = tubeState?.isPlaying;
+                        if (onSync) onSync({ type: isPlaying ? 'pause' : 'play', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
+                    }}
+                    style={{
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title={tubeState?.isPlaying ? "Pause" : "Resume"}
+                >
+                    <Icon icon={tubeState?.isPlaying ? "fa:pause" : "fa:play"} />
+                </button>
+                <button
                     onClick={() => onChangeVideo('')} // Clear video
                     style={{
                         background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
