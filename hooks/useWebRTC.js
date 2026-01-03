@@ -86,6 +86,9 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 // Update existing peers with new stream
                 peerManagerRef.current.updateLocalStream(stream);
 
+                console.log('DEBUG: PeerManager Peers:', Array.from(peerManagerRef.current.peers.keys()));
+                console.log('DEBUG: React State Peers:', Array.from(peers.keys()));
+
                 // Connect to any valid peers we missed (e.g. they were silent when we joined)
                 peers.forEach((peerData, peerId) => {
                     if (peerId !== socket.id && !peerManagerRef.current.peers.has(peerId)) {
