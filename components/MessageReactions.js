@@ -19,107 +19,133 @@ export default function MessageReactions({ messageId, reactions = {}, onReact, o
         setShowPicker(false);
     };
 
-    const hasReactions = Object.keys(reactions).length > 0;
+    const hasReactions = Object.entries(reactions).length > 0;
 
     return (
-        <div className="message-reactions" style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '4px',
-            alignItems: 'center',
-            justifyContent: center ? 'center' : 'flex-start',
-            marginTop: hasReactions ? '2px' : '0',
-            marginLeft: '0', // Align with message content
-            width: '100%'
-        }}>
-            {/* Existing reaction badges */}
-            {Object.entries(reactions).map(([emoji, data]) => {
-                const hasReacted = data.users?.includes(currentUserId);
-                return (
-                    <button
-                        key={emoji}
-                        onClick={() => handleEmojiClick(emoji)}
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            background: hasReacted ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255,255,255,0.1)',
-                            border: hasReacted ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid transparent',
-                            borderRadius: '12px',
-                            padding: '2px 8px',
-                            fontSize: '13px',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                        }}
-                        title={`${data.count} reaction${data.count !== 1 ? 's' : ''}`}
-                    >
-                        <span>{emoji}</span>
-                        <span style={{ color: hasReacted ? '#a5b4fc' : '#9ca3af', fontSize: '11px' }}>
-                            {data.count}
-                        </span>
-                    </button>
-                );
-            })}
-
-            {/* Add reaction button */}
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-                <button
-                    onClick={() => setShowPicker(!showPicker)}
-                    className="add-reaction-btn"
-                    style={{
-                        background: 'transparent',
-                        border: 'none',
-                        borderRadius: '12px',
-                        padding: '2px 6px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        opacity: showPicker ? 1 : 0,
-                        transition: 'opacity 0.15s ease',
-                        color: '#9ca3af'
-                    }}
-                    title="Add reaction"
-                >
-                    {showPicker ? '✕' : '😊+'}
-                </button>
-
-                {/* Emoji picker dropdown */}
-                {showPicker && (
-                    <div style={{
-                        position: 'absolute',
-                        bottom: '100%',
-                        left: 0,
-                        background: 'rgba(30, 30, 40, 0.95)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: '8px',
-                        padding: '6px',
-                        display: 'flex',
-                        gap: '2px',
-                        zIndex: 100,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
-                    }}>
-                        {EMOJI_OPTIONS.map(emoji => (
+        <div className="message-reactions-container" style={{ position: 'relative' }}>
+            {/* Existing Reactions (Only render if there are any) */}
+            {hasReactions && (
+                <div className="reactions-list" style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '4px',
+                    alignItems: 'center',
+                    justifyContent: center ? 'center' : 'flex-start',
+                    marginTop: '2px',
+                    width: '100%'
+                }}>
+                    {Object.entries(reactions).map(([emoji, data]) => {
+                        const isMe = data.users?.includes(currentUserId);
+                        return (
                             <button
                                 key={emoji}
                                 onClick={() => handleEmojiClick(emoji)}
+                                className={`reaction-badge ${isMe ? 'active' : ''}`}
                                 style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    fontSize: '18px',
-                                    padding: '4px',
+                                    background: isMe ? 'rgba(var(--primary-rgb), 0.2)' : 'rgba(255,255,255,0.05)',
+                                    border: isMe ? '1px solid rgba(var(--primary-rgb), 0.3)' : '1px solid transparent',
+                                    borderRadius: '12px',
+                                    padding: '2px 6px',
+                                    fontSize: '11px',
                                     cursor: 'pointer',
-                                    borderRadius: '4px',
-                                    transition: 'background 0.1s'
+                                    color: 'var(--text-secondary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    transition: 'all 0.2s ease'
                                 }}
-                                onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
-                                onMouseLeave={(e) => e.target.style.background = 'transparent'}
                             >
-                                {emoji}
+                                <span>{emoji}</span>
+                                <span style={{ opacity: 0.7, fontSize: '10px' }}>{data.count}</span>
                             </button>
-                        ))}
-                    </div>
-                )}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
 
+            {/* Add Reaction Button (Floating Right, Visible on Hover of parent row) */}
+            <div className="reaction-trigger" style={{
+                position: 'absolute',
+                right: '0',
+                top: hasReactions ? '-20px' : '-24px', // Adjust based on message height? A bit hacky but works for right-align
+                // Actually, let's put it top-right of the CONTAINER, which is below message.
+                // Better: The user wants it "to the right of chat".
+                // If this component is below the message, absolute positioning relative to THIS component won't put it next to text easily unless negative top.
+                // Let's rely on ChatPanel passing a class or we style it here.
+                // Assuming parent .message-row has relative positioning.
+                // We'll trust the user wants it to the right. 
+                // Let's try formatting it as an inline absolute element.
+                transform: 'translateY(-100%)', // Move up to message line
+                paddingLeft: '8px'
+            }}>
+                <button
+                    onClick={() => setShowPicker(!showPicker)}
+                    className="reaction-add-btn"
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        display: 'flex', // Start hidden, parent hover handles display via CSS? 
+                        // We can't easily do parent hover from here without global CSS.
+                        // For now, let's make it always visible or rely on global .message-row:hover .reaction-add-btn opacity
+                        opacity: 0.2, // Dim by default
+                        transition: 'opacity 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.2'}
+                    title="Add reaction"
+                >
+                    <Icon icon="mdi:emoticon-plus-outline" width="16" />
+                </button>
+
+                {/* Emoji Picker Popover */}
+                <AnimatePresence>
+                    {showPicker && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                            style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                right: 0,
+                                background: '#1a1a1a',
+                                border: '1px solid #333',
+                                borderRadius: '8px',
+                                padding: '8px',
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(4, 1fr)',
+                                gap: '4px',
+                                zIndex: 50,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                marginBottom: '8px'
+                            }}
+                        >
+                            {EMOJI_OPTIONS.map(emoji => (
+                                <button
+                                    key={emoji}
+                                    onClick={() => handleEmojiClick(emoji)}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        fontSize: '18px',
+                                        padding: '4px',
+                                        cursor: 'pointer',
+                                        borderRadius: '4px',
+                                        hover: { background: 'rgba(255,255,255,0.1)' }
+                                    }}
+                                    className="emoji-option"
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
             {/* Hover style for add button */}
             <style jsx>{`
                 .message-reactions:hover .add-reaction-btn {

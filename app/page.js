@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { getCookie, setCookie } from 'cookies-next';
 import { Icon } from '@iconify/react';
 import { SocketProvider } from "@/lib/socket";
 import VideoGrid from "@/components/VideoGrid";
@@ -39,7 +40,20 @@ function MainApp({ user, onLeaveRoom }) {
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false); // Admin Modal
-  const [sidebarWidth, setSidebarWidth] = useState(340);
+
+  // State initialization with cookie fallback
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = getCookie('sidebarWidth');
+    return saved ? parseInt(saved, 10) : 340;
+  });
+
+  // Persist sidebar width
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCookie('sidebarWidth', sidebarWidth, { maxAge: 60 * 60 * 24 * 365 }); // 1 year
+    }, 500); // Debounce
+    return () => clearTimeout(timer);
+  }, [sidebarWidth]);
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -136,7 +150,7 @@ function MainApp({ user, onLeaveRoom }) {
       const mentionedUsers = [];
       const allKnownUsers = [...peers.values().map(p => p.user?.name), user?.name].filter(Boolean);
       allKnownUsers.forEach(name => {
-        if (content.includes(`@${name}`)) {
+        if (content.includes(`@${name} `)) {
           mentionedUsers.push(name);
         }
       });
@@ -221,7 +235,7 @@ function MainApp({ user, onLeaveRoom }) {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className={`app ${isBuilding ? 'building-mode' : ''}`} style={{ '--dynamic-sidebar-w': `${sidebarWidth}px` }}>
+    <div className={`app ${isBuilding ? 'building-mode' : ''} `} style={{ '--dynamic-sidebar-w': `${sidebarWidth} px` }}>
 
       {/* Background Layer (Explicit) */}
       <div className="starmap-bg" />
@@ -268,12 +282,12 @@ function MainApp({ user, onLeaveRoom }) {
                 .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
                 .map((u, i) => {
                   const isUserTyping = typingUsers.includes(u.name);
-                  const base = u.avatar || `/api/avatar/${u.name}`;
+                  const base = u.avatar || `/ api / avatar / ${u.name} `;
                   // Only animate if it's our internal avatar API
                   let avatarUrl = base;
                   if (isUserTyping && base.includes('/api/avatar')) {
                     const hasQuery = base.includes('?');
-                    avatarUrl = `${base}${hasQuery ? '&' : '?'}expr=typing`;
+                    avatarUrl = `${base}${hasQuery ? '&' : '?'} expr = typing`;
                   }
                   return (
                     <div
@@ -299,7 +313,7 @@ function MainApp({ user, onLeaveRoom }) {
           {/* Broadcast Controls */}
           {/* Deafen (Always Visible) */}
           <button
-            className={`btn icon-btn ${isDeafened ? 'danger' : ''} `}
+            className={`btn icon - btn ${isDeafened ? 'danger' : ''} `}
             onClick={toggleDeaf}
             title={isDeafened ? 'Undeafen' : 'Deafen'}
             style={{ marginRight: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -343,7 +357,7 @@ function MainApp({ user, onLeaveRoom }) {
               title="Profile"
               style={{ padding: 0, width: '36px', height: '36px', overflow: 'hidden', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
             >
-              <img src={user.avatar || user.image || `/api/avatar/${user.name}`} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={user.avatar || user.image || `/ api / avatar / ${user.name} `} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </button>
 
             {showProfileMenu && (
@@ -410,7 +424,7 @@ function MainApp({ user, onLeaveRoom }) {
         <aside className="floating-sidebar">
           {/* Resize Handle */}
           <div
-            className={`drag-handle ${isBuilding ? 'active-pulse' : ''}`}
+            className={`drag - handle ${isBuilding ? 'active-pulse' : ''} `}
             onMouseDown={handleMouseDown}
             style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
           />
@@ -458,7 +472,7 @@ function MainApp({ user, onLeaveRoom }) {
               <div className="user-item">
                 <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <img
-                    src={user.avatar || `/api/avatar/${user.name}`}
+                    src={user.avatar || `/ api / avatar / ${user.name} `}
                     alt={user.name}
                     className={tubeState?.playing ? 'dancing' : ''}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -484,7 +498,7 @@ function MainApp({ user, onLeaveRoom }) {
                   <div key={socketId} className="user-item" onClick={(e) => handleProfileClick(p.user, e)} style={{ cursor: 'pointer' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <img
-                        src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
+                        src={p.user?.avatar || `/ api / avatar / ${p.user?.name || 'Guest'} `}
                         alt={p.user?.name}
                         className={tubeState?.playing ? 'dancing' : ''}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -520,7 +534,7 @@ function MainApp({ user, onLeaveRoom }) {
                   }} style={{ cursor: 'pointer' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <img
-                        src={u.avatar || `/api/avatar/${u.name}`}
+                        src={u.avatar || `/ api / avatar / ${u.name} `}
                         alt={u.name}
                         className={tubeState?.playing ? 'dancing' : ''}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}

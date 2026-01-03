@@ -42,37 +42,55 @@ export default function TubeTile({
     // Initialize mute state (default muted for autoplay policy)
     const userMutedRef = useRef(true);
 
-    // Client-side only: read mute preference from localStorage
+    // State for local interaction (Click-to-Play)
+    const [hasInteracted, setHasInteracted] = useState(false);
+    const [autoplayEnabled, setAutoplayEnabled] = useState(false); // Default false
+    const autoplayRef = useRef(false);
+
+    // Sync ref
     useEffect(() => {
-        const saved = localStorage.getItem('tube-muted');
-        if (saved !== null) {
-            const mutedValue = saved === 'true';
+        autoplayRef.current = autoplayEnabled;
+    }, [autoplayEnabled]);
+
+    // Load autoplay preference
+    useEffect(() => {
+        const savedAuto = localStorage.getItem('tube-autoplay');
+        if (savedAuto !== null) {
+            setAutoplayEnabled(savedAuto === 'true');
+        } else {
+            setAutoplayEnabled(false); // Default off
+        }
+
+        // Load mute state
+        const savedMuted = localStorage.getItem('tube-muted');
+        if (savedMuted !== null) {
+            const mutedValue = savedMuted === 'true';
             userMutedRef.current = mutedValue;
             setIsMuted(mutedValue);
-            console.log('[TubeTile] Loaded mute state from localStorage:', mutedValue);
         }
     }, []);
 
-    // Sync isOwner ref
-    useEffect(() => {
-        isOwnerRef.current = isOwner;
-    }, [isOwner]);
+    // Save autoplay preference
+    const toggleAutoplay = () => {
+        const newState = !autoplayEnabled;
+        setAutoplayEnabled(newState);
+        localStorage.setItem('tube-autoplay', newState); // Using localStorage as it's client preference
+    };
 
-    // Load YouTube API
+    // Auto-start if autoplay is enabled and we have a video
     useEffect(() => {
-        if (!window.YT || !window.YT.Player) {
-            const tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        // Handle auto-interaction update if needed
+        if (autoplayRef.current && !hasInteracted) {
+            setHasInteracted(true);
+            // The actual play command comes from the tubeState sync effect
         }
-    }, []);
+    }, [autoplayEnabled, hasInteracted]);
 
     // Initialize Player when API is ready and videoID exists
     useEffect(() => {
         if (!tubeState?.videoId) return;
 
-        // Extract ID
+        // ... (ID extraction logic) ... 
         let embedId = tubeState.videoId;
         if (tubeState.videoId.includes('v=')) {
             embedId = tubeState.videoId.split('v=')[1].split('&')[0];
@@ -83,13 +101,13 @@ export default function TubeTile({
         const onPlayerReady = (event) => {
             setIsReady(true);
             setLoadTimeout(false);
-            if (tubeState.isPlaying) {
-                event.target.playVideo();
-            }
-            // Read mute state directly from localStorage for reliability
+
+            // Only play if we have interacted OR autoplay is enabled
+            // We'll handle exact play/pause in the tubeState effect
+            // But we need to update volume/mute
+
             const savedMuted = localStorage.getItem('tube-muted');
             const shouldMute = savedMuted === null ? true : savedMuted === 'true';
-            console.log('[TubeTile] onPlayerReady - mute from localStorage:', shouldMute);
 
             if (shouldMute) {
                 event.target.mute();
@@ -97,7 +115,6 @@ export default function TubeTile({
                 event.target.unMute();
                 event.target.setVolume(settings.volume * 100);
             }
-            // Sync ref with localStorage
             userMutedRef.current = shouldMute;
         };
 
@@ -431,8 +448,69 @@ export default function TubeTile({
             ) : (
                 <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                     {/* Persistent Isolated Container for YT Iframe */}
+                    {/* Click to Play Overlay */}
+                    {!hasInteracted && tubeState?.videoId && (
+                        <div
+                            className="tube-overlay"
+                            onClick={() => setHasInteracted(true)}
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'rgba(0,0,0,0.7)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 20,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <Icon icon="mdi:play-circle-outline" width="64" height="64" color="white" />
+                            <span style={{ color: 'white', marginTop: '16px', fontWeight: '500' }}>Click to Join Stream</span>
+
+                            <div
+                                onClick={(e) => { e.stopPropagation(); toggleAutoplay(); }}
+                                style={{
+                                    marginTop: '24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '8px 12px',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    borderRadius: '20px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    color: '#ccc'
+                                }}
+                            >
+                                <div style={{
+                                    width: '32px',
+                                    height: '18px',
+                                    background: autoplayEnabled ? '#4ade80' : '#4b5563',
+                                    borderRadius: '10px',
+                                    position: 'relative',
+                                    transition: 'background 0.2s'
+                                }}>
+                                    <div style={{
+                                        position: 'absolute',
+                                        width: '14px',
+                                        height: '14px',
+                                        background: 'white',
+                                        borderRadius: '50%',
+                                        top: '2px',
+                                        left: autoplayEnabled ? '16px' : '2px',
+                                        transition: 'left 0.2s'
+                                    }} />
+                                </div>
+                                <span>Autoplay on join</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Video Player Container */}
                     <div
                         ref={playerContainerRef}
+                        className="youtube-player"
                         style={{ width: '100%', height: '100%' }}
                         id="yt-player-container"
                     ></div>
