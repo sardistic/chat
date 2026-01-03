@@ -12,6 +12,7 @@ export default function TubeTile({
     onSync,    // Callback when player reports progress/state
     onChangeVideo, // Callback to change video
     onReaction, // Callback for reactions
+    onMuteChange, // callback for mute state (isListening)
     width,
     height
 }) {
@@ -228,14 +229,24 @@ export default function TubeTile({
 
         // Poll YT player's mute state to track user mute/unmute actions
         const muteCheckInterval = setInterval(() => {
-            if (ytPlayerRef.current && ytPlayerRef.current.isMuted) {
+            if (ytPlayerRef.current) {
                 try {
-                    const isMuted = ytPlayerRef.current.isMuted();
-                    if (userMutedRef.current !== isMuted) {
-                        console.log('[TubeTile] Mute state changed:', isMuted);
-                        userMutedRef.current = isMuted;
+                    // Check if player is strictly muted
+                    const pMuted = ytPlayerRef.current.isMuted();
+                    // Also check volume (if volume is 0, practically muted)
+                    const pVolume = ytPlayerRef.current.getVolume();
+                    const effectiveMute = pMuted || pVolume === 0;
+
+                    if (userMutedRef.current !== effectiveMute) {
+                        console.log('[TubeTile] Mute state changed:', effectiveMute);
+                        userMutedRef.current = effectiveMute;
+                        setIsMuted(effectiveMute);
+
+                        // Notify parent (for dancing avatars)
+                        if (onMuteChange) onMuteChange(!effectiveMute);
+
                         // Persist to localStorage
-                        localStorage.setItem('tube-muted', String(isMuted));
+                        localStorage.setItem('tube-muted', String(effectiveMute));
                     }
                 } catch (e) {
                     // Player might not be ready yet

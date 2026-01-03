@@ -663,6 +663,7 @@ export default function VideoGrid({
                             if (update.type === 'progress') onUpdateTubeState({ timestamp: update.playedSeconds });
                             if (update.type === 'ended') onUpdateTubeState({ type: 'ended', isPlaying: false, timestamp: 0 });
                         }}
+                        onMuteChange={onMuteChange}
                         onChangeVideo={(url) => {
                             if (!url) {
                                 // Eject / Stop
