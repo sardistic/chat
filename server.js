@@ -959,11 +959,23 @@ app.prepare().then(async () => {
       // Ignore messages from the bot itself
       if (senderNick === 'ChatLogBot' || senderNick.startsWith('ChatLogBot')) return true;
 
-      // Ignore messages from users currently connected to the web chat
-      // (because we already got their message via socket, we don't need the IRC echo)
+      const debugMatch = [];
+      const normalizedSender = senderNick.toLowerCase();
+
+      // Check against connected web users
       for (const [socketId, user] of rooms.get('default-room') || []) {
-        if (user.name === senderNick) return true;
+        if (!user.name) continue;
+        const normalizedUser = user.name.toLowerCase();
+
+        // Match exact, or if IRC nick is "User_" when web is "User" (collision handling)
+        // Also check if web user IS the sender
+        if (normalizedSender === normalizedUser ||
+          (normalizedSender.startsWith(normalizedUser) && normalizedSender.length <= normalizedUser.length + 3)) { // Allow up to 3 suffix chars like _ or 123
+          // console.log(`[HistoryBot] 🔇 Ignoring duplicate from ${senderNick} (Matches web user ${user.name})`);
+          return true;
+        }
       }
+      // console.log(`[HistoryBot] 🔊 Allowing IRC msg from ${senderNick} (No matching web user found)`);
       return false;
     }
   });
