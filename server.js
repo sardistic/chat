@@ -1695,6 +1695,27 @@ app.prepare().then(async () => {
           storeMessage(roomId, queueMsg);
           io.to(roomId).emit('chat-message', queueMsg);
 
+          // Async fetch title for the queued item and update the message
+          getYouTubeVideoInfo(incomingVideoId).then(info => {
+            if (info && info.title) {
+              console.log(`[Tube] Fetched title for queued video: ${info.title}`);
+              // Update the queue item in memory
+              queueItem.title = info.title;
+              queueItem.thumbnail = info.thumbnail || queueItem.thumbnail;
+
+              // Update the queue message with real title
+              const updatedQueueMsg = {
+                ...queueMsg,
+                text: `**Queued**: ${info.title}`,
+                metadata: {
+                  ...queueMsg.metadata,
+                  title: info.title
+                }
+              };
+              io.to(roomId).emit('chat-message-update', updatedQueueMsg);
+            }
+          }).catch(err => console.error('[Tube] Queue title fetch error:', err));
+
           // Broadcast state update (queue changed)
           io.to(roomId).emit('tube-state', {
             ...tubeState,
