@@ -1591,9 +1591,14 @@ app.prepare().then(async () => {
 
           // CRITICAL: Store and emit the message before returning
           if (msgPayload) {
-            console.log(`[Tube] NEXT: Emitting message to room '${roomId}':`, msgPayload.text);
+            console.log(`[Tube] NEXT: Emitting message to room '${roomId}':`, msgPayload.text, `isUpdate:${isUpdate}`);
             storeMessage(roomId, msgPayload);
-            io.to(roomId).emit('chat-message', msgPayload);
+            // Use update event for existing messages, new event for first message
+            if (isUpdate) {
+              io.to(roomId).emit('chat-message-update', msgPayload);
+            } else {
+              io.to(roomId).emit('chat-message', msgPayload);
+            }
             // Track this as the last tube message for updates
             if (!global._lastTubeMsg) global._lastTubeMsg = {};
             global._lastTubeMsg[`tube-${roomId}`] = msgPayload.id;
