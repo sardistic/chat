@@ -4,6 +4,42 @@ import { useRef, useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useSocket } from '@/lib/socket';
 
+// Platform Detection Helper
+const detectPlatform = (url) => {
+    if (!url) return { platform: 'unknown', id: null };
+
+    // YouTube Shorts
+    if (url.includes('youtube.com/shorts/')) {
+        const id = url.split('shorts/')[1]?.split('?')[0];
+        return { platform: 'youtube', id, isShort: true };
+    }
+    // YouTube Standard
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        let id = url;
+        if (url.includes('v=')) {
+            id = url.split('v=')[1]?.split('&')[0];
+        } else if (url.includes('youtu.be/')) {
+            id = url.split('youtu.be/')[1]?.split('?')[0];
+        }
+        return { platform: 'youtube', id, isShort: false };
+    }
+    // TikTok
+    if (url.includes('tiktok.com')) {
+        // Handle: tiktok.com/@user/video/ID or tiktok.com/t/ID
+        const videoMatch = url.match(/video\/(\d+)/);
+        const shortMatch = url.match(/\/t\/(\w+)/);
+        const id = videoMatch?.[1] || shortMatch?.[1] || null;
+        return { platform: 'tiktok', id };
+    }
+    // Instagram Reels
+    if (url.includes('instagram.com/reel/') || url.includes('instagram.com/reels/')) {
+        const id = url.match(/reel[s]?\/([A-Za-z0-9_-]+)/)?.[1];
+        return { platform: 'instagram', id };
+    }
+    // Fallback: Assume YouTube ID
+    return { platform: 'youtube', id: url };
+};
+
 export default function TubeTile({
     tubeState, // { videoId, isPlaying, timestamp, lastUpdate, serverTime, ownerId }
     receivedAt, // Local timestamp when tubeState was received
@@ -33,6 +69,9 @@ export default function TubeTile({
     const [retryKey, setRetryKey] = useState(0);
     const [loadTimeout, setLoadTimeout] = useState(false);
     const [forceSyncTrigger, setForceSyncTrigger] = useState(0);
+
+    // Multi-platform support
+    const [currentPlatform, setCurrentPlatform] = useState({ platform: 'youtube', id: null });
 
     const ignorePauseRef = useRef(false);
     const ignorePlayRef = useRef(false); // Suppress duplicate play events on video load
@@ -94,13 +133,18 @@ export default function TubeTile({
         if (!tubeState?.videoId) return;
         if (!hasInteracted && !autoplayEnabled) return; // Block until user clicks overlay
 
-        // ... (ID extraction logic) ... 
-        let embedId = tubeState.videoId;
-        if (tubeState.videoId.includes('v=')) {
-            embedId = tubeState.videoId.split('v=')[1].split('&')[0];
-        } else if (tubeState.videoId.includes('youtu.be/')) {
-            embedId = tubeState.videoId.split('youtu.be/')[1].split('?')[0];
+        // Detect platform and extract ID
+        const platformInfo = detectPlatform(tubeState.videoId);
+        setCurrentPlatform(platformInfo);
+
+        // Only YouTube uses the iframe API - TikTok/Instagram handled in render
+        if (platformInfo.platform !== 'youtube') {
+            setIsReady(true);
+            setDebugStatus(`${platformInfo.platform} embed ready`);
+            return;
         }
+
+        const embedId = platformInfo.id;
 
         const onPlayerReady = (event) => {
             setIsReady(true);
@@ -567,13 +611,35 @@ export default function TubeTile({
                         </div>
                     )}
 
-                    {/* Video Player Container */}
-                    <div
-                        ref={playerContainerRef}
-                        className="youtube-player"
-                        style={{ width: '100%', height: '100%' }}
-                        id="yt-player-container"
-                    ></div>
+                    {/* Video Player Container - Platform Specific */}
+                    {currentPlatform.platform === 'youtube' && (
+                        <div
+                            ref={playerContainerRef}
+                            className="youtube-player"
+                            style={{ width: '100%', height: '100%' }}
+                            id="yt-player-container"
+                        ></div>
+                    )}
+
+                    {/* TikTok Embed */}
+                    {currentPlatform.platform === 'tiktok' && currentPlatform.id && hasInteracted && (
+                        <iframe
+                            src={`https://www.tiktok.com/player/v1/${currentPlatform.id}?autoplay=1&loop=0`}
+                            style={{ width: '100%', height: '100%', border: 'none' }}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                        />
+                    )}
+
+                    {/* Instagram Reel Embed */}
+                    {currentPlatform.platform === 'instagram' && currentPlatform.id && hasInteracted && (
+                        <iframe
+                            src={`https://www.instagram.com/reel/${currentPlatform.id}/embed/`}
+                            style={{ width: '100%', height: '100%', border: 'none', background: '#000' }}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                        />
+                    )}
 
                     {!isReady && !hasError && (
                         <div style={{
@@ -634,7 +700,7 @@ export default function TubeTile({
             )
             }
 
-            {/* Name Label */}
+            {/* Name Label - Platform Aware */}
             <div className="tile-name" style={{
                 position: 'absolute', bottom: '50px', left: '8px',
                 background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px',
@@ -644,8 +710,23 @@ export default function TubeTile({
                 zIndex: 10,
                 border: isOwner ? '1px solid #ff0000' : '1px solid rgba(255,255,255,0.2)'
             }}>
-                <Icon icon={isOwner ? "fa:user-circle" : "fa:link"} color={isOwner ? "#ff0000" : "#00f2ff"} />
-                {isOwner ? 'YOU ARE DJ' : 'SYNCED TO HOST'}
+                <Icon
+                    icon={
+                        currentPlatform.platform === 'tiktok' ? 'simple-icons:tiktok' :
+                            currentPlatform.platform === 'instagram' ? 'mdi:instagram' :
+                                isOwner ? 'fa:user-circle' : 'fa:youtube-play'
+                    }
+                    color={
+                        currentPlatform.platform === 'tiktok' ? '#00f2ea' :
+                            currentPlatform.platform === 'instagram' ? '#e1306c' :
+                                isOwner ? '#ff0000' : '#ff0000'
+                    }
+                />
+                {isOwner ? 'YOU ARE DJ' :
+                    currentPlatform.platform === 'tiktok' ? 'TikTok' :
+                        currentPlatform.platform === 'instagram' ? 'Instagram' :
+                            'SYNCED TO HOST'
+                }
             </div>
 
             {/* Reaction Button - Bottom Right */}
