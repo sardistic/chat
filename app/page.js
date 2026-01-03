@@ -322,6 +322,7 @@ function MainApp({ user, onLeaveRoom }) {
                       <img
                         src={avatarUrl}
                         alt={u.name}
+                        className={tubeState?.playing && ((u.name === user.name) ? isLocalTubeUnmuted : u.isTubeUnmuted) ? 'dancing' : ''}
                         style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
                       />
                     </div>
@@ -497,7 +498,7 @@ function MainApp({ user, onLeaveRoom }) {
                   <img
                     src={user.avatar || `/ api / avatar / ${user.name} `}
                     alt={user.name}
-                    className={tubeState?.playing && isLocalTubeUnmuted ? 'dancing' : ''}
+                    className=""
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 </div>
@@ -523,7 +524,7 @@ function MainApp({ user, onLeaveRoom }) {
                       <img
                         src={p.user?.avatar || `/ api / avatar / ${p.user?.name || 'Guest'} `}
                         alt={p.user?.name}
-                        className={tubeState?.playing && p.user?.isTubeUnmuted ? 'dancing' : ''}
+                        className=""
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     </div>
