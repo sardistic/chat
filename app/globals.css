@@ -201,10 +201,8 @@ body {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
-  max-width: 50vw;
-  /* Hard limit */
+  /* min-width and max-width handled via Javascript or relaxed */
   min-width: 280px;
-  /* Hard limit */
 
   /* Docked look - Flush edges */
   border-left: 1px solid rgba(255, 255, 255, 0.08);
