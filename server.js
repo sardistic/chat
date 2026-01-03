@@ -1722,12 +1722,13 @@ app.prepare().then(async () => {
               // Update the queue message with real title
               const updatedQueueMsg = {
                 ...queueMsg,
-                text: `**Queued**: ${info.title}`,
+                text: `**Queued by ${userName}**: ${info.title}`,
                 metadata: {
                   ...queueMsg.metadata,
                   title: info.title
                 }
               };
+              storeMessage(roomId, updatedQueueMsg); // Persist to DB
               io.to(roomId).emit('chat-message-update', updatedQueueMsg);
             }
           }).catch(err => console.error('[Tube] Queue title fetch error:', err));
@@ -1796,6 +1797,7 @@ app.prepare().then(async () => {
                 thumbnail: tubeState.thumbnail
               }
             };
+            storeMessage(roomId, updatedMsg); // Persist to DB
             io.to(roomId).emit('chat-message-update', updatedMsg);
             io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition() });
           }
