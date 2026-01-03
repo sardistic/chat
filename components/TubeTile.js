@@ -121,13 +121,6 @@ export default function TubeTile({
         };
 
         const onPlayerStateChange = (event) => {
-            // ALWAYS: If playing, dismiss the "Click to Join" overlay
-            if (event.data === 1) { // Playing
-                setHasInteracted(true);
-                // Also ensure we think we are playing
-                setIsReady(true);
-            }
-
             // OWNER ONLY: Sync logic
             // Use ref to avoid stale closure / re-init loops
             if (!isOwnerRef.current) return;
@@ -209,7 +202,7 @@ export default function TubeTile({
                                 'modestbranding': 1,
                                 'rel': 0,
                                 'origin': typeof window !== 'undefined' ? window.location.origin : '',
-                                'autoplay': 1,
+                                'autoplay': 0, // Default paused - user must click to join
                                 'mute': shouldStartMuted, // Dynamic based on user preference
                                 'enablejsapi': 1
                             },
@@ -501,7 +494,23 @@ export default function TubeTile({
                     {!hasInteracted && tubeState?.videoId && (
                         <div
                             className="tube-overlay"
-                            onClick={() => setHasInteracted(true)}
+                            onClick={() => {
+                                setHasInteracted(true);
+                                // Actually start playback
+                                if (ytPlayerRef.current) {
+                                    try { ytPlayerRef.current.unMute(); } catch (e) { }
+                                    try { ytPlayerRef.current.playVideo(); } catch (e) { }
+                                    // Sync to server time
+                                    try {
+                                        const serverPos = tubeState?.currentPosition || 0;
+                                        const lag = (Date.now() - (receivedAt || Date.now())) / 1000;
+                                        const target = serverPos + lag;
+                                        if (target > 0 && Number.isFinite(target)) {
+                                            ytPlayerRef.current.seekTo(target, true);
+                                        }
+                                    } catch (e) { }
+                                }
+                            }}
                             style={{
                                 position: 'absolute',
                                 inset: 0,
