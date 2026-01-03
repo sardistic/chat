@@ -1582,7 +1582,17 @@ app.prepare().then(async () => {
               }
             });
           }
-          return; // CRITICAL: Exit after handling action to prevent fall-through
+
+          // CRITICAL: Store and emit the message before returning
+          if (msgPayload) {
+            storeMessage(roomId, msgPayload);
+            io.to(roomId).emit('chat-message', msgPayload);
+            // Track this as the last tube message for updates
+            if (!global._lastTubeMsg) global._lastTubeMsg = {};
+            global._lastTubeMsg[`tube-${roomId}`] = msgPayload.id;
+          }
+
+          return; // Exit after handling action to prevent fall-through
         }
 
         // PREVIOUS Action: Pop history -> Queue Current -> Play History
