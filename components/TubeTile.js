@@ -202,8 +202,8 @@ export default function TubeTile({
                                 'modestbranding': 1,
                                 'rel': 0,
                                 'origin': typeof window !== 'undefined' ? window.location.origin : '',
-                                'autoplay': 0, // Default paused - user must click to join
-                                'mute': shouldStartMuted, // Dynamic based on user preference
+                                'autoplay': 1, // Autoplay allowed when muted
+                                'mute': 1, // ALWAYS start muted - user must click overlay to unmute
                                 'enablejsapi': 1
                             },
                             events: {
