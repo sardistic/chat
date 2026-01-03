@@ -1582,6 +1582,7 @@ app.prepare().then(async () => {
               }
             });
           }
+          return; // CRITICAL: Exit after handling action to prevent fall-through
         }
 
         // PREVIOUS Action: Pop history -> Queue Current -> Play History
