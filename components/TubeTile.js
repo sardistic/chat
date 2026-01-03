@@ -35,6 +35,7 @@ export default function TubeTile({
     const playerContainerRef = useRef(null);
     const isOwnerRef = useRef(isOwner);
     const currentVideoIdRef = useRef(null); // Track current video to prevent re-init loops
+    const userMutedRef = useRef(true); // Track if user has unmuted (starts muted for autoplay)
 
     // Sync isOwner ref
     useEffect(() => {
@@ -69,10 +70,11 @@ export default function TubeTile({
             if (tubeState.isPlaying) {
                 event.target.playVideo();
             }
-            // Set initial volume
-            if (settings.isLocallyMuted) {
+            // Restore mute state from previous session (userMutedRef tracks if user has unmuted)
+            if (userMutedRef.current) {
                 event.target.mute();
             } else {
+                event.target.unMute();
                 event.target.setVolume(settings.volume * 100);
             }
         };
@@ -175,8 +177,26 @@ export default function TubeTile({
             if (!isReady) setLoadTimeout(true);
         }, 8000);
 
+        // Poll YT player's mute state to track user mute/unmute actions
+        const muteCheckInterval = setInterval(() => {
+            if (ytPlayerRef.current && ytPlayerRef.current.isMuted) {
+                try {
+                    const isMuted = ytPlayerRef.current.isMuted();
+                    if (userMutedRef.current !== isMuted) {
+                        console.log('[TubeTile] Mute state changed:', isMuted);
+                        userMutedRef.current = isMuted;
+                    }
+                } catch (e) {
+                    // Player might not be ready yet
+                }
+            }
+        }, 1000);
+
         initPlayer();
-        return () => clearTimeout(checkTimeout);
+        return () => {
+            clearTimeout(checkTimeout);
+            clearInterval(muteCheckInterval);
+        };
     }, [tubeState?.videoId, retryKey]); // Removed isReady to prevent infinite loops
 
     // Sync Effect - Use server-calculated currentPosition
