@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const EMOJI_OPTIONS = ['❤️', '🔥', '😂', '😮', '👏', '🎉', '👍', '👎'];
 
-export default function MessageReactions({ messageId, reactions = {}, onReact, onUnreact, currentUserId }) {
+export default function MessageReactions({ messageId, reactions = {}, onReact, onUnreact, currentUserId, center = false }) {
     const [showPicker, setShowPicker] = useState(false);
 
     const handleEmojiClick = (emoji) => {
@@ -27,8 +27,10 @@ export default function MessageReactions({ messageId, reactions = {}, onReact, o
             flexWrap: 'wrap',
             gap: '4px',
             alignItems: 'center',
-            marginTop: hasReactions ? '4px' : '0',
-            marginLeft: '40px' // Align with message content
+            justifyContent: center ? 'center' : 'flex-start',
+            marginTop: hasReactions ? '2px' : '0',
+            marginLeft: '0', // Align with message content
+            width: '100%'
         }}>
             {/* Existing reaction badges */}
             {Object.entries(reactions).map(([emoji, data]) => {

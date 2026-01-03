@@ -97,6 +97,7 @@ model User {
   blockedBy     Block[]       @relation("BlockedBy")
   mutes         Mute[]        @relation("Mutes")
   mutedBy       Mute[]        @relation("MutedBy")
+  messageReactions MessageReaction[]
 
   @@index([discordId])
   @@index([guestToken])
@@ -144,8 +145,24 @@ model ChatMessage {
   metadata    Json?    // For bundling, commit info, etc.
   timestamp   DateTime @default(now())
   
+  reactions   MessageReaction[]
+
   @@index([roomId, timestamp])
   @@index([systemType])
+}
+
+model MessageReaction {
+  id        String      @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime    @default(now())
+
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
 }
 
 // ============================================

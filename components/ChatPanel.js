@@ -431,43 +431,61 @@ export default function ChatPanel({
                                             key={msg.id}
                                             className="message-row-container"
                                         >
-                                            <div
-                                                className="message-row"
-                                                style={{
-                                                    marginBottom: '2px', // Tighter lines
-                                                    lineHeight: '1.35',
-                                                    display: 'flex',
-                                                    alignItems: 'baseline',
-                                                    gap: '8px',
-                                                    position: 'relative'
-                                                }}
-                                            >
-                                                <span className="line-timestamp" style={{
-                                                    fontSize: '9px',
-                                                    color: 'var(--text-muted)',
-                                                    opacity: 0,
-                                                    width: '32px',
-                                                    flexShrink: 0,
-                                                    textAlign: 'right',
-                                                    userSelect: 'none',
-                                                    transition: 'opacity 0.1s'
-                                                }}>
-                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                                                </span>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <MessageContent
-                                                        text={msg.text}
-                                                        onMentionClick={(username, e) => onUserClick({ name: username }, e)}
-                                                        emotes={emotes}
-                                                    />
+                                            {msg.type === 'system' ? (
+                                                <div className="message-row" style={{ marginBottom: '2px', paddingLeft: '0' }}>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <SystemMessage
+                                                            text={msg.text}
+                                                            type={msg.systemType}
+                                                            timestamp={msg.timestamp}
+                                                            metadata={msg.metadata}
+                                                        />
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ) : (
+                                                <div
+                                                    className="message-row"
+                                                    style={{
+                                                        marginBottom: '0px',
+                                                        lineHeight: '1.3',
+                                                        display: 'flex',
+                                                        alignItems: 'flex-start',
+                                                        position: 'relative',
+                                                        paddingLeft: '0',
+                                                    }}
+                                                >
+                                                    {/* Hover Timestamp (Absolute) */}
+                                                    <span className="line-timestamp" style={{
+                                                        position: 'absolute',
+                                                        left: '-36px',
+                                                        top: '2px',
+                                                        fontSize: '9px',
+                                                        color: 'var(--text-muted)',
+                                                        opacity: 0,
+                                                        width: '30px',
+                                                        textAlign: 'right',
+                                                        userSelect: 'none',
+                                                        pointerEvents: 'none', // Don't block clicks
+                                                        transition: 'opacity 0.1s'
+                                                    }}>
+                                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                    </span>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <MessageContent
+                                                            text={msg.text}
+                                                            onMentionClick={(username, e) => onUserClick({ name: username }, e)}
+                                                            emotes={emotes}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                             <MessageReactions
                                                 messageId={msg.id}
                                                 reactions={messageReactions[msg.id] || {}}
                                                 onReact={handleReact}
                                                 onUnreact={handleUnreact}
                                                 currentUserId={user?.id}
+                                                center={msg.type === 'system'}
                                             />
                                         </div>
                                     ))}

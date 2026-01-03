@@ -212,13 +212,28 @@ async function loadHistoryFromDB() {
     const messages = await prisma.chatMessage.findMany({
       where: { roomId: 'default-room' },
       orderBy: { timestamp: 'desc' },
-      take: 100
+      take: 100,
+      include: { reactions: true }
     });
 
     // Reverse to get chronological order for display
     messages.reverse();
 
     messageHistory['default-room'] = messages.map(m => {
+      // Populate messageReactions in-memory map
+      if (m.reactions && m.reactions.length > 0) {
+        if (!messageReactions.has(m.id)) {
+          messageReactions.set(m.id, new Map());
+        }
+        const msgReactions = messageReactions.get(m.id);
+        m.reactions.forEach(r => {
+          if (!msgReactions.has(r.emoji)) {
+            msgReactions.set(r.emoji, new Set());
+          }
+          msgReactions.get(r.emoji).add(r.userId);
+        });
+      }
+
       const meta = m.metadata || {};
       return {
         id: m.id,
@@ -1450,6 +1465,20 @@ app.prepare().then(async () => {
       // Add user's reaction
       msgReactions.get(emoji).add(userId);
 
+      // Persist to DB (fire and forget)
+      prisma.messageReaction.create({
+        data: {
+          messageId,
+          userId,
+          emoji
+        }
+      }).catch(err => {
+        // Ignore unique constraint violations (already reacted)
+        if (err.code !== 'P2002') {
+          console.error('[Reactions] Failed to persist reaction:', err.message);
+        }
+      });
+
       console.log(`[Reactions] ${userName} reacted ${emoji} to message ${messageId}`);
 
       // Build reaction summary to broadcast
@@ -1483,6 +1512,17 @@ app.prepare().then(async () => {
       if (msgReactions.get(emoji).size === 0) {
         msgReactions.delete(emoji);
       }
+
+      // Persist removal to DB
+      prisma.messageReaction.deleteMany({
+        where: {
+          messageId,
+          userId,
+          emoji
+        }
+      }).catch(err => {
+        console.error('[Reactions] Failed to persist unreact:', err.message);
+      });
 
       console.log(`[Reactions] ${userName} removed ${emoji} from message ${messageId}`);
 
