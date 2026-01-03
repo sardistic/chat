@@ -107,7 +107,9 @@ export function useWebRTC(roomId, user, autoStart = true) {
                     setPeers(prev => {
                         const newPeers = new Map(prev);
                         const existingPeer = prev.get(peerId) || {};
-                        newPeers.set(peerId, { ...existingPeer, stream, userId: peerId });
+                        // Optimistically set isVideoEnabled to true since we received a stream
+                        const updatedUser = { ...(existingPeer.user || {}), isVideoEnabled: true };
+                        newPeers.set(peerId, { ...existingPeer, stream, user: updatedUser, userId: peerId });
                         return newPeers;
                     });
                 });
