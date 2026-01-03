@@ -80,10 +80,10 @@ export function useWebRTC(roomId, user, autoStart = true) {
             // 4. Update PeerManager
             if (peerManagerRef.current) {
                 console.log('🔄 Updating existing peer connections with new stream (Soft Reconnect)');
-                // Set the internal stream so peer manager uses it for future connections
-                peerManagerRef.current.localStream = stream;
 
                 // Update existing peers with new stream
+                // NOTE: This method internally updates this.localStream, so we must NOT set it manually beforehand
+                // or else 'oldStream' will be incorrect and removeStream will fail.
                 peerManagerRef.current.updateLocalStream(stream);
 
                 console.log('DEBUG: PeerManager Peers:', Array.from(peerManagerRef.current.peers.keys()));
