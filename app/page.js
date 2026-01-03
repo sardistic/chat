@@ -47,13 +47,28 @@ function MainApp({ user, onLeaveRoom }) {
     return saved ? parseInt(saved, 10) : 340;
   });
 
-  // Persist sidebar width
+  // Persist sidebar width & Validation
   useEffect(() => {
     const timer = setTimeout(() => {
       setCookie('sidebarWidth', sidebarWidth, { maxAge: 60 * 60 * 24 * 365 }); // 1 year
     }, 500); // Debounce
     return () => clearTimeout(timer);
   }, [sidebarWidth]);
+
+  // Ensure width is valid on mount/resize
+  useEffect(() => {
+    const validateWidth = () => {
+      const maxWidth = window.innerWidth * 0.5;
+      const validWidth = Math.max(280, Math.min(maxWidth, sidebarWidth));
+      if (validWidth !== sidebarWidth) {
+        setSidebarWidth(validWidth);
+      }
+    };
+    validateWidth(); // Check on mount
+    window.addEventListener('resize', validateWidth);
+    return () => window.removeEventListener('resize', validateWidth);
+  }, [sidebarWidth]);
+
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
