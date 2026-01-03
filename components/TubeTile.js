@@ -89,8 +89,10 @@ export default function TubeTile({
     }, [autoplayEnabled, hasInteracted]);
 
     // Initialize Player when API is ready and videoID exists
+    // ONLY init player if user has interacted OR autoplay is enabled
     useEffect(() => {
         if (!tubeState?.videoId) return;
+        if (!hasInteracted && !autoplayEnabled) return; // Block until user clicks overlay
 
         // ... (ID extraction logic) ... 
         let embedId = tubeState.videoId;
@@ -278,7 +280,7 @@ export default function TubeTile({
             clearTimeout(checkTimeout);
             clearInterval(muteCheckInterval);
         };
-    }, [tubeState?.videoId, retryKey]); // Removed isReady to prevent infinite loops
+    }, [tubeState?.videoId, retryKey, hasInteracted, autoplayEnabled]); // Re-run when user clicks overlay
 
     // Sync Effect - Use server-calculated currentPosition
     useEffect(() => {
