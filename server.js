@@ -1591,11 +1591,14 @@ app.prepare().then(async () => {
 
           // CRITICAL: Store and emit the message before returning
           if (msgPayload) {
+            console.log(`[Tube] NEXT: Emitting message to room '${roomId}':`, msgPayload.text);
             storeMessage(roomId, msgPayload);
             io.to(roomId).emit('chat-message', msgPayload);
             // Track this as the last tube message for updates
             if (!global._lastTubeMsg) global._lastTubeMsg = {};
             global._lastTubeMsg[`tube-${roomId}`] = msgPayload.id;
+          } else {
+            console.log(`[Tube] NEXT: No msgPayload to emit!`);
           }
 
           return; // Exit after handling action to prevent fall-through
