@@ -121,6 +121,14 @@ export default function TubeTile({
         };
 
         const onPlayerStateChange = (event) => {
+            // ALWAYS: If playing, dismiss the "Click to Join" overlay
+            if (event.data === 1) { // Playing
+                setHasInteracted(true);
+                // Also ensure we think we are playing
+                setIsReady(true);
+            }
+
+            // OWNER ONLY: Sync logic
             // Use ref to avoid stale closure / re-init loops
             if (!isOwnerRef.current) return;
 
