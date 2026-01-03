@@ -509,7 +509,11 @@ export default function TubeTile({
                 <button
                     onClick={() => {
                         // Previous
-                        if (socket) socket.emit('tube-update', { roomId: 'default', action: 'prev' });
+                        console.log('[TubeTile] PREV button clicked, socket:', !!socket);
+                        if (socket) {
+                            socket.emit('tube-update', { roomId: 'default', action: 'prev' });
+                            console.log('[TubeTile] Emitted tube-update with action: prev');
+                        }
                     }}
                     style={{
                         background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
@@ -550,8 +554,12 @@ export default function TubeTile({
                 <button
                     onClick={() => {
                         // Next (Explicit Action)
-                        if (socket) socket.emit('tube-update', { roomId: 'default', action: 'next' });
-                    }} // Clear video -> Next
+                        console.log('[TubeTile] NEXT button clicked, socket:', !!socket);
+                        if (socket) {
+                            socket.emit('tube-update', { roomId: 'default', action: 'next' });
+                            console.log('[TubeTile] Emitted tube-update with action: next');
+                        }
+                    }}
                     style={{
                         background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
                         color: 'white', padding: '4px', cursor: 'pointer'

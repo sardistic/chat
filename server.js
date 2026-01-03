@@ -1442,7 +1442,7 @@ app.prepare().then(async () => {
       const roomId = payload.roomId || socket.data.roomId || 'default-room';
       const newState = payload;
 
-      console.log(`[Tube] tube-update received:`, { videoId: newState.videoId, isPlaying: newState.isPlaying, type: newState.type });
+      console.log(`[Tube] tube-update received:`, { videoId: newState.videoId, isPlaying: newState.isPlaying, type: newState.type, action: newState.action });
 
       // Extract video ID early for consistent comparison
       const incomingVideoId = newState.videoId ? extractVideoId(newState.videoId) : null;
