@@ -17,6 +17,7 @@ export default function TubeTile({
     const { socket } = useSocket();
     const [isReady, setIsReady] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [isMuted, setIsMuted] = useState(true); // Track mute state for our custom button
 
     // UI State
     const [showInput, setShowInput] = useState(false);
@@ -43,8 +44,10 @@ export default function TubeTile({
     useEffect(() => {
         const saved = localStorage.getItem('tube-muted');
         if (saved !== null) {
-            userMutedRef.current = saved === 'true';
-            console.log('[TubeTile] Loaded mute state from localStorage:', userMutedRef.current);
+            const mutedValue = saved === 'true';
+            userMutedRef.current = mutedValue;
+            setIsMuted(mutedValue);
+            console.log('[TubeTile] Loaded mute state from localStorage:', mutedValue);
         }
     }, []);
 
@@ -616,6 +619,33 @@ export default function TubeTile({
                     title="Next / Skip"
                 >
                     <Icon icon="fa:step-forward" />
+                </button>
+                {/* Custom Mute/Unmute Button */}
+                <button
+                    onClick={() => {
+                        if (ytPlayerRef.current) {
+                            if (isMuted) {
+                                ytPlayerRef.current.unMute();
+                                ytPlayerRef.current.setVolume(settings.volume * 100);
+                                setIsMuted(false);
+                                localStorage.setItem('tube-muted', 'false');
+                                console.log('[TubeTile] Custom unmute clicked, saved to localStorage');
+                            } else {
+                                ytPlayerRef.current.mute();
+                                setIsMuted(true);
+                                localStorage.setItem('tube-muted', 'true');
+                                console.log('[TubeTile] Custom mute clicked, saved to localStorage');
+                            }
+                        }
+                    }}
+                    style={{
+                        background: isMuted ? 'rgba(239, 68, 68, 0.8)' : 'rgba(0,0,0,0.6)',
+                        border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title={isMuted ? "Unmute" : "Mute"}
+                >
+                    <Icon icon={isMuted ? "fa:volume-off" : "fa:volume-up"} />
                 </button>
                 <button
                     onClick={() => onChangeVideo('')} // Stop
