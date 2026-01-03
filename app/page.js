@@ -47,7 +47,7 @@ function MainApp({ user, onLeaveRoom }) {
     return saved ? parseInt(saved, 10) : 340;
   });
 
-  // Persist sidebar width & Validation
+  // Persist sidebar width
   useEffect(() => {
     const timer = setTimeout(() => {
       setCookie('sidebarWidth', sidebarWidth, { maxAge: 60 * 60 * 24 * 365 }); // 1 year
@@ -55,19 +55,8 @@ function MainApp({ user, onLeaveRoom }) {
     return () => clearTimeout(timer);
   }, [sidebarWidth]);
 
-  // Ensure width is valid on mount/resize
-  useEffect(() => {
-    const validateWidth = () => {
-      const maxWidth = window.innerWidth * 0.5;
-      const validWidth = Math.max(280, Math.min(maxWidth, sidebarWidth));
-      if (validWidth !== sidebarWidth) {
-        setSidebarWidth(validWidth);
-      }
-    };
-    validateWidth(); // Check on mount
-    window.addEventListener('resize', validateWidth);
-    return () => window.removeEventListener('resize', validateWidth);
-  }, [sidebarWidth]);
+  // NOTE: Removed aggressive auto-clamp on resize/mount as it annoyed user.
+  // We trust the cookie or default to 320px. CSS controls safety max-width.
 
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
@@ -247,9 +236,8 @@ function MainApp({ user, onLeaveRoom }) {
   const handleMouseMove = useCallback((e) => {
     if (!isResizing) return;
     const newWidth = window.innerWidth - e.clientX;
-    // Max width: 50% of screen or 800px, whichever is smaller (to avoid breaking on huge screens? or larger?)
-    // User asked for "like half the screen".
-    const maxWidth = window.innerWidth * 0.5;
+    // Allow resizing up to 80% of screen if user really wants to
+    const maxWidth = window.innerWidth * 0.8;
     const constrained = Math.max(280, Math.min(maxWidth, newWidth));
     setSidebarWidth(constrained);
   }, [isResizing]);
