@@ -19,6 +19,7 @@ export default function TubeTile({
     const { socket } = useSocket();
     const [isReady, setIsReady] = useState(false);
     const [hasError, setHasError] = useState(false);
+    const [debugStatus, setDebugStatus] = useState('Initializing...'); // [NEW] Debug Output
     const [isMuted, setIsMuted] = useState(true); // Track mute state for our custom button
 
     // UI State
@@ -181,6 +182,7 @@ export default function TubeTile({
                 // Wait a bit to ensure target DIV is truly in DOM
                 setTimeout(() => {
                     if (!playerContainerRef.current) return;
+                    setDebugStatus('API Ready. Creating Player...');
 
                     // Read mute preference from localStorage
                     const savedMuted = localStorage.getItem('tube-muted');
@@ -188,33 +190,48 @@ export default function TubeTile({
                     console.log("[Tube-Init] Initializing YT Player for:", embedId, "mute:", shouldStartMuted);
 
                     ignorePlayRef.current = true; // Skip the first play event
-                    ytPlayerRef.current = new window.YT.Player('tube-player-target', {
-                        height: '100%',
-                        width: '100%',
-                        videoId: embedId,
-                        playerVars: {
-                            'playsinline': 1,
-                            'controls': 1,
-                            'modestbranding': 1,
-                            'rel': 0,
-                            'origin': typeof window !== 'undefined' ? window.location.origin : '',
-                            'autoplay': 1,
-                            'mute': shouldStartMuted, // Dynamic based on user preference
-                            'enablejsapi': 1
-                        },
-                        events: {
-                            'onReady': onPlayerReady,
-                            'onStateChange': onPlayerStateChange,
-                            'onError': (e) => {
-                                console.error("[TubeTile-Native] Error:", e);
-                                if (e.data === 101 || e.data === 150 || e.data === 100) {
-                                    setHasError(true);
+                    try {
+                        ytPlayerRef.current = new window.YT.Player('tube-player-target', {
+                            height: '100%',
+                            width: '100%',
+                            videoId: embedId,
+                            playerVars: {
+                                'playsinline': 1,
+                                'controls': 1,
+                                'modestbranding': 1,
+                                'rel': 0,
+                                'origin': typeof window !== 'undefined' ? window.location.origin : '',
+                                'autoplay': 1,
+                                'mute': shouldStartMuted, // Dynamic based on user preference
+                                'enablejsapi': 1
+                            },
+                            events: {
+                                'onReady': onPlayerReady,
+                                'onStateChange': onPlayerStateChange,
+                                'onError': (e) => {
+                                    console.error("[TubeTile-Native] Error:", e);
+                                    setDebugStatus(`Error: ${e.data}`);
+                                    if (e.data === 101 || e.data === 150 || e.data === 100) {
+                                        setHasError(true);
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                        setDebugStatus('Player Object Created...');
+                    } catch (e) {
+                        setDebugStatus(`Constructor Error: ${e.message}`);
+                    }
                 }, 200);
             } else {
+                setDebugStatus('Waiting for YouTube API...');
+                // Fallback: If global script failed, inject strictly here
+                if (!document.getElementById('yt-api-script')) {
+                    const tag = document.createElement('script');
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    tag.id = "yt-api-script";
+                    document.body.appendChild(tag);
+                }
+
                 const checkYT = setInterval(() => {
                     if (window.YT && window.YT.Player) {
                         clearInterval(checkYT);
@@ -548,7 +565,9 @@ export default function TubeTile({
                             zIndex: 1
                         }}>
                             <Icon icon="eos-icons:bubble-loading" width="32" />
+                            <Icon icon="eos-icons:bubble-loading" width="32" />
                             <div style={{ fontSize: '12px' }}>Loading Player...</div>
+                            <div style={{ fontSize: '10px', color: '#666', fontFamily: 'monospace' }}>{debugStatus}</div>
                             {loadTimeout && (
                                 <button
                                     onClick={() => {
