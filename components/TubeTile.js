@@ -112,6 +112,11 @@ export default function TubeTile({
             // DESTROY existing player when video changes
             if (ytPlayerRef.current) {
                 try {
+                    // CAPTURE mute state before destruction
+                    if (ytPlayerRef.current.isMuted) {
+                        userMutedRef.current = ytPlayerRef.current.isMuted();
+                        console.log("[Tube-Init] Saved mute state:", userMutedRef.current);
+                    }
                     console.log("[Tube-Init] Destroying old player for new video");
                     ytPlayerRef.current.destroy();
                 } catch (err) {
