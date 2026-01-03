@@ -633,31 +633,48 @@ export default function TubeTile({
                                     fontSize: '13px'
                                 }}
                                 onClick={() => {
-                                    if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
-                                        console.log("[Tube-UI] JOIN PLAYBACK clicked. Forcing sync...");
-                                        try {
-                                            ytPlayerRef.current.unMute();
-                                            // Sync to server time immediately
-                                            const seekTo = (tubeState?.currentPosition || 0) + (Date.now() - (receivedAt || Date.now())) / 1000;
-                                            ytPlayerRef.current.seekTo(seekTo, true);
-                                            ytPlayerRef.current.playVideo();
+                                    // 1. FORCE CLEAR UI FIRST - Don't let a player error keep the UI stuck
+                                    setIsReady(true);
+                                    setLoadTimeout(false);
 
-                                            // Force clear loading screens
-                                            setIsReady(true);
-                                            setLoadTimeout(false);
-
-                                            // Some browsers need a second nudge
-                                            setTimeout(() => ytPlayerRef.current.playVideo(), 250);
-                                        } catch (e) {
-                                            console.error("[Tube-UI] Play failed:", e);
-                                        }
-                                        setForceSyncTrigger(prev => prev + 1);
-                                        setTimeout(() => setForceSyncTrigger(0), 1000);
-                                    } else {
-                                        console.warn("[Tube-UI] Player not ready for Join Playback");
-                                        // Fallback: If player ref is missing, try hard reload
+                                    if (!ytPlayerRef.current) {
+                                        console.warn("[Tube-UI] Player ref missing during join. Attempting re-render/reset...");
                                         setRetryKey(k => k + 1);
+                                        return;
                                     }
+
+                                    console.log("[Tube-UI] JOIN PLAYBACK clicked. Executing sequence...");
+
+                                    // 2. Unmute
+                                    try {
+                                        if (ytPlayerRef.current.unMute) ytPlayerRef.current.unMute();
+                                    } catch (e) { console.error("[Tube-Sync] Unmute failed:", e); }
+
+                                    // 3. Sync/Seek
+                                    try {
+                                        const now = Date.now();
+                                        const serverTime = tubeState?.currentPosition || 0;
+                                        // Calculate elapsed time since the packet was received
+                                        const lag = (now - (receivedAt || now)) / 1000;
+                                        const targetTime = serverTime + lag;
+
+                                        if (targetTime > 0 && Number.isFinite(targetTime)) {
+                                            if (ytPlayerRef.current.seekTo) ytPlayerRef.current.seekTo(targetTime, true);
+                                        }
+                                    } catch (e) { console.error("[Tube-Sync] Seek failed:", e); }
+
+                                    // 4. Play
+                                    try {
+                                        if (ytPlayerRef.current.playVideo) {
+                                            ytPlayerRef.current.playVideo();
+                                            // Double tap for mobile/safari
+                                            setTimeout(() => ytPlayerRef.current.playVideo(), 300);
+                                        }
+                                    } catch (e) { console.error("[Tube-Sync] Play failed:", e); }
+
+                                    // 5. Trigger Sync Ref correction
+                                    setForceSyncTrigger(prev => prev + 1);
+                                    setTimeout(() => setForceSyncTrigger(0), 1000);
                                 }}
                             >
                                 <Icon icon="fa:play" style={{ marginRight: '8px' }} />
