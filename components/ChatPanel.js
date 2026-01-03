@@ -86,6 +86,27 @@ export default function ChatPanel({
         return () => socket.off('message-reactions-update', handleReactionsUpdate);
     }, [socket]);
 
+    // Initialize reactions from history messages
+    useEffect(() => {
+        if (!messages) return;
+        const initialReactions = {};
+        let hasNewReactions = false;
+
+        messages.forEach(msg => {
+            if (msg.reactions && Object.keys(msg.reactions).length > 0) {
+                initialReactions[msg.id] = msg.reactions;
+                hasNewReactions = true;
+            }
+        });
+
+        if (hasNewReactions) {
+            setMessageReactions(prev => ({
+                ...prev,
+                ...initialReactions
+            }));
+        }
+    }, [messages]);
+
     // Reaction handlers
     const handleReact = useCallback((messageId, emoji) => {
         if (socket) {

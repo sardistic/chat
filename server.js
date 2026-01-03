@@ -1019,7 +1019,24 @@ app.prepare().then(async () => {
 
       // Send initial data to joining user
       socket.emit("existing-users", { users: existingUsers });
-      socket.emit("chat-history", messageHistory[roomId] || []); // Send history
+
+      // Prepare history with reactions
+      const rawHistory = messageHistory[roomId] || [];
+      const historyWithReactions = rawHistory.map(msg => {
+        const reactionsMap = messageReactions.get(msg.id);
+        let reactions = {};
+        if (reactionsMap) {
+          for (const [emoji, users] of reactionsMap.entries()) {
+            reactions[emoji] = {
+              count: users.size,
+              users: Array.from(users),
+              hasReacted: users.has(user.id)
+            };
+          }
+        }
+        return { ...msg, reactions };
+      });
+      socket.emit("chat-history", historyWithReactions);
 
       // Notify others
       socket.to(roomId).emit("user-joined", { socketId: socket.id, user });
