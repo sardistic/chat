@@ -448,7 +448,7 @@ function MainApp({ user, onLeaveRoom }) {
         <aside className="floating-sidebar">
           {/* Resize Handle */}
           <div
-            className={`drag - handle ${isBuilding ? 'active-pulse' : ''} `}
+            className={`drag-handle ${isBuilding ? 'active-pulse' : ''} `}
             onMouseDown={handleMouseDown}
             style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
           />
