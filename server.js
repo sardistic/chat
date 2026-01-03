@@ -957,7 +957,14 @@ app.prepare().then(async () => {
     },
     shouldIgnoreSender: (senderNick) => {
       // Ignore messages from the bot itself
-      return senderNick === 'ChatLogBot' || senderNick.startsWith('ChatLogBot');
+      if (senderNick === 'ChatLogBot' || senderNick.startsWith('ChatLogBot')) return true;
+
+      // Ignore messages from users currently connected to the web chat
+      // (because we already got their message via socket, we don't need the IRC echo)
+      for (const [socketId, user] of rooms.get('default-room') || []) {
+        if (user.name === senderNick) return true;
+      }
+      return false;
     }
   });
   historyBot.connect();
