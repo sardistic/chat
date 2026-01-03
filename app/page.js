@@ -481,7 +481,7 @@ function MainApp({ user, onLeaveRoom }) {
 
           <div className="side-content" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
             {/* Chat Panel - Always mounted to preserve state */}
-            <div style={{ flex: 1, height: '100%', display: activeTab === 'logs' ? 'flex' : 'none', flexDirection: 'column' }}>
+            <div style={{ flex: 1, height: '100%', display: activeTab === 'logs' ? 'flex' : 'none', flexDirection: 'column', minWidth: 0 }}>
               <ChatPanel
                 roomId={roomId}
                 user={user}
