@@ -55,8 +55,16 @@ function MainApp({ user, onLeaveRoom }) {
     return () => clearTimeout(timer);
   }, [sidebarWidth]);
 
-  // NOTE: Removed aggressive auto-clamp on resize/mount as it annoyed user.
-  // We trust the cookie or default to 320px. CSS controls safety max-width.
+  // Sanity check on mount (Fix stuck "fullscreen" cookies)
+  // But allow user to resize larger if they want (up to 90%)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const maxSafeWidth = window.innerWidth * 0.9;
+      if (sidebarWidth > maxSafeWidth) {
+        setSidebarWidth(Math.min(sidebarWidth, 500)); // Reset to reasonable defaults if broken
+      }
+    }
+  }, []);
 
   const [activeTab, setActiveTab] = useState('logs');
   const [isResizing, setIsResizing] = useState(false);
