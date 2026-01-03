@@ -510,7 +510,8 @@ export default function VideoGrid({
     receivedAt = 0,
     onUpdateTubeState = () => { },
     isTubeOwner = false,
-    blockedIds = new Set() // Passed from useChat
+    blockedIds = new Set(), // Passed from useChat
+    onMuteChange // Passed from page.js
 }) {
     const { socket } = useSocket();
     const [incomingReactions, setIncomingReactions] = useState(new Map());
