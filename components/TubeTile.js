@@ -508,10 +508,10 @@ export default function TubeTile({
                 </button>
                 <button
                     onClick={() => {
-                        // Previous
+                        // Previous - omit roomId so server uses socket.data.roomId
                         console.log('[TubeTile] PREV button clicked, socket:', !!socket);
                         if (socket) {
-                            socket.emit('tube-update', { roomId: 'default', action: 'prev' });
+                            socket.emit('tube-update', { action: 'prev' });
                             console.log('[TubeTile] Emitted tube-update with action: prev');
                         }
                     }}
@@ -553,10 +553,10 @@ export default function TubeTile({
                 )}
                 <button
                     onClick={() => {
-                        // Next (Explicit Action)
+                        // Next (Explicit Action) - omit roomId so server uses socket.data.roomId
                         console.log('[TubeTile] NEXT button clicked, socket:', !!socket);
                         if (socket) {
-                            socket.emit('tube-update', { roomId: 'default', action: 'next' });
+                            socket.emit('tube-update', { action: 'next' });
                             console.log('[TubeTile] Emitted tube-update with action: next');
                         }
                     }}
