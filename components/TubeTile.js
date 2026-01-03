@@ -81,13 +81,19 @@ export default function TubeTile({
             if (tubeState.isPlaying) {
                 event.target.playVideo();
             }
-            // Restore mute state from previous session (userMutedRef tracks if user has unmuted)
-            if (userMutedRef.current) {
+            // Read mute state directly from localStorage for reliability
+            const savedMuted = localStorage.getItem('tube-muted');
+            const shouldMute = savedMuted === null ? true : savedMuted === 'true';
+            console.log('[TubeTile] onPlayerReady - mute from localStorage:', shouldMute);
+
+            if (shouldMute) {
                 event.target.mute();
             } else {
                 event.target.unMute();
                 event.target.setVolume(settings.volume * 100);
             }
+            // Sync ref with localStorage
+            userMutedRef.current = shouldMute;
         };
 
         const onPlayerStateChange = (event) => {
