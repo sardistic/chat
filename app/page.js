@@ -44,7 +44,7 @@ function MainApp({ user, onLeaveRoom }) {
   // State initialization with cookie fallback
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = getCookie('sidebarWidth');
-    return saved ? parseInt(saved, 10) : 340;
+    return saved ? parseInt(saved, 10) : 320;
   });
 
   // Persist sidebar width
@@ -56,14 +56,39 @@ function MainApp({ user, onLeaveRoom }) {
   }, [sidebarWidth]);
 
   // Sanity check on mount (Fix stuck "fullscreen" cookies)
-  // But allow user to resize larger if they want (up to 90%)
+  // And apply 20% default if no cookie exists
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const saved = getCookie('sidebarWidth');
       const maxSafeWidth = window.innerWidth * 0.9;
-      if (sidebarWidth > maxSafeWidth) {
-        setSidebarWidth(Math.min(sidebarWidth, 500)); // Reset to reasonable defaults if broken
+
+      if (!saved) {
+        // User Request: Default to ~20% of screen
+        const targetWidth = Math.max(280, window.innerWidth * 0.2);
+        setSidebarWidth(targetWidth);
+      } else if (sidebarWidth > maxSafeWidth) {
+        // Fix broken cookies
+        setSidebarWidth(Math.min(sidebarWidth, 500));
       }
     }
+  }, []);
+
+  // Fluid Background Animation (Flashlight)
+  useEffect(() => {
+    let ticking = false;
+    const handleBgMove = (e) => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          // Update CSS variables on root for starmap-bg to use
+          document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+          document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('mousemove', handleBgMove);
+    return () => window.removeEventListener('mousemove', handleBgMove);
   }, []);
 
   const [activeTab, setActiveTab] = useState('logs');
