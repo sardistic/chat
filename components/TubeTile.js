@@ -600,229 +600,230 @@ export default function TubeTile({
                                     boxShadow: '0 4px 15px rgba(255,0,0,0.4)',
                                     fontSize: '13px'
                                 }}
-                                if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
-                                console.log("[Tube-UI] JOIN PLAYBACK clicked. Forcing sync...");
-                            try {
-                                ytPlayerRef.current.unMute();
-                            // Sync to server time immediately
-                            const seekTo = (tubeState?.currentPosition || 0) + (Date.now() - (receivedAt || Date.now())) / 1000;
-                            ytPlayerRef.current.seekTo(seekTo, true);
-                            ytPlayerRef.current.playVideo();
+                                onClick={() => {
+                                    if (ytPlayerRef.current && ytPlayerRef.current.playVideo) {
+                                        console.log("[Tube-UI] JOIN PLAYBACK clicked. Forcing sync...");
+                                        try {
+                                            ytPlayerRef.current.unMute();
+                                            // Sync to server time immediately
+                                            const seekTo = (tubeState?.currentPosition || 0) + (Date.now() - (receivedAt || Date.now())) / 1000;
+                                            ytPlayerRef.current.seekTo(seekTo, true);
+                                            ytPlayerRef.current.playVideo();
 
-                            // Force clear loading screens
-                            setIsReady(true);
-                            setLoadTimeout(false);
+                                            // Force clear loading screens
+                                            setIsReady(true);
+                                            setLoadTimeout(false);
 
                                             // Some browsers need a second nudge
                                             setTimeout(() => ytPlayerRef.current.playVideo(), 250);
                                         } catch (e) {
-                                console.error("[Tube-UI] Play failed:", e);
+                                            console.error("[Tube-UI] Play failed:", e);
                                         }
                                         setForceSyncTrigger(prev => prev + 1);
                                         setTimeout(() => setForceSyncTrigger(0), 1000);
                                     } else {
-                                console.warn("[Tube-UI] Player not ready for Join Playback");
+                                        console.warn("[Tube-UI] Player not ready for Join Playback");
                                         // Fallback: If player ref is missing, try hard reload
                                         setRetryKey(k => k + 1);
                                     }
                                 }}
                             >
-                            <Icon icon="fa:play" style={{ marginRight: '8px' }} />
-                            CLICK TO JOIN STREAM
-                        </button>
+                                <Icon icon="fa:play" style={{ marginRight: '8px' }} />
+                                CLICK TO JOIN STREAM
+                            </button>
                         </div>
-            )}
-        </div>
-    )
-}
+                    )}
+                </div>
+            )
+            }
 
-{/* Name Label */ }
-<div className="tile-name" style={{
-    position: 'absolute', bottom: '50px', left: '8px',
-    background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px',
-    fontSize: '11px', fontWeight: '600', color: 'white',
-    display: 'flex', alignItems: 'center', gap: '6px',
-    pointerEvents: 'none',
-    zIndex: 10,
-    border: isOwner ? '1px solid #ff0000' : '1px solid rgba(255,255,255,0.2)'
-}}>
-    <Icon icon={isOwner ? "fa:user-circle" : "fa:link"} color={isOwner ? "#ff0000" : "#00f2ff"} />
-    {isOwner ? 'YOU ARE DJ' : 'SYNCED TO HOST'}
-</div>
+            {/* Name Label */}
+            <div className="tile-name" style={{
+                position: 'absolute', bottom: '50px', left: '8px',
+                background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px',
+                fontSize: '11px', fontWeight: '600', color: 'white',
+                display: 'flex', alignItems: 'center', gap: '6px',
+                pointerEvents: 'none',
+                zIndex: 10,
+                border: isOwner ? '1px solid #ff0000' : '1px solid rgba(255,255,255,0.2)'
+            }}>
+                <Icon icon={isOwner ? "fa:user-circle" : "fa:link"} color={isOwner ? "#ff0000" : "#00f2ff"} />
+                {isOwner ? 'YOU ARE DJ' : 'SYNCED TO HOST'}
+            </div>
 
-{/* Reaction Button - Bottom Right */ }
-{
-    onReaction && (
-        <div
-            className="reaction-control"
-            style={{
-                position: 'absolute',
-                bottom: '8px',
-                right: '8px',
-                zIndex: 15,
-                display: 'flex',
-                alignItems: 'center',
-                background: 'rgba(0,0,0,0.6)',
-                borderRadius: '14px',
-                padding: '4px 8px',
-                gap: '2px'
-            }}
-            onClick={(e) => e.stopPropagation()}
-        >
-            <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setShowReactionPicker(!showReactionPicker);
-                }}
-                style={{
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    padding: '4px',
-                    lineHeight: 1
-                }}
-                title="React"
-            >
-                {showReactionPicker ? '✕' : '❤️'}
-            </button>
-            {showReactionPicker && ['❤️', '🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+            {/* Reaction Button - Bottom Right */}
+            {
+                onReaction && (
+                    <div
+                        className="reaction-control"
+                        style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            right: '8px',
+                            zIndex: 15,
+                            display: 'flex',
+                            alignItems: 'center',
+                            background: 'rgba(0,0,0,0.6)',
+                            borderRadius: '14px',
+                            padding: '4px 8px',
+                            gap: '2px'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowReactionPicker(!showReactionPicker);
+                            }}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                padding: '4px',
+                                lineHeight: 1
+                            }}
+                            title="React"
+                        >
+                            {showReactionPicker ? '✕' : '❤️'}
+                        </button>
+                        {showReactionPicker && ['❤️', '🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+                            <button
+                                key={emoji}
+                                onClick={(e) => { e.stopPropagation(); onReaction(emoji); setShowReactionPicker(false); }}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '16px',
+                                    padding: '4px',
+                                    lineHeight: 1
+                                }}
+                            >
+                                {emoji}
+                            </button>
+                        ))}
+                    </div>
+                )
+            }
+
+            {/* DJ Controls Overlay (Top Right) */}
+            <div style={{
+                position: 'absolute', top: '8px', right: '8px',
+                display: 'flex', gap: '4px', zIndex: 10
+            }}>
                 <button
-                    key={emoji}
-                    onClick={(e) => { e.stopPropagation(); onReaction(emoji); setShowReactionPicker(false); }}
+                    onClick={() => setShowInput(true)}
                     style={{
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '16px',
-                        padding: '4px',
-                        lineHeight: 1
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
                     }}
+                    title="Change Video"
                 >
-                    {emoji}
+                    <Icon icon="fa:search" />
                 </button>
-            ))}
-        </div>
-    )
-}
+                <button
+                    onClick={() => {
+                        // Previous - omit roomId so server uses socket.data.roomId
+                        console.log('[TubeTile] PREV button clicked, socket:', !!socket);
+                        if (socket) {
+                            socket.emit('tube-update', { action: 'prev' });
+                            console.log('[TubeTile] Emitted tube-update with action: prev');
+                        }
+                    }}
+                    style={{
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title="Previous"
+                >
+                    <Icon icon="fa:step-backward" />
+                </button>
+                {!tubeState?.isPlaying && (
+                    <button
+                        onClick={() => {
+                            if (onSync) onSync({ type: 'play', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
+                        }}
+                        style={{
+                            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                            color: 'white', padding: '4px', cursor: 'pointer'
+                        }}
+                        title="Resume"
+                    >
+                        <Icon icon="fa:play" />
+                    </button>
+                )}
+                {tubeState?.isPlaying && (
+                    <button
+                        onClick={() => {
+                            if (onSync) onSync({ type: 'pause', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
+                        }}
+                        style={{
+                            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                            color: 'white', padding: '4px', cursor: 'pointer'
+                        }}
+                        title="Pause"
+                    >
+                        <Icon icon="fa:pause" />
+                    </button>
+                )}
+                <button
+                    onClick={() => {
+                        // Next (Explicit Action) - omit roomId so server uses socket.data.roomId
+                        console.log('[TubeTile] NEXT button clicked, socket:', !!socket);
+                        if (socket) {
+                            socket.emit('tube-update', { action: 'next' });
+                            console.log('[TubeTile] Emitted tube-update with action: next');
+                        }
+                    }}
+                    style={{
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title="Next / Skip"
+                >
+                    <Icon icon="fa:step-forward" />
+                </button>
+                {/* Custom Mute/Unmute Button */}
+                <button
+                    onClick={() => {
+                        if (ytPlayerRef.current) {
+                            if (isMuted) {
+                                ytPlayerRef.current.unMute();
+                                ytPlayerRef.current.setVolume(settings.volume * 100);
+                                setIsMuted(false);
+                                localStorage.setItem('tube-muted', 'false');
+                                console.log('[TubeTile] Custom unmute clicked, saved to localStorage');
+                            } else {
+                                ytPlayerRef.current.mute();
+                                setIsMuted(true);
+                                localStorage.setItem('tube-muted', 'true');
+                                console.log('[TubeTile] Custom mute clicked, saved to localStorage');
+                            }
+                        }
+                    }}
+                    style={{
+                        background: isMuted ? 'rgba(239, 68, 68, 0.8)' : 'rgba(0,0,0,0.6)',
+                        border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title={isMuted ? "Unmute" : "Mute"}
+                >
+                    <Icon icon={isMuted ? "fa:volume-off" : "fa:volume-up"} />
+                </button>
+                <button
+                    onClick={() => onChangeVideo('')} // Stop
+                    style={{
+                        background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
+                        color: 'white', padding: '4px', cursor: 'pointer'
+                    }}
+                    title="Stop / Eject"
+                >
+                    <Icon icon="fa:eject" />
+                </button>
+            </div>
 
-{/* DJ Controls Overlay (Top Right) */ }
-<div style={{
-    position: 'absolute', top: '8px', right: '8px',
-    display: 'flex', gap: '4px', zIndex: 10
-}}>
-    <button
-        onClick={() => setShowInput(true)}
-        style={{
-            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-            color: 'white', padding: '4px', cursor: 'pointer'
-        }}
-        title="Change Video"
-    >
-        <Icon icon="fa:search" />
-    </button>
-    <button
-        onClick={() => {
-            // Previous - omit roomId so server uses socket.data.roomId
-            console.log('[TubeTile] PREV button clicked, socket:', !!socket);
-            if (socket) {
-                socket.emit('tube-update', { action: 'prev' });
-                console.log('[TubeTile] Emitted tube-update with action: prev');
-            }
-        }}
-        style={{
-            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-            color: 'white', padding: '4px', cursor: 'pointer'
-        }}
-        title="Previous"
-    >
-        <Icon icon="fa:step-backward" />
-    </button>
-    {!tubeState?.isPlaying && (
-        <button
-            onClick={() => {
-                if (onSync) onSync({ type: 'play', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
-            }}
-            style={{
-                background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-                color: 'white', padding: '4px', cursor: 'pointer'
-            }}
-            title="Resume"
-        >
-            <Icon icon="fa:play" />
-        </button>
-    )}
-    {tubeState?.isPlaying && (
-        <button
-            onClick={() => {
-                if (onSync) onSync({ type: 'pause', playedSeconds: ytPlayerRef.current?.getCurrentTime() || 0 });
-            }}
-            style={{
-                background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-                color: 'white', padding: '4px', cursor: 'pointer'
-            }}
-            title="Pause"
-        >
-            <Icon icon="fa:pause" />
-        </button>
-    )}
-    <button
-        onClick={() => {
-            // Next (Explicit Action) - omit roomId so server uses socket.data.roomId
-            console.log('[TubeTile] NEXT button clicked, socket:', !!socket);
-            if (socket) {
-                socket.emit('tube-update', { action: 'next' });
-                console.log('[TubeTile] Emitted tube-update with action: next');
-            }
-        }}
-        style={{
-            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-            color: 'white', padding: '4px', cursor: 'pointer'
-        }}
-        title="Next / Skip"
-    >
-        <Icon icon="fa:step-forward" />
-    </button>
-    {/* Custom Mute/Unmute Button */}
-    <button
-        onClick={() => {
-            if (ytPlayerRef.current) {
-                if (isMuted) {
-                    ytPlayerRef.current.unMute();
-                    ytPlayerRef.current.setVolume(settings.volume * 100);
-                    setIsMuted(false);
-                    localStorage.setItem('tube-muted', 'false');
-                    console.log('[TubeTile] Custom unmute clicked, saved to localStorage');
-                } else {
-                    ytPlayerRef.current.mute();
-                    setIsMuted(true);
-                    localStorage.setItem('tube-muted', 'true');
-                    console.log('[TubeTile] Custom mute clicked, saved to localStorage');
-                }
-            }
-        }}
-        style={{
-            background: isMuted ? 'rgba(239, 68, 68, 0.8)' : 'rgba(0,0,0,0.6)',
-            border: 'none', borderRadius: '4px',
-            color: 'white', padding: '4px', cursor: 'pointer'
-        }}
-        title={isMuted ? "Unmute" : "Mute"}
-    >
-        <Icon icon={isMuted ? "fa:volume-off" : "fa:volume-up"} />
-    </button>
-    <button
-        onClick={() => onChangeVideo('')} // Stop
-        style={{
-            background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '4px',
-            color: 'white', padding: '4px', cursor: 'pointer'
-        }}
-        title="Stop / Eject"
-    >
-        <Icon icon="fa:eject" />
-    </button>
-</div>
-
-{ renderInputModal() }
+            {renderInputModal()}
         </div >
     );
 }
