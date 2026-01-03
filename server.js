@@ -1517,10 +1517,11 @@ app.prepare().then(async () => {
             tubeState.pausedAt = 0;
 
             // Update System Message to "Now Playing"
-            // Build text with title if available
-            const titleText = nextVideo.title && !nextVideo.title.startsWith('Video:')
-              ? `**Now Playing**: [${nextVideo.title}](https://youtu.be/${nextVideo.videoId})`
-              : `**Now Playing**`;
+            // Build text with title if available, and include who queued it
+            const hasTitle = nextVideo.title && !nextVideo.title.startsWith('Video:');
+            const titleText = hasTitle
+              ? `**Now Playing**: [${nextVideo.title}](https://youtu.be/${nextVideo.videoId}) (queued by ${nextVideo.startedBy || 'Someone'})`
+              : `**Now Playing** (queued by ${nextVideo.startedBy || 'Someone'})`;
 
             msgPayload = {
               id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
@@ -1751,12 +1752,14 @@ app.prepare().then(async () => {
         tubeState.pausedAt = 0;
         tubeState.isPlaying = true; // Always auto-play new video
         tubeState.playStartedAt = Date.now();
+        tubeState.startedBy = userName; // Track who started this video
 
-        // Update/Create "Now Playing" Message
+        // Update/Create "Now Playing" Message (initially with placeholder, async update will add title)
+        const msgId = isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`;
         msgPayload = {
-          id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+          id: msgId,
           roomId,
-          text: `**Now Playing**`,
+          text: `**Now Playing** (queued by ${userName})`,
           sender: 'System',
           type: 'system',
           systemType: 'tube-now-playing',
@@ -1769,6 +1772,42 @@ app.prepare().then(async () => {
           },
           timestamp: new Date().toISOString()
         };
+
+        // Store and emit immediately with placeholder
+        storeMessage(roomId, msgPayload);
+        io.to(roomId).emit('chat-message', msgPayload);
+        if (!global._lastTubeMsg) global._lastTubeMsg = {};
+        global._lastTubeMsg[`tube-${roomId}`] = msgId;
+
+        // Async fetch title and update message
+        getYouTubeVideoInfo(videoId).then(info => {
+          if (info && info.title) {
+            console.log(`[Tube] Direct Play - Fetched title: ${info.title}`);
+            tubeState.title = info.title;
+            tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
+
+            // Update the Now Playing message with real title
+            const updatedMsg = {
+              ...msgPayload,
+              text: `**Now Playing**: [${info.title}](https://youtu.be/${videoId}) (queued by ${userName})`,
+              metadata: {
+                ...msgPayload.metadata,
+                title: info.title,
+                thumbnail: tubeState.thumbnail
+              }
+            };
+            io.to(roomId).emit('chat-message-update', updatedMsg);
+            io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition() });
+          }
+        }).catch(err => console.error('[Tube] Direct play title fetch error:', err));
+
+        // Emit initial tube state
+        io.to(roomId).emit('tube-state', {
+          ...tubeState,
+          serverTime: Date.now(),
+          currentPosition: getTubePosition()
+        });
+        return; // Exit - message already emitted above
 
       } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
         // STOPPED / ENDED / EJECTED
