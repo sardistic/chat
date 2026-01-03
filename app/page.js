@@ -268,7 +268,7 @@ function MainApp({ user, onLeaveRoom }) {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className={`app ${isBuilding ? 'building-mode' : ''} `} style={{ '--dynamic-sidebar-w': `${sidebarWidth} px` }}>
+    <div className={`app ${isBuilding ? 'building-mode' : ''} `} style={{ '--dynamic-sidebar-w': `${sidebarWidth}px` }}>
 
       {/* Background Layer (Explicit) */}
       <div className="starmap-bg" />
