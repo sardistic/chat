@@ -194,6 +194,14 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             kicker: '⏸ PAUSED',
             animation: 'none'
         },
+        'tube-queue': {
+            icon: 'mdi:youtube',
+            color: '#f97316', // Orange
+            bgColor: 'rgba(249, 115, 22, 0.1)',
+            borderColor: 'rgba(249, 115, 22, 0.4)',
+            kicker: '⏭ UP NEXT',
+            animation: 'none'
+        },
         'info': {
             icon: 'mdi:information-variant',
             color: '#3b82f6', // Blue
