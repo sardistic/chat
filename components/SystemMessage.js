@@ -245,7 +245,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
     return (
         <div className={`system-message-card ${style.animation}`} style={{
-            margin: '8px 0', // Compact
+            margin: '8px auto', // Center horizontally
             padding: '0',
             background: '#0a0a0a',
             border: `1px solid ${style.borderColor}`,
@@ -253,7 +253,9 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             overflow: 'hidden',
             position: 'relative',
             fontFamily: 'monospace, monospace', // Tech look
-            boxShadow: `0 4px 6px -1px rgba(0, 0, 0, 0.3)`
+            boxShadow: `0 4px 6px -1px rgba(0, 0, 0, 0.3)`,
+            maxWidth: '480px', // Limit width for better appearance
+            width: '100%'
         }}>
             {/* Kicker / Header Bar */}
             <div style={{
