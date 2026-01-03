@@ -78,7 +78,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
             });
 
             // 4. Update PeerManager
-            // 4. Update PeerManager
             if (peerManagerRef.current) {
                 console.log('🔄 Updating existing peer connections with new stream (Soft Reconnect)');
                 // Set the internal stream so peer manager uses it for future connections
@@ -98,14 +97,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
                 console.log('🆕 Creating new PeerManager');
                 const peerManager = new PeerManager(socket, stream);
                 peerManagerRef.current = peerManager;
-
-                // Connect to ALL peers
-                peers.forEach((peerData, peerId) => {
-                    if (peerId !== socket.id) {
-                        console.log('📡 Connecting to existing peer (fresh broadcast):', peerId);
-                        peerManager.createPeer(peerId, true);
-                    }
-                });
 
                 // Handle new peer streams
                 peerManager.onStream((peerId, stream) => {
@@ -127,12 +118,13 @@ export function useWebRTC(roomId, user, autoStart = true) {
                     });
                 });
 
-                // Create connections for existing users
-                if (peers.size > 0) {
-                    peers.forEach((peerData, peerId) => {
+                // Connect to ALL peers
+                peers.forEach((peerData, peerId) => {
+                    if (peerId !== socket.id) {
+                        console.log('📡 Connecting to existing peer (fresh broadcast):', peerId);
                         peerManager.createPeer(peerId, true);
-                    });
-                }
+                    }
+                });
             }
 
             console.log('✅ Broadcast started successfully');
