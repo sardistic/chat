@@ -35,7 +35,19 @@ export default function TubeTile({
     const playerContainerRef = useRef(null);
     const isOwnerRef = useRef(isOwner);
     const currentVideoIdRef = useRef(null); // Track current video to prevent re-init loops
-    const userMutedRef = useRef(true); // Track if user has unmuted (starts muted for autoplay)
+
+    // Initialize mute state from localStorage (default to muted for autoplay policy)
+    const userMutedRef = useRef(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('tube-muted');
+            return saved === null ? true : saved === 'true';
+        }
+        return true;
+    });
+    // Immediately evaluate the function
+    if (typeof userMutedRef.current === 'function') {
+        userMutedRef.current = userMutedRef.current();
+    }
 
     // Sync isOwner ref
     useEffect(() => {
@@ -190,12 +202,14 @@ export default function TubeTile({
                     if (userMutedRef.current !== isMuted) {
                         console.log('[TubeTile] Mute state changed:', isMuted);
                         userMutedRef.current = isMuted;
+                        // Persist to localStorage
+                        localStorage.setItem('tube-muted', String(isMuted));
                     }
                 } catch (e) {
                     // Player might not be ready yet
                 }
             }
-        }, 1000);
+        }, 500); // Check more frequently
 
         initPlayer();
         return () => {
