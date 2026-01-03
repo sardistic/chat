@@ -157,7 +157,12 @@ export default function TubeTile({
                 // Wait a bit to ensure target DIV is truly in DOM
                 setTimeout(() => {
                     if (!playerContainerRef.current) return;
-                    console.log("[Tube-Init] Initializing YT Player for:", embedId);
+
+                    // Read mute preference from localStorage
+                    const savedMuted = localStorage.getItem('tube-muted');
+                    const shouldStartMuted = savedMuted === null ? 1 : (savedMuted === 'true' ? 1 : 0);
+                    console.log("[Tube-Init] Initializing YT Player for:", embedId, "mute:", shouldStartMuted);
+
                     ignorePlayRef.current = true; // Skip the first play event
                     ytPlayerRef.current = new window.YT.Player('tube-player-target', {
                         height: '100%',
@@ -170,7 +175,7 @@ export default function TubeTile({
                             'rel': 0,
                             'origin': typeof window !== 'undefined' ? window.location.origin : '',
                             'autoplay': 1,
-                            'mute': 1,
+                            'mute': shouldStartMuted, // Dynamic based on user preference
                             'enablejsapi': 1
                         },
                         events: {
