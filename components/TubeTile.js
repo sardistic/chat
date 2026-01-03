@@ -11,6 +11,7 @@ export default function TubeTile({
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
     onSync,    // Callback when player reports progress/state
     onChangeVideo, // Callback to change video
+    onReaction, // Callback for reactions
     width,
     height
 }) {
@@ -22,6 +23,7 @@ export default function TubeTile({
     // UI State
     const [showInput, setShowInput] = useState(false);
     const [inputValue, setInputValue] = useState('');
+    const [showReactionPicker, setShowReactionPicker] = useState(false);
 
     // Search State
     const [isSearching, setIsSearching] = useState(false);
@@ -542,6 +544,60 @@ export default function TubeTile({
                 <Icon icon={isOwner ? "fa:user-circle" : "fa:link"} color={isOwner ? "#ff0000" : "#00f2ff"} />
                 {isOwner ? 'YOU ARE DJ' : 'SYNCED TO HOST'}
             </div>
+
+            {/* Reaction Button - Bottom Right */}
+            {onReaction && (
+                <div
+                    className="reaction-control"
+                    style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        right: '8px',
+                        zIndex: 15,
+                        display: 'flex',
+                        alignItems: 'center',
+                        background: 'rgba(0,0,0,0.6)',
+                        borderRadius: '14px',
+                        padding: '4px 8px',
+                        gap: '2px'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowReactionPicker(!showReactionPicker);
+                        }}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            padding: '4px',
+                            lineHeight: 1
+                        }}
+                        title="React"
+                    >
+                        {showReactionPicker ? '✕' : '❤️'}
+                    </button>
+                    {showReactionPicker && ['❤️', '🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+                        <button
+                            key={emoji}
+                            onClick={(e) => { e.stopPropagation(); onReaction(emoji); setShowReactionPicker(false); }}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                padding: '4px',
+                                lineHeight: 1
+                            }}
+                        >
+                            {emoji}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* DJ Controls Overlay (Top Right) */}
             <div style={{
