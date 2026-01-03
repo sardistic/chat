@@ -531,7 +531,7 @@ export default function TubeTile({
 
             {/* Name Label */}
             <div className="tile-name" style={{
-                position: 'absolute', bottom: '8px', left: '8px',
+                position: 'absolute', bottom: '50px', left: '8px',
                 background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px',
                 fontSize: '11px', fontWeight: '600', color: 'white',
                 display: 'flex', alignItems: 'center', gap: '6px',

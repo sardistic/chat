@@ -407,59 +407,63 @@ function VideoTile({
                             {user?.name || 'User'} {isLocal && '(You)'}
                         </span>
                         {isDiscordUser && <span style={{ opacity: 0.7 }}><Icon icon="fa:link" width="12" /></span>}
-
-                        {/* Reaction Button - click for heart, hover/click for more */}
-                        <div
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                background: 'rgba(0,0,0,0.5)',
-                                borderRadius: '14px',
-                                padding: '4px 8px',
-                                marginLeft: '6px',
-                                gap: '2px'
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <button
-                                className="reaction-btn"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowPicker(!showPicker);
-                                }}
-                                style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    fontSize: '16px',
-                                    padding: '4px',
-                                    lineHeight: 1
-                                }}
-                                title="React"
-                            >
-                                {showPicker ? '✕' : '❤️'}
-                            </button>
-                            {showPicker && ['❤️', '🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
-                                <button
-                                    key={emoji}
-                                    onClick={(e) => { e.stopPropagation(); onReaction(emoji); setShowPicker(false); }}
-                                    style={{
-                                        background: 'transparent',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        fontSize: '16px',
-                                        padding: '4px',
-                                        lineHeight: 1
-                                    }}
-                                >
-                                    {emoji}
-                                </button>
-                            ))}
-                        </div>
                     </div>
                 </div>
 
                 <div style={{ flex: 1 }}></div>
+            </div>
+
+            {/* Reaction Button - Bottom Right */}
+            <div
+                className="reaction-control"
+                style={{
+                    position: 'absolute',
+                    bottom: '8px',
+                    right: '8px',
+                    zIndex: 35,
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: 'rgba(0,0,0,0.6)',
+                    borderRadius: '14px',
+                    padding: '4px 8px',
+                    gap: '2px'
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button
+                    className="reaction-btn"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPicker(!showPicker);
+                    }}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        padding: '4px',
+                        lineHeight: 1
+                    }}
+                    title="React"
+                >
+                    {showPicker ? '✕' : '❤️'}
+                </button>
+                {showPicker && ['❤️', '🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
+                    <button
+                        key={emoji}
+                        onClick={(e) => { e.stopPropagation(); onReaction(emoji); setShowPicker(false); }}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            padding: '4px',
+                            lineHeight: 1
+                        }}
+                    >
+                        {emoji}
+                    </button>
+                ))}
             </div>
 
             <div className="status-icons" style={{
