@@ -324,6 +324,12 @@ export default function TubeTile({
         const isUrl = val.startsWith('http') || val.includes('youtube.com') || val.includes('youtu.be');
 
         if (isUrl) {
+            // AUTO-UNMUTE: DJ should hear the track they picked
+            userMutedRef.current = false;
+            setIsMuted(false);
+            localStorage.setItem('tube-muted', 'false');
+            if (onMuteChange) onMuteChange(true);
+
             onChangeVideo(val);
             setShowInput(false);
             setInputValue('');
@@ -335,6 +341,12 @@ export default function TubeTile({
     };
 
     const handleSelectResult = (video) => {
+        // AUTO-UNMUTE: DJ should hear the track they picked
+        userMutedRef.current = false;
+        setIsMuted(false);
+        localStorage.setItem('tube-muted', 'false');
+        if (onMuteChange) onMuteChange(true); // true = isListening (unmuted)
+
         onChangeVideo(video.url);
         setShowInput(false);
         setInputValue('');
