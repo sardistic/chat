@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useChat } from '@/hooks/useChat';
 import { useEmotes } from '@/hooks/useEmotes';
+import { useSocket } from '@/lib/socket';
 import MessageContent from './MessageContent';
 import SystemMessage from './SystemMessage';
 import GifPicker from './GifPicker';
+import MessageReactions from './MessageReactions';
 
 // Group messages from the same sender within 5 minutes
 function groupMessages(messages) {
@@ -53,6 +55,7 @@ export default function ChatPanel({
     handleTyping,
     isTyping
 }) {
+    const { socket } = useSocket();
     const { emotes } = useEmotes(); // Load 7TV emotes
     const [inputValue, setInputValue] = useState('');
     const [showGifPicker, setShowGifPicker] = useState(false);
@@ -61,9 +64,40 @@ export default function ChatPanel({
     const [showMentions, setShowMentions] = useState(false);
     const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
 
+    // Message reactions state: messageId -> { emoji -> { count, users } }
+    const [messageReactions, setMessageReactions] = useState({});
+
     const [gifQuery, setGifQuery] = useState('');
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+
+    // Listen for reaction updates from server
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleReactionsUpdate = ({ messageId, reactions }) => {
+            setMessageReactions(prev => ({
+                ...prev,
+                [messageId]: reactions
+            }));
+        };
+
+        socket.on('message-reactions-update', handleReactionsUpdate);
+        return () => socket.off('message-reactions-update', handleReactionsUpdate);
+    }, [socket]);
+
+    // Reaction handlers
+    const handleReact = useCallback((messageId, emoji) => {
+        if (socket) {
+            socket.emit('message-react', { messageId, emoji });
+        }
+    }, [socket]);
+
+    const handleUnreact = useCallback((messageId, emoji) => {
+        if (socket) {
+            socket.emit('message-unreact', { messageId, emoji });
+        }
+    }, [socket]);
 
     // Group messages for Discord-style display
     const messageGroups = useMemo(() => groupMessages(messages), [messages]);
@@ -395,35 +429,46 @@ export default function ChatPanel({
                                     {group.messages.map((msg) => (
                                         <div
                                             key={msg.id}
-                                            className="message-row"
-                                            style={{
-                                                marginBottom: '2px', // Tighter lines
-                                                lineHeight: '1.35',
-                                                display: 'flex',
-                                                alignItems: 'baseline',
-                                                gap: '8px',
-                                                position: 'relative'
-                                            }}
+                                            className="message-row-container"
                                         >
-                                            <span className="line-timestamp" style={{
-                                                fontSize: '9px',
-                                                color: 'var(--text-muted)',
-                                                opacity: 0,
-                                                width: '32px',
-                                                flexShrink: 0,
-                                                textAlign: 'right',
-                                                userSelect: 'none',
-                                                transition: 'opacity 0.1s'
-                                            }}>
-                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                                            </span>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <MessageContent
-                                                    text={msg.text}
-                                                    onMentionClick={(username, e) => onUserClick({ name: username }, e)}
-                                                    emotes={emotes}
-                                                />
+                                            <div
+                                                className="message-row"
+                                                style={{
+                                                    marginBottom: '2px', // Tighter lines
+                                                    lineHeight: '1.35',
+                                                    display: 'flex',
+                                                    alignItems: 'baseline',
+                                                    gap: '8px',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                <span className="line-timestamp" style={{
+                                                    fontSize: '9px',
+                                                    color: 'var(--text-muted)',
+                                                    opacity: 0,
+                                                    width: '32px',
+                                                    flexShrink: 0,
+                                                    textAlign: 'right',
+                                                    userSelect: 'none',
+                                                    transition: 'opacity 0.1s'
+                                                }}>
+                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                </span>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <MessageContent
+                                                        text={msg.text}
+                                                        onMentionClick={(username, e) => onUserClick({ name: username }, e)}
+                                                        emotes={emotes}
+                                                    />
+                                                </div>
                                             </div>
+                                            <MessageReactions
+                                                messageId={msg.id}
+                                                reactions={messageReactions[msg.id] || {}}
+                                                onReact={handleReact}
+                                                onUnreact={handleUnreact}
+                                                currentUserId={user?.id}
+                                            />
                                         </div>
                                     ))}
                                 </div>

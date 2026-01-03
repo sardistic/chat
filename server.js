@@ -104,6 +104,9 @@ const tubeState = {
   history: [] // Array of { videoId, title, thumbnail, startedBy }
 };
 
+// Message Reactions Storage: messageId -> { emoji -> Set of userIds }
+const messageReactions = new Map();
+
 // Helper to calculate current video position from server state
 function getTubePosition() {
   if (!tubeState.isPlaying) {
@@ -1422,6 +1425,79 @@ app.prepare().then(async () => {
           }).catch(e => console.error("[Stats] Failed to track reaction receive:", e.message));
         }
       }
+    });
+
+    // === MESSAGE REACTIONS (Discord-style) ===
+    socket.on('message-react', ({ messageId, emoji }) => {
+      const roomId = socket.data.roomId || 'default-room';
+      const userId = socket.data.user?.id || socket.id;
+      const userName = socket.data.user?.name || 'Someone';
+
+      if (!messageId || !emoji) return;
+
+      // Initialize reaction storage for this message
+      if (!messageReactions.has(messageId)) {
+        messageReactions.set(messageId, new Map());
+      }
+
+      const msgReactions = messageReactions.get(messageId);
+
+      // Initialize this emoji's set if needed
+      if (!msgReactions.has(emoji)) {
+        msgReactions.set(emoji, new Set());
+      }
+
+      // Add user's reaction
+      msgReactions.get(emoji).add(userId);
+
+      console.log(`[Reactions] ${userName} reacted ${emoji} to message ${messageId}`);
+
+      // Build reaction summary to broadcast
+      const reactionSummary = {};
+      for (const [e, users] of msgReactions.entries()) {
+        reactionSummary[e] = {
+          count: users.size,
+          users: Array.from(users),
+          hasReacted: users.has(userId) // Did current user react with this emoji
+        };
+      }
+
+      // Broadcast to room
+      io.to(roomId).emit('message-reactions-update', { messageId, reactions: reactionSummary });
+    });
+
+    socket.on('message-unreact', ({ messageId, emoji }) => {
+      const roomId = socket.data.roomId || 'default-room';
+      const userId = socket.data.user?.id || socket.id;
+      const userName = socket.data.user?.name || 'Someone';
+
+      if (!messageId || !emoji) return;
+
+      const msgReactions = messageReactions.get(messageId);
+      if (!msgReactions || !msgReactions.has(emoji)) return;
+
+      // Remove user's reaction
+      msgReactions.get(emoji).delete(userId);
+
+      // Clean up empty emoji sets
+      if (msgReactions.get(emoji).size === 0) {
+        msgReactions.delete(emoji);
+      }
+
+      console.log(`[Reactions] ${userName} removed ${emoji} from message ${messageId}`);
+
+      // Build reaction summary to broadcast
+      const reactionSummary = {};
+      for (const [e, users] of msgReactions.entries()) {
+        reactionSummary[e] = {
+          count: users.size,
+          users: Array.from(users),
+          hasReacted: users.has(userId)
+        };
+      }
+
+      // Broadcast to room
+      io.to(roomId).emit('message-reactions-update', { messageId, reactions: reactionSummary });
     });
 
     // Tube Sync Handlers
