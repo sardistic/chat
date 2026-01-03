@@ -171,8 +171,9 @@ export default function TubeTile({
             // ALWAYS suppress the first play event after loading a new video
             ignorePlayRef.current = true;
 
-            // Create fresh player DIV inside the container if needed
-            if (!document.getElementById('tube-player-target')) {
+            // ALWAYS RESET DOM: The API replaces the div with an iframe. 
+            // If we retry, we must recreate the div or the API will fail to attach to an existing iframe.
+            if (playerContainerRef.current) {
                 playerContainerRef.current.innerHTML = '<div id="tube-player-target" style="width:100%;height:100%;"></div>';
             }
 
