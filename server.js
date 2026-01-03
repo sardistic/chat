@@ -1517,10 +1517,15 @@ app.prepare().then(async () => {
             tubeState.pausedAt = 0;
 
             // Update System Message to "Now Playing"
+            // Build text with title if available
+            const titleText = nextVideo.title && !nextVideo.title.startsWith('Video:')
+              ? `**Now Playing**: [${nextVideo.title}](https://youtu.be/${nextVideo.videoId})`
+              : `**Now Playing**`;
+
             msgPayload = {
               id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
               roomId,
-              text: `**Now Playing**`,
+              text: titleText,
               sender: 'System',
               type: 'system',
               systemType: 'tube-now-playing',
