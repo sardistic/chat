@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.1 (Bridge Suppression & Modal Syntax)");
+    console.log("🚀 App Version: Fix-Round-3.2 (Self-Profile & IRC Role Fix)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
@@ -122,24 +122,30 @@ function MainApp({ user, onLeaveRoom }) {
       const userId = arg2;
       const avatarUrl = arg3;
 
+      // 0. Check if it's ME (The Local User) - Highest Priority
+      if (user && username === user.name) {
+        targetUser = user;
+      }
       // 1. Try to find in active peers (Rich data: role, seed, etc)
-      const peer = Array.from(peers.values()).find(p => p.user?.name === username);
-      if (peer?.user) {
-        targetUser = peer.user;
-      }
-      // 2. Try to find in IRC users
-      else if (ircUsers.has(username)) {
-        targetUser = ircUsers.get(username);
-      }
-      // 3. Fallback (Offline/History)
       else {
-        targetUser = {
-          name: username,
-          id: userId,
-          avatar: avatarUrl, // Critical: Use the avatar from the message (has seed)
-          role: 'USER', // Default for history
-          isGuest: !userId
-        };
+        const peer = Array.from(peers.values()).find(p => p.user?.name === username);
+        if (peer?.user) {
+          targetUser = peer.user;
+        }
+        // 2. Try to find in IRC users
+        else if (ircUsers.has(username)) {
+          targetUser = { ...ircUsers.get(username), role: 'USER' }; // Default IRC users to USER role
+        }
+        // 3. Fallback (Offline/History)
+        else {
+          targetUser = {
+            name: username,
+            id: userId,
+            avatar: avatarUrl, // Critical: Use the avatar from the message (has seed)
+            role: 'USER', // Default for history
+            isGuest: !userId
+          };
+        }
       }
     } else {
       // Called from VideoGrid/UserList: (userObject, event)
