@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { Icon } from '@iconify/react';
 import { useSocket } from "@/lib/socket";
 import { motion, useDragControls } from "framer-motion";
