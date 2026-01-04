@@ -959,7 +959,8 @@ app.prepare().then(async () => {
   const historyBot = new IRCBridge(null, {
     nick: 'ChatLogBot',
     username: 'chatlogbot',
-    channel: '#camsrooms'
+    channel: '#camsrooms',
+    isBot: true // Identified as the authoritative source
   }, {
     io: io, // Re-enabled: Broadcast to all connected clients
     onMessage: (message) => {

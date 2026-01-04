@@ -232,7 +232,7 @@ export default function ProfileModal({
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '16px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {user.globalName || user.name}
+                            {user.globalName || user.name} <span style={{ fontSize: '10px', color: 'gray' }}>({viewingUserRole} to {user.role})</span>
                             {(user.role === 'ADMIN' || user.role === 'MODERATOR') && (
                                 <span style={{ fontSize: '10px', padding: '2px 4px', background: '#4f46e5', borderRadius: '4px', verticalAlign: 'middle', marginLeft: '6px' }}>
                                     {user.role}
