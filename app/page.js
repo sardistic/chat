@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.6 (PFP Fix & Extensive Debugs)");
+    console.log("🚀 App Version: Fix-Round-3.7 (Chat Prop & Debugs)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
@@ -581,6 +581,7 @@ function MainApp({ user, onLeaveRoom }) {
               <ChatPanel
                 roomId={roomId}
                 user={user}
+                currentUser={user} // Pass local user state for self-lookup
                 users={Array.from(peers.values())}
                 ircUsers={Array.from(ircUsers.values())}
                 onUserClick={handleProfileClick}
