@@ -202,7 +202,7 @@ export default function ProfileModal({
     );
 
     // Get current settings for this user
-    const userSettings = (user && user.id) ? (peerSettings[user.id] || { volume: 1, isLocallyMuted: false, isVideoHidden: false }) : null;
+    const userSettings = peerSettings[user.id]; // Can be undefined for non-peers or self(peerSettings[user.id] || { volume: 1, isLocallyMuted: false, isVideoHidden: false }) : null;
     const isSelf = false; // logic to detect self if needed, passed prop or compare IDs
 
     const handleVolumeChange = (e) => {
@@ -365,41 +365,53 @@ export default function ProfileModal({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <div className="menu-label" style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Available Actions</div>
 
-                            {/* Volume */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
-                                    <span>Volume</span>
-                                    <span>{Math.round(userSettings.volume * 100)}%</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.1"
-                                    value={userSettings.volume}
-                                    onChange={handleVolumeChange}
-                                    style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
-                                />
-                            </div>
+                            {/* Peer Controls (Only if it's a peer we have settings for) */}
+                            {userSettings && (
+                                <>
+                                    {/* Volume */}
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                                            <span>Volume</span>
+                                            <span>{Math.round((userSettings.volume ?? 1) * 100)}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="1"
+                                            step="0.1"
+                                            value={userSettings.volume ?? 1}
+                                            onChange={handleVolumeChange}
+                                            style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
+                                        />
+                                    </div>
 
-                            {/* Toggles */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                <button
-                                    onClick={handleBlockToggle}
-                                    className={`btn ${isBlocked ? 'secondary' : 'danger'}`}
-                                    style={{ justifyContent: 'center' }}
-                                >
-                                    <Icon icon="fa:ban" width="14" /> {isBlocked ? "Unblock" : "Block"}
+                                    {/* Toggles */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                        <button
+                                            onClick={handleBlockToggle}
+                                            className={`btn ${isBlocked ? 'secondary' : 'danger'}`}
+                                            style={{ justifyContent: 'center' }}
+                                        >
+                                            <Icon icon="fa:ban" width="14" /> {isBlocked ? "Unblock" : "Block"}
+                                        </button>
+
+                                        <button className="btn secondary" style={{ justifyContent: 'center' }}>
+                                            <Icon icon="fa:flag" width="14" /> Report
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Fallback for non-peers (e.g. self or chat-only): Simple Report Button */}
+                            {!userSettings && (
+                                <button className="btn secondary" style={{ justifyContent: 'center', width: '100%' }}>
+                                    <Icon icon="fa:flag" width="14" /> Report User
                                 </button>
+                            )}
 
-                                <button className="btn secondary" style={{ justifyContent: 'center' }}>
-                                    <Icon icon="fa:flag" width="14" /> Report
-                                </button>
-                            </div>
-
-                            {/* Admin Actions Section - Need to check local user role, but for now we render placeholders if logic allows. 
-                                Ideally, we'd pass `localUserRole` prop or useSession. Assuming local user session available or passed. 
-                                For safety, we keep it client-side hidden but server enforced. 
+                            {/* Admin Actions Section - Always Visible for Admins */}
+                            Ideally, we'd pass `localUserRole` prop or useSession. Assuming local user session available or passed.
+                            For safety, we keep it client-side hidden but server enforced. 
                             */}
 
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
