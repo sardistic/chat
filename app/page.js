@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.10 (Profile Modal Prop Fix)");
+    console.log("🚀 App Version: Fix-Round-3.11 (Tab Case Sensitivity)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {

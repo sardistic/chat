@@ -323,183 +323,185 @@ export default function ProfileModal({
 
                 {/* Tab Content */}
                 <div style={{ padding: '16px', minHeight: '120px' }}>
-                    {activeTab === 'Overview' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {customStatus && (
-                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px', fontSize: '12px' }}>
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Status</span>
-                                    {customStatus}
-                                </div>
-                            )}
-                            <div>
-                                <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>About Me</div>
-                                <div style={{ fontSize: '13px', lineHeight: '1.4', color: 'rgba(255,255,255,0.8)' }}>
-                                    {isGuest ? "This is a guest user." : "No bio available."}
-                                </div>
-                            </div>
-                            {!isGuest && (
-                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 'auto' }}>
-                                    ID: <span style={{ fontFamily: 'monospace' }}>{user.discordId}</span>
-                                </div>
-                            )}
+                    const TABS = [
+                    {id: 'info', label: 'Overview', icon: 'fa:user' },
+                    {id: 'stats', label: 'Activity', icon: 'fa:bar-chart' },
+                    {id: 'actions', label: 'Actions', icon: 'fa:bolt' },
+                    ];                        {customStatus && (
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px', fontSize: '12px' }}>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Status</span>
+                            {customStatus}
                         </div>
                     )}
+                    <div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>About Me</div>
+                        <div style={{ fontSize: '13px', lineHeight: '1.4', color: 'rgba(255,255,255,0.8)' }}>
+                            {isGuest ? "This is a guest user." : "No bio available."}
+                        </div>
+                    </div>
+                    {!isGuest && (
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: 'auto' }}>
+                            ID: <span style={{ fontFamily: 'monospace' }}>{user.discordId}</span>
+                        </div>
+                    )}
+                </div>
+                    )}
 
-                    {activeTab === 'Activity' && (
+                {activeTab === 'Activity' && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <InfoChip label="Chat Points" value={stats?.chatPoints || 0} icon="fa:star" color="#FFD700" />
+                        <InfoChip label="Messages" value={stats?.messagesSent || 0} icon="fa:comment" />
+                        <InfoChip label="Emotes Sent" value={stats?.emotesGiven || 0} icon="fontelico:emo-wink" />
+                        <InfoChip label="Time Online" value={formatTime(stats?.timeOnSiteSeconds || 0)} icon="fa:clock-o" />
+                    </div>
+                )}
+
+                {activeTab === 'actions' && userSettings && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div className="menu-label" style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Available Actions</div>
+
+                        {/* Volume */}
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                                <span>Volume</span>
+                                <span>{Math.round(userSettings.volume * 100)}%</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={userSettings.volume}
+                                onChange={handleVolumeChange}
+                                style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
+                            />
+                        </div>
+
+                        {/* Toggles */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                            <InfoChip label="Chat Points" value={stats?.chatPoints || 0} icon="fa:star" color="#FFD700" />
-                            <InfoChip label="Messages" value={stats?.messagesSent || 0} icon="fa:comment" />
-                            <InfoChip label="Emotes Sent" value={stats?.emotesGiven || 0} icon="fontelico:emo-wink" />
-                            <InfoChip label="Time Online" value={formatTime(stats?.timeOnSiteSeconds || 0)} icon="fa:clock-o" />
+                            <button
+                                onClick={handleBlockToggle}
+                                className={`btn ${isBlocked ? 'secondary' : 'danger'}`}
+                                style={{ justifyContent: 'center' }}
+                            >
+                                <Icon icon="fa:ban" width="14" /> {isBlocked ? "Unblock" : "Block"}
+                            </button>
+
+                            <button className="btn secondary" style={{ justifyContent: 'center' }}>
+                                <Icon icon="fa:flag" width="14" /> Report
+                            </button>
                         </div>
-                    )}
 
-                    {activeTab === 'Actions' && userSettings && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div className="menu-label" style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Available Actions</div>
-
-                            {/* Volume */}
-                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
-                                    <span>Volume</span>
-                                    <span>{Math.round(userSettings.volume * 100)}%</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.1"
-                                    value={userSettings.volume}
-                                    onChange={handleVolumeChange}
-                                    style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
-                                />
-                            </div>
-
-                            {/* Toggles */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                <button
-                                    onClick={handleBlockToggle}
-                                    className={`btn ${isBlocked ? 'secondary' : 'danger'}`}
-                                    style={{ justifyContent: 'center' }}
-                                >
-                                    <Icon icon="fa:ban" width="14" /> {isBlocked ? "Unblock" : "Block"}
-                                </button>
-
-                                <button className="btn secondary" style={{ justifyContent: 'center' }}>
-                                    <Icon icon="fa:flag" width="14" /> Report
-                                </button>
-                            </div>
-
-                            {/* Admin Actions Section - Need to check local user role, but for now we render placeholders if logic allows. 
+                        {/* Admin Actions Section - Need to check local user role, but for now we render placeholders if logic allows. 
                                 Ideally, we'd pass `localUserRole` prop or useSession. Assuming local user session available or passed. 
                                 For safety, we keep it client-side hidden but server enforced. 
                             */}
 
-                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
 
-                            {/* Admin/Mod Actions */}
-                            {(effectiveRole === 'ADMIN' || effectiveRole === 'MODERATOR' || effectiveRole === 'OWNER') && (
-                                <>
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>Mod Actions</div>
+                        {/* Admin/Mod Actions */}
+                        {(effectiveRole === 'ADMIN' || effectiveRole === 'MODERATOR' || effectiveRole === 'OWNER') && (
+                            <>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>Mod Actions</div>
 
-                                    {/* Shadow Mute */}
-                                    <button
-                                        className="btn secondary"
-                                        style={{ justifyContent: 'center' }}
-                                        onClick={() => {
-                                            socket?.emit('mod-shadow-mute', {
-                                                targetUserId: user.id,
-                                                mute: true
-                                            });
-                                            alert('User shadow muted. Their messages will only be visible to mods.');
-                                        }}
-                                    >
-                                        <Icon icon="fa:eye-slash" width="14" /> Shadow Mute
-                                    </button>
+                                {/* Shadow Mute */}
+                                <button
+                                    className="btn secondary"
+                                    style={{ justifyContent: 'center' }}
+                                    onClick={() => {
+                                        socket?.emit('mod-shadow-mute', {
+                                            targetUserId: user.id,
+                                            mute: true
+                                        });
+                                        alert('User shadow muted. Their messages will only be visible to mods.');
+                                    }}
+                                >
+                                    <Icon icon="fa:eye-slash" width="14" /> Shadow Mute
+                                </button>
 
-                                    {/* Wipe Messages */}
-                                    <button
-                                        className="btn secondary"
-                                        style={{ justifyContent: 'center', marginTop: '4px' }}
-                                        onClick={() => {
-                                            socket?.emit('mod-wipe-messages', { targetUserId: user.id });
-                                            alert('Messages wiped (hidden from non-mods).');
-                                        }}
-                                    >
-                                        <Icon icon="fa:eraser" width="14" /> Wipe Messages
-                                    </button>
+                                {/* Wipe Messages */}
+                                <button
+                                    className="btn secondary"
+                                    style={{ justifyContent: 'center', marginTop: '4px' }}
+                                    onClick={() => {
+                                        socket?.emit('mod-wipe-messages', { targetUserId: user.id });
+                                        alert('Messages wiped (hidden from non-mods).');
+                                    }}
+                                >
+                                    <Icon icon="fa:eraser" width="14" /> Wipe Messages
+                                </button>
 
-                                    {/* Force Cam Down */}
-                                    <button
-                                        className="btn secondary"
-                                        style={{ justifyContent: 'center', marginTop: '4px' }}
-                                        onClick={() => {
-                                            socket?.emit('mod-force-cam-down', {
-                                                targetSocketId: user.socketId,
-                                                banMinutes: 0
-                                            });
-                                            alert('User camera disabled.');
-                                        }}
-                                    >
-                                        <Icon icon="fa:video-camera" width="14" /> Force Cam Down
-                                    </button>
+                                {/* Force Cam Down */}
+                                <button
+                                    className="btn secondary"
+                                    style={{ justifyContent: 'center', marginTop: '4px' }}
+                                    onClick={() => {
+                                        socket?.emit('mod-force-cam-down', {
+                                            targetSocketId: user.socketId,
+                                            banMinutes: 0
+                                        });
+                                        alert('User camera disabled.');
+                                    }}
+                                >
+                                    <Icon icon="fa:video-camera" width="14" /> Force Cam Down
+                                </button>
 
-                                    {/* Force Cam Down + Ban */}
-                                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                                        {[1, 5, 15].map(mins => (
-                                            <button
-                                                key={mins}
-                                                className="btn danger"
-                                                style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px' }}
-                                                onClick={() => {
-                                                    socket?.emit('mod-force-cam-down', {
-                                                        targetSocketId: user.socketId,
-                                                        banMinutes: mins
-                                                    });
-                                                    alert(`Camera disabled for ${mins} minutes.`);
-                                                }}
-                                            >
-                                                Cam Ban {mins}m
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
-
-                                    <button
-                                        className="btn danger"
-                                        style={{ justifyContent: 'center' }}
-                                        onClick={async () => {
-                                            if (confirm("Kick this user?")) {
-                                                await fetch('/api/admin/actions', {
-                                                    method: 'POST', body: JSON.stringify({ userId: user.id, action: 'KICK' })
+                                {/* Force Cam Down + Ban */}
+                                <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                                    {[1, 5, 15].map(mins => (
+                                        <button
+                                            key={mins}
+                                            className="btn danger"
+                                            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px' }}
+                                            onClick={() => {
+                                                socket?.emit('mod-force-cam-down', {
+                                                    targetSocketId: user.socketId,
+                                                    banMinutes: mins
                                                 });
-                                                onClose();
-                                            }
-                                        }}
-                                    >
-                                        <Icon icon="fa:ban" width="14" /> Kick User
-                                    </button>
-                                    <button
-                                        className="btn danger"
-                                        style={{ justifyContent: 'center', marginTop: '4px' }}
-                                        onClick={async () => {
-                                            if (confirm("Ban this user?")) {
-                                                await fetch('/api/admin/actions', {
-                                                    method: 'POST', body: JSON.stringify({ userId: user.id, action: 'BAN', value: true })
-                                                });
-                                                onClose();
-                                            }
-                                        }}
-                                    >
-                                        <Icon icon="fa:gavel" width="14" /> Ban User
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </motion.div>
+                                                alert(`Camera disabled for ${mins} minutes.`);
+                                            }}
+                                        >
+                                            Cam Ban {mins}m
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
+
+                                <button
+                                    className="btn danger"
+                                    style={{ justifyContent: 'center' }}
+                                    onClick={async () => {
+                                        if (confirm("Kick this user?")) {
+                                            await fetch('/api/admin/actions', {
+                                                method: 'POST', body: JSON.stringify({ userId: user.id, action: 'KICK' })
+                                            });
+                                            onClose();
+                                        }
+                                    }}
+                                >
+                                    <Icon icon="fa:ban" width="14" /> Kick User
+                                </button>
+                                <button
+                                    className="btn danger"
+                                    style={{ justifyContent: 'center', marginTop: '4px' }}
+                                    onClick={async () => {
+                                        if (confirm("Ban this user?")) {
+                                            await fetch('/api/admin/actions', {
+                                                method: 'POST', body: JSON.stringify({ userId: user.id, action: 'BAN', value: true })
+                                            });
+                                            onClose();
+                                        }
+                                    }}
+                                >
+                                    <Icon icon="fa:gavel" width="14" /> Ban User
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
         </div>
+            </motion.div >
+        </div >
     );
 }
