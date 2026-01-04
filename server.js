@@ -107,6 +107,17 @@ const tubeState = {
 // Message Reactions Storage: messageId -> { emoji -> Set of userIds }
 const messageReactions = new Map();
 
+// === MODERATION STATE ===
+// Shadow Muted Users: Set of userIds who are shadow muted (server-wide)
+const shadowMutedUsers = new Set();
+
+// Wiped Users: Set of userIds whose messages are hidden from non-admins
+const wipedUsers = new Set();
+
+// Cam Banned Users: Map of { oderId: { until: timestamp } }
+// 'until: 0' means one-time forced down (can re-enable immediately)
+const camBannedUsers = new Map();
+
 // Helper to calculate current video position from server state
 function getTubePosition() {
   if (!tubeState.isPlaying) {
@@ -1409,6 +1420,27 @@ app.prepare().then(async () => {
         message.text = filterProfanity(message.text);
       }
 
+      const senderId = socket.data.user?.id;
+      const isShadowMuted = senderId && shadowMutedUsers.has(senderId);
+
+      if (isShadowMuted) {
+        // Shadow muted: Only send to mods (role = 'admin' or 'mod') with indicator
+        const mutedMessage = { ...message, shadowMuted: true };
+
+        // Find all mod sockets in this room
+        const room = rooms.get(message.roomId);
+        if (room) {
+          room.forEach((user, socketId) => {
+            if (user.role === 'admin' || user.role === 'mod') {
+              io.to(socketId).emit('chat-message', mutedMessage);
+            }
+          });
+        }
+        // Do NOT store or broadcast to others
+        console.log(`[Mod] Shadow muted message from ${socket.data.user?.name} blocked`);
+        return;
+      }
+
       storeMessage(message.roomId, message);
       io.to(message.roomId).emit('chat-message', message);
 
@@ -2215,6 +2247,116 @@ app.prepare().then(async () => {
       } catch (e) {
         console.error("Error fetching stats:", e);
         callback({ error: "Server Error" });
+      }
+    });
+
+    // === MODERATION EVENTS ===
+
+    // Shadow Mute: Toggle shadow mute for a user
+    socket.on('mod-shadow-mute', ({ targetUserId, mute }) => {
+      const modUser = socket.data.user;
+      if (!modUser || (modUser.role !== 'admin' && modUser.role !== 'mod')) {
+        console.log(`[Mod] Unauthorized shadow-mute attempt by ${modUser?.name}`);
+        return;
+      }
+
+      if (mute) {
+        shadowMutedUsers.add(targetUserId);
+        console.log(`[Mod] ${modUser.name} shadow muted user ${targetUserId}`);
+      } else {
+        shadowMutedUsers.delete(targetUserId);
+        console.log(`[Mod] ${modUser.name} removed shadow mute from user ${targetUserId}`);
+      }
+
+      // Notify all mods about the mute status change
+      const roomId = socket.data.roomId;
+      const room = rooms.get(roomId);
+      if (room) {
+        room.forEach((user, socketId) => {
+          if (user.role === 'admin' || user.role === 'mod') {
+            io.to(socketId).emit('mod-mute-status', {
+              targetUserId,
+              isMuted: mute
+            });
+          }
+        });
+      }
+    });
+
+    // Wipe Messages: Mark user's messages as hidden for non-admins
+    socket.on('mod-wipe-messages', ({ targetUserId }) => {
+      const modUser = socket.data.user;
+      if (!modUser || (modUser.role !== 'admin' && modUser.role !== 'mod')) {
+        return;
+      }
+
+      const roomId = socket.data.roomId || 'default-room';
+      wipedUsers.add(targetUserId);
+      console.log(`[Mod] ${modUser.name} wiped messages from user ${targetUserId}`);
+
+      // Collect message IDs to hide
+      const messagesToHide = (messageHistory[roomId] || [])
+        .filter(m => m.senderId === targetUserId || m.sender?.id === targetUserId)
+        .map(m => m.id);
+
+      // Broadcast wipe command to room (clients will hide matching messages)
+      io.to(roomId).emit('mod-messages-wiped', {
+        targetUserId,
+        messageIds: messagesToHide
+      });
+    });
+
+    // Force Cam Down: Force user to stop broadcasting
+    socket.on('mod-force-cam-down', ({ targetSocketId, banMinutes = 0 }) => {
+      const modUser = socket.data.user;
+      if (!modUser || (modUser.role !== 'admin' && modUser.role !== 'mod')) {
+        return;
+      }
+
+      const roomId = socket.data.roomId;
+      const room = rooms.get(roomId);
+      if (!room) return;
+
+      const targetUser = room.get(targetSocketId);
+      if (!targetUser) return;
+
+      console.log(`[Mod] ${modUser.name} forced cam down on ${targetUser.name} (ban: ${banMinutes}m)`);
+
+      // Set cam ban if banMinutes > 0
+      if (banMinutes > 0 && targetUser.id) {
+        const banUntil = Date.now() + (banMinutes * 60 * 1000);
+        camBannedUsers.set(targetUser.id, { until: banUntil });
+      }
+
+      // Send force-cam-down to target socket
+      io.to(targetSocketId).emit('force-cam-down', {
+        banMinutes,
+        reason: 'Moderator action'
+      });
+
+      // Update user state in room
+      targetUser.isVideoEnabled = false;
+      room.set(targetSocketId, targetUser);
+
+      // Broadcast user update
+      io.to(roomId).emit('user-updated', { socketId: targetSocketId, user: targetUser });
+    });
+
+    // Check cam ban status (called by client before enabling cam)
+    socket.on('check-cam-ban', (callback) => {
+      const userId = socket.data.user?.id;
+      if (!userId) return callback({ banned: false });
+
+      const ban = camBannedUsers.get(userId);
+      if (!ban) return callback({ banned: false });
+
+      if (ban.until > Date.now()) {
+        const remainingMs = ban.until - Date.now();
+        callback({ banned: true, remainingSeconds: Math.ceil(remainingMs / 1000) });
+      } else {
+        // Ban expired, remove it
+        camBannedUsers.delete(userId);
+        callback({ banned: false });
       }
     });
 

@@ -128,6 +128,27 @@ function MainApp({ user, onLeaveRoom }) {
     return () => window.removeEventListener('click', closeMenu);
   }, [showProfileMenu]);
 
+  // Mod: Force Cam Down listener
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleForceCamDown = ({ banMinutes, reason }) => {
+      console.log(`[Mod] Received force-cam-down: ${reason}, ban: ${banMinutes}m`);
+      // Stop broadcasting if currently broadcasting
+      if (isBroadcasting) {
+        stopBroadcast();
+        setIsBroadcasting(false);
+      }
+      // Show notification to user
+      if (banMinutes > 0) {
+        alert(`Your camera was disabled by a moderator. You cannot re-enable it for ${banMinutes} minutes.`);
+      }
+    };
+
+    socket.on('force-cam-down', handleForceCamDown);
+    return () => socket.off('force-cam-down', handleForceCamDown);
+  }, [socket, isBroadcasting, stopBroadcast]);
+
   const handleToggleBroadcast = async () => {
     if (isBroadcasting) {
       try {
