@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { Icon } from '@iconify/react';
 import { useSocket } from "@/lib/socket";
 import { motion, useDragControls } from "framer-motion";
-import { InfoChip } from "./InfoChip"; // Assuming this exists or is defined below
+import { motion, useDragControls } from "framer-motion";
 
 const TABS = [
     { id: 'info', label: 'Overview', icon: 'fa:user' },
@@ -509,5 +509,20 @@ export default function ProfileModal({
                 </div>
             </motion.div >
         </div >
+    );
+}
+}
+
+function InfoChip({ label, value, icon, color }) {
+    return (
+        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <Icon icon={icon} width="12" color={color} />
+                {label}
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                {value}
+            </div>
+        </div>
     );
 }
