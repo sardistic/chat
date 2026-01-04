@@ -451,17 +451,24 @@ export default function ChatPanel({
                                     }}>
                                     <img
                                         src={(() => {
-                                            // Prioritize: 1. Live User (Peers) 2. Current User (Self) 3. IRC Found 4. Message Avatar
-                                            const liveUser = users.find(u => u.name === group.sender);
+                                            // Prioritize: 1. Self 2. active Peer 3. IRC User 4. Message Avatar
                                             const isSelf = currentUser && currentUser.name === group.sender;
-                                            const effectiveAvatar = (isSelf ? currentUser.avatar : liveUser?.avatar) || group.senderAvatar || `/api/avatar/${group.sender}`;
+                                            const liveUser = users.find(u => u.name === group.sender);
+                                            const ircUser = ircUsers.find(u => u.name === group.sender);
+
+                                            // IRC users often don't have avatars, but check anyway
+                                            const effectiveAvatar = (isSelf ? currentUser.avatar : null) ||
+                                                liveUser?.avatar ||
+                                                ircUser?.avatar ||
+                                                group.senderAvatar ||
+                                                `/api/avatar/${group.sender}`;
                                             const base = effectiveAvatar;
                                             // Only animate if it's our internal avatar API
-                                            if (shouldAnimate && base.includes('/api/avatar')) {
+                                            if (shouldAnimate && base && base.includes('/api/avatar')) {
                                                 const hasQuery = base.includes('?');
                                                 return `${base}${hasQuery ? '&' : '?'}expr=typing`;
                                             }
-                                            return base;
+                                            return base || `/api/avatar/${group.sender}`;
                                         })()}
                                         alt={group.sender}
                                         style={{
