@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.11 (Tab Case Sensitivity)");
+    console.log("🚀 App Version: Fix-Round-3.12 (Tab Logic & Build Fix)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
