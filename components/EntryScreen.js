@@ -192,6 +192,7 @@ export default function EntryScreen({ onJoin }) {
             guestToken: guestToken,
             role: session?.user?.role || 'USER',
             discordId: session?.user?.id,
+            avatarSeed: characterSeed,
             ircConfig: {
                 useIRC: true,
                 host: 'testnet.ergo.chat',

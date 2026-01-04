@@ -1184,7 +1184,7 @@ app.prepare().then(async () => {
           const r = rooms.get(roomId);
           if (!r) return false;
           for (const u of r.values()) {
-            if (u.ircNick === senderNick) return true;
+            if (u.ircNick && u.ircNick.toLowerCase() === senderNick.toLowerCase()) return true;
           }
           return false;
         }

@@ -155,7 +155,7 @@ export default function ProfileModal({
     const badges = getBadges(user.publicFlags);
     const premiumBadge = getPremiumBadge(user.premiumType);
     const accentColor = accentToHex(user.accentColor) || "var(--accent-primary)";
-    const avatarUrl = user.image || user.avatar || `/api/avatar/${user.name}`;
+    const avatarUrl = user.image || user.avatar || `/api/avatar/${user.name}${user.avatarSeed ? `?v=${user.avatarSeed}` : ''}`;
     const isGuest = user.isGuest !== false && !user.discordId;
     const customStatus = user.customStatus;
 
