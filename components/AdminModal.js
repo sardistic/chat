@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import { Icon } from '@iconify/react';
 import UserDetailModal from "./UserDetailModal";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { useSocket } from "@/lib/socket";
 
 export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const { data: session } = useSession();
+    const { socket } = useSocket();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 1 });
@@ -299,6 +301,30 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                                         {user.lastSeen ? new Date(user.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
                                                     </td>
                                                     <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                                        {/* Mod Actions */}
+                                                        <button
+                                                            className="icon-btn"
+                                                            title="Shadow Mute"
+                                                            onClick={() => {
+                                                                socket?.emit('mod-shadow-mute', { targetUserId: user.id, mute: true });
+                                                                alert('User shadow muted.');
+                                                            }}
+                                                            style={{ marginRight: '4px' }}
+                                                        >
+                                                            <Icon icon="fa:eye-slash" width="14" color="#888" />
+                                                        </button>
+                                                        <button
+                                                            className="icon-btn"
+                                                            title="Wipe Messages"
+                                                            onClick={() => {
+                                                                socket?.emit('mod-wipe-messages', { targetUserId: user.id });
+                                                                alert('Messages wiped.');
+                                                            }}
+                                                            style={{ marginRight: '4px' }}
+                                                        >
+                                                            <Icon icon="fa:eraser" width="14" color="#888" />
+                                                        </button>
+
                                                         <button
                                                             className="icon-btn"
                                                             title="View Details"

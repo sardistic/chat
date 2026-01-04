@@ -390,6 +390,72 @@ export default function ProfileModal({
                             {/* Admin/Mod Actions */}
                             {(viewingUserRole === 'ADMIN' || viewingUserRole === 'MODERATOR' || viewingUserRole === 'OWNER') && (
                                 <>
+                                    <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>Mod Actions</div>
+
+                                    {/* Shadow Mute */}
+                                    <button
+                                        className="btn secondary"
+                                        style={{ justifyContent: 'center' }}
+                                        onClick={() => {
+                                            socket?.emit('mod-shadow-mute', {
+                                                targetUserId: user.id,
+                                                mute: true
+                                            });
+                                            alert('User shadow muted. Their messages will only be visible to mods.');
+                                        }}
+                                    >
+                                        <Icon icon="fa:eye-slash" width="14" /> Shadow Mute
+                                    </button>
+
+                                    {/* Wipe Messages */}
+                                    <button
+                                        className="btn secondary"
+                                        style={{ justifyContent: 'center', marginTop: '4px' }}
+                                        onClick={() => {
+                                            socket?.emit('mod-wipe-messages', { targetUserId: user.id });
+                                            alert('Messages wiped (hidden from non-mods).');
+                                        }}
+                                    >
+                                        <Icon icon="fa:eraser" width="14" /> Wipe Messages
+                                    </button>
+
+                                    {/* Force Cam Down */}
+                                    <button
+                                        className="btn secondary"
+                                        style={{ justifyContent: 'center', marginTop: '4px' }}
+                                        onClick={() => {
+                                            socket?.emit('mod-force-cam-down', {
+                                                targetSocketId: user.socketId,
+                                                banMinutes: 0
+                                            });
+                                            alert('User camera disabled.');
+                                        }}
+                                    >
+                                        <Icon icon="fa:video-camera" width="14" /> Force Cam Down
+                                    </button>
+
+                                    {/* Force Cam Down + Ban */}
+                                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                                        {[1, 5, 15].map(mins => (
+                                            <button
+                                                key={mins}
+                                                className="btn danger"
+                                                style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px' }}
+                                                onClick={() => {
+                                                    socket?.emit('mod-force-cam-down', {
+                                                        targetSocketId: user.socketId,
+                                                        banMinutes: mins
+                                                    });
+                                                    alert(`Camera disabled for ${mins} minutes.`);
+                                                }}
+                                            >
+                                                Cam Ban {mins}m
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
+
                                     <button
                                         className="btn danger"
                                         style={{ justifyContent: 'center' }}
@@ -402,7 +468,7 @@ export default function ProfileModal({
                                             }
                                         }}
                                     >
-                                        <Icon icon="fa:ban" width="14" /> Kick User (Mod)
+                                        <Icon icon="fa:ban" width="14" /> Kick User
                                     </button>
                                     <button
                                         className="btn danger"
@@ -416,7 +482,7 @@ export default function ProfileModal({
                                             }
                                         }}
                                     >
-                                        <Icon icon="fa:gavel" width="14" /> Ban User (Mod)
+                                        <Icon icon="fa:gavel" width="14" /> Ban User
                                     </button>
                                 </>
                             )}
