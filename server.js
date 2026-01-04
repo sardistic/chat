@@ -970,23 +970,19 @@ app.prepare().then(async () => {
       // Ignore messages from the bot itself
       if (senderNick === 'ChatLogBot' || senderNick.startsWith('ChatLogBot')) return true;
 
-      const debugMatch = [];
-      const normalizedSender = senderNick.toLowerCase();
+      const normalizedSender = senderNick.toLowerCase().replace(/[^a-z0-9]/g, ''); // Strip all non-alphanum
 
       // Check against connected web users
       for (const [socketId, user] of rooms.get('default-room') || []) {
         if (!user.name) continue;
-        const normalizedUser = user.name.toLowerCase();
+        const normalizedUser = user.name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
         // Match exact, or if IRC nick is "User_" when web is "User" (collision handling)
-        // Also check if web user IS the sender
         if (normalizedSender === normalizedUser ||
-          (normalizedSender.startsWith(normalizedUser) && normalizedSender.length <= normalizedUser.length + 3)) { // Allow up to 3 suffix chars like _ or 123
-          // console.log(`[HistoryBot] 🔇 Ignoring duplicate from ${senderNick} (Matches web user ${user.name})`);
+          (normalizedSender.startsWith(normalizedUser) && normalizedSender.length <= normalizedUser.length + 3)) {
           return true;
         }
       }
-      // console.log(`[HistoryBot] 🔊 Allowing IRC msg from ${senderNick} (No matching web user found)`);
       return false;
     }
   });

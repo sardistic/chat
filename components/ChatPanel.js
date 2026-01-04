@@ -450,7 +450,8 @@ export default function ChatPanel({
                                     }}>
                                     <img
                                         src={(() => {
-                                            const base = group.senderAvatar || `/api/avatar/${group.sender}`;
+                                            const liveUser = users.find(u => u.name === group.sender);
+                                            const base = liveUser?.avatar || group.senderAvatar || `/api/avatar/${group.sender}`;
                                             // Only animate if it's our internal avatar API
                                             if (shouldAnimate && base.includes('/api/avatar')) {
                                                 const hasQuery = base.includes('?');
