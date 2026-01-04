@@ -450,8 +450,11 @@ export default function ChatPanel({
                                     }}>
                                     <img
                                         src={(() => {
+                                            // Prioritize: 1. Live User (Peers) 2. Current User (Self) 3. IRC Found 4. Message Avatar
                                             const liveUser = users.find(u => u.name === group.sender);
-                                            const base = liveUser?.avatar || group.senderAvatar || `/api/avatar/${group.sender}`;
+                                            const isSelf = currentUser && currentUser.name === group.sender;
+                                            const effectiveAvatar = (isSelf ? currentUser.avatar : liveUser?.avatar) || group.senderAvatar || `/api/avatar/${group.sender}`;
+                                            const base = effectiveAvatar;
                                             // Only animate if it's our internal avatar API
                                             if (shouldAnimate && base.includes('/api/avatar')) {
                                                 const hasQuery = base.includes('?');
