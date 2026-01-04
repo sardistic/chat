@@ -131,14 +131,13 @@ export default function ProfileModal({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ targetId: user.id, action })
             });
-            setIsBlocked(!isBlocked);
+            onUpdatePeerSettings(user.id, { isBlocked: !isBlocked });
         } catch (e) {
             console.error("Block action failed", e);
         }
     };
 
     const handleMuteToggle = async () => {
-        const isMuted = userSettings?.isLocallyMuted;
         // 1. Update Local (Immediate)
         onUpdatePeerSettings(user.id, { isLocallyMuted: !isMuted });
 
@@ -362,7 +361,7 @@ export default function ProfileModal({
                         </div>
                     )}
 
-                    {activeTab === 'actions' && userSettings && (
+                    {activeTab === 'actions' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <div className="menu-label" style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase' }}>Available Actions</div>
 

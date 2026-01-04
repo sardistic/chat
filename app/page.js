@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.15 (Import Cleanup)");
+    console.log("🚀 App Version: Fix-Round-3.16 (Actions Content Visible)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
