@@ -68,7 +68,7 @@ export default function ChatPanel({
     const [messageReactions, setMessageReactions] = useState({});
 
     // Moderation state
-    const [modMenuTarget, setModMenuTarget] = useState(null); // { userId, name, socketId, x, y }
+    // Moderation state
     const [wipedMessageIds, setWipedMessageIds] = useState(new Set());
     const [shadowMutedUsers, setShadowMutedUsers] = useState(new Set());
 
@@ -482,16 +482,10 @@ export default function ChatPanel({
                                                 fontSize: '15px',
                                                 cursor: isMod ? 'context-menu' : 'default'
                                             }}
-                                            onContextMenu={(e) => {
-                                                if (!isMod) return;
-                                                e.preventDefault();
-                                                setModMenuTarget({
-                                                    userId: group.senderId,
-                                                    name: group.sender,
-                                                    socketId: group.senderSocketId,
-                                                    x: e.clientX,
-                                                    y: e.clientY
-                                                });
+                                            // Remove onContextMenu
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onUserClick && onUserClick(group.sender, group.senderId);
                                             }}
                                         >
                                             {group.sender}
@@ -858,123 +852,7 @@ export default function ChatPanel({
                     )}
                 </div>
             </div>
-
-            {/* Mod Menu Dropdown */}
-            {modMenuTarget && isMod && (
-                <>
-                    {/* Backdrop to close menu */}
-                    <div
-                        style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
-                        onClick={() => setModMenuTarget(null)}
-                    />
-                    <div style={{
-                        position: 'fixed',
-                        left: modMenuTarget.x,
-                        top: modMenuTarget.y,
-                        background: '#1a1a1a',
-                        border: '1px solid #333',
-                        borderRadius: '8px',
-                        padding: '8px 0',
-                        minWidth: '180px',
-                        zIndex: 9999,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-                    }}>
-                        <div style={{ padding: '8px 12px', fontSize: '12px', color: '#888', borderBottom: '1px solid #333' }}>
-                            Mod Actions: <strong style={{ color: '#fff' }}>{modMenuTarget.name}</strong>
-                        </div>
-
-                        {/* Shadow Mute */}
-                        <button
-                            onClick={() => {
-                                const isMuted = shadowMutedUsers.has(modMenuTarget.userId);
-                                socket?.emit('mod-shadow-mute', {
-                                    targetUserId: modMenuTarget.userId,
-                                    mute: !isMuted
-                                });
-                                setModMenuTarget(null);
-                            }}
-                            style={{
-                                width: '100%', textAlign: 'left', padding: '10px 12px',
-                                background: 'transparent', border: 'none', color: '#fff',
-                                cursor: 'pointer', fontSize: '13px',
-                                display: 'flex', alignItems: 'center', gap: '8px'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = '#333'}
-                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                        >
-                            🔇 {shadowMutedUsers.has(modMenuTarget.userId) ? 'Remove Shadow Mute' : 'Shadow Mute'}
-                        </button>
-
-                        {/* Wipe Messages */}
-                        <button
-                            onClick={() => {
-                                socket?.emit('mod-wipe-messages', { targetUserId: modMenuTarget.userId });
-                                setModMenuTarget(null);
-                            }}
-                            style={{
-                                width: '100%', textAlign: 'left', padding: '10px 12px',
-                                background: 'transparent', border: 'none', color: '#fff',
-                                cursor: 'pointer', fontSize: '13px',
-                                display: 'flex', alignItems: 'center', gap: '8px'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = '#333'}
-                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                        >
-                            🧹 Wipe Messages
-                        </button>
-
-                        {/* Force Cam Down */}
-                        {modMenuTarget.socketId && (
-                            <>
-                                <button
-                                    onClick={() => {
-                                        socket?.emit('mod-force-cam-down', {
-                                            targetSocketId: modMenuTarget.socketId,
-                                            banMinutes: 0
-                                        });
-                                        setModMenuTarget(null);
-                                    }}
-                                    style={{
-                                        width: '100%', textAlign: 'left', padding: '10px 12px',
-                                        background: 'transparent', border: 'none', color: '#fff',
-                                        cursor: 'pointer', fontSize: '13px',
-                                        display: 'flex', alignItems: 'center', gap: '8px'
-                                    }}
-                                    onMouseEnter={(e) => e.target.style.background = '#333'}
-                                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
-                                >
-                                    📷 Force Cam Down
-                                </button>
-
-                                {/* Cam Ban submenu */}
-                                <div style={{ padding: '4px 12px', fontSize: '11px', color: '#666' }}>Cam Ban Duration:</div>
-                                <div style={{ display: 'flex', gap: '4px', padding: '4px 12px' }}>
-                                    {[1, 5, 15].map(mins => (
-                                        <button
-                                            key={mins}
-                                            onClick={() => {
-                                                socket?.emit('mod-force-cam-down', {
-                                                    targetSocketId: modMenuTarget.socketId,
-                                                    banMinutes: mins
-                                                });
-                                                setModMenuTarget(null);
-                                            }}
-                                            style={{
-                                                padding: '4px 8px', background: '#dc2626', border: 'none',
-                                                borderRadius: '4px', color: '#fff', cursor: 'pointer', fontSize: '11px'
-                                            }}
-                                        >
-                                            {mins}m
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </>
-            )
-            }
-        </div >
+        </div>
     );
 }
 

@@ -188,8 +188,10 @@ export default function EntryScreen({ onJoin }) {
         let startData = {
             name: sanitizeUsername(username),
             avatar: previewUrl,
-            isGuest: true,
+            isGuest: !isDiscordUser,
             guestToken: guestToken,
+            role: session?.user?.role || 'USER',
+            discordId: session?.user?.id,
             ircConfig: {
                 useIRC: true,
                 host: 'testnet.ergo.chat',

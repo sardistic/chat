@@ -437,7 +437,7 @@ function MainApp({ user, onLeaveRoom }) {
               title="Profile"
               style={{ padding: 0, width: '36px', height: '36px', overflow: 'hidden', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
             >
-              <img src={user.avatar || user.image || `/ api / avatar / ${user.name} `} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={user.avatar || user.image || `/api/avatar/${user.name}`} alt="Me" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </button>
 
             {showProfileMenu && (
@@ -553,7 +553,7 @@ function MainApp({ user, onLeaveRoom }) {
               <div className="user-item">
                 <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <img
-                    src={user.avatar || `/ api / avatar / ${user.name} `}
+                    src={user.avatar || `/api/avatar/${user.name}`}
                     alt={user.name}
                     className=""
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -579,7 +579,7 @@ function MainApp({ user, onLeaveRoom }) {
                   <div key={socketId} className="user-item" onClick={(e) => handleProfileClick(p.user, e)} style={{ cursor: 'pointer' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <img
-                        src={p.user?.avatar || `/ api / avatar / ${p.user?.name || 'Guest'} `}
+                        src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
                         alt={p.user?.name}
                         className=""
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
