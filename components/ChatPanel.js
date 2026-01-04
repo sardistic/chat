@@ -42,7 +42,6 @@ function groupMessages(messages) {
 
 export default function ChatPanel({
     roomId,
-    roomId,
     user,
     currentUser, // Pass current user for self-lookup
     users = [],

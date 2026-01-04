@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.7 (Chat Prop & Debugs)");
+    console.log("🚀 App Version: Fix-Round-3.8 (Build Fix & Prop Clean)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
