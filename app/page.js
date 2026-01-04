@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.9 (Socket Cleanup & PFP Fallback)");
+    console.log("🚀 App Version: Fix-Round-3.10 (Profile Modal Prop Fix)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
@@ -846,7 +846,8 @@ function MainApp({ user, onLeaveRoom }) {
         position={modalPosition}
         peerSettings={peerSettings}
         onUpdatePeerSettings={handleUpdatePeerSettings}
-        viewingUserRole={user.role} // Pass local user role
+        currentUser={user} // Pass local user state for role checks (Guest Admin actions)
+        viewingUserRole={user.role} // Fallback
       />
     </div>
   );
