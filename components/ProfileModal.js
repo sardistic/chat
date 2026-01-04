@@ -202,7 +202,7 @@ export default function ProfileModal({
     );
 
     // Get current settings for this user
-    const userSettings = peerSettings[user.id]; // Can be undefined for non-peers or self(peerSettings[user.id] || { volume: 1, isLocallyMuted: false, isVideoHidden: false }) : null;
+    const userSettings = peerSettings[user.id]; // Can be undefined for non-peers or self
     const isSelf = false; // logic to detect self if needed, passed prop or compare IDs
 
     const handleVolumeChange = (e) => {
@@ -410,9 +410,7 @@ export default function ProfileModal({
                             )}
 
                             {/* Admin Actions Section - Always Visible for Admins */}
-                            Ideally, we'd pass `localUserRole` prop or useSession. Assuming local user session available or passed.
-                            For safety, we keep it client-side hidden but server enforced. 
-                            */}
+
 
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
 
