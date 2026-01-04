@@ -264,6 +264,9 @@ export default function EntryScreen({ onJoin }) {
     return (
         <div className="entry-screen">
             <div className="starmap-bg" />
+            <div style={{ position: 'absolute', top: 10, left: 10, fontSize: '10px', color: 'rgba(255,255,255,0.5)', zIndex: 1000, pointerEvents: 'none' }}>
+                DEBUG: Status=[{status}] | User=[{session?.user?.name || 'None'}] | Role=[{session?.user?.role || 'None'}]
+            </div>
             <div className="entry-card">
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                     <h1 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '8px' }}>Chat</h1>
