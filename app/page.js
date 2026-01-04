@@ -75,6 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
+    console.log("🚀 App Version: Fix-Round-2 (PFP & Duplicates Patch)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
