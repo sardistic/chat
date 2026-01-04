@@ -68,8 +68,12 @@ export default function ProfileModal({
     position,
     peerSettings = {},
     onUpdatePeerSettings = () => { },
-    viewingUserRole = "USER" // Default to normal user
+    currentUser, // Local user state for role checks
+    viewingUserRole // Fallback
 }) {
+    const { data: session } = useSession();
+    // Use currentUser role if available (Guest Admin fix), else session, else fallback prop
+    const effectiveRole = currentUser?.role || session?.user?.role || viewingUserRole || 'USER';
     const modalRef = useRef(null);
     const { socket } = useSocket();
     const dragControls = useDragControls();
@@ -232,7 +236,7 @@ export default function ProfileModal({
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '16px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {user.globalName || user.name} <span style={{ fontSize: '10px', color: 'gray' }}>({viewingUserRole} to {user.role})</span>
+                            {user.globalName || user.name} <span style={{ fontSize: '10px', color: 'gray' }}>({effectiveRole} to {user.role})</span>
                             {(user.role === 'ADMIN' || user.role === 'MODERATOR') && (
                                 <span style={{ fontSize: '10px', padding: '2px 4px', background: '#4f46e5', borderRadius: '4px', verticalAlign: 'middle', marginLeft: '6px' }}>
                                     {user.role}
@@ -393,7 +397,7 @@ export default function ProfileModal({
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
 
                             {/* Admin/Mod Actions */}
-                            {(viewingUserRole === 'ADMIN' || viewingUserRole === 'MODERATOR' || viewingUserRole === 'OWNER') && (
+                            {(effectiveRole === 'ADMIN' || effectiveRole === 'MODERATOR' || effectiveRole === 'OWNER') && (
                                 <>
                                     <div style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}>Mod Actions</div>
 

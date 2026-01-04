@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.3 (Client Dedupe & Server Role Guard)");
+    console.log("🚀 App Version: Fix-Round-3.4 (Action Fix & Trace Logs)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
