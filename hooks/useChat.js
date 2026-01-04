@@ -116,7 +116,7 @@ export function useChat(roomId, user) {
             // Prevents "same message, different ID" (e.g. Web ID vs IRC ID race)
             const isFuzzyDuplicate = messagesRef.current.some(existing => {
                 const timeDiff = Math.abs(new Date(existing.timestamp) - new Date(msg.timestamp));
-                return existing.sender === msg.sender &&
+                return existing.sender.toLowerCase() === msg.sender.toLowerCase() &&
                     existing.text === msg.text &&
                     timeDiff < 2000; // 2 second window
             });

@@ -111,13 +111,48 @@ function MainApp({ user, onLeaveRoom }) {
     }));
   };
 
-  const handleProfileClick = (user, e) => {
-    e?.stopPropagation();
-    setSelectedProfileUser(user);
-    if (e?.clientX) {
-      setModalPosition({ x: e.clientX, y: e.clientY });
+  const handleProfileClick = (arg1, arg2, arg3) => {
+    let targetUser = null;
+    let event = null;
+
+    if (typeof arg1 === 'string') {
+      // Called from ChatPanel: (username, userId, avatarUrl)
+      const username = arg1;
+      const userId = arg2;
+      const avatarUrl = arg3;
+
+      // 1. Try to find in active peers (Rich data: role, seed, etc)
+      const peer = Array.from(peers.values()).find(p => p.user?.name === username);
+      if (peer?.user) {
+        targetUser = peer.user;
+      }
+      // 2. Try to find in IRC users
+      else if (ircUsers.has(username)) {
+        targetUser = ircUsers.get(username);
+      }
+      // 3. Fallback (Offline/History)
+      else {
+        targetUser = {
+          name: username,
+          id: userId,
+          avatar: avatarUrl, // Critical: Use the avatar from the message (has seed)
+          role: 'USER', // Default for history
+          isGuest: !userId
+        };
+      }
     } else {
-      setModalPosition(null); // Center if no event
+      // Called from VideoGrid/UserList: (userObject, event)
+      targetUser = arg1;
+      event = arg2;
+    }
+
+    event?.stopPropagation();
+    setSelectedProfileUser(targetUser);
+
+    if (event?.clientX) {
+      setModalPosition({ x: event.clientX, y: event.clientY });
+    } else {
+      setModalPosition(null);
     }
   };
 

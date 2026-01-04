@@ -485,7 +485,7 @@ export default function ChatPanel({
                                             // Remove onContextMenu
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                onUserClick && onUserClick(group.sender, group.senderId);
+                                                onUserClick && onUserClick(group.sender, group.senderId, group.senderAvatar);
                                             }}
                                         >
                                             {group.sender}
