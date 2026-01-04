@@ -36,7 +36,6 @@ export function useChat(roomId, user) {
             id: messageId,
             roomId,
             text: text.trim(),
-            text: text.trim(),
             sender: user.name,
             senderId: user.id, // Critical for blocking
             senderColor: user.color,
