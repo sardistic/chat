@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.14 (InfoChip Restoration)");
+    console.log("🚀 App Version: Fix-Round-3.14b (Syntax Polish)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {

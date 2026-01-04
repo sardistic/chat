@@ -511,7 +511,7 @@ export default function ProfileModal({
         </div >
     );
 }
-}
+
 
 function InfoChip({ label, value, icon, color }) {
     return (
