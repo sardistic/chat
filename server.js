@@ -1021,6 +1021,7 @@ app.prepare().then(async () => {
       socket.join(roomId);
 
       // Store user data on socket
+      if (!user.role) user.role = 'USER'; // Robustness: Ensure role exists
       socket.data.user = user;
       socket.data.roomId = roomId;
       lastKnownUsers.set(socket.id, { user, roomId });
