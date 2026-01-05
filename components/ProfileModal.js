@@ -424,7 +424,16 @@ export default function ProfileModal({
                                         className="btn secondary"
                                         style={{ justifyContent: 'center' }}
                                         onClick={() => {
-                                            socket?.emit('mod-shadow-mute', {
+                                            console.log('[ModAction] Shadow Mute clicked. Target:', user, 'Socket:', !!socket);
+                                            if (!socket) {
+                                                alert('No socket connection!');
+                                                return;
+                                            }
+                                            if (!user.id) {
+                                                alert('Target user has no ID - cannot mute guest users without ID');
+                                                return;
+                                            }
+                                            socket.emit('mod-shadow-mute', {
                                                 targetUserId: user.id,
                                                 mute: true
                                             });
@@ -439,7 +448,16 @@ export default function ProfileModal({
                                         className="btn secondary"
                                         style={{ justifyContent: 'center', marginTop: '4px' }}
                                         onClick={() => {
-                                            socket?.emit('mod-wipe-messages', { targetUserId: user.id });
+                                            console.log('[ModAction] Wipe Messages clicked. Target:', user, 'Socket:', !!socket);
+                                            if (!socket) {
+                                                alert('No socket connection!');
+                                                return;
+                                            }
+                                            if (!user.id) {
+                                                alert('Target user has no ID - cannot wipe guest users without ID');
+                                                return;
+                                            }
+                                            socket.emit('mod-wipe-messages', { targetUserId: user.id });
                                             alert('Messages wiped (hidden from non-mods).');
                                         }}
                                     >

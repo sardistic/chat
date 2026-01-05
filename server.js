@@ -2252,9 +2252,11 @@ app.prepare().then(async () => {
 
     // Shadow Mute: Toggle shadow mute for a user
     socket.on('mod-shadow-mute', ({ targetUserId, mute }) => {
+      console.log(`[Mod-Debug] mod-shadow-mute received. targetUserId: ${targetUserId}, mute: ${mute}`);
       const modUser = socket.data.user;
+      console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
       if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
-        console.log(`[Mod] Unauthorized shadow-mute attempt by ${modUser?.name}`);
+        console.log(`[Mod] Unauthorized shadow-mute attempt by ${modUser?.name} (role: ${modUser?.role})`);
         return;
       }
 
@@ -2283,8 +2285,11 @@ app.prepare().then(async () => {
 
     // Wipe Messages: Mark user's messages as hidden for non-admins
     socket.on('mod-wipe-messages', ({ targetUserId }) => {
+      console.log(`[Mod-Debug] mod-wipe-messages received. targetUserId: ${targetUserId}`);
       const modUser = socket.data.user;
+      console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
       if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
+        console.log(`[Mod] Unauthorized wipe-messages attempt by ${modUser?.name} (role: ${modUser?.role})`);
         return;
       }
 
