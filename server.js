@@ -1429,7 +1429,7 @@ app.prepare().then(async () => {
         const room = rooms.get(message.roomId);
         if (room) {
           room.forEach((user, socketId) => {
-            if (user.role === 'admin' || user.role === 'mod') {
+            if (['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role)) {
               io.to(socketId).emit('chat-message', mutedMessage);
             }
           });
@@ -2292,10 +2292,29 @@ app.prepare().then(async () => {
       wipedUsers.add(targetUserId);
       console.log(`[Mod] ${modUser.name} wiped messages from user ${targetUserId}`);
 
-      // Collect message IDs to hide
+      // Find target user's name for fallback matching
+      let targetUserName = null;
+      const room = rooms.get(roomId);
+      if (room) {
+        for (const [_, userData] of room) {
+          if (userData.id === targetUserId) {
+            targetUserName = userData.name;
+            break;
+          }
+        }
+      }
+
+      // Collect message IDs to hide (check senderId, sender.id, or sender name)
       const messagesToHide = (messageHistory[roomId] || [])
-        .filter(m => m.senderId === targetUserId || m.sender?.id === targetUserId)
+        .filter(m => {
+          if (m.senderId === targetUserId) return true;
+          if (m.sender?.id === targetUserId) return true;
+          if (targetUserName && m.sender === targetUserName) return true;
+          return false;
+        })
         .map(m => m.id);
+
+      console.log(`[Mod] Wipe: Found ${messagesToHide.length} messages to hide for user ${targetUserId} (${targetUserName})`);
 
       // Broadcast wipe command to room (clients will hide matching messages)
       io.to(roomId).emit('mod-messages-wiped', {
