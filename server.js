@@ -2253,7 +2253,7 @@ app.prepare().then(async () => {
     // Shadow Mute: Toggle shadow mute for a user
     socket.on('mod-shadow-mute', ({ targetUserId, mute }) => {
       const modUser = socket.data.user;
-      if (!modUser || (modUser.role !== 'admin' && modUser.role !== 'mod')) {
+      if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
         console.log(`[Mod] Unauthorized shadow-mute attempt by ${modUser?.name}`);
         return;
       }
@@ -2271,7 +2271,7 @@ app.prepare().then(async () => {
       const room = rooms.get(roomId);
       if (room) {
         room.forEach((user, socketId) => {
-          if (user.role === 'admin' || user.role === 'mod') {
+          if (['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role)) {
             io.to(socketId).emit('mod-mute-status', {
               targetUserId,
               isMuted: mute
@@ -2284,7 +2284,7 @@ app.prepare().then(async () => {
     // Wipe Messages: Mark user's messages as hidden for non-admins
     socket.on('mod-wipe-messages', ({ targetUserId }) => {
       const modUser = socket.data.user;
-      if (!modUser || (modUser.role !== 'admin' && modUser.role !== 'mod')) {
+      if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
         return;
       }
 
@@ -2307,7 +2307,7 @@ app.prepare().then(async () => {
     // Force Cam Down: Force user to stop broadcasting
     socket.on('mod-force-cam-down', ({ targetSocketId, banMinutes = 0 }) => {
       const modUser = socket.data.user;
-      if (!modUser || (modUser.role !== 'admin' && modUser.role !== 'mod')) {
+      if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
         return;
       }
 
