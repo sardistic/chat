@@ -69,6 +69,7 @@ model User {
   avatarUrl     String?               // Custom avatar URL
   role          Role      @default(USER)
   isBanned      Boolean   @default(false)
+  isShadowMuted Boolean   @default(false)  // Mod action: messages only visible to mods
   banReason     String?
   banExpires    DateTime?
 
@@ -143,6 +144,7 @@ model ChatMessage {
   type        String   @default("user") // user, system
   systemType  String?  // join-leave, deploy-start, deploy-success, etc.
   metadata    Json?    // For bundling, commit info, etc.
+  isWiped     Boolean  @default(false)  // Mod action: hidden from non-mods
   timestamp   DateTime @default(now())
   
   reactions   MessageReaction[]

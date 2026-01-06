@@ -278,6 +278,13 @@ async function loadHistoryFromDB() {
       console.log(`[Tube] Restored last tube message ID: ${lastTubeMsg.id}`);
     }
 
+    // LOAD SHADOW MUTED USERS from database
+    const shadowMutedFromDB = await prisma.user.findMany({
+      where: { isShadowMuted: true },
+      select: { id: true }
+    });
+    shadowMutedFromDB.forEach(u => shadowMutedUsers.add(u.id));
+    console.log(`🔇 Loaded ${shadowMutedUsers.size} shadow muted users from database.`);
 
   } catch (err) {
     console.error('Failed to load chat history from DB:', err);
@@ -1048,9 +1055,15 @@ app.prepare().then(async () => {
       // Send initial data to joining user
       socket.emit("existing-users", { users: existingUsers });
 
-      // Prepare history with reactions
+      // Prepare history with reactions, filtering wiped messages for non-mods
       const rawHistory = messageHistory[roomId] || [];
-      const historyWithReactions = rawHistory.map(msg => {
+      const isModUser = ['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role);
+      const filteredHistory = rawHistory.filter(msg => {
+        // Show all messages to mods, hide wiped for regular users
+        if (msg.isWiped && !isModUser) return false;
+        return true;
+      });
+      const historyWithReactions = filteredHistory.map(msg => {
         const reactionsMap = messageReactions.get(msg.id);
         let reactions = {};
         if (reactionsMap) {
@@ -2250,8 +2263,8 @@ app.prepare().then(async () => {
 
     // === MODERATION EVENTS ===
 
-    // Shadow Mute: Toggle shadow mute for a user
-    socket.on('mod-shadow-mute', ({ targetUserId, mute }) => {
+    // Shadow Mute: Toggle shadow mute for a user (PERSISTENT)
+    socket.on('mod-shadow-mute', async ({ targetUserId, mute }) => {
       console.log(`[Mod-Debug] mod-shadow-mute received. targetUserId: ${targetUserId}, mute: ${mute}`);
       const modUser = socket.data.user;
       console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
@@ -2260,12 +2273,24 @@ app.prepare().then(async () => {
         return;
       }
 
+      // Update in-memory Set
       if (mute) {
         shadowMutedUsers.add(targetUserId);
         console.log(`[Mod] ${modUser.name} shadow muted user ${targetUserId}`);
       } else {
         shadowMutedUsers.delete(targetUserId);
         console.log(`[Mod] ${modUser.name} removed shadow mute from user ${targetUserId}`);
+      }
+
+      // PERSIST to database
+      try {
+        await prisma.user.update({
+          where: { id: targetUserId },
+          data: { isShadowMuted: mute }
+        });
+        console.log(`[Mod] Shadow mute persisted to database for ${targetUserId}`);
+      } catch (e) {
+        console.error(`[Mod] Failed to persist shadow mute:`, e.message);
       }
 
       // Notify all mods about the mute status change
@@ -2283,8 +2308,8 @@ app.prepare().then(async () => {
       }
     });
 
-    // Wipe Messages: Mark user's messages as hidden for non-admins
-    socket.on('mod-wipe-messages', ({ targetUserId }) => {
+    // Wipe Messages: Mark user's messages as hidden for non-admins (PERSISTENT)
+    socket.on('mod-wipe-messages', async ({ targetUserId }) => {
       console.log(`[Mod-Debug] mod-wipe-messages received. targetUserId: ${targetUserId}`);
       const modUser = socket.data.user;
       console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
@@ -2320,6 +2345,26 @@ app.prepare().then(async () => {
         .map(m => m.id);
 
       console.log(`[Mod] Wipe: Found ${messagesToHide.length} messages to hide for user ${targetUserId} (${targetUserName})`);
+
+      // PERSIST to database - mark messages as wiped
+      if (messagesToHide.length > 0) {
+        try {
+          await prisma.chatMessage.updateMany({
+            where: { id: { in: messagesToHide } },
+            data: { isWiped: true }
+          });
+          console.log(`[Mod] Wipe persisted to database: ${messagesToHide.length} messages`);
+        } catch (e) {
+          console.error(`[Mod] Failed to persist wipe:`, e.message);
+        }
+      }
+
+      // Also mark in memory history
+      (messageHistory[roomId] || []).forEach(m => {
+        if (messagesToHide.includes(m.id)) {
+          m.isWiped = true;
+        }
+      });
 
       // Broadcast wipe command to room (clients will hide matching messages)
       io.to(roomId).emit('mod-messages-wiped', {
