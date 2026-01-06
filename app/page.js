@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.22 (Persistent Mod Actions)");
+    console.log("🚀 App Version: Fix-Round-3.23 (IRC User Mod Actions)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {

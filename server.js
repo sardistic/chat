@@ -1432,10 +1432,13 @@ app.prepare().then(async () => {
       }
 
       const senderId = socket.data.user?.id;
-      const isShadowMuted = senderId && shadowMutedUsers.has(senderId);
+      const senderName = socket.data.user?.name || message.sender;
+      // Check shadow mute by ID or by name key (for IRC users)
+      const isShadowMuted = (senderId && shadowMutedUsers.has(senderId)) ||
+        (senderName && shadowMutedUsers.has(`name:${senderName}`));
 
       if (isShadowMuted) {
-        // Shadow muted: Only send to mods (role = 'admin' or 'mod') with indicator
+        // Shadow muted: Only send to mods with indicator
         const mutedMessage = { ...message, shadowMuted: true };
 
         // Find all mod sockets in this room
@@ -1448,7 +1451,7 @@ app.prepare().then(async () => {
           });
         }
         // Do NOT store or broadcast to others
-        console.log(`[Mod] Shadow muted message from ${socket.data.user?.name} blocked`);
+        console.log(`[Mod] Shadow muted message from ${senderName} blocked`);
         return;
       }
 
@@ -2263,9 +2266,9 @@ app.prepare().then(async () => {
 
     // === MODERATION EVENTS ===
 
-    // Shadow Mute: Toggle shadow mute for a user (PERSISTENT)
-    socket.on('mod-shadow-mute', async ({ targetUserId, mute }) => {
-      console.log(`[Mod-Debug] mod-shadow-mute received. targetUserId: ${targetUserId}, mute: ${mute}`);
+    // Shadow Mute: Toggle shadow mute for a user (PERSISTENT for DB users, in-memory for IRC)
+    socket.on('mod-shadow-mute', async ({ targetUserId, targetUserName, mute }) => {
+      console.log(`[Mod-Debug] mod-shadow-mute received. targetUserId: ${targetUserId}, targetUserName: ${targetUserName}, mute: ${mute}`);
       const modUser = socket.data.user;
       console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
       if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
@@ -2273,24 +2276,29 @@ app.prepare().then(async () => {
         return;
       }
 
+      // Use ID if available, otherwise use name (for IRC/guest users)
+      const muteKey = targetUserId || `name:${targetUserName}`;
+
       // Update in-memory Set
       if (mute) {
-        shadowMutedUsers.add(targetUserId);
-        console.log(`[Mod] ${modUser.name} shadow muted user ${targetUserId}`);
+        shadowMutedUsers.add(muteKey);
+        console.log(`[Mod] ${modUser.name} shadow muted user ${muteKey}`);
       } else {
-        shadowMutedUsers.delete(targetUserId);
-        console.log(`[Mod] ${modUser.name} removed shadow mute from user ${targetUserId}`);
+        shadowMutedUsers.delete(muteKey);
+        console.log(`[Mod] ${modUser.name} removed shadow mute from user ${muteKey}`);
       }
 
-      // PERSIST to database
-      try {
-        await prisma.user.update({
-          where: { id: targetUserId },
-          data: { isShadowMuted: mute }
-        });
-        console.log(`[Mod] Shadow mute persisted to database for ${targetUserId}`);
-      } catch (e) {
-        console.error(`[Mod] Failed to persist shadow mute:`, e.message);
+      // PERSIST to database (only if we have a user ID)
+      if (targetUserId) {
+        try {
+          await prisma.user.update({
+            where: { id: targetUserId },
+            data: { isShadowMuted: mute }
+          });
+          console.log(`[Mod] Shadow mute persisted to database for ${targetUserId}`);
+        } catch (e) {
+          console.error(`[Mod] Failed to persist shadow mute:`, e.message);
+        }
       }
 
       // Notify all mods about the mute status change
@@ -2300,7 +2308,8 @@ app.prepare().then(async () => {
         room.forEach((user, socketId) => {
           if (['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role)) {
             io.to(socketId).emit('mod-mute-status', {
-              targetUserId,
+              targetUserId: muteKey,
+              targetUserName,
               isMuted: mute
             });
           }
@@ -2309,8 +2318,8 @@ app.prepare().then(async () => {
     });
 
     // Wipe Messages: Mark user's messages as hidden for non-admins (PERSISTENT)
-    socket.on('mod-wipe-messages', async ({ targetUserId }) => {
-      console.log(`[Mod-Debug] mod-wipe-messages received. targetUserId: ${targetUserId}`);
+    socket.on('mod-wipe-messages', async ({ targetUserId, targetUserName }) => {
+      console.log(`[Mod-Debug] mod-wipe-messages received. targetUserId: ${targetUserId}, targetUserName: ${targetUserName}`);
       const modUser = socket.data.user;
       console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
       if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
@@ -2319,17 +2328,20 @@ app.prepare().then(async () => {
       }
 
       const roomId = socket.data.roomId || 'default-room';
-      wipedUsers.add(targetUserId);
-      console.log(`[Mod] ${modUser.name} wiped messages from user ${targetUserId}`);
+      const wipeKey = targetUserId || `name:${targetUserName}`;
+      wipedUsers.add(wipeKey);
+      console.log(`[Mod] ${modUser.name} wiped messages from user ${wipeKey}`);
 
-      // Find target user's name for fallback matching
-      let targetUserName = null;
-      const room = rooms.get(roomId);
-      if (room) {
-        for (const [_, userData] of room) {
-          if (userData.id === targetUserId) {
-            targetUserName = userData.name;
-            break;
+      // Use provided targetUserName or find it from room
+      let userName = targetUserName;
+      if (!userName && targetUserId) {
+        const room = rooms.get(roomId);
+        if (room) {
+          for (const [_, userData] of room) {
+            if (userData.id === targetUserId) {
+              userName = userData.name;
+              break;
+            }
           }
         }
       }
@@ -2337,14 +2349,14 @@ app.prepare().then(async () => {
       // Collect message IDs to hide (check senderId, sender.id, or sender name)
       const messagesToHide = (messageHistory[roomId] || [])
         .filter(m => {
-          if (m.senderId === targetUserId) return true;
-          if (m.sender?.id === targetUserId) return true;
-          if (targetUserName && m.sender === targetUserName) return true;
+          if (targetUserId && m.senderId === targetUserId) return true;
+          if (targetUserId && m.sender?.id === targetUserId) return true;
+          if (userName && m.sender === userName) return true;
           return false;
         })
         .map(m => m.id);
 
-      console.log(`[Mod] Wipe: Found ${messagesToHide.length} messages to hide for user ${targetUserId} (${targetUserName})`);
+      console.log(`[Mod] Wipe: Found ${messagesToHide.length} messages to hide for user ${wipeKey} (${userName})`);
 
       // PERSIST to database - mark messages as wiped
       if (messagesToHide.length > 0) {

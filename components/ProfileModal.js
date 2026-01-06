@@ -429,12 +429,16 @@ export default function ProfileModal({
                                                 alert('No socket connection!');
                                                 return;
                                             }
-                                            if (!user.id) {
-                                                alert('Target user has no ID - cannot mute guest users without ID');
+                                            // Support both ID (for DB users) and name (for IRC/guests)
+                                            const targetId = user.id || null;
+                                            const targetName = user.name;
+                                            if (!targetId && !targetName) {
+                                                alert('Cannot identify target user');
                                                 return;
                                             }
                                             socket.emit('mod-shadow-mute', {
-                                                targetUserId: user.id,
+                                                targetUserId: targetId,
+                                                targetUserName: targetName,
                                                 mute: true
                                             });
                                             alert('User shadow muted. Their messages will only be visible to mods.');
@@ -453,11 +457,17 @@ export default function ProfileModal({
                                                 alert('No socket connection!');
                                                 return;
                                             }
-                                            if (!user.id) {
-                                                alert('Target user has no ID - cannot wipe guest users without ID');
+                                            // Support both ID (for DB users) and name (for IRC/guests)
+                                            const targetId = user.id || null;
+                                            const targetName = user.name;
+                                            if (!targetId && !targetName) {
+                                                alert('Cannot identify target user');
                                                 return;
                                             }
-                                            socket.emit('mod-wipe-messages', { targetUserId: user.id });
+                                            socket.emit('mod-wipe-messages', {
+                                                targetUserId: targetId,
+                                                targetUserName: targetName
+                                            });
                                             alert('Messages wiped (hidden from non-mods).');
                                         }}
                                     >
