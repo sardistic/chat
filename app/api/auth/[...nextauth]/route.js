@@ -46,7 +46,9 @@ export const authOptions = {
                 session.user.discordId = user.discordId;
                 session.user.role = user.role;
                 session.user.isBanned = user.isBanned;
-                // Add other DB fields here as needed
+                // Display name priority: DB displayName > Discord name > email prefix
+                session.user.displayName = user.displayName;
+                session.user.globalName = user.name; // Discord global name stored as 'name' in DB
             }
             return session;
         },

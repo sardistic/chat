@@ -1322,6 +1322,63 @@ app.prepare().then(async () => {
       });
     });
 
+    // Change Nickname (/nick command)
+    socket.on('change-nick', async ({ newNick }) => {
+      const user = socket.data.user;
+      const roomId = socket.data.roomId;
+      if (!user || !roomId) return;
+
+      const oldName = user.name;
+      console.log(`[Nick] ${oldName} changing nick to ${newNick}`);
+
+      // Update socket data
+      user.name = newNick;
+      socket.data.user = user;
+
+      // Update room map
+      const room = rooms.get(roomId);
+      if (room) {
+        room.set(socket.id, user);
+      }
+
+      // Persist to database if user has an ID (registered user)
+      if (user.id) {
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { displayName: newNick }
+          });
+          console.log(`[Nick] Persisted displayName for ${user.id}: ${newNick}`);
+        } catch (e) {
+          console.error(`[Nick] Failed to persist displayName:`, e.message);
+        }
+      }
+
+      // Change IRC nick if bridge exists
+      if (socket.data.ircBridge) {
+        socket.data.ircBridge.client.changeNick(newNick);
+      }
+
+      // Broadcast nick change to room
+      io.to(roomId).emit('user-updated', { socketId: socket.id, user });
+
+      // Send system message about nick change
+      const sysMsg = {
+        id: `nick-${Date.now()}`,
+        roomId,
+        text: `**${oldName}** is now known as **${newNick}**`,
+        sender: 'System',
+        type: 'system',
+        systemType: 'nick-change',
+        timestamp: new Date().toISOString()
+      };
+      storeMessage(roomId, sysMsg);
+      io.to(roomId).emit('chat-message', sysMsg);
+
+      // Emit nick-changed to sender so they can update local state
+      socket.emit('nick-changed', { newNick });
+    });
+
     // Handle User Updates (e.g. formatting, cam status)
     socket.on('update-user', (updates) => {
       const { roomId, user } = socket.data;

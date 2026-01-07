@@ -30,12 +30,30 @@ export function useChat(roomId, user) {
     const sendMessage = useCallback((text) => {
         if (!socket || !text.trim() || !roomId || !user) return;
 
+        const trimmedText = text.trim();
+
+        // Handle /nick command
+        if (trimmedText.toLowerCase().startsWith('/nick ')) {
+            const newNick = trimmedText.slice(6).trim();
+            if (newNick.length > 0 && newNick.length <= 32) {
+                // Sanitize nickname (alphanumeric, underscores, no spaces at start/end)
+                const sanitizedNick = newNick.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 32);
+                if (sanitizedNick.length > 0) {
+                    socket.emit('change-nick', { newNick: sanitizedNick });
+                    console.log(`[Nick] Changing nickname to: ${sanitizedNick}`);
+                    return; // Don't send as regular message
+                }
+            }
+            console.warn('[Nick] Invalid nickname - must be 1-32 alphanumeric characters');
+            return;
+        }
+
         const messageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         const message = {
             id: messageId,
             roomId,
-            text: text.trim(),
+            text: trimmedText,
             sender: user.name,
             senderId: user.id, // Critical for blocking
             senderColor: user.color,

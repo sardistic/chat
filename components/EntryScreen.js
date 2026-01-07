@@ -346,7 +346,8 @@ export default function EntryScreen({ onJoin }) {
                                     fontWeight: '600'
                                 }}
                                 onClick={() => onJoin({
-                                    name: sanitizeUsername(session.user.globalName || session.user.displayName || session.user.name),
+                                    // Priority: DB displayName > Discord globalName > name
+                                    name: sanitizeUsername(session.user.displayName || session.user.globalName || session.user.name),
                                     avatar: session.user.image || session.user.avatarUrl,
                                     image: session.user.image,
                                     userId: session.user.id,
@@ -365,9 +366,9 @@ export default function EntryScreen({ onJoin }) {
                                         useIRC: true,
                                         host: 'testnet.ergo.chat',
                                         port: 6697,
-                                        nick: sanitizeUsername(session.user.globalName || session.user.displayName || session.user.name),
+                                        nick: sanitizeUsername(session.user.displayName || session.user.globalName || session.user.name),
                                         channel: '#camsrooms',
-                                        username: sanitizeUsername(session.user.globalName || session.user.displayName || session.user.name)
+                                        username: sanitizeUsername(session.user.displayName || session.user.globalName || session.user.name)
                                     }
                                 })}
                             >

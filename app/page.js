@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.23 (IRC User Mod Actions)");
+    console.log("🚀 App Version: Fix-Round-3.24 (Display Name & /nick)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
@@ -190,6 +190,19 @@ function MainApp({ user, onLeaveRoom }) {
     socket.on('force-cam-down', handleForceCamDown);
     return () => socket.off('force-cam-down', handleForceCamDown);
   }, [socket, isBroadcasting, stopBroadcast]);
+
+  // Handle nick change confirmation from server
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNickChanged = ({ newNick }) => {
+      console.log(`[Nick] Nick changed to: ${newNick}`);
+      setUser(prev => ({ ...prev, name: newNick }));
+    };
+
+    socket.on('nick-changed', handleNickChanged);
+    return () => socket.off('nick-changed', handleNickChanged);
+  }, [socket]);
 
   const handleToggleBroadcast = async () => {
     if (isBroadcasting) {
