@@ -17,7 +17,7 @@ import SettingsModal from "@/components/SettingsModal";
 import AdminModal from "@/components/AdminModal";
 
 
-function MainApp({ user, onLeaveRoom }) {
+function MainApp({ user, setUser, onLeaveRoom }) {
   const roomId = "default-room";
   const { socket, isConnected } = useSocket();
   const {
@@ -75,7 +75,7 @@ function MainApp({ user, onLeaveRoom }) {
 
   // Fluid Background Animation (Flashlight)
   useEffect(() => {
-    console.log("🚀 App Version: Fix-Round-3.24 (Display Name & /nick)");
+    console.log("🚀 App Version: Fix-Round-3.25 (Nick Change Fix)");
     let ticking = false;
     const handleBgMove = (e) => {
       if (!ticking) {
@@ -899,7 +899,7 @@ export default function Home() {
       {!isRegistered ? (
         <EntryScreen onJoin={handleJoin} />
       ) : (
-        <MainApp user={user} onLeaveRoom={handleLeave} />
+        <MainApp user={user} setUser={setUser} onLeaveRoom={handleLeave} />
       )}
     </SocketProvider>
   );
