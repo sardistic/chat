@@ -8,6 +8,8 @@ const { RailwayBuildStream } = require("./lib/railwayLogs");
 const ytsr = require("ytsr");
 const fs = require('fs');
 const path = require('path');
+const valkey = require("./lib/valkey");
+const { createAdapter } = require("@socket.io/redis-adapter");
 
 const prisma = new PrismaClient();
 
@@ -243,23 +245,35 @@ async function loadHistoryFromDB() {
       select: {
         slug: true,
         currentVideoId: true,
-        currentVideoTitle: true
+        currentVideoTitle: true,
+        ircChannel: true
       }
     });
 
     const roomSlugs = new Set(roomsInDb.map(r => r.slug));
     roomSlugs.add('general');
 
+    // Load ALL tube states from Valkey
+    let valkeyStates = new Map();
+    if (valkey.enabled) {
+      valkeyStates = await valkey.getAllTubeStates();
+      console.log(`[Startup] Loaded ${valkeyStates.size} tube states from Valkey.`);
+    }
+
     console.log(`📚 Loading history and tube state for ${roomSlugs.size} rooms...`);
 
-    // Pre-populate tube states from DB
+    // Pre-populate tube states (Valkey takes precedence over DB)
     roomsInDb.forEach(r => {
-      if (r.currentVideoId) {
+      const vState = valkeyStates.get(r.slug);
+      if (vState) {
+        tubeStates.set(r.slug, vState);
+        console.log(`[Startup] Rehydrated tube from Valkey: ${r.slug}`);
+      } else if (r.currentVideoId) {
         const state = getTubeState(r.slug);
         state.videoId = r.currentVideoId;
         state.title = r.currentVideoTitle;
-        state.isPlaying = false; // Start paused on restart until someone joins/syncs
-        console.log(`[Startup] Rehydrated tube: ${r.currentVideoId} in ${r.slug}`);
+        state.isPlaying = false;
+        console.log(`[Startup] Rehydrated tube from DB: ${r.currentVideoId} in ${r.slug}`);
       }
     });
 
@@ -1016,6 +1030,12 @@ app.prepare().then(async () => {
     }
   });
 
+  // --- VALKEY / REDIS ADAPTER ---
+  if (valkey.enabled) {
+    console.log('[Socket.IO] 🔄 Using Redis Adapter for horizontal scaling');
+    io.adapter(createAdapter(valkey.client, valkey.subClient));
+  }
+
   // --- Backfill Build Logs (if missed during restart) ---
   checkAndBackfillLogs(io);
 
@@ -1024,10 +1044,23 @@ app.prepare().then(async () => {
   const historyBot = new IRCBridge(null, {
     nick: 'ChatLogBot',
     username: 'chatlogbot',
-    channel: '#camrooms-general', // Default channel for General room
+    channel: '#camrooms-general',
     isBot: true
   }, {
     io: io,
+    onRegistered: async () => {
+      console.log('[IRC] HistoryBot registered. Joining all rooms...');
+      try {
+        const allRooms = await prisma.room.findMany({ select: { slug: true, ircChannel: true } });
+        allRooms.forEach(r => {
+          const channel = r.ircChannel || `#camrooms-${r.slug}`;
+          console.log(`[Startup] HistoryBot joining ${channel} for ${r.slug}`);
+          historyBot.joinChannel(channel, r.slug);
+        });
+      } catch (e) {
+        console.error('[Startup] Failed to join rooms:', e.message);
+      }
+    },
     onMessage: (message) => {
       // Persist IRC messages to database
       storeMessage(message.roomId, message);
@@ -1061,15 +1094,27 @@ app.prepare().then(async () => {
 
   // --- Server-Authoritative Tube Sync Interval (Per Room) ---
   // Broadcasts sync updates every 2 seconds when video is playing
-  setInterval(() => {
+  setInterval(async () => {
+    // Optional: Load tube states from Valkey if we're not the "owner" process?
+    // For now, we trust the local map but keep it synced.
+
     for (const [roomId, tubeState] of tubeStates.entries()) {
       if (tubeState.videoId && tubeState.isPlaying) {
+        // Broadcast sync to everyone (Adapter handles cross-instance)
         io.to(roomId).emit('tube-sync', {
           videoId: tubeState.videoId,
           isPlaying: tubeState.isPlaying,
           currentPosition: getTubePosition(roomId),
           serverTime: Date.now()
         });
+
+        // Periodic sync to Valkey for rehydration on restart
+        if (valkey.enabled && Math.random() < 0.2) { // Throttle Valkey writes
+          valkey.setTubeState(roomId, {
+            ...tubeState,
+            playbackPosition: getTubePosition(roomId)
+          });
+        }
       }
     }
   }, 2000);
@@ -1137,9 +1182,21 @@ app.prepare().then(async () => {
         messageHistory[roomId] = [];
       }
 
-      // Tell HistoryBot to join this room's IRC channel
-      if (historyBot && historyBot.isConnected && ircConfig?.channel) {
-        historyBot.joinChannel(ircConfig.channel, roomId);
+      // Standardize IRC channel for this room
+      let targetIrcChannel = ircConfig?.channel;
+
+      // Force standardization if not explicitly provided or if it's the old hardcoded one
+      if (!targetIrcChannel || targetIrcChannel === '#camsrooms') {
+        const slug = roomId.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        targetIrcChannel = `#camrooms-${slug}`;
+      }
+
+      // Store on socket for the bridge creation later in this flow
+      socket.data.targetIrcChannel = targetIrcChannel;
+
+      if (historyBot && historyBot.isConnected) {
+        console.log(`[IRC] HistoryBot joining ${targetIrcChannel} for room ${roomId}`);
+        historyBot.joinChannel(targetIrcChannel, roomId);
       }
 
       const room = rooms.get(roomId);
@@ -1159,12 +1216,23 @@ app.prepare().then(async () => {
       // Prepare history with reactions, filtering wiped messages for non-mods
       const rawHistory = messageHistory[roomId] || [];
       const isModUser = ['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role);
-      const filteredHistory = rawHistory.filter(msg => {
+
+      const filteredHistory = await Promise.all(rawHistory.map(async (msg) => {
         // Show all messages to mods, hide wiped for regular users
-        if (msg.isWiped && !isModUser) return false;
-        return true;
-      });
-      const historyWithReactions = filteredHistory.map(msg => {
+        if (msg.isWiped && !isModUser) return null;
+
+        // Also hide messages from shadow-muted users for regular users
+        if (!isModUser && msg.senderId) {
+          const muted = await valkey.isShadowMuted(msg.senderId);
+          if (muted) return null;
+        }
+
+        return msg;
+      }));
+
+      const cleanHistory = filteredHistory.filter(Boolean);
+
+      const historyWithReactions = cleanHistory.map(msg => {
         const reactionsMap = messageReactions.get(msg.id);
         let reactions = {};
         if (reactionsMap) {
@@ -1285,8 +1353,8 @@ app.prepare().then(async () => {
 
       const userIrcConfig = {
         nick: derivedNick,
-        username: 'camrooms_' + user.name.slice(0, 8),
-        channel: '#camsrooms',
+        username: 'camrooms_' + (user.name || 'user').slice(0, 8).replace(/[^a-zA-Z0-9]/g, ''),
+        channel: socket.data.targetIrcChannel || targetIrcChannel,
         useIRC: true
       };
 
@@ -1302,14 +1370,12 @@ app.prepare().then(async () => {
         }
       };
 
-      // DISABLED: User IRC connections now handled client-side to prevent G-lines
-
+      // Create per-user IRC bridge
       queueIrcConnection(socket, user, userIrcConfig, (err, bridge) => {
         if (err) {
           console.error(`[IRC] Failed to create bridge for ${user.name}:`, err);
-          socket.emit('irc-error', { message: 'IRC connection queued - please wait' });
         } else {
-          console.log(`[IRC] ✅ Bridge created for ${user.name}`);
+          console.log(`[IRC] ✅ Bridge created for ${user.name} in ${targetIrcChannel}`);
         }
       }, bridgeOptions);
 
@@ -2497,13 +2563,13 @@ app.prepare().then(async () => {
       // Use ID if available, otherwise use name (for IRC/guest users)
       const muteKey = targetUserId || `name:${targetUserName}`;
 
-      // Update in-memory Set
+      // Update Valkey state
       if (mute) {
-        shadowMutedUsers.add(muteKey);
-        console.log(`[Mod] ${modUser.name} shadow muted user ${muteKey}`);
+        await valkey.addShadowMuted(muteKey);
+        console.log(`[Mod] ${modUser.name} shadow muted user ${muteKey} (Valkey)`);
       } else {
-        shadowMutedUsers.delete(muteKey);
-        console.log(`[Mod] ${modUser.name} removed shadow mute from user ${muteKey}`);
+        if (valkey.enabled) await valkey.client.srem('shadow_muted', muteKey);
+        console.log(`[Mod] ${modUser.name} removed shadow mute from user ${muteKey} (Valkey)`);
       }
 
       // PERSIST to database (only if we have a user ID)
