@@ -962,26 +962,31 @@ app.prepare().then(async () => {
   checkAndBackfillLogs(io);
 
   // --- HistoryBot: Single IRC connection that logs all messages to DB ---
-  // Broadcasts to all web clients since browser-side IRC is unreliable
+  // Dynamically joins channels as rooms become active
   const historyBot = new IRCBridge(null, {
     nick: 'ChatLogBot',
     username: 'chatlogbot',
-    channel: '#camsrooms',
-    isBot: true // Identified as the authoritative source
+    channel: '#camrooms-general', // Default channel for General room
+    isBot: true
   }, {
-    io: io, // Re-enabled: Broadcast to all connected clients
+    io: io,
     onMessage: (message) => {
       // Persist IRC messages to database
       storeMessage(message.roomId, message);
     },
-    shouldIgnoreSender: (senderNick) => {
+    shouldIgnoreSender: (senderNick, ircChannel) => {
       // Ignore messages from the bot itself
       if (senderNick === 'ChatLogBot' || senderNick.startsWith('ChatLogBot')) return true;
 
-      const normalizedSender = senderNick.toLowerCase().replace(/[^a-z0-9]/g, ''); // Strip all non-alphanum
+      // Find which room this channel belongs to
+      const roomId = historyBot.getRoomId(ircChannel);
+      const room = rooms.get(roomId);
+      if (!room) return false;
 
-      // Check against connected web users
-      for (const [socketId, user] of rooms.get('default-room') || []) {
+      const normalizedSender = senderNick.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      // Check against connected web users in that specific room
+      for (const [socketId, user] of room) {
         if (!user.name) continue;
         const normalizedUser = user.name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -998,13 +1003,17 @@ app.prepare().then(async () => {
 
   // --- Server-Authoritative Tube Sync Interval ---
   // Broadcasts sync updates every 2 seconds when video is playing
+  // TODO: Make tube state per-room
   setInterval(() => {
     if (tubeState.videoId && tubeState.isPlaying) {
-      io.to('default-room').emit('tube-sync', {
-        videoId: tubeState.videoId,
-        isPlaying: tubeState.isPlaying,
-        currentPosition: getTubePosition(),
-        serverTime: Date.now()
+      // For now, broadcast to all rooms - each room will eventually have its own tube state
+      rooms.forEach((room, roomId) => {
+        io.to(roomId).emit('tube-sync', {
+          videoId: tubeState.videoId,
+          isPlaying: tubeState.isPlaying,
+          currentPosition: getTubePosition(),
+          serverTime: Date.now()
+        });
       });
     }
   }, 2000);
@@ -1039,6 +1048,11 @@ app.prepare().then(async () => {
       }
       if (!messageHistory[roomId]) {
         messageHistory[roomId] = [];
+      }
+
+      // Tell HistoryBot to join this room's IRC channel
+      if (historyBot && historyBot.isConnected && ircConfig?.channel) {
+        historyBot.joinChannel(ircConfig.channel, roomId);
       }
 
       const room = rooms.get(roomId);

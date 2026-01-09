@@ -17,6 +17,8 @@ export async function GET() {
                 name: true,
                 slug: true,
                 description: true,
+                iconUrl: true,
+                ircChannel: true,
                 memberCount: true,
                 lastActive: true,
                 createdAt: true

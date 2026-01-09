@@ -128,7 +128,11 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                     >
                         <div className="room-card-header">
                             <div className="room-icon">
-                                <Icon icon="fa:comments" width="24" />
+                                {room.iconUrl ? (
+                                    <img src={room.iconUrl} alt={room.name} />
+                                ) : (
+                                    <Icon icon="fa:comments" width="24" />
+                                )}
                             </div>
                             <div className="room-info">
                                 <h3>{room.name}</h3>
