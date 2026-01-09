@@ -56,17 +56,37 @@ export async function GET() {
             let summary = room.shortSummary;
 
             // Generate heuristic summary if missing and room is active
-            if (!summary && score > 20) {
+            let sentiment = 'Quiet';
+
+            if (!summary && score > 5) { // Lower threshold to show info more often
                 const recentMessages = await prisma.chatMessage.findMany({
                     where: { roomId: room.id, isWiped: false },
                     orderBy: { timestamp: 'desc' },
-                    take: 3,
+                    take: 10,
                     select: { sender: true, text: true }
                 });
 
                 if (recentMessages.length > 0) {
-                    const users = [...new Set(recentMessages.map(m => m.sender))].slice(0, 2).join(' & ');
-                    summary = `${users} are chatting`;
+                    // Sentiment Analysis
+                    let sentimentScore = 0;
+                    const positive = /(:D|:\)|lol|lmao|haha|love|nice|cool|🔥|❤️|✨|w|pog)/i;
+                    const negative = /(:\(|sad|hate|bad|angry|ugh|🙄|cry|die)/i;
+
+                    recentMessages.forEach(m => {
+                        if (positive.test(m.text)) sentimentScore++;
+                        if (negative.test(m.text)) sentimentScore--;
+                    });
+
+                    if (sentimentScore > 2) sentiment = 'Hype 🔥';
+                    else if (sentimentScore > 0) sentiment = 'Positive ✨';
+                    else if (sentimentScore < -1) sentiment = 'Tense 🌩️';
+                    else sentiment = 'Chill 😌';
+
+                    const uniqueUsers = [...new Set(recentMessages.map(m => m.sender))];
+                    const users = uniqueUsers.slice(0, 2).join(' & ');
+                    const count = uniqueUsers.length > 2 ? ` +${uniqueUsers.length - 2}` : '';
+
+                    summary = `${users}${count} are active.`;
                 }
             }
 
@@ -74,6 +94,7 @@ export async function GET() {
                 ...room,
                 activityScore: score,
                 shortSummary: summary,
+                sentiment,
                 creatorName: room.creatorId ? (creatorMap.get(room.creatorId) || 'Unknown') : 'System'
             };
         }));

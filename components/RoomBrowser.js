@@ -291,6 +291,17 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                                         Owner: {room.creatorName || room.creatorId}
                                     </div>
                                 )}
+                                {room.shortSummary && (
+                                    <div style={{ fontSize: '11px', color: '#eee', margin: '4px 0 8px', maxWidth: '85%', lineHeight: '1.4' }}>
+                                        {room.shortSummary}
+                                    </div>
+                                )}
+                                {room.sentiment && room.sentiment !== 'Quiet' && (
+                                    <div style={{ fontSize: '10px', color: '#a78bfa', marginBottom: '8px', fontStyle: 'italic', background: 'rgba(167, 139, 250, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                        <Icon icon="fa:magic" style={{ marginRight: '4px' }} />
+                                        Mood: {room.sentiment}
+                                    </div>
+                                )}
                                 <div style={{
                                     background: room.activityScore > 50 ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255,255,255,0.1)',
                                     color: room.activityScore > 50 ? '#ff6b6b' : '#fff',
