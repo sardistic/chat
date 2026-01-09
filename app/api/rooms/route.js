@@ -31,6 +31,16 @@ export async function GET() {
         });
 
         // Computed metadata (Server-side heuristic)
+        const creatorIds = [...new Set(rooms.map(r => r.creatorId).filter(Boolean))];
+        const creators = creatorIds.length > 0
+            ? await prisma.user.findMany({
+                where: { id: { in: creatorIds } },
+                select: { id: true, name: true, displayName: true }
+            })
+            : [];
+
+        const creatorMap = new Map(creators.map(u => [u.id, u.displayName || u.name || 'Unknown']));
+
         const enrichedRooms = await Promise.all(rooms.map(async (room) => {
             const now = new Date();
             const lastActive = new Date(room.lastActive);
@@ -63,7 +73,8 @@ export async function GET() {
             return {
                 ...room,
                 activityScore: score,
-                shortSummary: summary
+                shortSummary: summary,
+                creatorName: room.creatorId ? (creatorMap.get(room.creatorId) || 'Unknown') : 'System'
             };
         }));
 

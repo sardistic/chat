@@ -252,11 +252,11 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                         {/* Hover Overlay */}
                         <div className="room-hover-details" onClick={(e) => { e.stopPropagation(); onSelectRoom(room); }}>
                             <div style={{ transform: 'translateY(10px)', transition: 'transform 0.2s' }}>
-                                <h4 style={{ color: 'white', margin: '0 0 4px', fontSize: '16px' }}>{room.name}</h4>
-                                {room.creatorId && (
+                                <h4 style={{ color: 'white', margin: '0 0 4px', fontSize: '16px' }} title={`Created by ${room.creatorName || 'System'}`}>{room.name}</h4>
+                                {room.creatorName && (
                                     <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '8px' }}>
                                         <Icon icon="fa:user-circle" style={{ marginRight: '4px' }} />
-                                        Owner: {room.creatorId}
+                                        Owner: {room.creatorName || room.creatorId}
                                     </div>
                                 )}
                                 <div style={{
