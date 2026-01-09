@@ -159,7 +159,9 @@ export default function EntryScreen({ onJoin }) {
     // Sync Discord data if available
     useEffect(() => {
         if (status === 'authenticated' && session?.user) {
-            const discordName = session.user.globalName || session.user.displayName || session.user.name;
+            // Priority: custom_nick cookie (from /nick) > DB displayName > Discord globalName > name
+            const customNick = getCookie('custom_nick');
+            const discordName = customNick || session.user.displayName || session.user.globalName || session.user.name;
             if (discordName) setUsername(sanitizeUsername(discordName));
         }
     }, [status, session]);
@@ -345,32 +347,36 @@ export default function EntryScreen({ onJoin }) {
                                     gap: '10px',
                                     fontWeight: '600'
                                 }}
-                                onClick={() => onJoin({
-                                    // Priority: DB displayName > Discord globalName > name
-                                    name: sanitizeUsername(session.user.displayName || session.user.globalName || session.user.name),
-                                    avatar: session.user.image || session.user.avatarUrl,
-                                    image: session.user.image,
-                                    id: session.user.id,
-                                    discordId: session.user.discordId,
-                                    globalName: session.user.globalName,
-                                    username: session.user.username,
-                                    banner: session.user.banner,
-                                    accentColor: session.user.accentColor,
-                                    premiumType: session.user.premiumType,
-                                    publicFlags: session.user.publicFlags,
-                                    email: session.user.email,
-                                    verified: session.user.verified,
-                                    role: session.user.role,
-                                    isGuest: false,
-                                    ircConfig: {
-                                        useIRC: true,
-                                        host: 'testnet.ergo.chat',
-                                        port: 6697,
-                                        nick: sanitizeUsername(session.user.displayName || session.user.globalName || session.user.name),
-                                        channel: '#camsrooms',
-                                        username: sanitizeUsername(session.user.displayName || session.user.globalName || session.user.name)
-                                    }
-                                })}
+                                onClick={() => {
+                                    // Priority: custom_nick cookie (from /nick) > DB displayName > Discord globalName > name
+                                    const customNick = getCookie('custom_nick');
+                                    const finalName = sanitizeUsername(customNick || session.user.displayName || session.user.globalName || session.user.name);
+                                    onJoin({
+                                        name: finalName,
+                                        avatar: session.user.image || session.user.avatarUrl,
+                                        image: session.user.image,
+                                        id: session.user.id,
+                                        discordId: session.user.discordId,
+                                        globalName: session.user.globalName,
+                                        username: session.user.username,
+                                        banner: session.user.banner,
+                                        accentColor: session.user.accentColor,
+                                        premiumType: session.user.premiumType,
+                                        publicFlags: session.user.publicFlags,
+                                        email: session.user.email,
+                                        verified: session.user.verified,
+                                        role: session.user.role,
+                                        isGuest: false,
+                                        ircConfig: {
+                                            useIRC: true,
+                                            host: 'testnet.ergo.chat',
+                                            port: 6697,
+                                            nick: finalName,
+                                            channel: '#camsrooms',
+                                            username: finalName
+                                        }
+                                    });
+                                }}
                             >
                                 <img
                                     src={session.user.image}

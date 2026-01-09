@@ -198,6 +198,8 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     const handleNickChanged = ({ newNick }) => {
       console.log(`[Nick] Nick changed to: ${newNick}`);
       setUser(prev => ({ ...prev, name: newNick }));
+      // Persist to cookie so it survives page refresh (session cache doesn't update immediately)
+      setCookie('custom_nick', newNick, { maxAge: 60 * 60 * 24 * 365, path: '/' });
     };
 
     socket.on('nick-changed', handleNickChanged);
@@ -880,6 +882,7 @@ export default function Home() {
     document.cookie = 'guest_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'display_name=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'avatar_seed=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'custom_nick=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 
     // Sign out of NextAuth (if logged in with Discord)
     try {
