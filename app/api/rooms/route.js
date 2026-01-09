@@ -46,12 +46,14 @@ export async function GET() {
             const lastActive = new Date(room.lastActive);
             const diffMins = (now - lastActive) / 1000 / 60;
 
-            // Dynamic Activity Score: High if active in last 15 mins
-            // 100 if 0 mins, 0 if > 100 mins
-            let score = Math.max(0, 100 - Math.floor(diffMins));
+            // Dynamic Activity Score: strict time-decay
+            // Score drops to 0 after 10 minutes of inactivity
+            let score = Math.max(0, 100 - Math.floor(diffMins * 10));
 
-            // If member count is high, boost score
-            if (room.memberCount > 0) score = Math.max(score, 50 + (room.memberCount * 10));
+            // Boost score for member count ONLY if room is recently active
+            if (score > 0 && room.memberCount > 0) {
+                score = Math.min(100, score + (room.memberCount * 5));
+            }
 
             let summary = room.shortSummary;
 
