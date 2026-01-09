@@ -22,10 +22,10 @@ export default function SettingsModal({ isOpen, onClose, user }) {
 
     // Fetch settings on mount
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && !user?.isGuest) {
             setLoading(true);
             fetch('/api/user/settings')
-                .then(res => res.json())
+                .then(res => res.ok ? res.json() : {})
                 .then(data => {
                     if (data.userId) { // If valid data
                         setSettings(prev => ({ ...prev, ...data }));
@@ -34,7 +34,7 @@ export default function SettingsModal({ isOpen, onClose, user }) {
                 .catch(err => console.error("Failed to load settings:", err))
                 .finally(() => setLoading(false));
         }
-    }, [isOpen]);
+    }, [isOpen, user?.isGuest]);
 
     const handleSave = async () => {
         setSaving(true);

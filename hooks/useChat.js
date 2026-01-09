@@ -16,7 +16,7 @@ export function useChat(roomId, user) {
     // Blocking State
     const [blockedIds, setBlockedIds] = useState(new Set());
     useEffect(() => {
-        if (user?.id) {
+        if (user?.id && !user.isGuest) {
             fetch('/api/user/block')
                 .then(res => res.ok ? res.json() : [])
                 .then(ids => {
@@ -24,7 +24,7 @@ export function useChat(roomId, user) {
                 })
                 .catch(e => console.error("Failed to load blocks", e));
         }
-    }, [user?.id]);
+    }, [user?.id, user?.isGuest]);
 
     // Track seen message IDs to prevent duplicates
     const seenIdsRef = useRef(new Set());

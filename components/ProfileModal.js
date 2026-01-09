@@ -114,14 +114,17 @@ export default function ProfileModal({
     // Check Block Status
     const [isBlocked, setIsBlocked] = useState(false);
     useEffect(() => {
-        if (isOpen && user?.id) {
-            fetch('/api/user/block').then(res => res.json()).then(blockedIds => {
-                if (Array.isArray(blockedIds)) {
-                    setIsBlocked(blockedIds.includes(user.id));
-                }
-            }).catch(err => console.error("Failed to fetch blocks", err));
+        if (isOpen && user?.id && !currentUser?.isGuest) {
+            fetch('/api/user/block')
+                .then(res => res.ok ? res.json() : [])
+                .then(blockedIds => {
+                    if (Array.isArray(blockedIds)) {
+                        setIsBlocked(blockedIds.includes(user.id));
+                    }
+                })
+                .catch(err => console.error("Failed to fetch blocks", err));
         }
-    }, [isOpen, user]);
+    }, [isOpen, user?.id, currentUser?.isGuest]);
 
     const handleBlockToggle = async () => {
         const action = isBlocked ? 'unblock' : 'block';
