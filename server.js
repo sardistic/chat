@@ -132,6 +132,18 @@ function getTubePosition(roomId) {
   return tubeState.pausedAt + (Date.now() - tubeState.playStartedAt) / 1000;
 }
 
+async function persistTubeState(roomId, videoId, title) {
+  try {
+    await prisma.room.update({
+      where: { slug: roomId },
+      data: { currentVideoId: videoId || null, currentVideoTitle: title || null }
+    });
+  } catch (e) {
+    // Ignore errors (e.g. room deleted) to strictly avoid crashing socket loop
+    console.error('[Tube] Failed to persist state:', e.message);
+  }
+}
+
 // Helper to extract video ID from URL
 function extractVideoId(input) {
   if (!input) return null;
@@ -1890,6 +1902,8 @@ app.prepare().then(async () => {
             currentPosition: getTubePosition(roomId)
           });
 
+          persistTubeState(roomId, tubeState.videoId, tubeState.title);
+
           // Trigger Async Title Fetch for the new video
           if (tubeState.videoId && (!tubeState.title || tubeState.title.startsWith('Video:'))) {
             getYouTubeVideoInfo(tubeState.videoId).then(info => {
@@ -1911,6 +1925,7 @@ app.prepare().then(async () => {
                   io.to(roomId).emit('chat-message-update', updatedMsg);
                 }
                 io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition(roomId) });
+                persistTubeState(roomId, tubeState.videoId, info.title);
               }
             });
           }
@@ -1987,6 +2002,8 @@ app.prepare().then(async () => {
               serverTime: Date.now(),
               currentPosition: 0
             });
+
+            persistTubeState(roomId, tubeState.videoId, tubeState.title);
             return; // Done
           }
         }
@@ -2109,6 +2126,7 @@ app.prepare().then(async () => {
         };
 
         // Store and emit immediately with placeholder
+        persistTubeState(roomId, videoId, `Video: ${videoId}`);
         storeMessage(roomId, msgPayload);
         io.to(roomId).emit('chat-message', msgPayload);
         if (!global._lastTubeMsg) global._lastTubeMsg = {};
@@ -2134,6 +2152,7 @@ app.prepare().then(async () => {
             storeMessage(roomId, updatedMsg); // Persist to DB
             io.to(roomId).emit('chat-message-update', updatedMsg);
             io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition(roomId) });
+            persistTubeState(roomId, videoId, info.title);
           }
         }).catch(err => console.error('[Tube] Direct play title fetch error:', err));
 
@@ -2188,6 +2207,7 @@ app.prepare().then(async () => {
             tubeState.title = null;
             tubeState.thumbnail = null;
           }
+          persistTubeState(roomId, null, null);
 
           msgPayload = {
             id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,

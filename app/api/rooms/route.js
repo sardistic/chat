@@ -26,7 +26,9 @@ export async function GET() {
                 createdAt: true,
                 shortSummary: true,
                 activityScore: true,
-                creatorId: true
+                creatorId: true,
+                currentVideoId: true,
+                currentVideoTitle: true
             }
         });
 

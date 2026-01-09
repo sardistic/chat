@@ -150,6 +150,11 @@ model Room {
   lastSummaryUpdate DateTime? // When the summary was generated
   activityScore     Int       @default(0) // 0-100 metric for animation intensity
   
+  // Tube Persistence (Snapshot for browsing)
+  currentVideoId    String?   // ID of currently playing video
+  currentVideoTitle String?   // Title of currently playing video
+
+  
   // Ownership & Stats
   creatorId   String?           // Discord user ID who created it (null for system rooms)
   memberCount Int      @default(0)  // Cached count for browsing

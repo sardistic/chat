@@ -129,7 +129,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                     background-position: center;
                     position: relative;
                     border-radius: 12px 12px 0 0;
-                    background-color: #2a2b30;
+                    background-color: rgba(42, 43, 48, 0.3);
                     overflow: hidden;
                 }
                 .room-banner-media {
@@ -160,25 +160,29 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                 .room-card {
                     overflow: hidden;
                     transition: transform 0.2s, box-shadow 0.2s;
+                    background: rgba(30, 30, 36, 0.6);
+                    backdrop-filter: blur(12px);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 12px;
                 }
                 .room-card:hover {
                     transform: translateY(-4px);
                     box-shadow: 0 12px 24px rgba(0,0,0,0.3);
                 }
-                .room-hover-details {
-                    position: absolute;
-                    inset: 0;
-                    background: rgba(0,0,0,0.8);
-                    backdrop-filter: blur(4px);
+                .now-playing {
+                    font-size: 11px;
+                    color: #fff;
+                    background: rgba(255, 80, 80, 0.15);
+                    border: 1px solid rgba(255, 80, 80, 0.3);
+                    padding: 6px 8px;
+                    border-radius: 6px;
+                    margin-bottom: 8px;
                     display: flex;
-                    flex-direction: column;
-                    justify-content: center;
                     align-items: center;
-                    opacity: 0;
-                    transition: opacity 0.2s;
-                    z-index: 10;
-                    padding: 20px;
-                    text-align: center;
+                    gap: 6px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
                 .room-card:hover .room-hover-details {
                     opacity: 1;
@@ -260,7 +264,13 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                             </div>
                         </div>
 
-                        <div className="room-card-content" style={{ padding: '16px' }}>
+                        <div className="room-card-content" style={{ padding: '12px' }}>
+                            {room.currentVideoTitle && (
+                                <div className="now-playing" title={room.currentVideoTitle}>
+                                    <Icon icon="fa:youtube-play" width="12" style={{ color: '#ff5050', flexShrink: 0 }} />
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{room.currentVideoTitle}</span>
+                                </div>
+                            )}
                             {room.shortSummary ? (
                                 <div className="ai-summary">
                                     <Icon icon="fa:magic" width="12" style={{ marginTop: '2px', color: 'var(--accent-primary)' }} />
