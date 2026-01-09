@@ -118,6 +118,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     const [isLoading, setIsLoading] = useState(true);
     const [guestToken, setGuestToken] = useState(null);
     const [selectedRoom, setSelectedRoom] = useState(initialRoom); // Room selection step
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     // Load saved guest data on mount
     useEffect(() => {
@@ -269,11 +270,83 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         );
     }
 
+    const AppHeader = () => (
+        <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: '64px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0 24px', zIndex: 50
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img src="https://i.imgur.com/MfbxoHW.gif" alt="Logo" style={{ height: '20px' }} />
+                <div style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.7)' }}>
+                    <span
+                        onClick={() => setSelectedRoom(null)}
+                        style={{ cursor: 'pointer', color: selectedRoom ? 'rgba(255,255,255,0.7)' : 'white' }}
+                    >
+                        Browser
+                    </span>
+                    {selectedRoom && (
+                        <>
+                            <span style={{ opacity: 0.3, margin: '0 4px' }}>/</span>
+                            <span style={{ color: 'white' }}>{selectedRoom.name}</span>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            <div>
+                {status === 'authenticated' && session?.user ? (
+                    <div style={{ position: 'relative' }}>
+                        <button
+                            onClick={() => setShowProfileMenu(!showProfileMenu)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                padding: '4px 8px 4px 4px', borderRadius: '32px', cursor: 'pointer',
+                                color: 'white', fontSize: '13px', transition: 'all 0.2s'
+                            }}
+                            className="header-profile-btn"
+                        >
+                            <img src={session.user.image} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                            <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {session.user.name}
+                            </span>
+                            <Icon icon="fa:caret-down" width="10" style={{ opacity: 0.5 }} />
+                        </button>
+
+                        {showProfileMenu && (
+                            <div style={{
+                                position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+                                width: '200px', background: '#1a1b20', border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                zIndex: 100
+                            }}>
+                                <div style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Signed in as</div>
+                                    <div style={{ fontWeight: '600' }}>{session.user.name}</div>
+                                </div>
+                                <button
+                                    onClick={() => signOut({ callbackUrl: '/' })}
+                                    style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}
+                                >
+                                    <Icon icon="fa:sign-out" width="14" /> Log Out
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '12px' }}>Guest</div>
+                )}
+            </div>
+        </div>
+    );
+
     // Step 1: Room Selection
     if (!selectedRoom) {
         return (
-            <div className="entry-screen-container">
+            <div className="entry-screen-container" style={{ paddingTop: '64px' }}>
                 <div className="starmap-bg" />
+                <AppHeader />
                 <RoomBrowser
                     onSelectRoom={setSelectedRoom}
                     isDiscordUser={isDiscordUser}
@@ -286,10 +359,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     return (
         <div className="entry-screen">
             <div className="starmap-bg" />
-            {/* Back Button */}
-            <button className="btn entry-back-btn" onClick={() => setSelectedRoom(null)}>
-                <Icon icon="fa:arrow-left" width="14" /> Back to Rooms
-            </button>
+            <AppHeader />
             <div className="entry-card">
                 {/* Room Badge */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--accent-surface)', borderRadius: 'var(--radius-sm)', marginBottom: '20px', fontSize: '13px', color: 'var(--accent-primary)' }}>
