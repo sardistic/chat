@@ -99,6 +99,67 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
         return url.match(/\.(mp4|webm|gifv|mov|mkv)$/i) || url.includes('imgur.com') && url.endsWith('.gifv');
     };
 
+    // Cute Pixel Art Generator
+    const generatePixelPattern = (seedString, activityScore) => {
+        // Simple hash function
+        let hash = 0;
+        for (let i = 0; i < seedString.length; i++) {
+            hash = seedString.charCodeAt(i) + ((hash << 5) - hash);
+        }
+
+        // Color Palettes (Cute/Pastel/Vibrant)
+        const palettes = [
+            ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA'], // Pastels
+            ['#845EC2', '#D65DB1', '#FF6F91', '#FF9671', '#FFC75F', '#F9F871'], // Vibrant
+            ['#2C3E50', '#E74C3C', '#ECF0F1', '#3498DB', '#2980B9'], // Retro
+            ['#2E1114', '#501B1D', '#64485C', '#83677B', '#ADADAD'], // Dark Gothic
+        ];
+
+        const paletteIdx = Math.abs(hash) % palettes.length;
+        const palette = palettes[paletteIdx];
+
+        // Grid Size based on activity (Higher activity = more detailed/dense)
+        const gridSize = activityScore > 50 ? 16 : 8;
+        const pixelSize = 40; // Virtual pixel size for SVG
+        const width = gridSize * pixelSize;
+        const height = width / 2; // Aspect ratio
+
+        let rects = '';
+
+        // Procedural generation
+        for (let y = 0; y < gridSize / 2; y++) {
+            for (let x = 0; x < gridSize; x++) {
+                // Determine if pixel is "on" based on hash and position
+                const pixelHash = (hash + x * 31 + y * 17);
+                const isActive = (pixelHash % 100) < (30 + (activityScore / 2)); // Activity increases density
+
+                if (isActive) {
+                    const colorIdx = Math.abs(pixelHash) % palette.length;
+                    const color = palette[colorIdx];
+                    const opacity = 0.4 + (Math.abs((pixelHash % 60)) / 100);
+
+                    rects += `<rect x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}" fill="${color}" fill-opacity="${opacity}" />`;
+                }
+            }
+        }
+
+        // Add a "cute" character shape if high activity?
+        // Simulating "invader" style symmetry for a center piece
+        if (activityScore > 30) {
+            const cx = (gridSize * pixelSize) / 2;
+            const cy = (gridSize * pixelSize) / 4;
+            // ... maybe too complex for quick inline string, stick to pattern
+        }
+
+        const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice">
+            <rect width="100%" height="100%" fill="${palette[0]}" fill-opacity="0.1"/>
+            ${rects}
+        </svg>`;
+
+        return `url('data:image/svg+xml;base64,${btoa(svg)}')`;
+    };
+
     if (isLoading) {
         return (
             <div className="room-browser-loading">
@@ -160,8 +221,8 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                 .room-card {
                     overflow: hidden;
                     transition: transform 0.2s, box-shadow 0.2s;
-                    background: rgba(30, 30, 36, 0.6);
-                    backdrop-filter: blur(12px);
+                    background: rgba(20, 20, 25, 0.4); /* More transparent */
+                    backdrop-filter: blur(8px); /* slightly less blur for clarity of bg */
                     border: 1px solid rgba(255, 255, 255, 0.08);
                     border-radius: 12px;
                 }
@@ -224,7 +285,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                         style={{ position: 'relative' }}
                     >
                         <div className="room-card-banner" style={{
-                            background: !room.bannerUrl ? 'linear-gradient(135deg, #3b3c45, #1e1e24)' : 'none'
+                            background: !room.bannerUrl ? '#000' : 'none'
                         }}>
                             {isVideo(room.bannerUrl) ? (
                                 <video
@@ -232,12 +293,17 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                                     className="room-banner-media"
                                     autoPlay loop muted playsInline
                                 />
-                            ) : room.bannerUrl ? (
+                            ) : (
+                                // GENERATED PIXEL ART
                                 <div
                                     className="room-banner-media"
-                                    style={{ backgroundImage: `url(${room.bannerUrl})` }}
+                                    style={{
+                                        backgroundImage: room.bannerUrl ? `url(${room.bannerUrl})` : generatePixelPattern(room.name, room.activityScore || 0),
+                                        backgroundSize: room.bannerUrl ? 'cover' : 'cover',
+                                        imageRendering: room.bannerUrl ? 'auto' : 'pixelated'
+                                    }}
                                 />
-                            ) : null}
+                            )}
 
                             <div className="room-banner-overlay" />
                             <div className="room-icon" style={{
