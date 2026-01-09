@@ -99,7 +99,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
         return url.match(/\.(mp4|webm|gifv|mov|mkv)$/i) || url.includes('imgur.com') && url.endsWith('.gifv');
     };
 
-    // Cute Pixel Art Generator
+    // Cute Animated Pixel Art Generator
     const generatePixelPattern = (seedString, activityScore) => {
         // Simple hash function
         let hash = 0;
@@ -107,53 +107,51 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
             hash = seedString.charCodeAt(i) + ((hash << 5) - hash);
         }
 
-        // Color Palettes (Cute/Pastel/Vibrant)
-        const palettes = [
-            ['#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA'], // Pastels
-            ['#845EC2', '#D65DB1', '#FF6F91', '#FF9671', '#FFC75F', '#F9F871'], // Vibrant
-            ['#2C3E50', '#E74C3C', '#ECF0F1', '#3498DB', '#2980B9'], // Retro
-            ['#2E1114', '#501B1D', '#64485C', '#83677B', '#ADADAD'], // Dark Gothic
+        // Cute/Pastel Palette (Pink, Purple, Teal, Soft Blue)
+        const colors = [
+            '#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA',
+            '#F48FB1', '#CE93D8', '#90CAF9', '#80CBC4', '#A5D6A7', '#FFF59D'
         ];
 
-        const paletteIdx = Math.abs(hash) % palettes.length;
-        const palette = palettes[paletteIdx];
-
-        // Grid Size based on activity (Higher activity = more detailed/dense)
-        const gridSize = activityScore > 50 ? 16 : 8;
-        const pixelSize = 40; // Virtual pixel size for SVG
+        // Grid Size
+        const gridSize = 12;
+        const pixelSize = 40;
         const width = gridSize * pixelSize;
         const height = width / 2; // Aspect ratio
+
+        // Background color (Dark but slightly tinted)
+        const bg = '#1a1b20';
 
         let rects = '';
 
         // Procedural generation
         for (let y = 0; y < gridSize / 2; y++) {
             for (let x = 0; x < gridSize; x++) {
-                // Determine if pixel is "on" based on hash and position
                 const pixelHash = (hash + x * 31 + y * 17);
-                const isActive = (pixelHash % 100) < (30 + (activityScore / 2)); // Activity increases density
+                // Lower threshold = fewer pixels. Activity increases density.
+                const isActive = (pixelHash % 100) < (20 + (activityScore / 2.5));
 
                 if (isActive) {
-                    const colorIdx = Math.abs(pixelHash) % palette.length;
-                    const color = palette[colorIdx];
-                    const opacity = 0.4 + (Math.abs((pixelHash % 60)) / 100);
+                    const colorIdx = Math.abs(pixelHash) % colors.length;
+                    const color = colors[colorIdx];
 
-                    rects += `<rect x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}" fill="${color}" fill-opacity="${opacity}" />`;
+                    // Random animation parameters
+                    const duration = 2 + (Math.abs(pixelHash % 40) / 10); // 2-6s duration
+                    const delay = Math.abs(pixelHash % 20) / 10; // 0-2s delay
+                    const keyTimes = (pixelHash % 2 === 0) ? "0;0.5;1" : "0;1";
+                    const values = (pixelHash % 2 === 0) ? "0.4;0.8;0.4" : "0.3;0.7"; // Opacity throb
+
+                    rects += `
+                    <rect x="${x * pixelSize}" y="${y * pixelSize}" width="${pixelSize}" height="${pixelSize}" fill="${color}" opacity="0.5">
+                        <animate attributeName="opacity" values="${values}" dur="${duration}s" begin="${delay}s" repeatCount="indefinite" />
+                    </rect>`;
                 }
             }
         }
 
-        // Add a "cute" character shape if high activity?
-        // Simulating "invader" style symmetry for a center piece
-        if (activityScore > 30) {
-            const cx = (gridSize * pixelSize) / 2;
-            const cy = (gridSize * pixelSize) / 4;
-            // ... maybe too complex for quick inline string, stick to pattern
-        }
-
         const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice">
-            <rect width="100%" height="100%" fill="${palette[0]}" fill-opacity="0.1"/>
+            <rect width="100%" height="100%" fill="${bg}"/>
             ${rects}
         </svg>`;
 

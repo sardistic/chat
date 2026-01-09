@@ -791,7 +791,8 @@ body {
   inset: 0;
   display: flex;
   flex-direction: column;
-  background-color: #0b0c0e;
+  background-color: transparent;
+  /* Transparent to show starmap */
   z-index: 100;
   overflow-y: auto;
   /* Enable scrolling */
