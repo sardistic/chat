@@ -1,0 +1,212 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { Icon } from '@iconify/react';
+
+export default function RoomSettings({ roomId, isOpen, onClose }) {
+    const [isLoading, setIsLoading] = useState(true);
+    const [roomData, setRoomData] = useState(null);
+    const [error, setError] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState(null);
+
+    // Form State
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [iconUrl, setIconUrl] = useState('');
+
+    useEffect(() => {
+        if (isOpen && roomId) {
+            fetchRoomDetails();
+        }
+    }, [isOpen, roomId]);
+
+    const fetchRoomDetails = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const res = await fetch(`/api/rooms/${roomId}/settings`);
+
+            if (!res.ok) {
+                if (res.status === 401) throw new Error('You must be logged in to view settings');
+                if (res.status === 403) throw new Error('Not authorized to view settings');
+                if (res.status === 404) throw new Error('Room not found');
+                throw new Error('Failed to load room settings');
+            }
+
+            const data = await res.json();
+            setRoomData(data);
+
+            // Init form
+            setName(data.name || '');
+            setDescription(data.description || '');
+            setIconUrl(data.iconUrl || '');
+        } catch (err) {
+            console.error('[RoomSettings] Error:', err);
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        if (!roomData?.canEdit) return;
+
+        try {
+            setIsSaving(true);
+            setSaveMessage(null);
+            setError(null);
+
+            const res = await fetch(`/api/rooms/${roomId}/settings`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    description: description.trim() || null,
+                    iconUrl: iconUrl.trim() || null
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to update room');
+            }
+
+            setRoomData(prev => ({ ...prev, ...data }));
+            setSaveMessage('Room settings updated successfully!');
+
+            // Persist changes to UI immediately if needed by parent? 
+            // Ideally we'd trigger a reload or callback, but page refresh works for now.
+            // Or we rely on real-time updates? Currently no real-time room update events.
+
+        } catch (err) {
+            console.error('[RoomSettings] Save error:', err);
+            setError(err.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content room-settings-modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h2>Room Settings</h2>
+                    <button className="btn icon-btn" onClick={onClose}>
+                        <Icon icon="fa:times" width="18" />
+                    </button>
+                </div>
+
+                {isLoading ? (
+                    <div className="loading-state">
+                        <Icon icon="svg-spinners:3-dots-scale" width="32" />
+                        <p>Loading settings...</p>
+                    </div>
+                ) : error ? (
+                    <div className="error-state">
+                        <Icon icon="fa:exclamation-triangle" width="32" color="#ef4444" />
+                        <p>{error}</p>
+                        <button className="btn" onClick={onClose}>Close</button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSave} className="settings-form">
+                        {!roomData.canEdit && (
+                            <div className="notice-banner">
+                                <Icon icon="fa:lock" width="14" />
+                                You are viewing these settings in read-only mode
+                            </div>
+                        )}
+
+                        <div className="form-group">
+                            <label>Room Name</label>
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={e => setName(e.target.value)}
+                                disabled={!roomData.canEdit}
+                                maxLength={32}
+                                required
+                            />
+                            <small className="hint">The unique URL slug (#{roomData.slug}) cannot be changed.</small>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Description</label>
+                            <textarea
+                                value={description}
+                                onChange={e => setDescription(e.target.value)}
+                                disabled={!roomData.canEdit}
+                                maxLength={200}
+                                rows={3}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Icon URL</label>
+                            <div className="input-with-preview">
+                                <input
+                                    type="url"
+                                    value={iconUrl}
+                                    onChange={e => setIconUrl(e.target.value)}
+                                    disabled={!roomData.canEdit}
+                                    placeholder="https://example.com/image.png"
+                                />
+                                {iconUrl && (
+                                    <div className="icon-preview">
+                                        <img
+                                            src={iconUrl}
+                                            alt="Preview"
+                                            onError={(e) => e.target.style.display = 'none'}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="moderators-section">
+                            <h3>Moderators</h3>
+                            <div className="moderators-list">
+                                <div className="mod-item owner">
+                                    <Icon icon="fa:crown" width="14" />
+                                    <span>Owner (Creator)</span>
+                                </div>
+                                {roomData.moderators?.map(mod => (
+                                    <div key={mod.userId} className="mod-item">
+                                        <Icon icon="fa:shield" width="14" />
+                                        <span>User ID: {mod.userId}</span>
+                                        <span className="badge">{mod.role}</span>
+                                    </div>
+                                ))}
+                                {(!roomData.moderators || roomData.moderators.length === 0) && (
+                                    <p className="no-mods">No additional moderators assigned</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {saveMessage && (
+                            <div className="success-message">
+                                <Icon icon="fa:check-circle" width="14" />
+                                {saveMessage}
+                            </div>
+                        )}
+
+                        {roomData.canEdit && (
+                            <div className="modal-actions">
+                                <button type="button" className="btn" onClick={onClose}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn primary" disabled={isSaving}>
+                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        )}
+                    </form>
+                )}
+            </div>
+        </div>
+    );
+}

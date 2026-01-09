@@ -15,6 +15,7 @@ import { useYouTubeSync } from "@/hooks/useYouTubeSync";
 import { useChat } from "@/hooks/useChat";
 import SettingsModal from "@/components/SettingsModal";
 import AdminModal from "@/components/AdminModal";
+import RoomSettings from "@/components/RoomSettings";
 
 
 function MainApp({ user, setUser, onLeaveRoom }) {
@@ -39,6 +40,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRoomSettingsOpen, setIsRoomSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false); // Admin Modal
 
   // State initialization with cookie fallback
@@ -395,7 +397,15 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               chat
             </button>
             <span style={{ color: '#444' }}>/</span>
-            <span style={{ color: '#E2E8F0' }}>production</span>
+            <span style={{ color: '#E2E8F0' }}>{user.roomName || roomId}</span>
+            <button
+              className="text-btn"
+              onClick={() => setIsRoomSettingsOpen(true)}
+              title="Room Settings"
+              style={{ color: '#666', background: 'none', border: 'none', padding: 0, cursor: 'pointer', marginLeft: '8px', opacity: 0.7 }}
+            >
+              <Icon icon="fa:cog" width="12" />
+            </button>
           </div>
         </div>
 
@@ -863,6 +873,12 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         onUpdatePeerSettings={handleUpdatePeerSettings}
         currentUser={user} // Pass local user state for role checks (Guest Admin actions)
         viewingUserRole={user.role} // Fallback
+      />
+
+      <RoomSettings
+        roomId={roomId}
+        isOpen={isRoomSettingsOpen}
+        onClose={() => setIsRoomSettingsOpen(false)}
       />
     </div>
   );
