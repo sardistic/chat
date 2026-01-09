@@ -237,15 +237,33 @@ const filterProfanity = (text) => {
 // Load History from Database on Start
 async function loadHistoryFromDB() {
   try {
-    // Fetch all known rooms to load their history
+    // Fetch all known rooms to load their history & tube state
     // Also explicitly include 'general' for legacy support/fallback
-    const roomsInDb = await prisma.room.findMany({ select: { slug: true } });
-    const roomIds = new Set(roomsInDb.map(r => r.slug));
-    roomIds.add('general');
+    const roomsInDb = await prisma.room.findMany({
+      select: {
+        slug: true,
+        currentVideoId: true,
+        currentVideoTitle: true
+      }
+    });
 
-    console.log(`📚 Loading history for ${roomIds.size} rooms...`);
+    const roomSlugs = new Set(roomsInDb.map(r => r.slug));
+    roomSlugs.add('general');
 
-    for (const roomId of roomIds) {
+    console.log(`📚 Loading history and tube state for ${roomSlugs.size} rooms...`);
+
+    // Pre-populate tube states from DB
+    roomsInDb.forEach(r => {
+      if (r.currentVideoId) {
+        const state = getTubeState(r.slug);
+        state.videoId = r.currentVideoId;
+        state.title = r.currentVideoTitle;
+        state.isPlaying = false; // Start paused on restart until someone joins/syncs
+        console.log(`[Startup] Rehydrated tube: ${r.currentVideoId} in ${r.slug}`);
+      }
+    });
+
+    for (const roomId of roomSlugs) {
       // Get the NEWEST 100 messages (order by desc, then reverse for display)
       const messages = await prisma.chatMessage.findMany({
         where: { roomId },
@@ -572,7 +590,6 @@ app.prepare().then(async () => {
                       else if (cleanLogs.includes('docker-image') || cleanLogs.includes('exporting')) phase = 'PACKAGING CONTAINER';
                       else if (cleanLogs.includes('npm run start') || cleanLogs.includes('starting')) phase = 'STARTING APP';
                       else if (cleanLogs.includes('upload')) phase = 'UPLOADING';
-
                       const updatedMsg = {
                         ...msg,
                         metadata: { ...msg.metadata, logs: newLogs, phase: phase || msg.metadata?.phase }
@@ -839,7 +856,7 @@ app.prepare().then(async () => {
           if (req.headers['x-admin-secret'] !== process.env.NEXTAUTH_SECRET) {
             // Allow development bypass if needed, but strictly enforce in prod
             if (process.env.NODE_ENV === 'production') {
-              res.writeHead(401);
+              res.writeHead(401, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ error: 'Unauthorized' }));
               return;
             }
@@ -1632,7 +1649,8 @@ app.prepare().then(async () => {
         const room = rooms.get(message.roomId);
         if (room) {
           room.forEach((user, socketId) => {
-            if (['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role)) {
+            const userRole = (user.role || '').toUpperCase();
+            if (['ADMIN', 'MODERATOR', 'OWNER'].includes(userRole)) {
               io.to(socketId).emit('chat-message', mutedMessage);
             }
           });

@@ -10,7 +10,7 @@ export async function POST(req) {
     try {
         const { targetId, action } = await req.json(); // action: 'block' or 'unblock'
 
-        if (!targetId) return new NextResponse("Missing targetId", { status: 400 });
+        if (!targetId) return NextResponse.json({ error: "Missing targetId" }, { status: 400 });
 
         if (action === 'block') {
             await prisma.block.create({
@@ -36,7 +36,7 @@ export async function POST(req) {
         if (error.code === 'P2002') return NextResponse.json({ success: true });
 
         console.error("Block API Error:", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
     }
 }
 

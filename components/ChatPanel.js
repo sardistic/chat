@@ -160,8 +160,10 @@ export default function ChatPanel({
         }
     }, [socket]);
 
-    // Check if current user is a mod
-    const isMod = user?.role === 'admin' || user?.role === 'mod';
+    const isMod = useMemo(() => {
+        const role = user?.role?.toUpperCase();
+        return ['ADMIN', 'MODERATOR', 'OWNER'].includes(role);
+    }, [user?.role]);
 
     // Group messages for Discord-style display (filter wiped for non-mods)
     const messageGroups = useMemo(() => {

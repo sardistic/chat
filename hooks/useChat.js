@@ -138,9 +138,9 @@ export function useChat(roomId, user) {
             // Prevents "same message, different ID" (e.g. Web ID vs IRC ID race)
             const isFuzzyDuplicate = messagesRef.current.some(existing => {
                 const timeDiff = Math.abs(new Date(existing.timestamp) - new Date(msg.timestamp));
-                const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
                 const match = normalize(existing.sender) === normalize(msg.sender) &&
-                    existing.text === msg.text &&
+                    (existing.text || '') === (msg.text || '') &&
                     timeDiff < 2000;
 
                 if (match) console.log(`[FuzzyDebug] MATCH FOUND: ${msg.text} | Existing: ${existing.sender} | New: ${msg.sender}`);

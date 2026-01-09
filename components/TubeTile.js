@@ -127,24 +127,28 @@ export default function TubeTile({
         }
     }, [autoplayEnabled, hasInteracted]);
 
-    // Initialize Player when API is ready and videoID exists
-    // ONLY init player if user has interacted OR autoplay is enabled
     useEffect(() => {
         if (!tubeState?.videoId) return;
-        if (!hasInteracted && !autoplayEnabled) return; // Block until user clicks overlay
 
         // Detect platform and extract ID
         const platformInfo = detectPlatform(tubeState.videoId);
         setCurrentPlatform(platformInfo);
+    }, [tubeState?.videoId]);
 
-        // Only YouTube uses the iframe API - TikTok/Instagram handled in render
-        if (platformInfo.platform !== 'youtube') {
-            setIsReady(true);
-            setDebugStatus(`${platformInfo.platform} embed ready`);
+    // Initialize YouTube Player
+    useEffect(() => {
+        if (currentPlatform.platform !== 'youtube' || !currentPlatform.id) {
+            if (currentPlatform.platform !== 'youtube' && currentPlatform.id) {
+                setIsReady(true);
+                setDebugStatus(`${currentPlatform.platform} embed ready`);
+            }
             return;
         }
 
-        const embedId = platformInfo.id;
+        if (!hasInteracted && !autoplayEnabled) return;
+
+        const embedId = currentPlatform.id;
+        setIsReady(false); // Reset ready state on re-init
 
         const onPlayerReady = (event) => {
             setIsReady(true);
@@ -221,8 +225,10 @@ export default function TubeTile({
 
             // ALWAYS RESET DOM: The API replaces the div with an iframe. 
             // If we retry, we must recreate the div or the API will fail to attach to an existing iframe.
+            // Create unique target to ensure DOM attachment
+            const targetId = `tube-target-${Math.random().toString(36).substr(2, 9)}`;
             if (playerContainerRef.current) {
-                playerContainerRef.current.innerHTML = '<div id="tube-player-target" style="width:100%;height:100%;"></div>';
+                playerContainerRef.current.innerHTML = `<div id="${targetId}" style="width:100%;height:100%;"></div>`;
             }
 
             if (window.YT && window.YT.Player) {
@@ -238,7 +244,7 @@ export default function TubeTile({
 
                     ignorePlayRef.current = true; // Skip the first play event
                     try {
-                        ytPlayerRef.current = new window.YT.Player('tube-player-target', {
+                        ytPlayerRef.current = new window.YT.Player(targetId, {
                             height: '100%',
                             width: '100%',
                             videoId: embedId,
@@ -543,7 +549,7 @@ export default function TubeTile({
                             onClick={() => {
                                 setHasInteracted(true);
                                 // Actually start playback
-                                if (ytPlayerRef.current) {
+                                if (isReady && ytPlayerRef.current) {
                                     try { ytPlayerRef.current.unMute(); } catch (e) { }
                                     try { ytPlayerRef.current.playVideo(); } catch (e) { }
                                     // Sync to server time

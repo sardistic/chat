@@ -63,7 +63,7 @@ export async function POST(req) {
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Settings Update Error:", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        return NextResponse.json({ error: "Internal Error" }, { status: 500 });
     }
 }
 
