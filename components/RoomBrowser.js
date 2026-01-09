@@ -8,8 +8,11 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+
+    // Create Room State
     const [newRoomName, setNewRoomName] = useState('');
     const [newRoomDesc, setNewRoomDesc] = useState('');
+    const [newRoomBanner, setNewRoomBanner] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [createError, setCreateError] = useState(null);
 
@@ -47,7 +50,8 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: newRoomName.trim(),
-                    description: newRoomDesc.trim() || null
+                    description: newRoomDesc.trim() || null,
+                    bannerUrl: newRoomBanner.trim() || null
                 })
             });
 
@@ -62,6 +66,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
             setShowCreateModal(false);
             setNewRoomName('');
             setNewRoomDesc('');
+            setNewRoomBanner('');
             onSelectRoom(data);
         } catch (err) {
             console.error('[RoomBrowser] Create error:', err);
@@ -82,6 +87,13 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
         return `${days}d ago`;
     };
 
+    const getActivityClass = (score) => {
+        if (!score) return '';
+        if (score >= 80) return 'activity-high';
+        if (score >= 40) return 'activity-medium';
+        return 'activity-low';
+    };
+
     if (isLoading) {
         return (
             <div className="room-browser-loading">
@@ -93,11 +105,59 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
 
     return (
         <div className="room-browser">
+            <style jsx>{`
+                @keyframes pulse-glow {
+                    0% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4); border-color: rgba(167, 139, 250, 0.6); }
+                    70% { box-shadow: 0 0 0 10px rgba(167, 139, 250, 0); border-color: rgba(167, 139, 250, 0.3); }
+                    100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0); border-color: rgba(167, 139, 250, 0.6); }
+                }
+                .activity-high {
+                    animation: pulse-glow 2s infinite;
+                    border: 1px solid var(--accent-primary) !important;
+                }
+                .activity-medium {
+                    border: 1px solid rgba(167, 139, 250, 0.5) !important;
+                }
+                .room-card-banner {
+                    height: 100px;
+                    background-size: cover;
+                    background-position: center;
+                    position: relative;
+                    border-radius: 12px 12px 0 0;
+                    background-color: #2a2b30;
+                }
+                .room-banner-overlay {
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%);
+                }
+                .ai-summary {
+                    font-size: 12px;
+                    color: var(--text-secondary);
+                    background: rgba(167, 139, 250, 0.1);
+                    border: 1px solid rgba(167, 139, 250, 0.2);
+                    padding: 8px;
+                    border-radius: 8px;
+                    margin-top: 8px;
+                    display: flex;
+                    gap: 6px;
+                    align-items: flex-start;
+                }
+                .room-card {
+                    overflow: hidden;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                }
+                .room-card:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+                }
+            `}</style>
+
             {/* Header */}
             <div className="room-browser-header">
                 <div>
-                    <h2>Choose a Room</h2>
-                    <p>Join an existing room or create your own</p>
+                    <h2>Explore Rooms</h2>
+                    <p>Discover active communities or start your own</p>
                 </div>
                 {isDiscordUser && (
                     <button
@@ -123,34 +183,50 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                 {rooms.map(room => (
                     <div
                         key={room.id}
-                        className="room-card"
+                        className={`room-card ${getActivityClass(room.activityScore)}`}
                         onClick={() => onSelectRoom(room)}
+                        title={`Created by user ${room.creatorId || 'System'}`}
                     >
-                        <div className="room-card-header">
-                            <div className="room-icon">
+                        <div className="room-card-banner" style={{
+                            backgroundImage: room.bannerUrl ? `url(${room.bannerUrl})` : 'linear-gradient(135deg, #3b3c45, #1e1e24)'
+                        }}>
+                            <div className="room-banner-overlay" />
+                            <div className="room-icon" style={{
+                                position: 'absolute', bottom: '12px', left: '16px',
+                                width: '40px', height: '40px', borderRadius: '12px',
+                                background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)'
+                            }}>
                                 {room.iconUrl ? (
-                                    <img src={room.iconUrl} alt={room.name} />
+                                    <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', borderRadius: '12px' }} />
                                 ) : (
-                                    <Icon icon="fa:comments" width="24" />
+                                    <Icon icon="fa:hashtag" width="20" color="#fff" />
                                 )}
                             </div>
-                            <div className="room-info">
-                                <h3>{room.name}</h3>
-                                <span className="room-slug">#{room.slug}</span>
+                            <div style={{ position: 'absolute', bottom: '12px', left: '68px', right: '12px' }}>
+                                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                                    {room.name}
+                                </h3>
                             </div>
                         </div>
 
-                        {room.description && (
-                            <p className="room-description">{room.description}</p>
-                        )}
+                        <div className="room-card-content" style={{ padding: '16px' }}>
+                            {room.shortSummary ? (
+                                <div className="ai-summary">
+                                    <Icon icon="fa:magic" width="12" style={{ marginTop: '2px', color: 'var(--accent-primary)' }} />
+                                    <span>{room.shortSummary}</span>
+                                </div>
+                            ) : (
+                                <p className="room-description" style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                                    {room.description || "No description provided."}
+                                </p>
+                            )}
 
-                        <div className="room-card-footer">
-                            <div className="room-stat">
-                                <Icon icon="fa:users" width="14" />
-                                <span>{room.memberCount} online</span>
-                            </div>
-                            <div className="room-stat">
-                                <Icon icon="fa:clock-o" width="14" />
+                            <div className="room-card-footer" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <div className="status-dot" style={{ background: room.memberCount > 0 ? '#3ba55d' : '#888' }}></div>
+                                    <span>{room.memberCount} online</span>
+                                </div>
                                 <span>{formatTimeAgo(room.lastActive)}</span>
                             </div>
                         </div>
@@ -160,7 +236,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                 {rooms.length === 0 && !error && (
                     <div className="room-browser-empty">
                         <Icon icon="fa:comments-o" width="48" />
-                        <p>No rooms yet. Be the first to create one!</p>
+                        <p>No rooms found.</p>
                     </div>
                 )}
             </div>
@@ -183,7 +259,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                                     type="text"
                                     value={newRoomName}
                                     onChange={e => setNewRoomName(e.target.value)}
-                                    placeholder="e.g., Gaming, Music, Chill"
+                                    placeholder="e.g., Chill Vibes"
                                     maxLength={32}
                                     autoFocus
                                     required
@@ -191,11 +267,22 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                             </div>
 
                             <div className="form-group">
-                                <label>Description (optional)</label>
+                                <label>Banner URL (optional)</label>
+                                <input
+                                    type="text"
+                                    value={newRoomBanner}
+                                    onChange={e => setNewRoomBanner(e.target.value)}
+                                    placeholder="https://..."
+                                />
+                                <p className="form-hint">Image for the room card background</p>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Description / Topic</label>
                                 <textarea
                                     value={newRoomDesc}
                                     onChange={e => setNewRoomDesc(e.target.value)}
-                                    placeholder="What's this room about?"
+                                    placeholder="What's happening here?"
                                     maxLength={200}
                                     rows={3}
                                 />
@@ -209,18 +296,8 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                             )}
 
                             <div className="modal-actions">
-                                <button
-                                    type="button"
-                                    className="btn"
-                                    onClick={() => setShowCreateModal(false)}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn primary"
-                                    disabled={isCreating || !newRoomName.trim()}
-                                >
+                                <button type="button" className="btn" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                                <button type="submit" className="btn primary" disabled={isCreating || !newRoomName.trim()}>
                                     {isCreating ? 'Creating...' : 'Create Room'}
                                 </button>
                             </div>
@@ -246,9 +323,11 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                             });
                         }}
                     >
-                        <svg width="20" height="20" viewBox="0 0 71 55" fill="currentColor">
-                            <path d="M60.1 4.9A58.5 58.5 0 0045.4.5a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.6a.2.2 0 00-.2-.1 58.4 58.4 0 00-14.7 4.4.2.2 0 00-.1.1C1.5 18.2-.9 31 .3 43.7a.2.2 0 00.1.1 58.8 58.8 0 0017.7 8.9.2.2 0 00.2 0 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.6.2.2 0 010-.4l1.1-.9a.2.2 0 01.2 0 42 42 0 0035.6 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.2 0 58.6 58.6 0 0017.7-8.9.2.2 0 00.1-.1c1.4-14.5-2.4-27.1-10-38.3a.2.2 0 00-.1-.1zM23.7 35.8c-3.3 0-6-3-6-6.7s2.7-6.7 6-6.7c3.4 0 6.1 3 6 6.7 0 3.7-2.6 6.7-6 6.7zm22.2 0c-3.3 0-6-3-6-6.7s2.6-6.7 6-6.7c3.3 0 6 3 6 6.7 0 3.7-2.7 6.7-6 6.7z" />
-                        </svg>
+                        <div style={{ marginRight: '8px', display: 'flex' }}>
+                            <svg width="20" height="20" viewBox="0 0 71 55" fill="currentColor">
+                                <path d="M60.1 4.9A58.5 58.5 0 0045.4.5a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.6a.2.2 0 00-.2-.1 58.4 58.4 0 00-14.7 4.4.2.2 0 00-.1.1C1.5 18.2-.9 31 .3 43.7a.2.2 0 00.1.1 58.8 58.8 0 0017.7 8.9.2.2 0 00.2 0 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.6.2.2 0 010-.4l1.1-.9a.2.2 0 01.2 0 42 42 0 0035.6 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.2 0 58.6 58.6 0 0017.7-8.9.2.2 0 00.1-.1c1.4-14.5-2.4-27.1-10-38.3a.2.2 0 00-.1-.1zM23.7 35.8c-3.3 0-6-3-6-6.7s2.7-6.7 6-6.7c3.4 0 6.1 3 6 6.7 0 3.7-2.6 6.7-6 6.7zm22.2 0c-3.3 0-6-3-6-6.7s2.6-6.7 6-6.7c3.3 0 6 3 6 6.7 0 3.7-2.7 6.7-6 6.7z" />
+                            </svg>
+                        </div>
                         Login with Discord
                     </button>
                 </div>

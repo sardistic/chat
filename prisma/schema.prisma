@@ -143,6 +143,12 @@ model Room {
   description String?  @db.Text
   ircChannel  String   @unique  // IRC channel name (e.g., "#camrooms-general")
   iconUrl     String?           // Room icon/avatar URL
+  bannerUrl   String?           // Custom banner image for room cards
+
+  // AI & Activity Metadata
+  shortSummary      String?   @db.Text // AI-generated summary of current activity
+  lastSummaryUpdate DateTime? // When the summary was generated
+  activityScore     Int       @default(0) // 0-100 metric for animation intensity
   
   // Ownership & Stats
   creatorId   String?           // Discord user ID who created it (null for system rooms)

@@ -18,10 +18,14 @@ export async function GET() {
                 slug: true,
                 description: true,
                 iconUrl: true,
+                bannerUrl: true,
                 ircChannel: true,
                 memberCount: true,
                 lastActive: true,
-                createdAt: true
+                createdAt: true,
+                shortSummary: true,
+                activityScore: true,
+                creatorId: true
             }
         });
 
@@ -46,7 +50,7 @@ export async function POST(request) {
         }
 
         const body = await request.json();
-        const { name, description } = body;
+        const { name, description, bannerUrl } = body;
 
         // Validate name
         if (!name || typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 32) {
@@ -88,6 +92,7 @@ export async function POST(request) {
                 name: name.trim(),
                 slug,
                 description: description?.trim() || null,
+                bannerUrl: bannerUrl?.trim() || null,
                 ircChannel,
                 creatorId: session.user.id,
                 isPublic: true,
