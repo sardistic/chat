@@ -238,11 +238,10 @@ const filterProfanity = (text) => {
 async function loadHistoryFromDB() {
   try {
     // Fetch all known rooms to load their history
-    // Also explicitly include 'general' and 'default-room' for legacy support/fallback
+    // Also explicitly include 'general' for legacy support/fallback
     const roomsInDb = await prisma.room.findMany({ select: { slug: true } });
     const roomIds = new Set(roomsInDb.map(r => r.slug));
     roomIds.add('general');
-    roomIds.add('default-room');
 
     console.log(`📚 Loading history for ${roomIds.size} rooms...`);
 
@@ -394,7 +393,7 @@ async function checkAndBackfillLogs(io) {
   try {
     // 1. Find existing Deployment Message
     const recentMessages = await prisma.chatMessage.findMany({
-      where: { roomId: 'default-room', systemType: { in: ['deploy-start', 'deploy-success', 'deploy-fail'] } },
+      where: { roomId: 'general', systemType: { in: ['deploy-start', 'deploy-success', 'deploy-fail'] } },
       take: 20,
       orderBy: { timestamp: 'desc' }
     });
@@ -445,12 +444,12 @@ async function checkAndBackfillLogs(io) {
       };
 
       // Update Memory
-      if (typeof messageHistory !== 'undefined' && messageHistory['default-room']) {
-        const idx = messageHistory['default-room'].findIndex(m => m.id === deploymentMsg.id);
-        if (idx !== -1) messageHistory['default-room'][idx] = updatedMsg;
+      if (typeof messageHistory !== 'undefined' && messageHistory['general']) {
+        const idx = messageHistory['general'].findIndex(m => m.id === deploymentMsg.id);
+        if (idx !== -1) messageHistory['general'][idx] = updatedMsg;
       }
 
-      if (io) io.to('default-room').emit('chat-message-update', updatedMsg);
+      if (io) io.to('general').emit('chat-message-update', updatedMsg);
 
       console.log(`[Backfill] Appended ${newLogs.length} logs to message ${deploymentMsg.id}`);
     } else {
@@ -557,7 +556,7 @@ app.prepare().then(async () => {
                   let msgId = activeDeployments.get(deploymentId);
 
                   if (msgId) {
-                    const history = messageHistory['default-room'];
+                    const history = messageHistory['general'];
                     const idx = history?.findIndex(m => m.id === msgId);
 
                     if (idx !== -1) {
@@ -581,7 +580,7 @@ app.prepare().then(async () => {
 
                       history[idx] = updatedMsg;
                       saveMessageToDB(updatedMsg);
-                      io.to('default-room').emit('chat-message-update', updatedMsg);
+                      io.to('general').emit('chat-message-update', updatedMsg);
                     }
                   }
                 };
@@ -1714,7 +1713,7 @@ app.prepare().then(async () => {
 
     // === MESSAGE REACTIONS (Discord-style) ===
     socket.on('message-react', ({ messageId, emoji }) => {
-      const roomId = socket.data.roomId || 'default-room';
+      const roomId = socket.data.roomId || 'general';
       const userId = socket.data.user?.id || socket.id;
       const userName = socket.data.user?.name || 'Someone';
 
@@ -1766,7 +1765,7 @@ app.prepare().then(async () => {
     });
 
     socket.on('message-unreact', ({ messageId, emoji }) => {
-      const roomId = socket.data.roomId || 'default-room';
+      const roomId = socket.data.roomId || 'general';
       const userId = socket.data.user?.id || socket.id;
       const userName = socket.data.user?.name || 'Someone';
 
@@ -1812,7 +1811,7 @@ app.prepare().then(async () => {
 
     // Tube Sync Handlers
     socket.on('tube-request-state', () => {
-      const roomId = socket.data.roomId || 'default-room';
+      const roomId = socket.data.roomId || 'general';
       const tubeState = getTubeState(roomId);
 
       // If there's no owner, and we have a video, requester can be owner
@@ -1828,7 +1827,7 @@ app.prepare().then(async () => {
     });
 
     socket.on('tube-update', (payload) => {
-      const roomId = payload.roomId || socket.data.roomId || 'default-room';
+      const roomId = payload.roomId || socket.data.roomId || 'general';
       const tubeState = getTubeState(roomId);
       const newState = payload;
 
@@ -2528,7 +2527,7 @@ app.prepare().then(async () => {
         return;
       }
 
-      const roomId = socket.data.roomId || 'default-room';
+      const roomId = socket.data.roomId || 'general';
       const wipeKey = targetUserId || `name:${targetUserName}`;
       wipedUsers.add(wipeKey);
       console.log(`[Mod] ${modUser.name} wiped messages from user ${wipeKey}`);

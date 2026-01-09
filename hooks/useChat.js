@@ -213,7 +213,7 @@ export function useChat(roomId, user) {
 
             // Check history for active build state
             // Find last deployment message (most recent in history array)
-            const lastDeployMsg = uniqueHistory.find(m =>
+            const lastDeployMsg = [...uniqueHistory].reverse().find(m =>
                 ['deploy-start', 'deploy-success', 'deploy-fail'].includes(m.systemType)
             );
             if (lastDeployMsg && lastDeployMsg.systemType === 'deploy-start') {
