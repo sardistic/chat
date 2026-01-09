@@ -520,6 +520,8 @@ export default function ProfileModal({
                                         style={{ justifyContent: 'center' }}
                                         onClick={async () => {
                                             if (confirm("Kick this user?")) {
+                                                const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'MODERATOR' || session?.user?.role === 'OWNER';
+                                                if (!isAdmin) return;
                                                 await fetch('/api/admin/actions', {
                                                     method: 'POST', body: JSON.stringify({ userId: user.id, action: 'KICK' })
                                                 });
@@ -534,6 +536,8 @@ export default function ProfileModal({
                                         style={{ justifyContent: 'center', marginTop: '4px' }}
                                         onClick={async () => {
                                             if (confirm("Ban this user?")) {
+                                                const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'MODERATOR' || session?.user?.role === 'OWNER';
+                                                if (!isAdmin) return;
                                                 await fetch('/api/admin/actions', {
                                                     method: 'POST', body: JSON.stringify({ userId: user.id, action: 'BAN', value: true })
                                                 });

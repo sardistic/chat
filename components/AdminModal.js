@@ -20,9 +20,11 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const [actionLoading, setActionLoading] = useState(null); // userId being acted upon
     const dragControls = useDragControls();
 
+    const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'MODERATOR' || session?.user?.role === 'OWNER';
+
     // Fetch on open or search/filter change
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || !isAdmin) return;
 
         const timer = setTimeout(() => {
             fetchUsers(1);
@@ -72,6 +74,8 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
             });
 
             if (!res.ok) {
+                // If 401/403, just return quietly to avoid spamming console with error parsing if text
+                if (res.status === 401 || res.status === 403) return;
                 const err = await res.json();
                 alert(err.error || 'Action failed');
                 return;
