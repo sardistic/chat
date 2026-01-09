@@ -94,6 +94,11 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
         return 'activity-low';
     };
 
+    const isVideo = (url) => {
+        if (!url) return false;
+        return url.match(/\.(mp4|webm|gifv|mov|mkv)$/i) || url.includes('imgur.com') && url.endsWith('.gifv');
+    };
+
     if (isLoading) {
         return (
             <div className="room-browser-loading">
@@ -125,11 +130,20 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                     position: relative;
                     border-radius: 12px 12px 0 0;
                     background-color: #2a2b30;
+                    overflow: hidden;
+                }
+                .room-banner-media {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    position: absolute;
+                    inset: 0;
                 }
                 .room-banner-overlay {
                     position: absolute;
                     inset: 0;
                     background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%);
+                    z-index: 1;
                 }
                 .ai-summary {
                     font-size: 12px;
@@ -206,22 +220,40 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                         style={{ position: 'relative' }}
                     >
                         <div className="room-card-banner" style={{
-                            backgroundImage: room.bannerUrl ? `url(${room.bannerUrl})` : 'linear-gradient(135deg, #3b3c45, #1e1e24)'
+                            background: !room.bannerUrl ? 'linear-gradient(135deg, #3b3c45, #1e1e24)' : 'none'
                         }}>
+                            {isVideo(room.bannerUrl) ? (
+                                <video
+                                    src={room.bannerUrl}
+                                    className="room-banner-media"
+                                    autoPlay loop muted playsInline
+                                />
+                            ) : room.bannerUrl ? (
+                                <div
+                                    className="room-banner-media"
+                                    style={{ backgroundImage: `url(${room.bannerUrl})` }}
+                                />
+                            ) : null}
+
                             <div className="room-banner-overlay" />
                             <div className="room-icon" style={{
                                 position: 'absolute', bottom: '12px', left: '16px',
                                 width: '40px', height: '40px', borderRadius: '12px',
                                 background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)'
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)',
+                                overflow: 'hidden', zIndex: 2
                             }}>
                                 {room.iconUrl ? (
-                                    <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', borderRadius: '12px' }} />
+                                    isVideo(room.iconUrl) ? (
+                                        <video src={room.iconUrl} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    )
                                 ) : (
                                     <Icon icon="fa:hashtag" width="20" color="#fff" />
                                 )}
                             </div>
-                            <div style={{ position: 'absolute', bottom: '12px', left: '68px', right: '12px' }}>
+                            <div style={{ position: 'absolute', bottom: '12px', left: '68px', right: '12px', zIndex: 2 }}>
                                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
                                     {room.name}
                                 </h3>

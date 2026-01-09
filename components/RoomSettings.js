@@ -17,11 +17,19 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
     const [bannerUrl, setBannerUrl] = useState('');
     const [newModId, setNewModId] = useState('');
 
+    const isVideo = (url) => {
+        if (!url) return false;
+        return url.match(/\.(mp4|webm|gifv|mov|mkv)$/i) || (url.includes('imgur.com') && url.endsWith('.gifv'));
+    };
+
     useEffect(() => {
         if (isOpen && roomId) {
             fetchRoomDetails();
         }
     }, [isOpen, roomId]);
+
+
+
 
     const handleAddMod = async () => {
         if (!newModId.trim()) return;
@@ -242,11 +250,19 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
                                 />
                                 {iconUrl && (
                                     <div className="icon-preview">
-                                        <img
-                                            src={iconUrl}
-                                            alt="Preview"
-                                            onError={(e) => e.target.style.display = 'none'}
-                                        />
+                                        {isVideo(iconUrl) ? (
+                                            <video
+                                                src={iconUrl}
+                                                autoPlay loop muted playsInline
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={iconUrl}
+                                                alt="Preview"
+                                                onError={(e) => e.target.style.display = 'none'}
+                                            />
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -264,12 +280,20 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
                                 />
                                 {bannerUrl && (
                                     <div className="banner-preview" style={{ marginTop: '8px', height: '60px', borderRadius: '8px', background: '#333', overflow: 'hidden' }}>
-                                        <img
-                                            src={bannerUrl}
-                                            alt="Banner Preview"
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            onError={(e) => e.target.style.display = 'none'}
-                                        />
+                                        {isVideo(bannerUrl) ? (
+                                            <video
+                                                src={bannerUrl}
+                                                autoPlay loop muted playsInline
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={bannerUrl}
+                                                alt="Banner Preview"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                onError={(e) => e.target.style.display = 'none'}
+                                            />
+                                        )}
                                     </div>
                                 )}
                             </div>
