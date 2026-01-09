@@ -80,7 +80,7 @@ const queueIrcConnection = (socket, user, ircConfig, callback) => {
 };
 
 // Store message history per room (limit 200)
-let messageHistory = {}; // roomId -> Array of messages (Changed to Object for JSON serialization)
+let messageHistory = {}; // roomId -> Array
 
 // Bundling Storage
 const bundles = new Map(); // roomId -> { type: { id, users, timestamp } }
@@ -88,21 +88,26 @@ const bundles = new Map(); // roomId -> { type: { id, users, timestamp } }
 // Identity Persistence Cache
 const lastKnownUsers = new Map(); // socket.id -> { user, roomId }
 
-// Server-Authoritative Tube State
-// playStartedAt: server timestamp when play started (used to calculate current position)
-// pausedAt: position in seconds when paused
-const tubeState = {
-  videoId: null,
-  isPlaying: false,
-  pausedAt: 0,           // Position in seconds when paused
-  playStartedAt: 0,      // Server timestamp when play started
-  title: null,
-  thumbnail: null,
-  ownerId: null,
-  lastUpdate: 0,
-  queue: [], // Array of { videoId, title, thumbnail, user }
-  history: [] // Array of { videoId, title, thumbnail, startedBy }
-};
+// Server-Authoritative Tube State (Per Room)
+const tubeStates = new Map();
+
+function getTubeState(roomId) {
+  if (!tubeStates.has(roomId)) {
+    tubeStates.set(roomId, {
+      videoId: null,
+      isPlaying: false,
+      pausedAt: 0,
+      playStartedAt: 0,
+      title: null,
+      thumbnail: null,
+      ownerId: null,
+      lastUpdate: 0,
+      queue: [],
+      history: []
+    });
+  }
+  return tubeStates.get(roomId);
+}
 
 // Message Reactions Storage: messageId -> { emoji -> Set of userIds }
 const messageReactions = new Map();
@@ -119,7 +124,8 @@ const wipedUsers = new Set();
 const camBannedUsers = new Map();
 
 // Helper to calculate current video position from server state
-function getTubePosition() {
+function getTubePosition(roomId) {
+  const tubeState = getTubeState(roomId);
   if (!tubeState.isPlaying) {
     return tubeState.pausedAt;
   }
@@ -219,63 +225,72 @@ const filterProfanity = (text) => {
 // Load History from Database on Start
 async function loadHistoryFromDB() {
   try {
-    // Get the NEWEST 100 messages (order by desc, then reverse for display)
-    const messages = await prisma.chatMessage.findMany({
-      where: { roomId: 'default-room' },
-      orderBy: { timestamp: 'desc' },
-      take: 100,
-      include: { reactions: true }
-    });
+    // Fetch all known rooms to load their history
+    // Also explicitly include 'general' and 'default-room' for legacy support/fallback
+    const roomsInDb = await prisma.room.findMany({ select: { slug: true } });
+    const roomIds = new Set(roomsInDb.map(r => r.slug));
+    roomIds.add('general');
+    roomIds.add('default-room');
 
-    // Reverse to get chronological order for display
-    messages.reverse();
+    console.log(`📚 Loading history for ${roomIds.size} rooms...`);
 
-    messageHistory['default-room'] = messages.map(m => {
-      // Populate messageReactions in-memory map
-      if (m.reactions && m.reactions.length > 0) {
-        if (!messageReactions.has(m.id)) {
-          messageReactions.set(m.id, new Map());
-        }
-        const msgReactions = messageReactions.get(m.id);
-        m.reactions.forEach(r => {
-          if (!msgReactions.has(r.emoji)) {
-            msgReactions.set(r.emoji, new Set());
+    for (const roomId of roomIds) {
+      // Get the NEWEST 100 messages (order by desc, then reverse for display)
+      const messages = await prisma.chatMessage.findMany({
+        where: { roomId },
+        orderBy: { timestamp: 'desc' },
+        take: 100,
+        include: { reactions: true }
+      });
+
+      // Reverse to get chronological order for display
+      messages.reverse();
+
+      messageHistory[roomId] = messages.map(m => {
+        // Populate messageReactions in-memory map
+        if (m.reactions && m.reactions.length > 0) {
+          if (!messageReactions.has(m.id)) {
+            messageReactions.set(m.id, new Map());
           }
-          msgReactions.get(r.emoji).add(r.userId);
-        });
+          const msgReactions = messageReactions.get(m.id);
+          m.reactions.forEach(r => {
+            if (!msgReactions.has(r.emoji)) {
+              msgReactions.set(r.emoji, new Set());
+            }
+            msgReactions.get(r.emoji).add(r.userId);
+          });
+        }
+
+        const meta = m.metadata || {};
+        return {
+          id: m.id,
+          roomId: m.roomId,
+          sender: m.sender,
+          text: m.text,
+          type: m.type,
+          systemType: m.systemType,
+          metadata: m.metadata,
+          timestamp: m.timestamp.toISOString(),
+          // Restore IRC-specific fields from metadata
+          source: meta.source,
+          senderColor: meta.senderColor,
+          channel: meta.channel
+        };
+      });
+
+      // RESTORE SERVER STATE FROM HISTORY
+      // Prevent duplicate "Now Playing" messages by finding the last one and tracking it
+      if (!global._lastTubeMsg) global._lastTubeMsg = {};
+
+      const lastTubeMsg = [...messages].reverse().find(m =>
+        m.systemType && m.systemType.startsWith('tube-')
+      );
+
+      if (lastTubeMsg) {
+        const tubeMsgKey = `tube-${roomId}`;
+        global._lastTubeMsg[tubeMsgKey] = lastTubeMsg.id;
+        // console.log(`[Tube] Restored last tube message ID for ${roomId}: ${lastTubeMsg.id}`);
       }
-
-      const meta = m.metadata || {};
-      return {
-        id: m.id,
-        roomId: m.roomId,
-        sender: m.sender,
-        text: m.text,
-        type: m.type,
-        systemType: m.systemType,
-        metadata: m.metadata,
-        timestamp: m.timestamp.toISOString(),
-        // Restore IRC-specific fields from metadata
-        source: meta.source,
-        senderColor: meta.senderColor,
-        channel: meta.channel
-      };
-    });
-
-    console.log(`📚 Loaded ${messages.length} messages from database.`);
-
-    // RESTORE SERVER STATE FROM HISTORY
-    // Prevent duplicate "Now Playing" messages by finding the last one and tracking it
-    if (!global._lastTubeMsg) global._lastTubeMsg = {};
-
-    const lastTubeMsg = [...messages].reverse().find(m =>
-      m.systemType && m.systemType.startsWith('tube-')
-    );
-
-    if (lastTubeMsg) {
-      const tubeMsgKey = `tube-default-room`;
-      global._lastTubeMsg[tubeMsgKey] = lastTubeMsg.id;
-      console.log(`[Tube] Restored last tube message ID: ${lastTubeMsg.id}`);
     }
 
     // LOAD SHADOW MUTED USERS from database
@@ -692,85 +707,100 @@ app.prepare().then(async () => {
 
           // 2. Broadcast to Chat
           if (systemMessage) {
-            let msgId = `sys-${Date.now()}`;
-            let isUpdate = false;
-            let existingStartMsg = null;
+            // Broadcast to all active rooms + general
+            const targetRooms = new Set(rooms.keys());
+            targetRooms.add('general');
 
-            // Attempt to find existing "Deploying" message to update
-            if (systemType === 'deploy-success' || systemType === 'deploy-fail') {
-              // 1. Try Map lookup (Most accurate)
-              if (metadata?.deploymentId && activeDeployments.has(metadata.deploymentId)) {
-                msgId = activeDeployments.get(metadata.deploymentId);
-                existingStartMsg = messageHistory['default-room']?.find(m => m.id === msgId);
-                isUpdate = !!existingStartMsg;
-              }
-              // 2. Fallback to heuristic (Last deploy-start within 30m)
-              if (!isUpdate) {
-                const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
-                existingStartMsg = messageHistory['default-room']
-                  ?.slice()
-                  .reverse()
-                  .find(m =>
-                    m.systemType === 'deploy-start' &&
-                    new Date(m.timestamp).getTime() > thirtyMinutesAgo
-                  );
-                if (existingStartMsg) {
-                  msgId = existingStartMsg.id;
-                  isUpdate = true;
+            for (const roomId of targetRooms) {
+              // Ensure unique ID per room for DB constraints
+              let msgId = `sys-${Date.now()}-${roomId}`;
+
+              let isUpdate = false;
+              let existingStartMsg = null;
+              const compositeKey = metadata?.deploymentId ? `${metadata.deploymentId}:${roomId}` : null;
+
+              // Attempt to find existing "Deploying" message to update
+              if (systemType === 'deploy-success' || systemType === 'deploy-fail') {
+                // 1. Try Map lookup
+                if (compositeKey && activeDeployments.has(compositeKey)) {
+                  msgId = activeDeployments.get(compositeKey);
+                  existingStartMsg = messageHistory[roomId]?.find(m => m.id === msgId);
+                  isUpdate = !!existingStartMsg;
+                }
+                // 2. Fallback to heuristic
+                if (!isUpdate && messageHistory[roomId]) {
+                  const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
+                  existingStartMsg = messageHistory[roomId]
+                    .slice()
+                    .reverse()
+                    .find(m =>
+                      m.systemType === 'deploy-start' &&
+                      new Date(m.timestamp).getTime() > thirtyMinutesAgo
+                    );
+                  if (existingStartMsg) {
+                    msgId = existingStartMsg.id;
+                    isUpdate = true;
+                  }
                 }
               }
-            }
 
-            // Preserve logs if updating
-            // Preserve logs if updating
-            let existingLogs = [];
-            if (isUpdate && existingStartMsg?.metadata?.logs) {
-              existingLogs = existingStartMsg.metadata.logs;
-            } else if (!isUpdate && (!existingLogs || existingLogs.length === 0) && (metadata.commitMsg || metadata.shortHash)) {
-              // Pre-fill logs so the terminal isn't empty initially
-              existingLogs = [
-                `> Initializing deployment...`,
-                `> Commit: ${metadata.shortHash || 'Unknown'}`,
-                `> Subject: ${metadata.commitMsg || 'No message'}`
-              ];
-            }
-
-            const msg = {
-              roomId: 'default-room',
-              id: msgId,
-              sender: 'System',
-              text: systemMessage,
-              type: 'system',
-              systemType: systemType,
-              metadata: { ...metadata, logs: existingLogs },
-              timestamp: new Date().toISOString()
-            };
-
-            // Clean up phase on success/fail so header uses default kicker
-            if (systemType === 'deploy-success') msg.metadata.phase = null; // Revert to "DEPLOYMENT SUCCESSFUL"
-            if (systemType === 'deploy-fail') msg.metadata.phase = 'FAILED';
-
-            // Track active deployment message for log appending
-            if (systemType === 'deploy-start' && metadata?.deploymentId) {
-              activeDeployments.set(metadata.deploymentId, msgId);
-            }
-
-            if (isUpdate) {
-              // Update in history
-              const history = messageHistory['default-room'];
-              if (history) {
-                const idx = history.findIndex(m => m.id === msgId);
-                if (idx !== -1) {
-                  history[idx] = { ...history[idx], ...msg }; // Merge to keep other props
-                }
+              // Preserve logs if updating
+              let existingLogs = [];
+              if (isUpdate && existingStartMsg?.metadata?.logs) {
+                existingLogs = existingStartMsg.metadata.logs;
+              } else if (!isUpdate && (!existingLogs || existingLogs.length === 0) && (metadata.commitMsg || metadata.shortHash)) {
+                existingLogs = [
+                  `> Initializing deployment...`,
+                  `> Commit: ${metadata.shortHash || 'Unknown'}`,
+                  `> Subject: ${metadata.commitMsg || 'No message'}`
+                ];
               }
-              saveMessageToDB(msg); // Persist to DB
-              if (io) io.to('default-room').emit('chat-message-update', msg);
-              console.log(`[Webhook] 🔄 Updated message ${msgId}:`, systemMessage);
-            } else {
-              storeMessage('default-room', msg);
-              if (io) io.to('default-room').emit('chat-message', msg);
-              console.log('[Webhook] 📢 Broadcasted:', systemMessage);
+
+              const msg = {
+                roomId,
+                id: msgId,
+                sender: 'System',
+                text: systemMessage,
+                type: 'system',
+                systemType: systemType,
+                metadata: { ...metadata, logs: existingLogs },
+                timestamp: new Date().toISOString()
+              };
+
+              // Clean up phase on success/fail
+              if (systemType === 'deploy-success') msg.metadata.phase = null;
+              if (systemType === 'deploy-fail') msg.metadata.phase = 'FAILED';
+
+              // Track active deployment message
+              if (systemType === 'deploy-start' && compositeKey) {
+                activeDeployments.set(compositeKey, msgId);
+              }
+
+              if (isUpdate) {
+                // Update in history
+                const history = messageHistory[roomId];
+                if (history) {
+                  const idx = history.findIndex(m => m.id === msgId);
+                  if (idx !== -1) {
+                    history[idx] = { ...history[idx], ...msg };
+                  }
+                }
+                // Use saveMessageToDB (Upsert/Update logic) if it exists, or re-use storeMessage for insert-only?
+                // Assuming saveMessageToDB handles updates based on ID
+                if (typeof saveMessageToDB === 'function') {
+                  saveMessageToDB(msg);
+                } else {
+                  // Fallback: This might fail if ID exists
+                  console.warn('saveMessageToDB not defined, skipping DB update');
+                }
+
+                io.to(roomId).emit('chat-message-update', msg);
+                // console.log(`[Webhook] 🔄 Updated message ${msgId} in ${roomId}`);
+              } else {
+                storeMessage(roomId, msg);
+                io.to(roomId).emit('chat-message', msg);
+                // console.log(`[Webhook] 📢 Broadcasted to ${roomId}`);
+              }
             }
           }
 
@@ -914,8 +944,8 @@ app.prepare().then(async () => {
       });
       for (const msg of recent) {
         if (msg.systemType === 'deploy-start' && msg.metadata?.deploymentId) {
-          activeDeployments.set(msg.metadata.deploymentId, msg.id);
-          console.log(`[Startup] Rehydrated active deployment: ${msg.metadata.deploymentId}`);
+          activeDeployments.set(`${msg.metadata.deploymentId}:${msg.roomId}`, msg.id);
+          console.log(`[Startup] Rehydrated active deployment: ${msg.metadata.deploymentId} in ${msg.roomId}`);
         }
       }
     } catch (e) {
@@ -1001,20 +1031,18 @@ app.prepare().then(async () => {
   });
   historyBot.connect();
 
-  // --- Server-Authoritative Tube Sync Interval ---
+  // --- Server-Authoritative Tube Sync Interval (Per Room) ---
   // Broadcasts sync updates every 2 seconds when video is playing
-  // TODO: Make tube state per-room
   setInterval(() => {
-    if (tubeState.videoId && tubeState.isPlaying) {
-      // For now, broadcast to all rooms - each room will eventually have its own tube state
-      rooms.forEach((room, roomId) => {
+    for (const [roomId, tubeState] of tubeStates.entries()) {
+      if (tubeState.videoId && tubeState.isPlaying) {
         io.to(roomId).emit('tube-sync', {
           videoId: tubeState.videoId,
           isPlaying: tubeState.isPlaying,
-          currentPosition: getTubePosition(),
+          currentPosition: getTubePosition(roomId),
           serverTime: Date.now()
         });
-      });
+      }
     }
   }, 2000);
 
@@ -1720,6 +1748,9 @@ app.prepare().then(async () => {
 
     // Tube Sync Handlers
     socket.on('tube-request-state', () => {
+      const roomId = socket.data.roomId || 'default-room';
+      const tubeState = getTubeState(roomId);
+
       // If there's no owner, and we have a video, requester can be owner
       if (!tubeState.ownerId && tubeState.videoId) {
         tubeState.ownerId = socket.id;
@@ -1728,12 +1759,13 @@ app.prepare().then(async () => {
       socket.emit('tube-state', {
         ...tubeState,
         serverTime: Date.now(),
-        currentPosition: getTubePosition()
+        currentPosition: getTubePosition(roomId)
       });
     });
 
     socket.on('tube-update', (payload) => {
       const roomId = payload.roomId || socket.data.roomId || 'default-room';
+      const tubeState = getTubeState(roomId);
       const newState = payload;
 
       console.log(`[Tube] tube-update received:`, { videoId: newState.videoId, isPlaying: newState.isPlaying, type: newState.type, action: newState.action });
@@ -1754,7 +1786,7 @@ app.prepare().then(async () => {
           io.to(roomId).emit('tube-state', {
             ...tubeState,
             serverTime: Date.now(),
-            currentPosition: getTubePosition()
+            currentPosition: getTubePosition(roomId)
           });
           return;
         }
@@ -1855,7 +1887,7 @@ app.prepare().then(async () => {
           io.to(roomId).emit('tube-state', {
             ...tubeState,
             serverTime: Date.now(),
-            currentPosition: getTubePosition()
+            currentPosition: getTubePosition(roomId)
           });
 
           // Trigger Async Title Fetch for the new video
@@ -1878,7 +1910,7 @@ app.prepare().then(async () => {
                   };
                   io.to(roomId).emit('chat-message-update', updatedMsg);
                 }
-                io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition() });
+                io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition(roomId) });
               }
             });
           }
@@ -2039,7 +2071,7 @@ app.prepare().then(async () => {
           io.to(roomId).emit('tube-state', {
             ...tubeState,
             serverTime: Date.now(),
-            currentPosition: getTubePosition()
+            currentPosition: getTubePosition(roomId)
           });
           return; // EXIT EARLY - Do not change current video
         }
@@ -2101,7 +2133,7 @@ app.prepare().then(async () => {
             };
             storeMessage(roomId, updatedMsg); // Persist to DB
             io.to(roomId).emit('chat-message-update', updatedMsg);
-            io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition() });
+            io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition(roomId) });
           }
         }).catch(err => console.error('[Tube] Direct play title fetch error:', err));
 
@@ -2109,7 +2141,7 @@ app.prepare().then(async () => {
         io.to(roomId).emit('tube-state', {
           ...tubeState,
           serverTime: Date.now(),
-          currentPosition: getTubePosition()
+          currentPosition: getTubePosition(roomId)
         });
         return; // Exit - message already emitted above
 
@@ -2173,7 +2205,7 @@ app.prepare().then(async () => {
         io.to(roomId).emit('tube-state', {
           ...tubeState,
           serverTime: Date.now(),
-          currentPosition: getTubePosition()
+          currentPosition: getTubePosition(roomId)
         });
 
         // 5. Async Title Fetching (Fire and Forget)
@@ -2199,7 +2231,7 @@ app.prepare().then(async () => {
               io.to(roomId).emit('tube-state', {
                 ...tubeState,
                 serverTime: Date.now(),
-                currentPosition: getTubePosition()
+                currentPosition: getTubePosition(roomId)
               });
             }
           }).catch(err => console.error("Title fetch error:", err));
@@ -2294,7 +2326,7 @@ app.prepare().then(async () => {
       io.to(roomId).emit('tube-state', {
         ...tubeState,
         serverTime: Date.now(),
-        currentPosition: getTubePosition()
+        currentPosition: getTubePosition(roomId)
       });
     });
 
@@ -2560,14 +2592,20 @@ app.prepare().then(async () => {
             // Room might not exist in DB, ignore
           }
 
+          const tubeState = getTubeState(roomId);
+
           if (room.size === 0) {
             rooms.delete(roomId);
-            tubeState.ownerId = null;
-          } else if (tubeState.ownerId === socket.id) {
+            if (tubeState) tubeState.ownerId = null;
+          } else if (tubeState && tubeState.ownerId === socket.id) {
             const nextOwnerId = room.keys().next().value;
             tubeState.ownerId = nextOwnerId;
             console.log(`[Tube] Handed over ownership to ${nextOwnerId}`);
-            io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now() });
+            io.to(roomId).emit('tube-state', {
+              ...tubeState,
+              serverTime: Date.now(),
+              currentPosition: getTubePosition(roomId)
+            });
           }
         }
         socket.to(roomId).emit("user-left", { socketId: socket.id });
