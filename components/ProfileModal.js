@@ -97,6 +97,7 @@ export default function ProfileModal({
     const [stats, setStats] = useState(null);
     const [connectionStatus, setConnectionStatus] = useState(null);
     const [loadingStats, setLoadingStats] = useState(false);
+    const { status } = useSession();
 
     useEffect(() => {
         if (isOpen && user && user.id && socket) {
@@ -114,7 +115,7 @@ export default function ProfileModal({
     // Check Block Status
     const [isBlocked, setIsBlocked] = useState(false);
     useEffect(() => {
-        if (isOpen && user?.id && !currentUser?.isGuest) {
+        if (isOpen && user?.id && status === 'authenticated') {
             fetch('/api/user/block')
                 .then(res => res.ok ? res.json() : [])
                 .then(blockedIds => {
@@ -124,7 +125,7 @@ export default function ProfileModal({
                 })
                 .catch(err => console.error("Failed to fetch blocks", err));
         }
-    }, [isOpen, user?.id, currentUser?.isGuest]);
+    }, [isOpen, user?.id, status]);
 
     const handleBlockToggle = async () => {
         const action = isBlocked ? 'unblock' : 'block';

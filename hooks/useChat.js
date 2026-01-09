@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSocket } from '@/lib/socket';
+import { useSession } from 'next-auth/react';
 
 export function useChat(roomId, user) {
     const { socket, isConnected } = useSocket();
+    const { status } = useSession();
     const [messages, setMessages] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
     const [typingUsers, setTypingUsers] = useState(new Set());
@@ -16,7 +18,7 @@ export function useChat(roomId, user) {
     // Blocking State
     const [blockedIds, setBlockedIds] = useState(new Set());
     useEffect(() => {
-        if (user?.id && !user.isGuest) {
+        if (user?.id && status === 'authenticated') {
             fetch('/api/user/block')
                 .then(res => res.ok ? res.json() : [])
                 .then(ids => {
@@ -24,7 +26,7 @@ export function useChat(roomId, user) {
                 })
                 .catch(e => console.error("Failed to load blocks", e));
         }
-    }, [user?.id, user?.isGuest]);
+    }, [user?.id, status]);
 
     // Track seen message IDs to prevent duplicates
     const seenIdsRef = useRef(new Set());

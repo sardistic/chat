@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Icon } from '@iconify/react';
 import { useSocket } from "@/lib/socket";
+import { useSession } from "next-auth/react";
 
 export default function SettingsModal({ isOpen, onClose, user }) {
     const [settings, setSettings] = useState({
@@ -19,10 +20,11 @@ export default function SettingsModal({ isOpen, onClose, user }) {
     });
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const { status } = useSession();
 
     // Fetch settings on mount
     useEffect(() => {
-        if (isOpen && !user?.isGuest) {
+        if (isOpen && status === 'authenticated') {
             setLoading(true);
             fetch('/api/user/settings')
                 .then(res => res.ok ? res.json() : {})
@@ -34,7 +36,7 @@ export default function SettingsModal({ isOpen, onClose, user }) {
                 .catch(err => console.error("Failed to load settings:", err))
                 .finally(() => setLoading(false));
         }
-    }, [isOpen, user?.isGuest]);
+    }, [isOpen, status]);
 
     const handleSave = async () => {
         setSaving(true);
