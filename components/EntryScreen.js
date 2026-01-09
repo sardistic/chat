@@ -111,13 +111,13 @@ function getCookie(name) {
 
 
 
-export default function EntryScreen({ onJoin }) {
+export default function EntryScreen({ onJoin, initialRoom = null }) {
     const { data: session, status } = useSession();
     const [username, setUsername] = useState("");
     const [characterSeed, setCharacterSeed] = useState(Math.floor(Math.random() * 2147483647));
     const [isLoading, setIsLoading] = useState(true);
     const [guestToken, setGuestToken] = useState(null);
-    const [selectedRoom, setSelectedRoom] = useState(null); // Room selection step
+    const [selectedRoom, setSelectedRoom] = useState(initialRoom); // Room selection step
 
     // Load saved guest data on mount
     useEffect(() => {
