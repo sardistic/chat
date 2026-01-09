@@ -14,12 +14,62 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [iconUrl, setIconUrl] = useState('');
+    const [newModId, setNewModId] = useState('');
 
     useEffect(() => {
         if (isOpen && roomId) {
             fetchRoomDetails();
         }
     }, [isOpen, roomId]);
+
+    const handleAddMod = async () => {
+        if (!newModId.trim()) return;
+        try {
+            setIsSaving(true);
+            setError(null);
+            const res = await fetch(`/api/rooms/${roomId}/moderators`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: newModId.trim() })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            setNewModId('');
+            fetchRoomDetails(); // Refresh list
+            setSaveMessage('Moderator added successfully');
+        } catch (err) {
+            console.error(err);
+            setError(err.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleRemoveMod = async (userId) => {
+        if (!confirm('Remove this moderator?')) return;
+        try {
+            setIsSaving(true);
+            setError(null);
+            const res = await fetch(`/api/rooms/${roomId}/moderators?userId=${userId}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error);
+            }
+
+            fetchRoomDetails(); // Refresh list
+            setSaveMessage('Moderator removed successfully');
+        } catch (err) {
+            console.error(err);
+            setError(err.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const fetchRoomDetails = async () => {
         try {
@@ -168,7 +218,31 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
                         </div>
 
                         <div className="moderators-section">
-                            <h3>Moderators</h3>
+                            <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <h3>Moderators</h3>
+                            </div>
+
+                            {roomData.isOwner && (
+                                <div className="add-mod-form" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter Discord User ID"
+                                        value={newModId}
+                                        onChange={(e) => setNewModId(e.target.value)}
+                                        style={{ flex: 1, fontSize: '13px', padding: '8px' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn primary"
+                                        onClick={handleAddMod}
+                                        disabled={!newModId.trim() || isSaving}
+                                        style={{ padding: '8px 12px', fontSize: '12px' }}
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="moderators-list">
                                 <div className="mod-item owner">
                                     <Icon icon="fa:crown" width="14" />
@@ -176,9 +250,22 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
                                 </div>
                                 {roomData.moderators?.map(mod => (
                                     <div key={mod.userId} className="mod-item">
-                                        <Icon icon="fa:shield" width="14" />
-                                        <span>User ID: {mod.userId}</span>
-                                        <span className="badge">{mod.role}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                                            <Icon icon="fa:shield" width="14" />
+                                            <span style={{ fontFamily: 'monospace' }}>{mod.userId}</span>
+                                            <span className="badge">{mod.role}</span>
+                                        </div>
+                                        {roomData.isOwner && (
+                                            <button
+                                                type="button"
+                                                className="btn icon-btn danger"
+                                                onClick={() => handleRemoveMod(mod.userId)}
+                                                title="Remove Moderator"
+                                                style={{ padding: '4px', width: '24px', height: '24px' }}
+                                            >
+                                                <Icon icon="fa:times" width="12" />
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                                 {(!roomData.moderators || roomData.moderators.length === 0) && (
