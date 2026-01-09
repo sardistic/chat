@@ -38,7 +38,7 @@ export async function PATCH(request, { params }) {
 
         const { slug } = await params;
         const body = await request.json();
-        const { name, description, iconUrl } = body;
+        const { name, description, iconUrl, bannerUrl } = body;
 
         // Check permissions
         const role = await isRoomAdmin(slug, session.user.id);
@@ -51,6 +51,7 @@ export async function PATCH(request, { params }) {
         if (name !== undefined) updateData.name = name.trim();
         if (description !== undefined) updateData.description = description?.trim() || null;
         if (iconUrl !== undefined) updateData.iconUrl = iconUrl || null;
+        if (bannerUrl !== undefined) updateData.bannerUrl = bannerUrl || null;
 
         // Update room
         const room = await prisma.room.update({
@@ -62,6 +63,7 @@ export async function PATCH(request, { params }) {
                 slug: true,
                 description: true,
                 iconUrl: true,
+                bannerUrl: true,
                 ircChannel: true,
                 creatorId: true,
                 memberCount: true,

@@ -14,6 +14,7 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [iconUrl, setIconUrl] = useState('');
+    const [bannerUrl, setBannerUrl] = useState('');
     const [newModId, setNewModId] = useState('');
 
     useEffect(() => {
@@ -91,6 +92,7 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
             setName(data.name || '');
             setDescription(data.description || '');
             setIconUrl(data.iconUrl || '');
+            setBannerUrl(data.bannerUrl || '');
         } catch (err) {
             console.error('[RoomSettings] Error:', err);
             setError(err.message);
@@ -114,7 +116,8 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
                 body: JSON.stringify({
                     name: name.trim(),
                     description: description.trim() || null,
-                    iconUrl: iconUrl.trim() || null
+                    iconUrl: iconUrl.trim() || null,
+                    bannerUrl: bannerUrl.trim() || null
                 })
             });
 
@@ -127,14 +130,46 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
             setRoomData(prev => ({ ...prev, ...data }));
             setSaveMessage('Room settings updated successfully!');
 
-            // Persist changes to UI immediately if needed by parent? 
-            // Ideally we'd trigger a reload or callback, but page refresh works for now.
-            // Or we rely on real-time updates? Currently no real-time room update events.
-
         } catch (err) {
             console.error('[RoomSettings] Save error:', err);
             setError(err.message);
         } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteRoom = async () => {
+        if (!roomData?.isOwner) return;
+
+        const confirmName = prompt(`DANGER: This will permanently delete the room.\nTo confirm, please type the room name: "${roomData.name}"`);
+        if (confirmName !== roomData.name) {
+            if (confirmName !== null) alert("Room name did not match. Deletion cancelled.");
+            return;
+        }
+
+        try {
+            setIsSaving(true); // Lock UI
+            setError(null);
+
+            // Use the slug or roomId - Route uses slug in params usually, but here roomId prop passed might be slug or ID?
+            // ClientApp passes `roomId` which is usually the SLUG (e.g. 'general' or 'room-123').
+            // Let's ensure we use the slug from roomData if available, or roomId prop.
+            const targetSlug = roomData.slug || roomId;
+
+            const res = await fetch(`/api/rooms/${targetSlug}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to delete room');
+            }
+
+            // Success - Redirect to home
+            window.location.href = '/';
+        } catch (err) {
+            console.error('[RoomSettings] Delete error:', err);
+            setError(err.message);
             setIsSaving(false);
         }
     };
@@ -203,7 +238,7 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
                                     value={iconUrl}
                                     onChange={e => setIconUrl(e.target.value)}
                                     disabled={!roomData.canEdit}
-                                    placeholder="https://example.com/image.png"
+                                    placeholder="https://example.com/icon.png"
                                 />
                                 {iconUrl && (
                                     <div className="icon-preview">
@@ -215,6 +250,30 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Banner URL</label>
+                            <div className="input-with-preview">
+                                <input
+                                    type="url"
+                                    value={bannerUrl}
+                                    onChange={e => setBannerUrl(e.target.value)}
+                                    disabled={!roomData.canEdit}
+                                    placeholder="https://example.com/banner.jpg"
+                                />
+                                {bannerUrl && (
+                                    <div className="banner-preview" style={{ marginTop: '8px', height: '60px', borderRadius: '8px', background: '#333', overflow: 'hidden' }}>
+                                        <img
+                                            src={bannerUrl}
+                                            alt="Banner Preview"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            onError={(e) => e.target.style.display = 'none'}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <small className="hint">Displayed on the room card in the browser.</small>
                         </div>
 
                         <div className="moderators-section">
@@ -282,13 +341,33 @@ export default function RoomSettings({ roomId, isOpen, onClose }) {
                         )}
 
                         {roomData.canEdit && (
-                            <div className="modal-actions">
+                            <div className="modal-actions" style={{ marginBottom: '0' }}>
                                 <button type="button" className="btn" onClick={onClose}>
                                     Cancel
                                 </button>
                                 <button type="submit" className="btn primary" disabled={isSaving}>
                                     {isSaving ? 'Saving...' : 'Save Changes'}
                                 </button>
+                            </div>
+                        )}
+
+                        {roomData.isOwner && (
+                            <div className="danger-zone" style={{ marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <h4 style={{ color: '#ef4444', margin: '0 0 4px', fontSize: '14px' }}>Delete Room</h4>
+                                        <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Permanently delete this room and all its data.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn danger"
+                                        onClick={handleDeleteRoom}
+                                        disabled={isSaving}
+                                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: '#ef4444' }}
+                                    >
+                                        Delete Room
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </form>
