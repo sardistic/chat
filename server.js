@@ -1593,6 +1593,27 @@ app.prepare().then(async () => {
     socket.on('chat-message', (message) => {
       if (!message.timestamp) message.timestamp = new Date().toISOString();
 
+      const user = socket.data.user;
+      const roomId = message.roomId || socket.data.roomId;
+      const text = message.text || '';
+
+      // 0. Build State Override (Failsafe)
+      if (text.toLowerCase() === '/clearbuild' && user && (user.role === 'ADMIN' || user.role === 'OWNER')) {
+        console.log(`[Admin] Building state cleared by ${user.name}`);
+        const clearMsg = {
+          id: `clear-${Date.now()}`,
+          roomId,
+          sender: 'System',
+          text: `**Build state manually cleared** by ${user.name}`,
+          type: 'system',
+          systemType: 'deploy-success',
+          timestamp: new Date().toISOString()
+        };
+        storeMessage(roomId, clearMsg);
+        io.to(roomId).emit('chat-message', clearMsg);
+        return;
+      }
+
       // Automod Filter
       if (message.text) {
         message.text = filterProfanity(message.text);
@@ -2137,6 +2158,7 @@ app.prepare().then(async () => {
         tubeState.playStartedAt = Date.now();
         tubeState.startedBy = userName; // Track who started this video
 
+        // 1. YouTube Commands (Now Playing / Queue / Search)
         // Update/Create "Now Playing" Message (initially with placeholder, async update will add title)
         const msgId = isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`;
         msgPayload = {
