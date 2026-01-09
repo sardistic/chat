@@ -18,7 +18,7 @@ import AdminModal from "@/components/AdminModal";
 
 
 function MainApp({ user, setUser, onLeaveRoom }) {
-  const roomId = "default-room";
+  const roomId = user.roomId || "general";
   const { socket, isConnected } = useSocket();
   const {
     localStream,

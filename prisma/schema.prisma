@@ -133,6 +133,30 @@ enum Role {
 }
 
 // ============================================
+// Rooms (Multi-Room Support)
+// ============================================
+
+model Room {
+  id          String   @id @default(cuid())
+  name        String   @unique  // Display name (e.g., "General", "Gaming")
+  slug        String   @unique  // URL-friendly slug (e.g., "general", "gaming")
+  description String?  @db.Text
+  ircChannel  String   @unique  // IRC channel name (e.g., "#camrooms-general")
+  
+  // Ownership & Stats
+  creatorId   String?           // Discord user ID who created it (null for system rooms)
+  memberCount Int      @default(0)  // Cached count for browsing
+  isPublic    Boolean  @default(true)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  lastActive  DateTime @default(now())
+
+  @@index([lastActive])
+  @@index([memberCount])
+}
+
+// ============================================
 // Chat Messages (Persistent)
 // ============================================
 

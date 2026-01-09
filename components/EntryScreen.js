@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { setCookie } from "cookies-next";
 import { Icon } from '@iconify/react';
+import RoomBrowser from './RoomBrowser';
 
 // Expanded name generator with gaming/internet culture
 function generateName(seed) {
@@ -116,6 +117,7 @@ export default function EntryScreen({ onJoin }) {
     const [characterSeed, setCharacterSeed] = useState(Math.floor(Math.random() * 2147483647));
     const [isLoading, setIsLoading] = useState(true);
     const [guestToken, setGuestToken] = useState(null);
+    const [selectedRoom, setSelectedRoom] = useState(null); // Room selection step
 
     // Load saved guest data on mount
     useEffect(() => {
@@ -179,6 +181,8 @@ export default function EntryScreen({ onJoin }) {
         : `/api/avatar/${sanitizeUsername(username) || 'guest'}?v=${characterSeed}`;
 
     const handleGuestJoin = async () => {
+        if (!selectedRoom) return; // Must have selected a room
+
         // Save to cookies for persistence with 1 year expiry
         const options = { maxAge: 60 * 60 * 24 * 365, path: '/' };
         setCookie('display_name', username, options);
@@ -195,12 +199,14 @@ export default function EntryScreen({ onJoin }) {
             role: session?.user?.role || 'USER',
             discordId: session?.user?.id,
             avatarSeed: characterSeed,
+            roomId: selectedRoom.slug,
+            roomName: selectedRoom.name,
             ircConfig: {
                 useIRC: true,
                 host: 'testnet.ergo.chat',
                 port: 6697,
                 nick: sanitizeUsername(username),
-                channel: '#camsrooms',
+                channel: selectedRoom.ircChannel || `#camrooms-${selectedRoom.slug}`,
                 username: sanitizeUsername(username)
             }
         };
@@ -263,15 +269,35 @@ export default function EntryScreen({ onJoin }) {
         );
     }
 
+    // Step 1: Room Selection
+    if (!selectedRoom) {
+        return (
+            <div className="entry-screen-container">
+                <div className="starmap-bg" />
+                <RoomBrowser
+                    onSelectRoom={setSelectedRoom}
+                    isDiscordUser={isDiscordUser}
+                />
+            </div>
+        );
+    }
+
+    // Step 2: Identity Selection
     return (
         <div className="entry-screen">
             <div className="starmap-bg" />
-            <div style={{ position: 'absolute', top: 10, left: 10, fontSize: '10px', color: 'rgba(255,255,255,0.5)', zIndex: 1000, pointerEvents: 'none' }}>
-                DEBUG: Status=[{status}] | User=[{session?.user?.name || 'None'}] | Role=[{session?.user?.role || 'None'}]
-            </div>
+            {/* Back Button */}
+            <button className="btn entry-back-btn" onClick={() => setSelectedRoom(null)}>
+                <Icon icon="fa:arrow-left" width="14" /> Back to Rooms
+            </button>
             <div className="entry-card">
+                {/* Room Badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--accent-surface)', borderRadius: 'var(--radius-sm)', marginBottom: '20px', fontSize: '13px', color: 'var(--accent-primary)' }}>
+                    <Icon icon="fa:comments" width="14" />
+                    Joining: <strong>{selectedRoom.name}</strong>
+                </div>
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '8px' }}>Chat</h1>
+                    <h1 style={{ fontSize: '24px', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '8px' }}>Choose Identity</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Join the channel</p>
                 </div>
 
@@ -367,12 +393,14 @@ export default function EntryScreen({ onJoin }) {
                                         verified: session.user.verified,
                                         role: session.user.role,
                                         isGuest: false,
+                                        roomId: selectedRoom.slug,
+                                        roomName: selectedRoom.name,
                                         ircConfig: {
                                             useIRC: true,
                                             host: 'testnet.ergo.chat',
                                             port: 6697,
                                             nick: finalName,
-                                            channel: '#camsrooms',
+                                            channel: selectedRoom.ircChannel || `#camrooms-${selectedRoom.slug}`,
                                             username: finalName
                                         }
                                     });
@@ -413,7 +441,7 @@ export default function EntryScreen({ onJoin }) {
                 </div>
 
                 <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Joining chat on testnet.ergo.chat
+                    Joining {selectedRoom.ircChannel || `#camrooms-${selectedRoom.slug}`} on testnet.ergo.chat
                 </div>
             </div>
         </div>
