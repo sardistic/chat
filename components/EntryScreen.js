@@ -111,6 +111,8 @@ function getCookie(name) {
 
 
 
+import ProfileModal from "@/components/ProfileModal";
+
 export default function EntryScreen({ onJoin, initialRoom = null }) {
     const { data: session, status } = useSession();
     const [username, setUsername] = useState("");
@@ -119,6 +121,11 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     const [guestToken, setGuestToken] = useState(null);
     const [selectedRoom, setSelectedRoom] = useState(initialRoom); // Room selection step
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+    // Feature States
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [showStatusInput, setShowStatusInput] = useState(false);
+    const [customStatus, setCustomStatus] = useState("");
 
     // Load saved guest data on mount
     useEffect(() => {
@@ -298,7 +305,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 {status === 'authenticated' && session?.user ? (
                     <div style={{ position: 'relative' }}>
                         <button
-                            onClick={() => setShowProfileMenu(!showProfileMenu)}
+                            onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '8px',
                                 background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
@@ -315,21 +322,29 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                         </button>
 
                         {showProfileMenu && (
-                            <div style={{
-                                position: 'absolute', top: '100%', right: 0, marginTop: '8px',
-                                width: '200px', background: '#1a1b20', border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                                zIndex: 100
-                            }}>
-                                <div style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Signed in as</div>
-                                    <div style={{ fontWeight: '600' }}>{session.user.name}</div>
+                            <div className="profile-menu" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', zIndex: 100 }}>
+                                <div style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
+                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{session.user.globalName || session.user.name}</div>
+                                    <div style={{ fontSize: '11px', color: '#3ba55d', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ width: '8px', height: '8px', background: '#3ba55d', borderRadius: '50%', display: 'inline-block' }}></span>
+                                        {customStatus || 'Online'}
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={() => signOut({ callbackUrl: '/' })}
-                                    style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}
-                                >
-                                    <Icon icon="fa:sign-out" width="14" /> Log Out
+
+                                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowProfileModal(true); }}>
+                                    <Icon icon="fa:user" width="16" /> View Profile
+                                </button>
+                                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>
+                                    <Icon icon="fa:comment" width="16" /> Set Status
+                                </button>
+                                <button className="menu-item disabled">
+                                    <Icon icon="fa:cog" width="16" /> Settings
+                                </button>
+
+                                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+
+                                <button className="menu-item danger" onClick={() => signOut({ callbackUrl: '/' })}>
+                                    <Icon icon="fa:sign-out" width="16" /> Disconnect
                                 </button>
                             </div>
                         )}
@@ -338,6 +353,40 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                     <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '12px' }}>Guest</div>
                 )}
             </div>
+
+            {/* Modals placed here to be available in all views */}
+            {showStatusInput && (
+                <div className="profile-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="profile-modal" style={{ padding: '20px', width: '300px', background: '#1E1E24', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Set Custom Status</h3>
+                        <input
+                            type="text"
+                            placeholder="What's on your mind?"
+                            value={customStatus}
+                            onChange={(e) => setCustomStatus(e.target.value)}
+                            maxLength={50}
+                            autoFocus
+                            className="chat-input"
+                            style={{ width: '100%', marginBottom: '12px' }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') setShowStatusInput(false);
+                                if (e.key === 'Escape') { setCustomStatus(''); setShowStatusInput(false); }
+                            }}
+                        />
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button className="btn" onClick={() => { setCustomStatus(''); setShowStatusInput(false); }}>Clear</button>
+                            <button className="btn primary" onClick={() => setShowStatusInput(false)}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <ProfileModal
+                user={session?.user}
+                isOpen={showProfileModal}
+                onClose={() => setShowProfileModal(false)}
+                currentUser={session?.user}
+            />
         </div>
     );
 
