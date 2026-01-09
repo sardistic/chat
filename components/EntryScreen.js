@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { setCookie } from "cookies-next";
 import { Icon } from '@iconify/react';
 import RoomBrowser from './RoomBrowser';
@@ -438,6 +438,24 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                         </svg>
                         {status === 'authenticated' ? <><Icon icon="fa:refresh" width="16" /> Switch Discord Account</> : 'Login with Discord'}
                     </button>
+
+                    {status === 'authenticated' && (
+                        <button
+                            className="btn"
+                            style={{
+                                width: '100%',
+                                padding: '10px',
+                                fontSize: '12px',
+                                justifyContent: 'center',
+                                background: 'rgba(255, 80, 80, 0.1)',
+                                border: '1px solid rgba(255, 80, 80, 0.2)',
+                                color: '#ff8080',
+                            }}
+                            onClick={() => signOut({ callbackUrl: '/' })}
+                        >
+                            Log Out
+                        </button>
+                    )}
                 </div>
 
                 <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: 'var(--text-muted)' }}>

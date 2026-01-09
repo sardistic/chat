@@ -900,13 +900,15 @@ export default function ClientApp({ initialRoom }) {
     document.cookie = 'avatar_seed=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.cookie = 'custom_nick=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 
-    // Sign out of NextAuth (if logged in with Discord)
+    // OPTIONAL: Sign out of NextAuth? 
+    // User Feedback: Keep session persistent so they can switch rooms easily.
+    // To logout completely, use the logout button in EntryScreen.
+    /* 
     try {
       const { signOut } = await import('next-auth/react');
       await signOut({ redirect: false });
-    } catch (e) {
-      // Ignore if not signed in
-    }
+    } catch (e) { } 
+    */
 
     // Reset to entry screen
     setUser(null);
