@@ -4,19 +4,24 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 
 // Helper to check if user is room owner or moderator
-async function isRoomAdmin(roomId, userId) {
-    // Check if user is creator
+async function isRoomAdmin(slug, userId) {
+    // First get the room ID handling the slug
     const room = await prisma.room.findUnique({
-        where: { slug: roomId },
-        select: { creatorId: true }
+        where: { slug },
+        select: { id: true, creatorId: true }
     });
 
-    if (room?.creatorId === userId) return 'OWNER';
+    if (!room) return null;
 
-    // Check if user is a moderator
+    if (room.creatorId === userId) return 'OWNER';
+
+    // Check if user is a moderator using the correct room ID
     const mod = await prisma.roomModerator.findUnique({
         where: {
-            roomId_userId: { roomId, userId }
+            roomId_userId: {
+                roomId: room.id,
+                userId
+            }
         }
     });
 
@@ -31,7 +36,7 @@ export async function PATCH(request, { params }) {
             return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
         }
 
-        const { slug } = params;
+        const { slug } = await params;
         const body = await request.json();
         const { name, description, iconUrl } = body;
 
@@ -80,7 +85,7 @@ export async function PATCH(request, { params }) {
 export async function GET(request, { params }) {
     try {
         const session = await getServerSession(authOptions);
-        const { slug } = params;
+        const { slug } = await params;
 
         const room = await prisma.room.findUnique({
             where: { slug },

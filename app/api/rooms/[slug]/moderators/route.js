@@ -20,7 +20,7 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
         }
 
-        const { slug } = params;
+        const { slug } = await params;
         const body = await request.json();
         const { userId } = body; // Discord User ID to add
 
@@ -76,7 +76,7 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
         }
 
-        const { slug } = params;
+        const { slug } = await params;
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
 
