@@ -1068,1151 +1068,834 @@ app.prepare().then(async () => {
         channel: historyBot.currentChannel,
         users
       });
-      // Explicit History Request (Fix for Room Switch / Reload)
-      socket.on('get-history', ({ roomId }) => {
-        console.log(`📜 [History] Manual request for ${roomId} from ${socket.id}`);
-        if (!roomId) return;
+    }
 
-        const rawHistory = messageHistory[roomId] || [];
-        const isUserMod = socket.data.user && ['ADMIN', 'MODERATOR', 'OWNER'].includes(socket.data.user.role);
+    // Explicit History Request (Fix for Room Switch / Reload)
+    socket.on('get-history', ({ roomId }) => {
+      console.log(`📜 [History] Manual request for ${roomId} from ${socket.id}`);
+      if (!roomId) return;
 
-        const filteredHistory = rawHistory.filter(msg => {
-          if (msg.isWiped && !isUserMod) return false;
-          return true;
-        });
+      const rawHistory = messageHistory[roomId] || [];
+      const isUserMod = socket.data.user && ['ADMIN', 'MODERATOR', 'OWNER'].includes(socket.data.user.role);
 
-        const historyWithReactions = filteredHistory.map(msg => {
-          const reactionsMap = messageReactions.get(msg.id);
-          let reactions = {};
-          if (reactionsMap) {
-            for (const [emoji, users] of reactionsMap.entries()) {
-              reactions[emoji] = {
-                count: users.size,
-                users: Array.from(users),
-                hasReacted: socket.data.user ? users.has(socket.data.user.id) : false
-              };
-            }
-          }
-          return { ...msg, reactions };
-        });
-
-        socket.emit("chat-history", historyWithReactions);
+      const filteredHistory = rawHistory.filter(msg => {
+        if (msg.isWiped && !isUserMod) return false;
+        return true;
       });
 
-      // Handle room joining (Unified)
-      socket.on('join-room', async ({ roomId, user, ircConfig }) => {
-        console.log(`👤 User ${user.name} (${socket.id}) joining room ${roomId}`);
-
-        socket.join(roomId);
-
-        // Store user data on socket
-        if (!user.role) user.role = 'USER'; // Robustness: Ensure role exists
-        socket.data.user = user;
-        socket.data.roomId = roomId;
-        lastKnownUsers.set(socket.id, { user, roomId });
-
-        // Initialize room logic
-        if (!rooms.has(roomId)) {
-          rooms.set(roomId, new Map());
-        }
-        if (!messageHistory[roomId]) {
-          messageHistory[roomId] = [];
-        }
-
-        // Tell HistoryBot to join this room's IRC channel
-        if (historyBot && historyBot.isConnected && ircConfig?.channel) {
-          historyBot.joinChannel(ircConfig.channel, roomId);
-        }
-
-        const room = rooms.get(roomId);
-
-        // Notify existing users
-        const existingUsers = Array.from(room.entries()).map(([socketId, userData]) => ({
-          socketId,
-          user: userData
-        }));
-
-        // Add user to room map
-        room.set(socket.id, user);
-
-        // Send initial data to joining user
-        socket.emit("existing-users", { users: existingUsers });
-
-        // Prepare history with reactions, filtering wiped messages for non-mods
-        const rawHistory = messageHistory[roomId] || [];
-        const isModUser = ['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role);
-        const filteredHistory = rawHistory.filter(msg => {
-          // Show all messages to mods, hide wiped for regular users
-          if (msg.isWiped && !isModUser) return false;
-          return true;
-        });
-        const historyWithReactions = filteredHistory.map(msg => {
-          const reactionsMap = messageReactions.get(msg.id);
-          let reactions = {};
-          if (reactionsMap) {
-            for (const [emoji, users] of reactionsMap.entries()) {
-              reactions[emoji] = {
-                count: users.size,
-                users: Array.from(users),
-                hasReacted: users.has(user.id)
-              };
-            }
-          }
-          return { ...msg, reactions };
-        });
-        socket.emit("chat-history", historyWithReactions);
-
-        // Notify others
-        socket.to(roomId).emit("user-joined", { socketId: socket.id, user });
-        socket.to(roomId).emit("user-connected", { socketId: socket.id, user }); // Keep compatibility
-
-        // System Message: Join
-        // System Message: Join (Smart Bundling)
-        // System Message: Join (Smart Bundling)
-        let activeBundle = getBundle(roomId, 'join');
-
-        // Attempt rehydration from history (Fix for server restarts/refresh creating duplicates)
-        if (!activeBundle && messageHistory[roomId] && messageHistory[roomId].length > 0) {
-          const lastMsg = messageHistory[roomId][messageHistory[roomId].length - 1];
-          if (lastMsg.systemType === 'join-leave') {
-            const logTime = new Date(lastMsg.timestamp).getTime();
-            if (Date.now() - logTime < 120000) { // 2 minute window for rehydration
-              console.log(`[SmartBundle] Rehydrating join bundle ${lastMsg.id} from history`);
-              const rawUsers = lastMsg.metadata?.users || [];
-              // Deduplicate rehydrated users by name just in case
-              const cleanUsers = [];
-              const seenNames = new Set();
-              rawUsers.forEach(u => {
-                if (u && u.name && !seenNames.has(u.name)) {
-                  cleanUsers.push(u);
-                  seenNames.add(u.name);
-                }
-              });
-              setBundle(roomId, 'join', lastMsg.id, cleanUsers);
-              activeBundle = getBundle(roomId, 'join');
-            }
+      const historyWithReactions = filteredHistory.map(msg => {
+        const reactionsMap = messageReactions.get(msg.id);
+        let reactions = {};
+        if (reactionsMap) {
+          for (const [emoji, users] of reactionsMap.entries()) {
+            reactions[emoji] = {
+              count: users.size,
+              users: Array.from(users),
+              hasReacted: socket.data.user ? users.has(socket.data.user.id) : false
+            };
           }
         }
-        let joinMsgId;
-        const userMeta = { ...user, action: 'joined', timestamp: Date.now() };
+        return { ...msg, reactions };
+      });
 
-        if (activeBundle) {
-          joinMsgId = activeBundle.id;
-          // Strictly deduplicate by name or ID, and update latest info (avatar/role)
-          const existingIdx = activeBundle.users.findIndex(u => (u.id && u.id === user.id) || u.name === user.name);
+      socket.emit("chat-history", historyWithReactions);
+    });
 
-          if (existingIdx !== -1) {
-            // Update existing entry with freshest info
-            activeBundle.users[existingIdx] = { ...activeBundle.users[existingIdx], ...userMeta };
-          } else {
-            activeBundle.users.push(userMeta);
+    // Handle room joining (Unified)
+    socket.on('join-room', async ({ roomId, user, ircConfig }) => {
+      console.log(`👤 User ${user.name} (${socket.id}) joining room ${roomId}`);
+
+      socket.join(roomId);
+
+      // Store user data on socket
+      if (!user.role) user.role = 'USER'; // Robustness: Ensure role exists
+      socket.data.user = user;
+      socket.data.roomId = roomId;
+      lastKnownUsers.set(socket.id, { user, roomId });
+
+      // Initialize room logic
+      if (!rooms.has(roomId)) {
+        rooms.set(roomId, new Map());
+      }
+      if (!messageHistory[roomId]) {
+        messageHistory[roomId] = [];
+      }
+
+      // Tell HistoryBot to join this room's IRC channel
+      if (historyBot && historyBot.isConnected && ircConfig?.channel) {
+        historyBot.joinChannel(ircConfig.channel, roomId);
+      }
+
+      const room = rooms.get(roomId);
+
+      // Notify existing users
+      const existingUsers = Array.from(room.entries()).map(([socketId, userData]) => ({
+        socketId,
+        user: userData
+      }));
+
+      // Add user to room map
+      room.set(socket.id, user);
+
+      // Send initial data to joining user
+      socket.emit("existing-users", { users: existingUsers });
+
+      // Prepare history with reactions, filtering wiped messages for non-mods
+      const rawHistory = messageHistory[roomId] || [];
+      const isModUser = ['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role);
+      const filteredHistory = rawHistory.filter(msg => {
+        // Show all messages to mods, hide wiped for regular users
+        if (msg.isWiped && !isModUser) return false;
+        return true;
+      });
+      const historyWithReactions = filteredHistory.map(msg => {
+        const reactionsMap = messageReactions.get(msg.id);
+        let reactions = {};
+        if (reactionsMap) {
+          for (const [emoji, users] of reactionsMap.entries()) {
+            reactions[emoji] = {
+              count: users.size,
+              users: Array.from(users),
+              hasReacted: users.has(user.id)
+            };
           }
+        }
+        return { ...msg, reactions };
+      });
+      socket.emit("chat-history", historyWithReactions);
 
-          const total = activeBundle.users.length;
-          const activeCount = activeBundle.users.filter(u => u.action === 'joined').length;
+      // Notify others
+      socket.to(roomId).emit("user-joined", { socketId: socket.id, user });
+      socket.to(roomId).emit("user-connected", { socketId: socket.id, user }); // Keep compatibility
 
-          const updateMsg = {
-            id: joinMsgId,
-            roomId,
-            sender: 'System',
-            text: total === 1 && activeCount === 1
-              ? `${activeBundle.users[0].name} popped in!`
-              : `${total} Users visited (${activeCount} active)`,
-            type: 'system',
-            systemType: 'join-leave',
-            metadata: { users: [...activeBundle.users] },
-            timestamp: new Date().toISOString()
-          };
+      // System Message: Join
+      // System Message: Join (Smart Bundling)
+      // System Message: Join (Smart Bundling)
+      let activeBundle = getBundle(roomId, 'join');
 
-          if (messageHistory[roomId]) {
-            const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
-            if (idx !== -1) {
-              messageHistory[roomId][idx] = updateMsg;
-            }
+      // Attempt rehydration from history (Fix for server restarts/refresh creating duplicates)
+      if (!activeBundle && messageHistory[roomId] && messageHistory[roomId].length > 0) {
+        const lastMsg = messageHistory[roomId][messageHistory[roomId].length - 1];
+        if (lastMsg.systemType === 'join-leave') {
+          const logTime = new Date(lastMsg.timestamp).getTime();
+          if (Date.now() - logTime < 120000) { // 2 minute window for rehydration
+            console.log(`[SmartBundle] Rehydrating join bundle ${lastMsg.id} from history`);
+            const rawUsers = lastMsg.metadata?.users || [];
+            // Deduplicate rehydrated users by name just in case
+            const cleanUsers = [];
+            const seenNames = new Set();
+            rawUsers.forEach(u => {
+              if (u && u.name && !seenNames.has(u.name)) {
+                cleanUsers.push(u);
+                seenNames.add(u.name);
+              }
+            });
+            setBundle(roomId, 'join', lastMsg.id, cleanUsers);
+            activeBundle = getBundle(roomId, 'join');
           }
-          saveMessageToDB(updateMsg);
-          io.to(roomId).emit('chat-message-update', updateMsg);
+        }
+      }
+      let joinMsgId;
+      const userMeta = { ...user, action: 'joined', timestamp: Date.now() };
+
+      if (activeBundle) {
+        joinMsgId = activeBundle.id;
+        // Strictly deduplicate by name or ID, and update latest info (avatar/role)
+        const existingIdx = activeBundle.users.findIndex(u => (u.id && u.id === user.id) || u.name === user.name);
+
+        if (existingIdx !== -1) {
+          // Update existing entry with freshest info
+          activeBundle.users[existingIdx] = { ...activeBundle.users[existingIdx], ...userMeta };
         } else {
-          // Check if user already joined recently (prevent duplicate "popped in" on refresh)
-          // If there's an active bundle, we might want to just update it even if it's "expired" for new users?
-          // Better: Check if THIS user is already in the last join message if it's recent enough to be relevant.
-          // Actually, just expanding the bundle logic is safer.
-
-          joinMsgId = `sys-${Date.now()}`;
-          const users = [userMeta];
-          const joinMsg = {
-            roomId,
-            id: joinMsgId,
-            sender: 'System',
-            text: `${user.name || 'Someone'} popped in!`,
-            type: 'system',
-            systemType: 'join-leave',
-            metadata: { users },
-            timestamp: new Date().toISOString()
-          };
-          setBundle(roomId, 'join', joinMsgId, users);
-          storeMessage(roomId, joinMsg);
-          io.to(roomId).emit('chat-message', joinMsg);
+          activeBundle.users.push(userMeta);
         }
 
-        socket.data.joinMsgId = joinMsgId;
+        const total = activeBundle.users.length;
+        const activeCount = activeBundle.users.filter(u => u.action === 'joined').length;
 
-        // Create per-user IRC connection via rate-limited queue
-        // Each user gets their own IRC connection like KiwiIRC/Twitch
-        const derivedNick = user.name.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 15);
-
-        // Update user with their IRC nick for filtering duplicates
-        user.ircNick = derivedNick;
-        room.set(socket.id, user); // Update room with new field
-
-        const userIrcConfig = {
-          nick: derivedNick,
-          username: 'camrooms_' + user.name.slice(0, 8),
-          channel: '#camsrooms',
-          useIRC: true
+        const updateMsg = {
+          id: joinMsgId,
+          roomId,
+          sender: 'System',
+          text: total === 1 && activeCount === 1
+            ? `${activeBundle.users[0].name} popped in!`
+            : `${total} Users visited (${activeCount} active)`,
+          type: 'system',
+          systemType: 'join-leave',
+          metadata: { users: [...activeBundle.users] },
+          timestamp: new Date().toISOString()
         };
 
-        const bridgeOptions = {
-          shouldIgnoreSender: (senderNick) => {
-            // Ignore messages from anyone currently connected to this room via Web
-            const r = rooms.get(roomId);
-            if (!r) return false;
-            for (const u of r.values()) {
-              if (u.ircNick && u.ircNick.toLowerCase() === senderNick.toLowerCase()) return true;
-            }
-            return false;
+        if (messageHistory[roomId]) {
+          const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
+          if (idx !== -1) {
+            messageHistory[roomId][idx] = updateMsg;
           }
+        }
+        saveMessageToDB(updateMsg);
+        io.to(roomId).emit('chat-message-update', updateMsg);
+      } else {
+        // Check if user already joined recently (prevent duplicate "popped in" on refresh)
+        // If there's an active bundle, we might want to just update it even if it's "expired" for new users?
+        // Better: Check if THIS user is already in the last join message if it's recent enough to be relevant.
+        // Actually, just expanding the bundle logic is safer.
+
+        joinMsgId = `sys-${Date.now()}`;
+        const users = [userMeta];
+        const joinMsg = {
+          roomId,
+          id: joinMsgId,
+          sender: 'System',
+          text: `${user.name || 'Someone'} popped in!`,
+          type: 'system',
+          systemType: 'join-leave',
+          metadata: { users },
+          timestamp: new Date().toISOString()
         };
+        setBundle(roomId, 'join', joinMsgId, users);
+        storeMessage(roomId, joinMsg);
+        io.to(roomId).emit('chat-message', joinMsg);
+      }
 
-        // DISABLED: User IRC connections now handled client-side to prevent G-lines
+      socket.data.joinMsgId = joinMsgId;
 
-        queueIrcConnection(socket, user, userIrcConfig, (err, bridge) => {
-          if (err) {
-            console.error(`[IRC] Failed to create bridge for ${user.name}:`, err);
-            socket.emit('irc-error', { message: 'IRC connection queued - please wait' });
-          } else {
-            console.log(`[IRC] ✅ Bridge created for ${user.name}`);
+      // Create per-user IRC connection via rate-limited queue
+      // Each user gets their own IRC connection like KiwiIRC/Twitch
+      const derivedNick = user.name.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 15);
+
+      // Update user with their IRC nick for filtering duplicates
+      user.ircNick = derivedNick;
+      room.set(socket.id, user); // Update room with new field
+
+      const userIrcConfig = {
+        nick: derivedNick,
+        username: 'camrooms_' + user.name.slice(0, 8),
+        channel: '#camsrooms',
+        useIRC: true
+      };
+
+      const bridgeOptions = {
+        shouldIgnoreSender: (senderNick) => {
+          // Ignore messages from anyone currently connected to this room via Web
+          const r = rooms.get(roomId);
+          if (!r) return false;
+          for (const u of r.values()) {
+            if (u.ircNick && u.ircNick.toLowerCase() === senderNick.toLowerCase()) return true;
           }
-        }, bridgeOptions);
+          return false;
+        }
+      };
 
-        console.log(`✅ ${user.name} joined room ${roomId}. Total users: ${room.size}`);
+      // DISABLED: User IRC connections now handled client-side to prevent G-lines
+
+      queueIrcConnection(socket, user, userIrcConfig, (err, bridge) => {
+        if (err) {
+          console.error(`[IRC] Failed to create bridge for ${user.name}:`, err);
+          socket.emit('irc-error', { message: 'IRC connection queued - please wait' });
+        } else {
+          console.log(`[IRC] ✅ Bridge created for ${user.name}`);
+        }
+      }, bridgeOptions);
+
+      console.log(`✅ ${user.name} joined room ${roomId}. Total users: ${room.size}`);
+
+      // Update room member count in database
+      try {
+        await prisma.room.update({
+          where: { slug: roomId },
+          data: {
+            memberCount: room.size,
+            lastActive: new Date()
+          }
+        });
+      } catch (e) {
+        // Room might not exist in DB (e.g., old "default-room"), ignore
+        console.log(`[Room] Could not update member count for ${roomId}:`, e.message);
+      }
+    });
+
+    // Request streams from broadcasters (new user wants to receive existing broadcasts)
+    socket.on("request-streams", ({ roomId }) => {
+      const room = rooms.get(roomId);
+      if (!room) return;
+
+      // Find all users who are currently broadcasting video
+      const broadcasters = [];
+      room.forEach((userData, socketId) => {
+        if (socketId !== socket.id && userData.isVideoEnabled) {
+          broadcasters.push(socketId);
+        }
+      });
+
+      if (broadcasters.length > 0) {
+        console.log(`📡 ${socket.id} requesting streams from ${broadcasters.length} broadcasters`);
+        // Tell each broadcaster to initiate a peer connection to the new user
+        broadcasters.forEach(broadcasterId => {
+          io.to(broadcasterId).emit("connect-to-peer", { peerId: socket.id });
+        });
+      }
+    });
+
+    // Handle Leave
+    socket.on("leave-room", async (roomId) => {
+      socket.leave(roomId);
+      console.log(`User ${socket.id} left room ${roomId}`);
+
+      const room = rooms.get(roomId);
+      // Get username from room map first, then socket.data as fallback
+      const fallback = lastKnownUsers.get(socket.id);
+      let userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
+      if (room) {
+        const u = room.get(socket.id);
+        if (u?.name) userName = u.name;
+        room.delete(socket.id);
 
         // Update room member count in database
         try {
           await prisma.room.update({
             where: { slug: roomId },
-            data: {
-              memberCount: room.size,
-              lastActive: new Date()
-            }
+            data: { memberCount: room.size }
           });
         } catch (e) {
-          // Room might not exist in DB (e.g., old "default-room"), ignore
-          console.log(`[Room] Could not update member count for ${roomId}:`, e.message);
-        }
-      });
-
-      // Request streams from broadcasters (new user wants to receive existing broadcasts)
-      socket.on("request-streams", ({ roomId }) => {
-        const room = rooms.get(roomId);
-        if (!room) return;
-
-        // Find all users who are currently broadcasting video
-        const broadcasters = [];
-        room.forEach((userData, socketId) => {
-          if (socketId !== socket.id && userData.isVideoEnabled) {
-            broadcasters.push(socketId);
-          }
-        });
-
-        if (broadcasters.length > 0) {
-          console.log(`📡 ${socket.id} requesting streams from ${broadcasters.length} broadcasters`);
-          // Tell each broadcaster to initiate a peer connection to the new user
-          broadcasters.forEach(broadcasterId => {
-            io.to(broadcasterId).emit("connect-to-peer", { peerId: socket.id });
-          });
-        }
-      });
-
-      // Handle Leave
-      socket.on("leave-room", async (roomId) => {
-        socket.leave(roomId);
-        console.log(`User ${socket.id} left room ${roomId}`);
-
-        const room = rooms.get(roomId);
-        // Get username from room map first, then socket.data as fallback
-        const fallback = lastKnownUsers.get(socket.id);
-        let userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
-        if (room) {
-          const u = room.get(socket.id);
-          if (u?.name) userName = u.name;
-          room.delete(socket.id);
-
-          // Update room member count in database
-          try {
-            await prisma.room.update({
-              where: { slug: roomId },
-              data: { memberCount: room.size }
-            });
-          } catch (e) {
-            // Room might not exist in DB, ignore
-          }
-
-          if (room.size === 0) rooms.delete(roomId);
+          // Room might not exist in DB, ignore
         }
 
-        socket.to(roomId).emit("user-left", { socketId: socket.id });
-        socket.to(roomId).emit("user-disconnected", socket.id);
+        if (room.size === 0) rooms.delete(roomId);
+      }
 
-        // System Message: Leave
-        // System Message: Leave (Smart Bundling)
-        const activeBundle = getBundle(roomId, 'leave');
-        let leaveMsgId;
-        const userMeta = { name: userName, action: 'left', timestamp: Date.now() };
+      socket.to(roomId).emit("user-left", { socketId: socket.id });
+      socket.to(roomId).emit("user-disconnected", socket.id);
 
-        if (activeBundle) {
-          leaveMsgId = activeBundle.id;
-          activeBundle.users.push(userMeta);
-          const uniqueUsers = activeBundle.users.length;
+      // System Message: Leave
+      // System Message: Leave (Smart Bundling)
+      const activeBundle = getBundle(roomId, 'leave');
+      let leaveMsgId;
+      const userMeta = { name: userName, action: 'left', timestamp: Date.now() };
 
-          let text = `💨 ${uniqueUsers} Users floated away...`;
-          // Optional: List names if small count? "A, B left..." - User asked to match join style "X Users..."
+      if (activeBundle) {
+        leaveMsgId = activeBundle.id;
+        activeBundle.users.push(userMeta);
+        const uniqueUsers = activeBundle.users.length;
 
-          const updateMsg = {
-            id: leaveMsgId,
-            roomId,
-            sender: 'System',
-            text,
-            type: 'system',
-            systemType: 'join-leave',
-            metadata: { users: activeBundle.users },
-            timestamp: new Date().toISOString()
-          };
+        let text = `💨 ${uniqueUsers} Users floated away...`;
+        // Optional: List names if small count? "A, B left..." - User asked to match join style "X Users..."
 
-          if (messageHistory[roomId]) {
-            const idx = messageHistory[roomId].findIndex(m => m.id === leaveMsgId);
-            if (idx !== -1) {
-              messageHistory[roomId][idx] = updateMsg;
-            }
-          }
-          saveMessageToDB(updateMsg);
-          io.to(roomId).emit('chat-message-update', updateMsg);
-        } else {
-          leaveMsgId = `sys-${Date.now()}`;
-          const users = [userMeta];
-          const leaveMsg = {
-            roomId,
-            id: leaveMsgId,
-            sender: 'System',
-            text: `💨 ${userName} floated away...`,
-            type: 'system',
-            systemType: 'join-leave',
-            metadata: { users },
-            timestamp: new Date().toISOString()
-          };
-          setBundle(roomId, 'leave', leaveMsgId, users);
-          storeMessage(roomId, leaveMsg);
-          io.to(roomId).emit('chat-message', leaveMsg);
-        }
-
-        // Cleanup IRC
-        if (socket.data.ircBridge) {
-          socket.data.ircBridge.disconnect();
-          socket.data.ircBridge = null;
-        }
-      });
-
-      // WebRTC Signaling
-      socket.on("signal", (data) => {
-        io.to(data.target).emit("signal", {
-          sender: socket.id,
-          payload: data.payload
-        });
-      });
-
-      // Change Nickname (/nick command)
-      socket.on('change-nick', async ({ newNick }) => {
-        const user = socket.data.user;
-        const roomId = socket.data.roomId;
-        if (!user || !roomId) return;
-
-        const oldName = user.name;
-        console.log(`[Nick] ${oldName} changing nick to ${newNick}`);
-
-        // Update socket data
-        user.name = newNick;
-        socket.data.user = user;
-
-        // Update room map
-        const room = rooms.get(roomId);
-        if (room) {
-          room.set(socket.id, user);
-        }
-
-        // Persist to database if user has an ID (registered user)
-        if (user.id) {
-          try {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { displayName: newNick }
-            });
-            console.log(`[Nick] Persisted displayName for ${user.id}: ${newNick}`);
-          } catch (e) {
-            console.error(`[Nick] Failed to persist displayName:`, e.message);
-          }
-        }
-
-        // Change IRC nick if bridge exists
-        if (socket.data.ircBridge) {
-          socket.data.ircBridge.client.changeNick(newNick);
-        }
-
-        // Broadcast nick change to room
-        io.to(roomId).emit('user-updated', { socketId: socket.id, user });
-
-        // Send system message about nick change
-        const sysMsg = {
-          id: `nick-${Date.now()}`,
+        const updateMsg = {
+          id: leaveMsgId,
           roomId,
-          text: `**${oldName}** is now known as **${newNick}**`,
           sender: 'System',
+          text,
           type: 'system',
-          systemType: 'nick-change',
+          systemType: 'join-leave',
+          metadata: { users: activeBundle.users },
           timestamp: new Date().toISOString()
         };
-        storeMessage(roomId, sysMsg);
-        io.to(roomId).emit('chat-message', sysMsg);
 
-        // Emit nick-changed to sender so they can update local state
-        socket.emit('nick-changed', { newNick });
+        if (messageHistory[roomId]) {
+          const idx = messageHistory[roomId].findIndex(m => m.id === leaveMsgId);
+          if (idx !== -1) {
+            messageHistory[roomId][idx] = updateMsg;
+          }
+        }
+        saveMessageToDB(updateMsg);
+        io.to(roomId).emit('chat-message-update', updateMsg);
+      } else {
+        leaveMsgId = `sys-${Date.now()}`;
+        const users = [userMeta];
+        const leaveMsg = {
+          roomId,
+          id: leaveMsgId,
+          sender: 'System',
+          text: `💨 ${userName} floated away...`,
+          type: 'system',
+          systemType: 'join-leave',
+          metadata: { users },
+          timestamp: new Date().toISOString()
+        };
+        setBundle(roomId, 'leave', leaveMsgId, users);
+        storeMessage(roomId, leaveMsg);
+        io.to(roomId).emit('chat-message', leaveMsg);
+      }
+
+      // Cleanup IRC
+      if (socket.data.ircBridge) {
+        socket.data.ircBridge.disconnect();
+        socket.data.ircBridge = null;
+      }
+    });
+
+    // WebRTC Signaling
+    socket.on("signal", (data) => {
+      io.to(data.target).emit("signal", {
+        sender: socket.id,
+        payload: data.payload
       });
+    });
 
-      // Handle User Updates (e.g. formatting, cam status)
-      socket.on('update-user', (updates) => {
-        const { roomId, user } = socket.data;
-        if (!roomId || !rooms.has(roomId)) return;
+    // Change Nickname (/nick command)
+    socket.on('change-nick', async ({ newNick }) => {
+      const user = socket.data.user;
+      const roomId = socket.data.roomId;
+      if (!user || !roomId) return;
 
-        const room = rooms.get(roomId);
-        const userData = room.get(socket.id);
+      const oldName = user.name;
+      console.log(`[Nick] ${oldName} changing nick to ${newNick}`);
 
-        if (userData) {
-          // Check for Cam Toggle
-          const wasVideoEnabled = userData.isVideoEnabled;
-          const isVideoEnabled = updates.isVideoEnabled;
-          const camToggled = (isVideoEnabled !== undefined) && (isVideoEnabled !== wasVideoEnabled);
+      // Update socket data
+      user.name = newNick;
+      socket.data.user = user;
 
-          // Apply Updates
-          Object.assign(userData, updates);
-          room.set(socket.id, userData); // Update map
+      // Update room map
+      const room = rooms.get(roomId);
+      if (room) {
+        room.set(socket.id, user);
+      }
 
-          // Broadcast Update to others
-          socket.to(roomId).emit('user-updated', { socketId: socket.id, user: userData });
+      // Persist to database if user has an ID (registered user)
+      if (user.id) {
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { displayName: newNick }
+          });
+          console.log(`[Nick] Persisted displayName for ${user.id}: ${newNick}`);
+        } catch (e) {
+          console.error(`[Nick] Failed to persist displayName:`, e.message);
+        }
+      }
 
-          // --- Smart Bundling: CAM ---
-          if (camToggled) {
-            const action = isVideoEnabled ? 'cam-up' : 'cam-down';
-            const activeBundle = getBundle(roomId, 'cam');
-            let bundleId;
+      // Change IRC nick if bridge exists
+      if (socket.data.ircBridge) {
+        socket.data.ircBridge.client.changeNick(newNick);
+      }
 
-            const userMeta = { ...user, action, timestamp: Date.now() };
+      // Broadcast nick change to room
+      io.to(roomId).emit('user-updated', { socketId: socket.id, user });
 
-            if (activeBundle) {
-              // Update Bundle
-              bundleId = activeBundle.id;
-              const userInBundle = activeBundle.users.find(u => u.name === user.name);
-              if (userInBundle) {
-                // Overwrite previous action if recent? OR append?
-                // "A started... and stopped" -> action: 'cam-flash'
-                if (userInBundle.action !== action) {
-                  // E.g. cam-up + cam-down = cam-flash?
-                  // Or just update to latest state?
-                  userInBundle.action = action; // Just update to latest
-                }
-              } else {
-                activeBundle.users.push(userMeta);
+      // Send system message about nick change
+      const sysMsg = {
+        id: `nick-${Date.now()}`,
+        roomId,
+        text: `**${oldName}** is now known as **${newNick}**`,
+        sender: 'System',
+        type: 'system',
+        systemType: 'nick-change',
+        timestamp: new Date().toISOString()
+      };
+      storeMessage(roomId, sysMsg);
+      io.to(roomId).emit('chat-message', sysMsg);
+
+      // Emit nick-changed to sender so they can update local state
+      socket.emit('nick-changed', { newNick });
+    });
+
+    // Handle User Updates (e.g. formatting, cam status)
+    socket.on('update-user', (updates) => {
+      const { roomId, user } = socket.data;
+      if (!roomId || !rooms.has(roomId)) return;
+
+      const room = rooms.get(roomId);
+      const userData = room.get(socket.id);
+
+      if (userData) {
+        // Check for Cam Toggle
+        const wasVideoEnabled = userData.isVideoEnabled;
+        const isVideoEnabled = updates.isVideoEnabled;
+        const camToggled = (isVideoEnabled !== undefined) && (isVideoEnabled !== wasVideoEnabled);
+
+        // Apply Updates
+        Object.assign(userData, updates);
+        room.set(socket.id, userData); // Update map
+
+        // Broadcast Update to others
+        socket.to(roomId).emit('user-updated', { socketId: socket.id, user: userData });
+
+        // --- Smart Bundling: CAM ---
+        if (camToggled) {
+          const action = isVideoEnabled ? 'cam-up' : 'cam-down';
+          const activeBundle = getBundle(roomId, 'cam');
+          let bundleId;
+
+          const userMeta = { ...user, action, timestamp: Date.now() };
+
+          if (activeBundle) {
+            // Update Bundle
+            bundleId = activeBundle.id;
+            const userInBundle = activeBundle.users.find(u => u.name === user.name);
+            if (userInBundle) {
+              // Overwrite previous action if recent? OR append?
+              // "A started... and stopped" -> action: 'cam-flash'
+              if (userInBundle.action !== action) {
+                // E.g. cam-up + cam-down = cam-flash?
+                // Or just update to latest state?
+                userInBundle.action = action; // Just update to latest
               }
-
-              const total = activeBundle.users.length;
-              const up = activeBundle.users.filter(u => u.action === 'cam-up').length;
-
-              // Text Logic: "3 Users updated camera" or "3 Users live!"
-              let text = `${total} Users updated camera`;
-              if (up === total) text = `${total} Users went live!`;
-              else text = `Cam check: ${up} live, ${total - up} off`;
-
-              const updateMsg = {
-                id: bundleId,
-                roomId,
-                sender: 'System',
-                text,
-                type: 'system',
-                systemType: 'join-leave', // Use same minimal style
-                metadata: { users: activeBundle.users },
-                timestamp: new Date().toISOString()
-              };
-
-              if (messageHistory[roomId]) {
-                const idx = messageHistory[roomId].findIndex(m => m.id === bundleId);
-                if (idx !== -1) {
-                  messageHistory[roomId][idx] = updateMsg;
-                }
-              }
-              saveMessageToDB(updateMsg);
-              io.to(roomId).emit('chat-message-update', updateMsg);
-
             } else {
-              // Create New Bundle
-              bundleId = `sys-cam-${Date.now()}`;
-              const users = [userMeta];
-
-              let text = `${user.name} went live!`;
-              if (!isVideoEnabled) text = `${user.name} turned off camera.`;
-
-              const camMsg = {
-                roomId,
-                id: bundleId,
-                sender: 'System',
-                text,
-                type: 'system',
-                systemType: 'join-leave', // Use minimal style
-                metadata: { users },
-                timestamp: new Date().toISOString()
-              };
-
-              setBundle(roomId, 'cam', bundleId, users);
-              storeMessage(roomId, camMsg);
-              io.to(roomId).emit('chat-message', camMsg);
-            }
-          }
-        }
-      });
-
-      // Chat Messages
-      socket.on('chat-message', (message) => {
-        if (!message.timestamp) message.timestamp = new Date().toISOString();
-
-        // Automod Filter
-        if (message.text) {
-          message.text = filterProfanity(message.text);
-        }
-
-        const senderId = socket.data.user?.id;
-        const senderName = socket.data.user?.name || message.sender;
-        // Check shadow mute by ID or by name key (for IRC users)
-        const isShadowMuted = (senderId && shadowMutedUsers.has(senderId)) ||
-          (senderName && shadowMutedUsers.has(`name:${senderName}`));
-
-        if (isShadowMuted) {
-          // Shadow muted: Only send to mods with indicator
-          const mutedMessage = { ...message, shadowMuted: true };
-
-          // Find all mod sockets in this room
-          const room = rooms.get(message.roomId);
-          if (room) {
-            room.forEach((user, socketId) => {
-              if (['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role)) {
-                io.to(socketId).emit('chat-message', mutedMessage);
-              }
-            });
-          }
-          // Do NOT store or broadcast to others
-          console.log(`[Mod] Shadow muted message from ${senderName} blocked`);
-          return;
-        }
-
-        storeMessage(message.roomId, message);
-        io.to(message.roomId).emit('chat-message', message);
-
-        if (socket.data.ircBridge) {
-          socket.data.ircBridge.sendToIRC(message);
-        }
-
-        // Track Message Stats
-        if (socket.data.user && socket.data.user.id) {
-          prisma.userStats.upsert({
-            where: { userId: socket.data.user.id },
-            create: { userId: socket.data.user.id, messagesSent: 1, chatPoints: 1 },
-            update: { messagesSent: { increment: 1 }, chatPoints: { increment: 1 } }
-          }).catch(e => console.error("[Stats] Failed to track message:", e.message));
-        }
-      });
-
-      // Typing
-      socket.on("typing", ({ roomId, user }) => {
-        socket.to(roomId).emit("user-typing", { user });
-      });
-
-      socket.on("stop-typing", ({ roomId }) => {
-        socket.to(roomId).emit("user-stop-typing", { user: socket.data.user?.name });
-      });
-
-      // Manual History Request
-      socket.on('get-history', ({ roomId }) => {
-        const history = messageHistory[roomId] || [];
-        socket.emit('chat-history', history);
-      });
-
-      // Reactions
-      socket.on("reaction", ({ roomId, targetId, emoji }) => {
-        // Broadcast to everyone in the room (including sender, simplifies logic)
-        io.to(roomId).emit("reaction", {
-          senderId: socket.id,
-          targetId, // If null, it's a general room reaction? For now, we assume user-specific.
-          emoji,
-          timestamp: Date.now()
-        });
-
-        // Track Reaction Stats
-        if (socket.data.user && socket.data.user.id) {
-          // Giver
-          prisma.userStats.upsert({
-            where: { userId: socket.data.user.id },
-            create: { userId: socket.data.user.id, emotesGiven: 1, chatPoints: 1 },
-            update: { emotesGiven: { increment: 1 }, chatPoints: { increment: 1 } }
-          }).catch(e => console.error("[Stats] Failed to track reaction give:", e.message));
-        }
-
-        // Receiver (Find user by socket/targetId?)
-        // targetId is likely a socketId or userId. The reaction event assumes socketId usually.
-        // We need to resolve targetId to a user ID.
-        // Since rooms map stores users by socketId, we can look it up.
-        const room = rooms.get(roomId);
-        if (room && targetId && room.has(targetId)) {
-          const targetUser = room.get(targetId);
-          if (targetUser && targetUser.id) {
-            prisma.userStats.upsert({
-              where: { userId: targetUser.id },
-              create: { userId: targetUser.id, emotesReceived: 1, chatPoints: 1 },
-              update: { emotesReceived: { increment: 1 }, chatPoints: { increment: 1 } }
-            }).catch(e => console.error("[Stats] Failed to track reaction receive:", e.message));
-          }
-        }
-      });
-
-      // === MESSAGE REACTIONS (Discord-style) ===
-      socket.on('message-react', ({ messageId, emoji }) => {
-        const roomId = socket.data.roomId || 'default-room';
-        const userId = socket.data.user?.id || socket.id;
-        const userName = socket.data.user?.name || 'Someone';
-
-        if (!messageId || !emoji) return;
-
-        // Initialize reaction storage for this message
-        if (!messageReactions.has(messageId)) {
-          messageReactions.set(messageId, new Map());
-        }
-
-        const msgReactions = messageReactions.get(messageId);
-
-        // Initialize this emoji's set if needed
-        if (!msgReactions.has(emoji)) {
-          msgReactions.set(emoji, new Set());
-        }
-
-        // Add user's reaction
-        msgReactions.get(emoji).add(userId);
-
-        // Persist to DB (fire and forget)
-        prisma.messageReaction.create({
-          data: {
-            messageId,
-            userId,
-            emoji
-          }
-        }).catch(err => {
-          // Ignore unique constraint violations (already reacted)
-          if (err.code !== 'P2002') {
-            console.error('[Reactions] Failed to persist reaction:', err.message);
-          }
-        });
-
-        console.log(`[Reactions] ${userName} reacted ${emoji} to message ${messageId}`);
-
-        // Build reaction summary to broadcast
-        const reactionSummary = {};
-        for (const [e, users] of msgReactions.entries()) {
-          reactionSummary[e] = {
-            count: users.size,
-            users: Array.from(users),
-            hasReacted: users.has(userId) // Did current user react with this emoji
-          };
-        }
-
-        // Broadcast to room
-        io.to(roomId).emit('message-reactions-update', { messageId, reactions: reactionSummary });
-      });
-
-      socket.on('message-unreact', ({ messageId, emoji }) => {
-        const roomId = socket.data.roomId || 'default-room';
-        const userId = socket.data.user?.id || socket.id;
-        const userName = socket.data.user?.name || 'Someone';
-
-        if (!messageId || !emoji) return;
-
-        const msgReactions = messageReactions.get(messageId);
-        if (!msgReactions || !msgReactions.has(emoji)) return;
-
-        // Remove user's reaction
-        msgReactions.get(emoji).delete(userId);
-
-        // Clean up empty emoji sets
-        if (msgReactions.get(emoji).size === 0) {
-          msgReactions.delete(emoji);
-        }
-
-        // Persist removal to DB
-        prisma.messageReaction.deleteMany({
-          where: {
-            messageId,
-            userId,
-            emoji
-          }
-        }).catch(err => {
-          console.error('[Reactions] Failed to persist unreact:', err.message);
-        });
-
-        console.log(`[Reactions] ${userName} removed ${emoji} from message ${messageId}`);
-
-        // Build reaction summary to broadcast
-        const reactionSummary = {};
-        for (const [e, users] of msgReactions.entries()) {
-          reactionSummary[e] = {
-            count: users.size,
-            users: Array.from(users),
-            hasReacted: users.has(userId)
-          };
-        }
-
-        // Broadcast to room
-        io.to(roomId).emit('message-reactions-update', { messageId, reactions: reactionSummary });
-      });
-
-      // Tube Sync Handlers
-      socket.on('tube-request-state', () => {
-        const roomId = socket.data.roomId || 'default-room';
-        const tubeState = getTubeState(roomId);
-
-        // If there's no owner, and we have a video, requester can be owner
-        if (!tubeState.ownerId && tubeState.videoId) {
-          tubeState.ownerId = socket.id;
-        }
-        // Include currentPosition for immediate sync on join
-        socket.emit('tube-state', {
-          ...tubeState,
-          serverTime: Date.now(),
-          currentPosition: getTubePosition(roomId)
-        });
-      });
-
-      socket.on('tube-update', (payload) => {
-        const roomId = payload.roomId || socket.data.roomId || 'default-room';
-        const tubeState = getTubeState(roomId);
-        const newState = payload;
-
-        console.log(`[Tube] tube-update received:`, { videoId: newState.videoId, isPlaying: newState.isPlaying, type: newState.type, action: newState.action });
-
-        // Extract video ID early for consistent comparison
-        const incomingVideoId = newState.videoId ? extractVideoId(newState.videoId) : null;
-
-        // EARLY DEDUP: If this is a new video request, check if we JUST processed this video
-        if (incomingVideoId) {
-          const lastProcessedVideo = global._lastProcessedTubeVideo || {};
-          const lastVideoKey = lastProcessedVideo[roomId];
-          const lastVideoTime = global._lastProcessedTubeVideoTime?.[roomId] || 0;
-
-          // If same video was processed within last 5 seconds, skip ENTIRELY
-          if (lastVideoKey === incomingVideoId && (Date.now() - lastVideoTime) < 5000) {
-            console.log(`[Tube] Skipping duplicate videoId: ${incomingVideoId}`);
-            // Still broadcast state but skip the system message
-            io.to(roomId).emit('tube-state', {
-              ...tubeState,
-              serverTime: Date.now(),
-              currentPosition: getTubePosition(roomId)
-            });
-            return;
-          }
-
-          // Record this video as being processed (use extracted ID)
-          if (!global._lastProcessedTubeVideo) global._lastProcessedTubeVideo = {};
-          if (!global._lastProcessedTubeVideoTime) global._lastProcessedTubeVideoTime = {};
-          global._lastProcessedTubeVideo[roomId] = incomingVideoId;
-          global._lastProcessedTubeVideoTime[roomId] = Date.now();
-        }
-
-        if (!tubeState.ownerId) {
-          tubeState.ownerId = socket.id;
-        }
-
-        const fallback = lastKnownUsers.get(socket.id);
-        const userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
-        let systemMsg = null;
-        let shouldUpdateExisting = false;
-
-        // Track the last tube message ID for updates
-        const tubeMsgKey = `tube-${roomId}`;
-        let lastTubeMsgId = global._lastTubeMsg?.[tubeMsgKey];
-
-        // Build message payload - ALWAYS UPDATE existing message if it exists
-        let msgPayload = null;
-        let isUpdate = !!lastTubeMsgId;
-
-        // --- PLAYBACK CONTROL ACTIONS (Next/Prev) ---
-        // incomingVideoId is null when action is sent without a videoId
-        if (!incomingVideoId && newState.action) {
-          // NEXT Action: Explicitly Advance Queue
-          if (newState.action === 'next') {
-            console.log(`[Tube] Action: NEXT triggered by ${userName}`);
-
-            // Push current to history if playing
-            if (tubeState.videoId) {
-              tubeState.history.push({
-                videoId: tubeState.videoId,
-                title: tubeState.title,
-                thumbnail: tubeState.thumbnail,
-                startedBy: tubeState.ownerId
-              });
-              if (tubeState.history.length > 20) tubeState.history.shift();
+              activeBundle.users.push(userMeta);
             }
 
-            if (tubeState.queue.length > 0) {
-              const nextVideo = tubeState.queue.shift();
-              tubeState.videoId = nextVideo.videoId;
-              tubeState.title = nextVideo.title;
-              tubeState.thumbnail = nextVideo.thumbnail;
-              tubeState.isPlaying = true;
-              tubeState.playStartedAt = Date.now();
-              tubeState.pausedAt = 0;
+            const total = activeBundle.users.length;
+            const up = activeBundle.users.filter(u => u.action === 'cam-up').length;
 
-              // Update System Message to "Now Playing"
-              // Build text with title if available, and include who queued it
-              const hasTitle = nextVideo.title && !nextVideo.title.startsWith('Video:');
-              const titleText = hasTitle
-                ? `**Now Playing**: [${nextVideo.title}](https://youtu.be/${nextVideo.videoId}) (queued by ${nextVideo.startedBy || 'Someone'})`
-                : `**Now Playing** (queued by ${nextVideo.startedBy || 'Someone'})`;
+            // Text Logic: "3 Users updated camera" or "3 Users live!"
+            let text = `${total} Users updated camera`;
+            if (up === total) text = `${total} Users went live!`;
+            else text = `Cam check: ${up} live, ${total - up} off`;
 
-              msgPayload = {
-                id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
-                roomId,
-                text: titleText,
-                sender: 'System',
-                type: 'system',
-                systemType: 'tube-now-playing',
-                metadata: {
-                  kicker: 'ON AIR',
-                  videoId: nextVideo.videoId,
-                  title: nextVideo.title,
-                  thumbnail: nextVideo.thumbnail,
-                  startedBy: nextVideo.startedBy
-                },
-                timestamp: new Date().toISOString()
-              };
-            } else {
-              // Stop if queue empty
-              tubeState.isPlaying = false;
-              tubeState.videoId = null;
-              tubeState.title = null;
-              tubeState.thumbnail = null;
-
-              msgPayload = {
-                id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
-                roomId,
-                text: `**Playback Stopped**`,
-                sender: 'System',
-                type: 'system',
-                systemType: 'tube-stopped',
-                metadata: { kicker: 'OFF AIR' },
-                timestamp: new Date().toISOString()
-              };
-            }
-
-            io.to(roomId).emit('tube-state', {
-              ...tubeState,
-              serverTime: Date.now(),
-              currentPosition: getTubePosition(roomId)
-            });
-
-            persistTubeState(roomId, tubeState.videoId, tubeState.title);
-
-            // Trigger Async Title Fetch for the new video
-            if (tubeState.videoId && (!tubeState.title || tubeState.title.startsWith('Video:'))) {
-              getYouTubeVideoInfo(tubeState.videoId).then(info => {
-                if (info && info.title) {
-                  console.log(`[Tube] NEXT Action - Fetched title: ${info.title}`);
-                  tubeState.title = info.title;
-                  tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
-                  // Update message
-                  if (msgPayload) {
-                    // We have to emit the update because msgPayload might have been sent already? 
-                    // No, msgPayload is stored at end of function. 
-                    // But this async block runs later.
-                    // So we need to emit an update.
-                    const updatedMsg = {
-                      ...msgPayload,
-                      text: `**Now Playing**: [${info.title}](https://youtu.be/${tubeState.videoId})`,
-                      metadata: { ...msgPayload.metadata, title: info.title, thumbnail: tubeState.thumbnail }
-                    };
-                    io.to(roomId).emit('chat-message-update', updatedMsg);
-                  }
-                  io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition(roomId) });
-                  persistTubeState(roomId, tubeState.videoId, info.title);
-                }
-              });
-            }
-
-            // CRITICAL: Store and emit the message before returning
-            if (msgPayload) {
-              console.log(`[Tube] NEXT: Emitting message to room '${roomId}':`, msgPayload.text, `isUpdate:${isUpdate}`);
-              storeMessage(roomId, msgPayload);
-              // Use update event for existing messages, new event for first message
-              if (isUpdate) {
-                io.to(roomId).emit('chat-message-update', msgPayload);
-              } else {
-                io.to(roomId).emit('chat-message', msgPayload);
-              }
-              // Track this as the last tube message for updates
-              if (!global._lastTubeMsg) global._lastTubeMsg = {};
-              global._lastTubeMsg[`tube-${roomId}`] = msgPayload.id;
-            } else {
-              console.log(`[Tube] NEXT: No msgPayload to emit!`);
-            }
-
-            return; // Exit after handling action to prevent fall-through
-          }
-
-          // PREVIOUS Action: Pop history -> Queue Current -> Play History
-          if (newState.action === 'prev') {
-            console.log(`[Tube] Action: PREVIOUS triggered by ${userName}`);
-            if (tubeState.history.length > 0) {
-              const prevVideo = tubeState.history.pop();
-
-              // If currently playing something, push it to QUEUE FRONT
-              if (tubeState.videoId) {
-                const currentAsQueue = {
-                  videoId: tubeState.videoId,
-                  title: tubeState.title || `Video: ${tubeState.videoId}`,
-                  thumbnail: tubeState.thumbnail,
-                  startedBy: tubeState.ownerId, // or keep original startedBy?
-                  tstamp: Date.now()
-                };
-                tubeState.queue.unshift(currentAsQueue);
-              }
-
-              // Force play the previous video
-              tubeState.videoId = prevVideo.videoId;
-              tubeState.title = prevVideo.title;
-              tubeState.thumbnail = prevVideo.thumbnail;
-              tubeState.isPlaying = true;
-              tubeState.playStartedAt = Date.now();
-              tubeState.pausedAt = 0;
-
-              // Emit Now Playing for the historical video
-              msgPayload = {
-                id: `sys-tube-${Date.now()}`, // New ID to force a new message (or reuse global if needed, but history jump usually warrants new context)
-                roomId,
-                text: `**Now Playing** (History)`,
-                sender: 'System',
-                type: 'system',
-                systemType: 'tube-now-playing',
-                metadata: {
-                  kicker: 'REWIND',
-                  videoId: prevVideo.videoId,
-                  title: prevVideo.title,
-                  thumbnail: prevVideo.thumbnail,
-                  startedBy: prevVideo.startedBy
-                },
-                timestamp: new Date().toISOString()
-              };
-              storeMessage(roomId, msgPayload);
-              io.to(roomId).emit('chat-message', msgPayload);
-
-              // Emit update immediately
-              io.to(roomId).emit('tube-state', {
-                ...tubeState,
-                serverTime: Date.now(),
-                currentPosition: 0
-              });
-
-              persistTubeState(roomId, tubeState.videoId, tubeState.title);
-              return; // Done
-            }
-          }
-        }
-
-        // Detect Changes for System Messages & History Tracking
-        if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
-          // ... (rest of existing logic)
-
-
-          // HISTORY LOGIC: Before switching, push CURRENT video to history
-          if (tubeState.videoId) {
-            tubeState.history.push({
-              videoId: tubeState.videoId,
-              title: tubeState.title,
-              thumbnail: tubeState.thumbnail,
-              startedBy: tubeState.ownerId // effectively who queued it
-            });
-            // Limit history size
-            if (tubeState.history.length > 20) tubeState.history.shift();
-          }
-
-          // QUEUE LOGIC: If a video is ALREADY playing, add to queue instead of interrupting
-          if (tubeState.videoId) {
-            // Prevent duplicates in queue
-            if (tubeState.queue.some(q => q.videoId === incomingVideoId)) {
-              console.log(`[Tube] Ignoring duplicate queue request for ${incomingVideoId}`);
-              return;
-            }
-
-            const queueItem = {
-              videoId: incomingVideoId,
-              title: `Video: ${incomingVideoId}`,
-              thumbnail: `https://img.youtube.com/vi/${incomingVideoId}/mqdefault.jpg`,
-              startedBy: userName,
-              tstamp: Date.now()
-            };
-            tubeState.queue.push(queueItem);
-
-            // Emit "Queued" message (New message)
-            const queueMsg = {
-              id: `sys-queue-${Date.now()}`,
+            const updateMsg = {
+              id: bundleId,
               roomId,
-              text: `**Queued**: ${queueItem.title}`,
               sender: 'System',
+              text,
               type: 'system',
-              systemType: 'tube-queue',
-              metadata: {
-                kicker: 'UP NEXT',
-                videoId: incomingVideoId,
-                title: queueItem.title,
-                startedBy: userName
-              },
+              systemType: 'join-leave', // Use same minimal style
+              metadata: { users: activeBundle.users },
               timestamp: new Date().toISOString()
             };
-            storeMessage(roomId, queueMsg);
-            io.to(roomId).emit('chat-message', queueMsg);
 
-            // Async fetch title for the queued item and update the message
-            getYouTubeVideoInfo(incomingVideoId).then(info => {
-              if (info && info.title) {
-                console.log(`[Tube] Fetched title for queued video: ${info.title}`);
-                // Update the queue item in memory
-                queueItem.title = info.title;
-                queueItem.thumbnail = info.thumbnail || queueItem.thumbnail;
-
-                // Update the queue message with real title
-                const updatedQueueMsg = {
-                  ...queueMsg,
-                  text: `**Queued by ${userName}**: ${info.title}`,
-                  metadata: {
-                    ...queueMsg.metadata,
-                    title: info.title
-                  }
-                };
-                storeMessage(roomId, updatedQueueMsg); // Persist to DB
-                io.to(roomId).emit('chat-message-update', updatedQueueMsg);
+            if (messageHistory[roomId]) {
+              const idx = messageHistory[roomId].findIndex(m => m.id === bundleId);
+              if (idx !== -1) {
+                messageHistory[roomId][idx] = updateMsg;
               }
-            }).catch(err => console.error('[Tube] Queue title fetch error:', err));
-
-            // Broadcast state update (queue changed)
-            io.to(roomId).emit('tube-state', {
-              ...tubeState,
-              serverTime: Date.now(),
-              currentPosition: getTubePosition(roomId)
-            });
-            return; // EXIT EARLY - Do not change current video
-          }
-
-          // NEW VIDEO (Immediate Play) - update or create the tube message
-          const videoId = incomingVideoId;
-          const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-
-          // Update state
-          tubeState.videoId = videoId;
-          tubeState.title = `Video: ${videoId}`;
-          tubeState.thumbnail = thumbnail;
-          tubeState.pausedAt = 0;
-          tubeState.isPlaying = true; // Always auto-play new video
-          tubeState.playStartedAt = Date.now();
-          tubeState.startedBy = userName; // Track who started this video
-
-          // Update/Create "Now Playing" Message (initially with placeholder, async update will add title)
-          const msgId = isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`;
-          msgPayload = {
-            id: msgId,
-            roomId,
-            text: `**Now Playing** (queued by ${userName})`,
-            sender: 'System',
-            type: 'system',
-            systemType: 'tube-now-playing',
-            metadata: {
-              kicker: 'ON AIR',
-              videoId,
-              title: `Video: ${videoId}`,
-              thumbnail,
-              startedBy: userName
-            },
-            timestamp: new Date().toISOString()
-          };
-
-          // Store and emit immediately with placeholder
-          persistTubeState(roomId, videoId, `Video: ${videoId}`);
-          storeMessage(roomId, msgPayload);
-          io.to(roomId).emit('chat-message', msgPayload);
-          if (!global._lastTubeMsg) global._lastTubeMsg = {};
-          global._lastTubeMsg[`tube-${roomId}`] = msgId;
-
-          // Async fetch title and update message
-          getYouTubeVideoInfo(videoId).then(info => {
-            if (info && info.title) {
-              console.log(`[Tube] Direct Play - Fetched title: ${info.title}`);
-              tubeState.title = info.title;
-              tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
-
-              // Update the Now Playing message with real title
-              const updatedMsg = {
-                ...msgPayload,
-                text: `**Now Playing**: [${info.title}](https://youtu.be/${videoId}) (queued by ${userName})`,
-                metadata: {
-                  ...msgPayload.metadata,
-                  title: info.title,
-                  thumbnail: tubeState.thumbnail
-                }
-              };
-              storeMessage(roomId, updatedMsg); // Persist to DB
-              io.to(roomId).emit('chat-message-update', updatedMsg);
-              io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition(roomId) });
-              persistTubeState(roomId, videoId, info.title);
             }
-          }).catch(err => console.error('[Tube] Direct play title fetch error:', err));
+            saveMessageToDB(updateMsg);
+            io.to(roomId).emit('chat-message-update', updateMsg);
 
-          // Emit initial tube state
+          } else {
+            // Create New Bundle
+            bundleId = `sys-cam-${Date.now()}`;
+            const users = [userMeta];
+
+            let text = `${user.name} went live!`;
+            if (!isVideoEnabled) text = `${user.name} turned off camera.`;
+
+            const camMsg = {
+              roomId,
+              id: bundleId,
+              sender: 'System',
+              text,
+              type: 'system',
+              systemType: 'join-leave', // Use minimal style
+              metadata: { users },
+              timestamp: new Date().toISOString()
+            };
+
+            setBundle(roomId, 'cam', bundleId, users);
+            storeMessage(roomId, camMsg);
+            io.to(roomId).emit('chat-message', camMsg);
+          }
+        }
+      }
+    });
+
+    // Chat Messages
+    socket.on('chat-message', (message) => {
+      if (!message.timestamp) message.timestamp = new Date().toISOString();
+
+      // Automod Filter
+      if (message.text) {
+        message.text = filterProfanity(message.text);
+      }
+
+      const senderId = socket.data.user?.id;
+      const senderName = socket.data.user?.name || message.sender;
+      // Check shadow mute by ID or by name key (for IRC users)
+      const isShadowMuted = (senderId && shadowMutedUsers.has(senderId)) ||
+        (senderName && shadowMutedUsers.has(`name:${senderName}`));
+
+      if (isShadowMuted) {
+        // Shadow muted: Only send to mods with indicator
+        const mutedMessage = { ...message, shadowMuted: true };
+
+        // Find all mod sockets in this room
+        const room = rooms.get(message.roomId);
+        if (room) {
+          room.forEach((user, socketId) => {
+            if (['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role)) {
+              io.to(socketId).emit('chat-message', mutedMessage);
+            }
+          });
+        }
+        // Do NOT store or broadcast to others
+        console.log(`[Mod] Shadow muted message from ${senderName} blocked`);
+        return;
+      }
+
+      storeMessage(message.roomId, message);
+      io.to(message.roomId).emit('chat-message', message);
+
+      if (socket.data.ircBridge) {
+        socket.data.ircBridge.sendToIRC(message);
+      }
+
+      // Track Message Stats
+      if (socket.data.user && socket.data.user.id) {
+        prisma.userStats.upsert({
+          where: { userId: socket.data.user.id },
+          create: { userId: socket.data.user.id, messagesSent: 1, chatPoints: 1 },
+          update: { messagesSent: { increment: 1 }, chatPoints: { increment: 1 } }
+        }).catch(e => console.error("[Stats] Failed to track message:", e.message));
+      }
+    });
+
+    // Typing
+    socket.on("typing", ({ roomId, user }) => {
+      socket.to(roomId).emit("user-typing", { user });
+    });
+
+    socket.on("stop-typing", ({ roomId }) => {
+      socket.to(roomId).emit("user-stop-typing", { user: socket.data.user?.name });
+    });
+
+    // Manual History Request
+    socket.on('get-history', ({ roomId }) => {
+      const history = messageHistory[roomId] || [];
+      socket.emit('chat-history', history);
+    });
+
+    // Reactions
+    socket.on("reaction", ({ roomId, targetId, emoji }) => {
+      // Broadcast to everyone in the room (including sender, simplifies logic)
+      io.to(roomId).emit("reaction", {
+        senderId: socket.id,
+        targetId, // If null, it's a general room reaction? For now, we assume user-specific.
+        emoji,
+        timestamp: Date.now()
+      });
+
+      // Track Reaction Stats
+      if (socket.data.user && socket.data.user.id) {
+        // Giver
+        prisma.userStats.upsert({
+          where: { userId: socket.data.user.id },
+          create: { userId: socket.data.user.id, emotesGiven: 1, chatPoints: 1 },
+          update: { emotesGiven: { increment: 1 }, chatPoints: { increment: 1 } }
+        }).catch(e => console.error("[Stats] Failed to track reaction give:", e.message));
+      }
+
+      // Receiver (Find user by socket/targetId?)
+      // targetId is likely a socketId or userId. The reaction event assumes socketId usually.
+      // We need to resolve targetId to a user ID.
+      // Since rooms map stores users by socketId, we can look it up.
+      const room = rooms.get(roomId);
+      if (room && targetId && room.has(targetId)) {
+        const targetUser = room.get(targetId);
+        if (targetUser && targetUser.id) {
+          prisma.userStats.upsert({
+            where: { userId: targetUser.id },
+            create: { userId: targetUser.id, emotesReceived: 1, chatPoints: 1 },
+            update: { emotesReceived: { increment: 1 }, chatPoints: { increment: 1 } }
+          }).catch(e => console.error("[Stats] Failed to track reaction receive:", e.message));
+        }
+      }
+    });
+
+    // === MESSAGE REACTIONS (Discord-style) ===
+    socket.on('message-react', ({ messageId, emoji }) => {
+      const roomId = socket.data.roomId || 'default-room';
+      const userId = socket.data.user?.id || socket.id;
+      const userName = socket.data.user?.name || 'Someone';
+
+      if (!messageId || !emoji) return;
+
+      // Initialize reaction storage for this message
+      if (!messageReactions.has(messageId)) {
+        messageReactions.set(messageId, new Map());
+      }
+
+      const msgReactions = messageReactions.get(messageId);
+
+      // Initialize this emoji's set if needed
+      if (!msgReactions.has(emoji)) {
+        msgReactions.set(emoji, new Set());
+      }
+
+      // Add user's reaction
+      msgReactions.get(emoji).add(userId);
+
+      // Persist to DB (fire and forget)
+      prisma.messageReaction.create({
+        data: {
+          messageId,
+          userId,
+          emoji
+        }
+      }).catch(err => {
+        // Ignore unique constraint violations (already reacted)
+        if (err.code !== 'P2002') {
+          console.error('[Reactions] Failed to persist reaction:', err.message);
+        }
+      });
+
+      console.log(`[Reactions] ${userName} reacted ${emoji} to message ${messageId}`);
+
+      // Build reaction summary to broadcast
+      const reactionSummary = {};
+      for (const [e, users] of msgReactions.entries()) {
+        reactionSummary[e] = {
+          count: users.size,
+          users: Array.from(users),
+          hasReacted: users.has(userId) // Did current user react with this emoji
+        };
+      }
+
+      // Broadcast to room
+      io.to(roomId).emit('message-reactions-update', { messageId, reactions: reactionSummary });
+    });
+
+    socket.on('message-unreact', ({ messageId, emoji }) => {
+      const roomId = socket.data.roomId || 'default-room';
+      const userId = socket.data.user?.id || socket.id;
+      const userName = socket.data.user?.name || 'Someone';
+
+      if (!messageId || !emoji) return;
+
+      const msgReactions = messageReactions.get(messageId);
+      if (!msgReactions || !msgReactions.has(emoji)) return;
+
+      // Remove user's reaction
+      msgReactions.get(emoji).delete(userId);
+
+      // Clean up empty emoji sets
+      if (msgReactions.get(emoji).size === 0) {
+        msgReactions.delete(emoji);
+      }
+
+      // Persist removal to DB
+      prisma.messageReaction.deleteMany({
+        where: {
+          messageId,
+          userId,
+          emoji
+        }
+      }).catch(err => {
+        console.error('[Reactions] Failed to persist unreact:', err.message);
+      });
+
+      console.log(`[Reactions] ${userName} removed ${emoji} from message ${messageId}`);
+
+      // Build reaction summary to broadcast
+      const reactionSummary = {};
+      for (const [e, users] of msgReactions.entries()) {
+        reactionSummary[e] = {
+          count: users.size,
+          users: Array.from(users),
+          hasReacted: users.has(userId)
+        };
+      }
+
+      // Broadcast to room
+      io.to(roomId).emit('message-reactions-update', { messageId, reactions: reactionSummary });
+    });
+
+    // Tube Sync Handlers
+    socket.on('tube-request-state', () => {
+      const roomId = socket.data.roomId || 'default-room';
+      const tubeState = getTubeState(roomId);
+
+      // If there's no owner, and we have a video, requester can be owner
+      if (!tubeState.ownerId && tubeState.videoId) {
+        tubeState.ownerId = socket.id;
+      }
+      // Include currentPosition for immediate sync on join
+      socket.emit('tube-state', {
+        ...tubeState,
+        serverTime: Date.now(),
+        currentPosition: getTubePosition(roomId)
+      });
+    });
+
+    socket.on('tube-update', (payload) => {
+      const roomId = payload.roomId || socket.data.roomId || 'default-room';
+      const tubeState = getTubeState(roomId);
+      const newState = payload;
+
+      console.log(`[Tube] tube-update received:`, { videoId: newState.videoId, isPlaying: newState.isPlaying, type: newState.type, action: newState.action });
+
+      // Extract video ID early for consistent comparison
+      const incomingVideoId = newState.videoId ? extractVideoId(newState.videoId) : null;
+
+      // EARLY DEDUP: If this is a new video request, check if we JUST processed this video
+      if (incomingVideoId) {
+        const lastProcessedVideo = global._lastProcessedTubeVideo || {};
+        const lastVideoKey = lastProcessedVideo[roomId];
+        const lastVideoTime = global._lastProcessedTubeVideoTime?.[roomId] || 0;
+
+        // If same video was processed within last 5 seconds, skip ENTIRELY
+        if (lastVideoKey === incomingVideoId && (Date.now() - lastVideoTime) < 5000) {
+          console.log(`[Tube] Skipping duplicate videoId: ${incomingVideoId}`);
+          // Still broadcast state but skip the system message
           io.to(roomId).emit('tube-state', {
             ...tubeState,
             serverTime: Date.now(),
             currentPosition: getTubePosition(roomId)
           });
-          return; // Exit - message already emitted above
+          return;
+        }
 
-        } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
-          // STOPPED / ENDED / EJECTED
+        // Record this video as being processed (use extracted ID)
+        if (!global._lastProcessedTubeVideo) global._lastProcessedTubeVideo = {};
+        if (!global._lastProcessedTubeVideoTime) global._lastProcessedTubeVideoTime = {};
+        global._lastProcessedTubeVideo[roomId] = incomingVideoId;
+        global._lastProcessedTubeVideoTime[roomId] = Date.now();
+      }
 
-          // Check Queue
+      if (!tubeState.ownerId) {
+        tubeState.ownerId = socket.id;
+      }
+
+      const fallback = lastKnownUsers.get(socket.id);
+      const userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
+      let systemMsg = null;
+      let shouldUpdateExisting = false;
+
+      // Track the last tube message ID for updates
+      const tubeMsgKey = `tube-${roomId}`;
+      let lastTubeMsgId = global._lastTubeMsg?.[tubeMsgKey];
+
+      // Build message payload - ALWAYS UPDATE existing message if it exists
+      let msgPayload = null;
+      let isUpdate = !!lastTubeMsgId;
+
+      // --- PLAYBACK CONTROL ACTIONS (Next/Prev) ---
+      // incomingVideoId is null when action is sent without a videoId
+      if (!incomingVideoId && newState.action) {
+        // NEXT Action: Explicitly Advance Queue
+        if (newState.action === 'next') {
+          console.log(`[Tube] Action: NEXT triggered by ${userName}`);
+
+          // Push current to history if playing
+          if (tubeState.videoId) {
+            tubeState.history.push({
+              videoId: tubeState.videoId,
+              title: tubeState.title,
+              thumbnail: tubeState.thumbnail,
+              startedBy: tubeState.ownerId
+            });
+            if (tubeState.history.length > 20) tubeState.history.shift();
+          }
+
           if (tubeState.queue.length > 0) {
-            // PLAY NEXT FROM QUEUE
             const nextVideo = tubeState.queue.shift();
-
             tubeState.videoId = nextVideo.videoId;
             tubeState.title = nextVideo.title;
             tubeState.thumbnail = nextVideo.thumbnail;
-            tubeState.pausedAt = 0;
             tubeState.isPlaying = true;
             tubeState.playStartedAt = Date.now();
+            tubeState.pausedAt = 0;
 
-            // Re-use the existing Now Playing message logic to update it
+            // Update System Message to "Now Playing"
+            // Build text with title if available, and include who queued it
+            const hasTitle = nextVideo.title && !nextVideo.title.startsWith('Video:');
+            const titleText = hasTitle
+              ? `**Now Playing**: [${nextVideo.title}](https://youtu.be/${nextVideo.videoId}) (queued by ${nextVideo.startedBy || 'Someone'})`
+              : `**Now Playing** (queued by ${nextVideo.startedBy || 'Someone'})`;
+
             msgPayload = {
               id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
               roomId,
-              text: `**Now Playing**`,
+              text: titleText,
               sender: 'System',
               type: 'system',
               systemType: 'tube-now-playing',
@@ -2225,18 +1908,12 @@ app.prepare().then(async () => {
               },
               timestamp: new Date().toISOString()
             };
-
           } else {
-            // EMPTY QUEUE - REALLY STOP
+            // Stop if queue empty
             tubeState.isPlaying = false;
-            tubeState.playStartedAt = 0;
-            tubeState.pausedAt = 0;
-            if (newState.videoId === null) {
-              tubeState.videoId = null; // Clear video if explicitly ejected
-              tubeState.title = null;
-              tubeState.thumbnail = null;
-            }
-            persistTubeState(roomId, null, null);
+            tubeState.videoId = null;
+            tubeState.title = null;
+            tubeState.thumbnail = null;
 
             msgPayload = {
               id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
@@ -2250,472 +1927,797 @@ app.prepare().then(async () => {
             };
           }
 
-          // Emit Tube State Update
           io.to(roomId).emit('tube-state', {
             ...tubeState,
             serverTime: Date.now(),
             currentPosition: getTubePosition(roomId)
           });
 
-          // 5. Async Title Fetching (Fire and Forget)
+          persistTubeState(roomId, tubeState.videoId, tubeState.title);
+
+          // Trigger Async Title Fetch for the new video
           if (tubeState.videoId && (!tubeState.title || tubeState.title.startsWith('Video:'))) {
             getYouTubeVideoInfo(tubeState.videoId).then(info => {
               if (info && info.title) {
-                console.log(`[Tube] Fetched title for ${tubeState.videoId}: ${info.title}`);
+                console.log(`[Tube] NEXT Action - Fetched title: ${info.title}`);
                 tubeState.title = info.title;
                 tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
-
-                // Update the system message if it exists
-                if (systemMsg) {
-                  systemMsg.text = `**Now Playing**: [${info.title}](https://youtu.be/${tubeState.videoId})`;
-                  if (systemMsg.metadata) {
-                    systemMsg.metadata.title = info.title;
-                    systemMsg.metadata.thumbnail = tubeState.thumbnail;
-                  }
-                  // Emit update for the message
-                  io.to(roomId).emit('chat-message-update', systemMsg);
+                // Update message
+                if (msgPayload) {
+                  // We have to emit the update because msgPayload might have been sent already? 
+                  // No, msgPayload is stored at end of function. 
+                  // But this async block runs later.
+                  // So we need to emit an update.
+                  const updatedMsg = {
+                    ...msgPayload,
+                    text: `**Now Playing**: [${info.title}](https://youtu.be/${tubeState.videoId})`,
+                    metadata: { ...msgPayload.metadata, title: info.title, thumbnail: tubeState.thumbnail }
+                  };
+                  io.to(roomId).emit('chat-message-update', updatedMsg);
                 }
-
-                // Broadcast state update with new title
-                io.to(roomId).emit('tube-state', {
-                  ...tubeState,
-                  serverTime: Date.now(),
-                  currentPosition: getTubePosition(roomId)
-                });
+                io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition(roomId) });
+                persistTubeState(roomId, tubeState.videoId, info.title);
               }
-            }).catch(err => console.error("Title fetch error:", err));
+            });
           }
 
-          // 6. Queue Title Fetching (Process new queue items)
-          tubeState.queue.forEach(item => {
-            if (!item.title || item.title.startsWith('Video:')) {
-              getYouTubeVideoInfo(item.videoId).then(info => {
-                if (info && info.title) {
-                  item.title = info.title;
-                  item.thumbnail = info.thumbnail || item.thumbnail;
-                }
-              });
+          // CRITICAL: Store and emit the message before returning
+          if (msgPayload) {
+            console.log(`[Tube] NEXT: Emitting message to room '${roomId}':`, msgPayload.text, `isUpdate:${isUpdate}`);
+            storeMessage(roomId, msgPayload);
+            // Use update event for existing messages, new event for first message
+            if (isUpdate) {
+              io.to(roomId).emit('chat-message-update', msgPayload);
+            } else {
+              io.to(roomId).emit('chat-message', msgPayload);
             }
-          });
-
-        } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
-          // PLAY/PAUSE toggle - update the existing message
-          if (newState.isPlaying) {
-            msgPayload = {
-              id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
-              roomId,
-              text: `**${userName}** resumed playback`,
-              sender: 'System',
-              type: 'system',
-              systemType: 'tube-resumed',
-              metadata: {
-                kicker: 'PLAYING',
-                videoId: tubeState.videoId,
-                title: tubeState.title || `Video: ${tubeState.videoId}`,
-                thumbnail: tubeState.thumbnail,
-                startedBy: userName
-              },
-              timestamp: new Date().toISOString()
-            };
-            tubeState.isPlaying = true;
-            if (newState.timestamp !== undefined) {
-              tubeState.pausedAt = newState.timestamp;
-            }
-            tubeState.playStartedAt = Date.now();
+            // Track this as the last tube message for updates
+            if (!global._lastTubeMsg) global._lastTubeMsg = {};
+            global._lastTubeMsg[`tube-${roomId}`] = msgPayload.id;
           } else {
-            msgPayload = {
-              id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
-              roomId,
-              text: `**${userName}** paused`,
-              sender: 'System',
-              type: 'system',
-              systemType: 'tube-paused',
-              metadata: {
-                kicker: 'PAUSED',
-                videoId: tubeState.videoId,
-                title: tubeState.title || `Video: ${tubeState.videoId}`,
-                thumbnail: tubeState.thumbnail,
-                startedBy: userName
-              },
-              timestamp: new Date().toISOString()
-            };
-            tubeState.isPlaying = false;
-            tubeState.pausedAt = getTubePosition();
-            tubeState.playStartedAt = 0;
+            console.log(`[Tube] NEXT: No msgPayload to emit!`);
           }
+
+          return; // Exit after handling action to prevent fall-through
         }
 
-        // Emit message if we have one
-        if (msgPayload) {
-          console.log(`[Tube] ${isUpdate ? 'UPDATING' : 'CREATING'} message: ${msgPayload.systemType}`);
+        // PREVIOUS Action: Pop history -> Queue Current -> Play History
+        if (newState.action === 'prev') {
+          console.log(`[Tube] Action: PREVIOUS triggered by ${userName}`);
+          if (tubeState.history.length > 0) {
+            const prevVideo = tubeState.history.pop();
 
-          if (isUpdate) {
-            // Update existing message in history
-            if (messageHistory[roomId]) {
-              const idx = messageHistory[roomId].findIndex(m => m.id === lastTubeMsgId);
-              if (idx !== -1) {
-                messageHistory[roomId][idx] = msgPayload;
-              }
+            // If currently playing something, push it to QUEUE FRONT
+            if (tubeState.videoId) {
+              const currentAsQueue = {
+                videoId: tubeState.videoId,
+                title: tubeState.title || `Video: ${tubeState.videoId}`,
+                thumbnail: tubeState.thumbnail,
+                startedBy: tubeState.ownerId, // or keep original startedBy?
+                tstamp: Date.now()
+              };
+              tubeState.queue.unshift(currentAsQueue);
             }
-            io.to(roomId).emit('chat-message-update', msgPayload);
-          } else {
-            // Create new message
+
+            // Force play the previous video
+            tubeState.videoId = prevVideo.videoId;
+            tubeState.title = prevVideo.title;
+            tubeState.thumbnail = prevVideo.thumbnail;
+            tubeState.isPlaying = true;
+            tubeState.playStartedAt = Date.now();
+            tubeState.pausedAt = 0;
+
+            // Emit Now Playing for the historical video
+            msgPayload = {
+              id: `sys-tube-${Date.now()}`, // New ID to force a new message (or reuse global if needed, but history jump usually warrants new context)
+              roomId,
+              text: `**Now Playing** (History)`,
+              sender: 'System',
+              type: 'system',
+              systemType: 'tube-now-playing',
+              metadata: {
+                kicker: 'REWIND',
+                videoId: prevVideo.videoId,
+                title: prevVideo.title,
+                thumbnail: prevVideo.thumbnail,
+                startedBy: prevVideo.startedBy
+              },
+              timestamp: new Date().toISOString()
+            };
             storeMessage(roomId, msgPayload);
             io.to(roomId).emit('chat-message', msgPayload);
-          }
 
-          // Track this message ID
-          if (!global._lastTubeMsg) global._lastTubeMsg = {};
-          global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
+            // Emit update immediately
+            io.to(roomId).emit('tube-state', {
+              ...tubeState,
+              serverTime: Date.now(),
+              currentPosition: 0
+            });
+
+            persistTubeState(roomId, tubeState.videoId, tubeState.title);
+            return; // Done
+          }
+        }
+      }
+
+      // Detect Changes for System Messages & History Tracking
+      if (incomingVideoId && incomingVideoId !== tubeState.videoId) {
+        // ... (rest of existing logic)
+
+
+        // HISTORY LOGIC: Before switching, push CURRENT video to history
+        if (tubeState.videoId) {
+          tubeState.history.push({
+            videoId: tubeState.videoId,
+            title: tubeState.title,
+            thumbnail: tubeState.thumbnail,
+            startedBy: tubeState.ownerId // effectively who queued it
+          });
+          // Limit history size
+          if (tubeState.history.length > 20) tubeState.history.shift();
         }
 
-        tubeState.lastUpdate = Date.now();
+        // QUEUE LOGIC: If a video is ALREADY playing, add to queue instead of interrupting
+        if (tubeState.videoId) {
+          // Prevent duplicates in queue
+          if (tubeState.queue.some(q => q.videoId === incomingVideoId)) {
+            console.log(`[Tube] Ignoring duplicate queue request for ${incomingVideoId}`);
+            return;
+          }
 
-        // Broadcast tube-state with server-calculated position
+          const queueItem = {
+            videoId: incomingVideoId,
+            title: `Video: ${incomingVideoId}`,
+            thumbnail: `https://img.youtube.com/vi/${incomingVideoId}/mqdefault.jpg`,
+            startedBy: userName,
+            tstamp: Date.now()
+          };
+          tubeState.queue.push(queueItem);
+
+          // Emit "Queued" message (New message)
+          const queueMsg = {
+            id: `sys-queue-${Date.now()}`,
+            roomId,
+            text: `**Queued**: ${queueItem.title}`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-queue',
+            metadata: {
+              kicker: 'UP NEXT',
+              videoId: incomingVideoId,
+              title: queueItem.title,
+              startedBy: userName
+            },
+            timestamp: new Date().toISOString()
+          };
+          storeMessage(roomId, queueMsg);
+          io.to(roomId).emit('chat-message', queueMsg);
+
+          // Async fetch title for the queued item and update the message
+          getYouTubeVideoInfo(incomingVideoId).then(info => {
+            if (info && info.title) {
+              console.log(`[Tube] Fetched title for queued video: ${info.title}`);
+              // Update the queue item in memory
+              queueItem.title = info.title;
+              queueItem.thumbnail = info.thumbnail || queueItem.thumbnail;
+
+              // Update the queue message with real title
+              const updatedQueueMsg = {
+                ...queueMsg,
+                text: `**Queued by ${userName}**: ${info.title}`,
+                metadata: {
+                  ...queueMsg.metadata,
+                  title: info.title
+                }
+              };
+              storeMessage(roomId, updatedQueueMsg); // Persist to DB
+              io.to(roomId).emit('chat-message-update', updatedQueueMsg);
+            }
+          }).catch(err => console.error('[Tube] Queue title fetch error:', err));
+
+          // Broadcast state update (queue changed)
+          io.to(roomId).emit('tube-state', {
+            ...tubeState,
+            serverTime: Date.now(),
+            currentPosition: getTubePosition(roomId)
+          });
+          return; // EXIT EARLY - Do not change current video
+        }
+
+        // NEW VIDEO (Immediate Play) - update or create the tube message
+        const videoId = incomingVideoId;
+        const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+
+        // Update state
+        tubeState.videoId = videoId;
+        tubeState.title = `Video: ${videoId}`;
+        tubeState.thumbnail = thumbnail;
+        tubeState.pausedAt = 0;
+        tubeState.isPlaying = true; // Always auto-play new video
+        tubeState.playStartedAt = Date.now();
+        tubeState.startedBy = userName; // Track who started this video
+
+        // Update/Create "Now Playing" Message (initially with placeholder, async update will add title)
+        const msgId = isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`;
+        msgPayload = {
+          id: msgId,
+          roomId,
+          text: `**Now Playing** (queued by ${userName})`,
+          sender: 'System',
+          type: 'system',
+          systemType: 'tube-now-playing',
+          metadata: {
+            kicker: 'ON AIR',
+            videoId,
+            title: `Video: ${videoId}`,
+            thumbnail,
+            startedBy: userName
+          },
+          timestamp: new Date().toISOString()
+        };
+
+        // Store and emit immediately with placeholder
+        persistTubeState(roomId, videoId, `Video: ${videoId}`);
+        storeMessage(roomId, msgPayload);
+        io.to(roomId).emit('chat-message', msgPayload);
+        if (!global._lastTubeMsg) global._lastTubeMsg = {};
+        global._lastTubeMsg[`tube-${roomId}`] = msgId;
+
+        // Async fetch title and update message
+        getYouTubeVideoInfo(videoId).then(info => {
+          if (info && info.title) {
+            console.log(`[Tube] Direct Play - Fetched title: ${info.title}`);
+            tubeState.title = info.title;
+            tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
+
+            // Update the Now Playing message with real title
+            const updatedMsg = {
+              ...msgPayload,
+              text: `**Now Playing**: [${info.title}](https://youtu.be/${videoId}) (queued by ${userName})`,
+              metadata: {
+                ...msgPayload.metadata,
+                title: info.title,
+                thumbnail: tubeState.thumbnail
+              }
+            };
+            storeMessage(roomId, updatedMsg); // Persist to DB
+            io.to(roomId).emit('chat-message-update', updatedMsg);
+            io.to(roomId).emit('tube-state', { ...tubeState, serverTime: Date.now(), currentPosition: getTubePosition(roomId) });
+            persistTubeState(roomId, videoId, info.title);
+          }
+        }).catch(err => console.error('[Tube] Direct play title fetch error:', err));
+
+        // Emit initial tube state
         io.to(roomId).emit('tube-state', {
           ...tubeState,
           serverTime: Date.now(),
           currentPosition: getTubePosition(roomId)
         });
-      });
+        return; // Exit - message already emitted above
 
-      // Handle Tube Search
-      socket.on("tube-search", async ({ query }, callback) => {
-        try {
-          console.log(`[Tube] Searching for: ${query}`);
-          const searchResults = await ytsr(query, { limit: 10 });
-          // Filter only videos
-          const videos = searchResults.items
-            .filter(item => item.type === 'video')
-            .map(item => ({
-              title: item.title,
-              url: item.url,
-              thumbnail: item.bestThumbnail.url,
-              duration: item.duration,
-              author: item.author.name
-            }));
+      } else if (newState.type === 'ended' || (newState.videoId === null && tubeState.videoId)) {
+        // STOPPED / ENDED / EJECTED
 
-          if (callback) callback({ success: true, videos });
-        } catch (err) {
-          console.error('[Tube] Search failed:', err);
-          if (callback) callback({ success: false, error: 'Search failed' });
-        }
-      });
+        // Check Queue
+        if (tubeState.queue.length > 0) {
+          // PLAY NEXT FROM QUEUE
+          const nextVideo = tubeState.queue.shift();
 
-      // Fetch Profile Stats
-      socket.on("fetch-profile-stats", async ({ userId }, callback) => {
-        try {
-          if (!userId) {
-            callback({ error: "No User ID" });
-            return;
-          }
+          tubeState.videoId = nextVideo.videoId;
+          tubeState.title = nextVideo.title;
+          tubeState.thumbnail = nextVideo.thumbnail;
+          tubeState.pausedAt = 0;
+          tubeState.isPlaying = true;
+          tubeState.playStartedAt = Date.now();
 
-          const stats = await prisma.userStats.findUnique({
-            where: { userId }
-          });
+          // Re-use the existing Now Playing message logic to update it
+          msgPayload = {
+            id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**Now Playing**`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-now-playing',
+            metadata: {
+              kicker: 'ON AIR',
+              videoId: nextVideo.videoId,
+              title: nextVideo.title,
+              thumbnail: nextVideo.thumbnail,
+              startedBy: nextVideo.startedBy
+            },
+            timestamp: new Date().toISOString()
+          };
 
-          // Also calculate connection status
-          let isOnline = false;
-          let isIdle = true;
-          let lastSeen = null; // Could fetch from User table if needed
-
-          // Check if online in any room
-          for (const room of rooms.values()) {
-            for (const u of room.values()) {
-              if (u.id === userId) {
-                isOnline = true;
-                isIdle = false; // Simplified; real idle tracking requires more state
-                break;
-              }
-            }
-            if (isOnline) break;
-          }
-
-          callback({
-            stats: stats || { chatPoints: 0, timeOnSiteSeconds: 0, camTimeSeconds: 0, messagesSent: 0, emotesGiven: 0, emotesReceived: 0 },
-            status: { isOnline, isIdle }
-          });
-        } catch (e) {
-          console.error("Error fetching stats:", e);
-          callback({ error: "Server Error" });
-        }
-      });
-
-      // === MODERATION EVENTS ===
-
-      // Shadow Mute: Toggle shadow mute for a user (PERSISTENT for DB users, in-memory for IRC)
-      socket.on('mod-shadow-mute', async ({ targetUserId, targetUserName, mute }) => {
-        console.log(`[Mod-Debug] mod-shadow-mute received. targetUserId: ${targetUserId}, targetUserName: ${targetUserName}, mute: ${mute}`);
-        const modUser = socket.data.user;
-        console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
-        if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
-          console.log(`[Mod] Unauthorized shadow-mute attempt by ${modUser?.name} (role: ${modUser?.role})`);
-          return;
-        }
-
-        // Use ID if available, otherwise use name (for IRC/guest users)
-        const muteKey = targetUserId || `name:${targetUserName}`;
-
-        // Update in-memory Set
-        if (mute) {
-          shadowMutedUsers.add(muteKey);
-          console.log(`[Mod] ${modUser.name} shadow muted user ${muteKey}`);
         } else {
-          shadowMutedUsers.delete(muteKey);
-          console.log(`[Mod] ${modUser.name} removed shadow mute from user ${muteKey}`);
-        }
-
-        // PERSIST to database (only if we have a user ID)
-        if (targetUserId) {
-          try {
-            await prisma.user.update({
-              where: { id: targetUserId },
-              data: { isShadowMuted: mute }
-            });
-            console.log(`[Mod] Shadow mute persisted to database for ${targetUserId}`);
-          } catch (e) {
-            console.error(`[Mod] Failed to persist shadow mute:`, e.message);
+          // EMPTY QUEUE - REALLY STOP
+          tubeState.isPlaying = false;
+          tubeState.playStartedAt = 0;
+          tubeState.pausedAt = 0;
+          if (newState.videoId === null) {
+            tubeState.videoId = null; // Clear video if explicitly ejected
+            tubeState.title = null;
+            tubeState.thumbnail = null;
           }
+          persistTubeState(roomId, null, null);
+
+          msgPayload = {
+            id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**Playback Stopped**`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-stopped',
+            metadata: { kicker: 'OFF AIR' },
+            timestamp: new Date().toISOString()
+          };
         }
 
-        // Notify all mods about the mute status change
-        const roomId = socket.data.roomId;
-        const room = rooms.get(roomId);
-        if (room) {
-          room.forEach((user, socketId) => {
-            if (['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role)) {
-              io.to(socketId).emit('mod-mute-status', {
-                targetUserId: muteKey,
-                targetUserName,
-                isMuted: mute
-              });
-            }
-          });
-        }
-      });
+        // Emit Tube State Update
+        io.to(roomId).emit('tube-state', {
+          ...tubeState,
+          serverTime: Date.now(),
+          currentPosition: getTubePosition(roomId)
+        });
 
-      // Wipe Messages: Mark user's messages as hidden for non-admins (PERSISTENT)
-      socket.on('mod-wipe-messages', async ({ targetUserId, targetUserName }) => {
-        console.log(`[Mod-Debug] mod-wipe-messages received. targetUserId: ${targetUserId}, targetUserName: ${targetUserName}`);
-        const modUser = socket.data.user;
-        console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
-        if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
-          console.log(`[Mod] Unauthorized wipe-messages attempt by ${modUser?.name} (role: ${modUser?.role})`);
-          return;
-        }
+        // 5. Async Title Fetching (Fire and Forget)
+        if (tubeState.videoId && (!tubeState.title || tubeState.title.startsWith('Video:'))) {
+          getYouTubeVideoInfo(tubeState.videoId).then(info => {
+            if (info && info.title) {
+              console.log(`[Tube] Fetched title for ${tubeState.videoId}: ${info.title}`);
+              tubeState.title = info.title;
+              tubeState.thumbnail = info.thumbnail || tubeState.thumbnail;
 
-        const roomId = socket.data.roomId || 'default-room';
-        const wipeKey = targetUserId || `name:${targetUserName}`;
-        wipedUsers.add(wipeKey);
-        console.log(`[Mod] ${modUser.name} wiped messages from user ${wipeKey}`);
-
-        // Use provided targetUserName or find it from room
-        let userName = targetUserName;
-        if (!userName && targetUserId) {
-          const room = rooms.get(roomId);
-          if (room) {
-            for (const [_, userData] of room) {
-              if (userData.id === targetUserId) {
-                userName = userData.name;
-                break;
+              // Update the system message if it exists
+              if (systemMsg) {
+                systemMsg.text = `**Now Playing**: [${info.title}](https://youtu.be/${tubeState.videoId})`;
+                if (systemMsg.metadata) {
+                  systemMsg.metadata.title = info.title;
+                  systemMsg.metadata.thumbnail = tubeState.thumbnail;
+                }
+                // Emit update for the message
+                io.to(roomId).emit('chat-message-update', systemMsg);
               }
-            }
-          }
-        }
 
-        // Collect message IDs to hide (check senderId, sender.id, or sender name)
-        const messagesToHide = (messageHistory[roomId] || [])
-          .filter(m => {
-            if (targetUserId && m.senderId === targetUserId) return true;
-            if (targetUserId && m.sender?.id === targetUserId) return true;
-            if (userName && m.sender === userName) return true;
-            return false;
-          })
-          .map(m => m.id);
-
-        console.log(`[Mod] Wipe: Found ${messagesToHide.length} messages to hide for user ${wipeKey} (${userName})`);
-
-        // PERSIST to database - mark messages as wiped
-        if (messagesToHide.length > 0) {
-          try {
-            await prisma.chatMessage.updateMany({
-              where: { id: { in: messagesToHide } },
-              data: { isWiped: true }
-            });
-            console.log(`[Mod] Wipe persisted to database: ${messagesToHide.length} messages`);
-          } catch (e) {
-            console.error(`[Mod] Failed to persist wipe:`, e.message);
-          }
-        }
-
-        // Also mark in memory history
-        (messageHistory[roomId] || []).forEach(m => {
-          if (messagesToHide.includes(m.id)) {
-            m.isWiped = true;
-          }
-        });
-
-        // Broadcast wipe command to room (clients will hide matching messages)
-        io.to(roomId).emit('mod-messages-wiped', {
-          targetUserId,
-          messageIds: messagesToHide
-        });
-      });
-
-      // Force Cam Down: Force user to stop broadcasting
-      socket.on('mod-force-cam-down', ({ targetSocketId, banMinutes = 0 }) => {
-        const modUser = socket.data.user;
-        if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
-          return;
-        }
-
-        const roomId = socket.data.roomId;
-        const room = rooms.get(roomId);
-        if (!room) return;
-
-        const targetUser = room.get(targetSocketId);
-        if (!targetUser) return;
-
-        console.log(`[Mod] ${modUser.name} forced cam down on ${targetUser.name} (ban: ${banMinutes}m)`);
-
-        // Set cam ban if banMinutes > 0
-        if (banMinutes > 0 && targetUser.id) {
-          const banUntil = Date.now() + (banMinutes * 60 * 1000);
-          camBannedUsers.set(targetUser.id, { until: banUntil });
-        }
-
-        // Send force-cam-down to target socket
-        io.to(targetSocketId).emit('force-cam-down', {
-          banMinutes,
-          reason: 'Moderator action'
-        });
-
-        // Update user state in room
-        targetUser.isVideoEnabled = false;
-        room.set(targetSocketId, targetUser);
-
-        // Broadcast user update
-        io.to(roomId).emit('user-updated', { socketId: targetSocketId, user: targetUser });
-      });
-
-      // Check cam ban status (called by client before enabling cam)
-      socket.on('check-cam-ban', (callback) => {
-        const userId = socket.data.user?.id;
-        if (!userId) return callback({ banned: false });
-
-        const ban = camBannedUsers.get(userId);
-        if (!ban) return callback({ banned: false });
-
-        if (ban.until > Date.now()) {
-          const remainingMs = ban.until - Date.now();
-          callback({ banned: true, remainingSeconds: Math.ceil(remainingMs / 1000) });
-        } else {
-          // Ban expired, remove it
-          camBannedUsers.delete(userId);
-          callback({ banned: false });
-        }
-      });
-
-      // Disconnect
-      socket.on("disconnect", async () => {
-        console.log("Client disconnected:", socket.id);
-        const fallback = lastKnownUsers.get(socket.id);
-        const { roomId, user, joinMsgId } = {
-          roomId: socket.data.roomId || fallback?.roomId,
-          user: socket.data.user || fallback?.user,
-          joinMsgId: socket.data.joinMsgId
-        };
-
-        if (roomId) {
-          const room = rooms.get(roomId);
-          if (room) {
-            room.delete(socket.id);
-
-            // Update room member count in database
-            try {
-              await prisma.room.update({
-                where: { slug: roomId },
-                data: { memberCount: room.size }
-              });
-            } catch (e) {
-              // Room might not exist in DB, ignore
-            }
-
-            const tubeState = getTubeState(roomId);
-
-            if (room.size === 0) {
-              rooms.delete(roomId);
-              if (tubeState) tubeState.ownerId = null;
-            } else if (tubeState && tubeState.ownerId === socket.id) {
-              const nextOwnerId = room.keys().next().value;
-              tubeState.ownerId = nextOwnerId;
-              console.log(`[Tube] Handed over ownership to ${nextOwnerId}`);
+              // Broadcast state update with new title
               io.to(roomId).emit('tube-state', {
                 ...tubeState,
                 serverTime: Date.now(),
                 currentPosition: getTubePosition(roomId)
               });
             }
+          }).catch(err => console.error("Title fetch error:", err));
+        }
+
+        // 6. Queue Title Fetching (Process new queue items)
+        tubeState.queue.forEach(item => {
+          if (!item.title || item.title.startsWith('Video:')) {
+            getYouTubeVideoInfo(item.videoId).then(info => {
+              if (info && info.title) {
+                item.title = info.title;
+                item.thumbnail = info.thumbnail || item.thumbnail;
+              }
+            });
           }
-          socket.to(roomId).emit("user-left", { socketId: socket.id });
-          socket.to(roomId).emit("user-disconnected", socket.id);
+        });
 
-          // System Message: Disconnect (Smart Bundling)
-          if (user) {
-            const activeBundle = getBundle(roomId, 'join');
+      } else if (newState.isPlaying !== undefined && newState.isPlaying !== tubeState.isPlaying) {
+        // PLAY/PAUSE toggle - update the existing message
+        if (newState.isPlaying) {
+          msgPayload = {
+            id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**${userName}** resumed playback`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-resumed',
+            metadata: {
+              kicker: 'PLAYING',
+              videoId: tubeState.videoId,
+              title: tubeState.title || `Video: ${tubeState.videoId}`,
+              thumbnail: tubeState.thumbnail,
+              startedBy: userName
+            },
+            timestamp: new Date().toISOString()
+          };
+          tubeState.isPlaying = true;
+          if (newState.timestamp !== undefined) {
+            tubeState.pausedAt = newState.timestamp;
+          }
+          tubeState.playStartedAt = Date.now();
+        } else {
+          msgPayload = {
+            id: isUpdate ? lastTubeMsgId : `sys-tube-${Date.now()}`,
+            roomId,
+            text: `**${userName}** paused`,
+            sender: 'System',
+            type: 'system',
+            systemType: 'tube-paused',
+            metadata: {
+              kicker: 'PAUSED',
+              videoId: tubeState.videoId,
+              title: tubeState.title || `Video: ${tubeState.videoId}`,
+              thumbnail: tubeState.thumbnail,
+              startedBy: userName
+            },
+            timestamp: new Date().toISOString()
+          };
+          tubeState.isPlaying = false;
+          tubeState.pausedAt = getTubePosition();
+          tubeState.playStartedAt = 0;
+        }
+      }
 
-            if (activeBundle && joinMsgId && activeBundle.id === joinMsgId) {
-              // Update Bundle
-              const userInBundle = activeBundle.users.find(u => u.name === user.name);
-              if (userInBundle) {
-                userInBundle.action = 'joined-left';
-              } else {
-                activeBundle.users.push({ ...user, action: 'left', timestamp: Date.now() });
-              }
+      // Emit message if we have one
+      if (msgPayload) {
+        console.log(`[Tube] ${isUpdate ? 'UPDATING' : 'CREATING'} message: ${msgPayload.systemType}`);
 
-              const total = activeBundle.users.length;
-              const active = activeBundle.users.filter(u => u.action === 'joined').length;
+        if (isUpdate) {
+          // Update existing message in history
+          if (messageHistory[roomId]) {
+            const idx = messageHistory[roomId].findIndex(m => m.id === lastTubeMsgId);
+            if (idx !== -1) {
+              messageHistory[roomId][idx] = msgPayload;
+            }
+          }
+          io.to(roomId).emit('chat-message-update', msgPayload);
+        } else {
+          // Create new message
+          storeMessage(roomId, msgPayload);
+          io.to(roomId).emit('chat-message', msgPayload);
+        }
 
-              const updateMsg = {
-                id: joinMsgId,
-                roomId,
-                sender: 'System',
-                text: `${total} Users visited (${active} active)`,
-                type: 'system',
-                systemType: 'join-leave',
-                metadata: { users: activeBundle.users },
-                timestamp: new Date().toISOString()
-              };
+        // Track this message ID
+        if (!global._lastTubeMsg) global._lastTubeMsg = {};
+        global._lastTubeMsg[tubeMsgKey] = msgPayload.id;
+      }
 
-              if (messageHistory[roomId]) {
-                const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
-                if (idx !== -1) {
-                  messageHistory[roomId][idx] = updateMsg;
-                }
-              }
-              saveMessageToDB(updateMsg);
-              io.to(roomId).emit('chat-message-update', updateMsg);
+      tubeState.lastUpdate = Date.now();
 
-            } else {
-              // Minimal fallback - skip explicit message for old sessions
-              console.log(`User left room ${roomId}:`, user.name);
+      // Broadcast tube-state with server-calculated position
+      io.to(roomId).emit('tube-state', {
+        ...tubeState,
+        serverTime: Date.now(),
+        currentPosition: getTubePosition(roomId)
+      });
+    });
+
+    // Handle Tube Search
+    socket.on("tube-search", async ({ query }, callback) => {
+      try {
+        console.log(`[Tube] Searching for: ${query}`);
+        const searchResults = await ytsr(query, { limit: 10 });
+        // Filter only videos
+        const videos = searchResults.items
+          .filter(item => item.type === 'video')
+          .map(item => ({
+            title: item.title,
+            url: item.url,
+            thumbnail: item.bestThumbnail.url,
+            duration: item.duration,
+            author: item.author.name
+          }));
+
+        if (callback) callback({ success: true, videos });
+      } catch (err) {
+        console.error('[Tube] Search failed:', err);
+        if (callback) callback({ success: false, error: 'Search failed' });
+      }
+    });
+
+    // Fetch Profile Stats
+    socket.on("fetch-profile-stats", async ({ userId }, callback) => {
+      try {
+        if (!userId) {
+          callback({ error: "No User ID" });
+          return;
+        }
+
+        const stats = await prisma.userStats.findUnique({
+          where: { userId }
+        });
+
+        // Also calculate connection status
+        let isOnline = false;
+        let isIdle = true;
+        let lastSeen = null; // Could fetch from User table if needed
+
+        // Check if online in any room
+        for (const room of rooms.values()) {
+          for (const u of room.values()) {
+            if (u.id === userId) {
+              isOnline = true;
+              isIdle = false; // Simplified; real idle tracking requires more state
+              break;
+            }
+          }
+          if (isOnline) break;
+        }
+
+        callback({
+          stats: stats || { chatPoints: 0, timeOnSiteSeconds: 0, camTimeSeconds: 0, messagesSent: 0, emotesGiven: 0, emotesReceived: 0 },
+          status: { isOnline, isIdle }
+        });
+      } catch (e) {
+        console.error("Error fetching stats:", e);
+        callback({ error: "Server Error" });
+      }
+    });
+
+    // === MODERATION EVENTS ===
+
+    // Shadow Mute: Toggle shadow mute for a user (PERSISTENT for DB users, in-memory for IRC)
+    socket.on('mod-shadow-mute', async ({ targetUserId, targetUserName, mute }) => {
+      console.log(`[Mod-Debug] mod-shadow-mute received. targetUserId: ${targetUserId}, targetUserName: ${targetUserName}, mute: ${mute}`);
+      const modUser = socket.data.user;
+      console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
+      if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
+        console.log(`[Mod] Unauthorized shadow-mute attempt by ${modUser?.name} (role: ${modUser?.role})`);
+        return;
+      }
+
+      // Use ID if available, otherwise use name (for IRC/guest users)
+      const muteKey = targetUserId || `name:${targetUserName}`;
+
+      // Update in-memory Set
+      if (mute) {
+        shadowMutedUsers.add(muteKey);
+        console.log(`[Mod] ${modUser.name} shadow muted user ${muteKey}`);
+      } else {
+        shadowMutedUsers.delete(muteKey);
+        console.log(`[Mod] ${modUser.name} removed shadow mute from user ${muteKey}`);
+      }
+
+      // PERSIST to database (only if we have a user ID)
+      if (targetUserId) {
+        try {
+          await prisma.user.update({
+            where: { id: targetUserId },
+            data: { isShadowMuted: mute }
+          });
+          console.log(`[Mod] Shadow mute persisted to database for ${targetUserId}`);
+        } catch (e) {
+          console.error(`[Mod] Failed to persist shadow mute:`, e.message);
+        }
+      }
+
+      // Notify all mods about the mute status change
+      const roomId = socket.data.roomId;
+      const room = rooms.get(roomId);
+      if (room) {
+        room.forEach((user, socketId) => {
+          if (['ADMIN', 'MODERATOR', 'OWNER'].includes(user.role)) {
+            io.to(socketId).emit('mod-mute-status', {
+              targetUserId: muteKey,
+              targetUserName,
+              isMuted: mute
+            });
+          }
+        });
+      }
+    });
+
+    // Wipe Messages: Mark user's messages as hidden for non-admins (PERSISTENT)
+    socket.on('mod-wipe-messages', async ({ targetUserId, targetUserName }) => {
+      console.log(`[Mod-Debug] mod-wipe-messages received. targetUserId: ${targetUserId}, targetUserName: ${targetUserName}`);
+      const modUser = socket.data.user;
+      console.log(`[Mod-Debug] modUser:`, modUser?.name, 'role:', modUser?.role);
+      if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
+        console.log(`[Mod] Unauthorized wipe-messages attempt by ${modUser?.name} (role: ${modUser?.role})`);
+        return;
+      }
+
+      const roomId = socket.data.roomId || 'default-room';
+      const wipeKey = targetUserId || `name:${targetUserName}`;
+      wipedUsers.add(wipeKey);
+      console.log(`[Mod] ${modUser.name} wiped messages from user ${wipeKey}`);
+
+      // Use provided targetUserName or find it from room
+      let userName = targetUserName;
+      if (!userName && targetUserId) {
+        const room = rooms.get(roomId);
+        if (room) {
+          for (const [_, userData] of room) {
+            if (userData.id === targetUserId) {
+              userName = userData.name;
+              break;
             }
           }
         }
+      }
 
-        // Cleanup IRC
-        if (socket.data.ircBridge) {
-          console.log(`[Server] Disconnecting IRC Bridge for ${user?.name}`);
-          socket.data.ircBridge.disconnect();
-          socket.data.ircBridge = null;
+      // Collect message IDs to hide (check senderId, sender.id, or sender name)
+      const messagesToHide = (messageHistory[roomId] || [])
+        .filter(m => {
+          if (targetUserId && m.senderId === targetUserId) return true;
+          if (targetUserId && m.sender?.id === targetUserId) return true;
+          if (userName && m.sender === userName) return true;
+          return false;
+        })
+        .map(m => m.id);
+
+      console.log(`[Mod] Wipe: Found ${messagesToHide.length} messages to hide for user ${wipeKey} (${userName})`);
+
+      // PERSIST to database - mark messages as wiped
+      if (messagesToHide.length > 0) {
+        try {
+          await prisma.chatMessage.updateMany({
+            where: { id: { in: messagesToHide } },
+            data: { isWiped: true }
+          });
+          console.log(`[Mod] Wipe persisted to database: ${messagesToHide.length} messages`);
+        } catch (e) {
+          console.error(`[Mod] Failed to persist wipe:`, e.message);
         }
+      }
 
-        // Cleanup persistence cache
-        setTimeout(() => {
-          lastKnownUsers.delete(socket.id);
-        }, 5000); // 5s grace period for re-joins/updates
+      // Also mark in memory history
+      (messageHistory[roomId] || []).forEach(m => {
+        if (messagesToHide.includes(m.id)) {
+          m.isWiped = true;
+        }
+      });
+
+      // Broadcast wipe command to room (clients will hide matching messages)
+      io.to(roomId).emit('mod-messages-wiped', {
+        targetUserId,
+        messageIds: messagesToHide
       });
     });
+
+    // Force Cam Down: Force user to stop broadcasting
+    socket.on('mod-force-cam-down', ({ targetSocketId, banMinutes = 0 }) => {
+      const modUser = socket.data.user;
+      if (!modUser || !['ADMIN', 'MODERATOR', 'OWNER'].includes(modUser.role)) {
+        return;
+      }
+
+      const roomId = socket.data.roomId;
+      const room = rooms.get(roomId);
+      if (!room) return;
+
+      const targetUser = room.get(targetSocketId);
+      if (!targetUser) return;
+
+      console.log(`[Mod] ${modUser.name} forced cam down on ${targetUser.name} (ban: ${banMinutes}m)`);
+
+      // Set cam ban if banMinutes > 0
+      if (banMinutes > 0 && targetUser.id) {
+        const banUntil = Date.now() + (banMinutes * 60 * 1000);
+        camBannedUsers.set(targetUser.id, { until: banUntil });
+      }
+
+      // Send force-cam-down to target socket
+      io.to(targetSocketId).emit('force-cam-down', {
+        banMinutes,
+        reason: 'Moderator action'
+      });
+
+      // Update user state in room
+      targetUser.isVideoEnabled = false;
+      room.set(targetSocketId, targetUser);
+
+      // Broadcast user update
+      io.to(roomId).emit('user-updated', { socketId: targetSocketId, user: targetUser });
+    });
+
+    // Check cam ban status (called by client before enabling cam)
+    socket.on('check-cam-ban', (callback) => {
+      const userId = socket.data.user?.id;
+      if (!userId) return callback({ banned: false });
+
+      const ban = camBannedUsers.get(userId);
+      if (!ban) return callback({ banned: false });
+
+      if (ban.until > Date.now()) {
+        const remainingMs = ban.until - Date.now();
+        callback({ banned: true, remainingSeconds: Math.ceil(remainingMs / 1000) });
+      } else {
+        // Ban expired, remove it
+        camBannedUsers.delete(userId);
+        callback({ banned: false });
+      }
+    });
+
+    // Disconnect
+    socket.on("disconnect", async () => {
+      console.log("Client disconnected:", socket.id);
+      const fallback = lastKnownUsers.get(socket.id);
+      const { roomId, user, joinMsgId } = {
+        roomId: socket.data.roomId || fallback?.roomId,
+        user: socket.data.user || fallback?.user,
+        joinMsgId: socket.data.joinMsgId
+      };
+
+      if (roomId) {
+        const room = rooms.get(roomId);
+        if (room) {
+          room.delete(socket.id);
+
+          // Update room member count in database
+          try {
+            await prisma.room.update({
+              where: { slug: roomId },
+              data: { memberCount: room.size }
+            });
+          } catch (e) {
+            // Room might not exist in DB, ignore
+          }
+
+          const tubeState = getTubeState(roomId);
+
+          if (room.size === 0) {
+            rooms.delete(roomId);
+            if (tubeState) tubeState.ownerId = null;
+          } else if (tubeState && tubeState.ownerId === socket.id) {
+            const nextOwnerId = room.keys().next().value;
+            tubeState.ownerId = nextOwnerId;
+            console.log(`[Tube] Handed over ownership to ${nextOwnerId}`);
+            io.to(roomId).emit('tube-state', {
+              ...tubeState,
+              serverTime: Date.now(),
+              currentPosition: getTubePosition(roomId)
+            });
+          }
+        }
+        socket.to(roomId).emit("user-left", { socketId: socket.id });
+        socket.to(roomId).emit("user-disconnected", socket.id);
+
+        // System Message: Disconnect (Smart Bundling)
+        if (user) {
+          const activeBundle = getBundle(roomId, 'join');
+
+          if (activeBundle && joinMsgId && activeBundle.id === joinMsgId) {
+            // Update Bundle
+            const userInBundle = activeBundle.users.find(u => u.name === user.name);
+            if (userInBundle) {
+              userInBundle.action = 'joined-left';
+            } else {
+              activeBundle.users.push({ ...user, action: 'left', timestamp: Date.now() });
+            }
+
+            const total = activeBundle.users.length;
+            const active = activeBundle.users.filter(u => u.action === 'joined').length;
+
+            const updateMsg = {
+              id: joinMsgId,
+              roomId,
+              sender: 'System',
+              text: `${total} Users visited (${active} active)`,
+              type: 'system',
+              systemType: 'join-leave',
+              metadata: { users: activeBundle.users },
+              timestamp: new Date().toISOString()
+            };
+
+            if (messageHistory[roomId]) {
+              const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
+              if (idx !== -1) {
+                messageHistory[roomId][idx] = updateMsg;
+              }
+            }
+            saveMessageToDB(updateMsg);
+            io.to(roomId).emit('chat-message-update', updateMsg);
+
+          } else {
+            // Minimal fallback - skip explicit message for old sessions
+            console.log(`User left room ${roomId}:`, user.name);
+          }
+        }
+      }
+
+      // Cleanup IRC
+      if (socket.data.ircBridge) {
+        console.log(`[Server] Disconnecting IRC Bridge for ${user?.name}`);
+        socket.data.ircBridge.disconnect();
+        socket.data.ircBridge = null;
+      }
+
+      // Cleanup persistence cache
+      setTimeout(() => {
+        lastKnownUsers.delete(socket.id);
+      }, 5000); // 5s grace period for re-joins/updates
+    });
+  });
 
   httpServer.listen(port, "0.0.0.0", () => {
     console.log(`> Ready on http://0.0.0.0:${port}`);
