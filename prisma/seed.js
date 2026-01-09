@@ -4,10 +4,12 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Seeding rooms...');
 
-    // Create General room (default)
+    // Create General room (default) or update if exists
     const generalRoom = await prisma.room.upsert({
         where: { slug: 'general' },
-        update: {},
+        update: {
+            ircChannel: '#camrooms-general' // Ensure correct channel name
+        },
         create: {
             name: 'General',
             slug: 'general',
