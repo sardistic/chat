@@ -1922,3 +1922,63 @@ body,
   top: 20px;
   left: 20px;
 }
+
+/* Room Browser Login Prompt */
+.room-browser-login-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.15), rgba(88, 101, 242, 0.05));
+  border: 1px solid rgba(88, 101, 242, 0.3);
+  border-radius: var(--radius-lg);
+  margin-top: 12px;
+}
+
+.login-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+}
+
+.login-prompt-content p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.login-prompt-content p:first-child {
+  color: var(--text-primary);
+}
+
+.discord-login-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #5865F2;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.discord-login-btn:hover {
+  background: #4752C4;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 600px) {
+  .room-browser-login-prompt {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .login-prompt-content {
+    flex-direction: column;
+  }
+}

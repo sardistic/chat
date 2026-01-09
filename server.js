@@ -1022,7 +1022,7 @@ app.prepare().then(async () => {
     }
 
     // Handle room joining (Unified)
-    socket.on('join-room', ({ roomId, user, ircConfig }) => {
+    socket.on('join-room', async ({ roomId, user, ircConfig }) => {
       console.log(`👤 User ${user.name} (${socket.id}) joining room ${roomId}`);
 
       socket.join(roomId);
@@ -1212,7 +1212,21 @@ app.prepare().then(async () => {
         }
       }, bridgeOptions);
 
-      console.log(`✅ ${user.name} joined room. Total users: ${room.size}`);
+      console.log(`✅ ${user.name} joined room ${roomId}. Total users: ${room.size}`);
+
+      // Update room member count in database
+      try {
+        await prisma.room.update({
+          where: { slug: roomId },
+          data: {
+            memberCount: room.size,
+            lastActive: new Date()
+          }
+        });
+      } catch (e) {
+        // Room might not exist in DB (e.g., old "default-room"), ignore
+        console.log(`[Room] Could not update member count for ${roomId}:`, e.message);
+      }
     });
 
     // Request streams from broadcasters (new user wants to receive existing broadcasts)
@@ -1238,7 +1252,7 @@ app.prepare().then(async () => {
     });
 
     // Handle Leave
-    socket.on("leave-room", (roomId) => {
+    socket.on("leave-room", async (roomId) => {
       socket.leave(roomId);
       console.log(`User ${socket.id} left room ${roomId}`);
 
@@ -1250,6 +1264,17 @@ app.prepare().then(async () => {
         const u = room.get(socket.id);
         if (u?.name) userName = u.name;
         room.delete(socket.id);
+
+        // Update room member count in database
+        try {
+          await prisma.room.update({
+            where: { slug: roomId },
+            data: { memberCount: room.size }
+          });
+        } catch (e) {
+          // Room might not exist in DB, ignore
+        }
+
         if (room.size === 0) rooms.delete(roomId);
       }
 
@@ -2497,7 +2522,7 @@ app.prepare().then(async () => {
     });
 
     // Disconnect
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("Client disconnected:", socket.id);
       const fallback = lastKnownUsers.get(socket.id);
       const { roomId, user, joinMsgId } = {
@@ -2510,6 +2535,17 @@ app.prepare().then(async () => {
         const room = rooms.get(roomId);
         if (room) {
           room.delete(socket.id);
+
+          // Update room member count in database
+          try {
+            await prisma.room.update({
+              where: { slug: roomId },
+              data: { memberCount: room.size }
+            });
+          } catch (e) {
+            // Room might not exist in DB, ignore
+          }
+
           if (room.size === 0) {
             rooms.delete(roomId);
             tubeState.ownerId = null;
