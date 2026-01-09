@@ -151,6 +151,24 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                     transform: translateY(-4px);
                     box-shadow: 0 12px 24px rgba(0,0,0,0.3);
                 }
+                .room-hover-details {
+                    position: absolute;
+                    inset: 0;
+                    background: rgba(0,0,0,0.8);
+                    backdrop-filter: blur(4px);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                    z-index: 10;
+                    padding: 20px;
+                    text-align: center;
+                }
+                .room-card:hover .room-hover-details {
+                    opacity: 1;
+                }
             `}</style>
 
             {/* Header */}
@@ -185,7 +203,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                         key={room.id}
                         className={`room-card ${getActivityClass(room.activityScore)}`}
                         onClick={() => onSelectRoom(room)}
-                        title={`Created by user ${room.creatorId || 'System'}`}
+                        style={{ position: 'relative' }}
                     >
                         <div className="room-card-banner" style={{
                             backgroundImage: room.bannerUrl ? `url(${room.bannerUrl})` : 'linear-gradient(135deg, #3b3c45, #1e1e24)'
@@ -228,6 +246,30 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                                     <span>{room.memberCount} online</span>
                                 </div>
                                 <span>{formatTimeAgo(room.lastActive)}</span>
+                            </div>
+                        </div>
+
+                        {/* Hover Overlay */}
+                        <div className="room-hover-details" onClick={(e) => { e.stopPropagation(); onSelectRoom(room); }}>
+                            <div style={{ transform: 'translateY(10px)', transition: 'transform 0.2s' }}>
+                                <h4 style={{ color: 'white', margin: '0 0 4px', fontSize: '16px' }}>{room.name}</h4>
+                                {room.creatorId && (
+                                    <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '8px' }}>
+                                        <Icon icon="fa:user-circle" style={{ marginRight: '4px' }} />
+                                        Owner: {room.creatorId}
+                                    </div>
+                                )}
+                                <div style={{
+                                    background: room.activityScore > 50 ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255,255,255,0.1)',
+                                    color: room.activityScore > 50 ? '#ff6b6b' : '#fff',
+                                    padding: '4px 8px', borderRadius: '12px', fontSize: '11px',
+                                    display: 'inline-block', marginBottom: '12px'
+                                }}>
+                                    {room.activityScore > 50 ? '🔥 High Activity' : '🟢 Online'}
+                                </div>
+                                <div className="btn primary small" style={{ width: 'auto', margin: '0 auto' }}>
+                                    Join Room
+                                </div>
                             </div>
                         </div>
                     </div>

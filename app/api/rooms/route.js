@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/rooms - List all public rooms
+// GET /api/rooms - List all public rooms
 export async function GET() {
     try {
         const rooms = await prisma.room.findMany({
@@ -29,7 +30,44 @@ export async function GET() {
             }
         });
 
-        return NextResponse.json(rooms);
+        // Computed metadata (Server-side heuristic)
+        const enrichedRooms = await Promise.all(rooms.map(async (room) => {
+            const now = new Date();
+            const lastActive = new Date(room.lastActive);
+            const diffMins = (now - lastActive) / 1000 / 60;
+
+            // Dynamic Activity Score: High if active in last 15 mins
+            // 100 if 0 mins, 0 if > 100 mins
+            let score = Math.max(0, 100 - Math.floor(diffMins));
+
+            // If member count is high, boost score
+            if (room.memberCount > 0) score = Math.max(score, 50 + (room.memberCount * 10));
+
+            let summary = room.shortSummary;
+
+            // Generate heuristic summary if missing and room is active
+            if (!summary && score > 20) {
+                const recentMessages = await prisma.chatMessage.findMany({
+                    where: { roomId: room.id, isWiped: false },
+                    orderBy: { timestamp: 'desc' },
+                    take: 3,
+                    select: { sender: true, text: true }
+                });
+
+                if (recentMessages.length > 0) {
+                    const users = [...new Set(recentMessages.map(m => m.sender))].slice(0, 2).join(' & ');
+                    summary = `${users} are chatting`;
+                }
+            }
+
+            return {
+                ...room,
+                activityScore: score,
+                shortSummary: summary
+            };
+        }));
+
+        return NextResponse.json(enrichedRooms);
     } catch (error) {
         console.error('[Rooms API] GET error:', error);
         return NextResponse.json({ error: 'Failed to fetch rooms' }, { status: 500 });
