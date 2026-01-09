@@ -350,7 +350,7 @@ export default function EntryScreen({ onJoin }) {
                                     name: sanitizeUsername(session.user.displayName || session.user.globalName || session.user.name),
                                     avatar: session.user.image || session.user.avatarUrl,
                                     image: session.user.image,
-                                    userId: session.user.id,
+                                    id: session.user.id,
                                     discordId: session.user.discordId,
                                     globalName: session.user.globalName,
                                     username: session.user.username,
