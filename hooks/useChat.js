@@ -10,14 +10,19 @@ export function useChat(roomId, user) {
     const [typingUsers, setTypingUsers] = useState(new Set());
     const [isBuilding, setIsBuilding] = useState(false);
     const typingTimeoutRef = useRef(null);
+    const userRef = useRef(user);
+    useEffect(() => { userRef.current = user; }, [user]);
 
     // Blocking State
     const [blockedIds, setBlockedIds] = useState(new Set());
     useEffect(() => {
         if (user?.id) {
-            fetch('/api/user/block').then(res => res.json()).then(ids => {
-                if (Array.isArray(ids)) setBlockedIds(new Set(ids));
-            }).catch(e => console.error("Failed to load blocks", e));
+            fetch('/api/user/block')
+                .then(res => res.ok ? res.json() : [])
+                .then(ids => {
+                    if (Array.isArray(ids)) setBlockedIds(new Set(ids));
+                })
+                .catch(e => console.error("Failed to load blocks", e));
         }
     }, [user?.id]);
 
@@ -103,9 +108,6 @@ export function useChat(roomId, user) {
     useEffect(() => {
         if (!socket || !isConnected) return;
 
-        if (socket.hasListeners('chat-message')) {
-            // console.warn('⚠️ useChat: socket already has listeners');
-        }
 
         const handleMessage = (msg) => {
             // 1. Strict Deduplication (ID mismatch)
@@ -124,7 +126,7 @@ export function useChat(roomId, user) {
             if (msg.systemType === 'deploy-success' || msg.systemType === 'deploy-fail') setIsBuilding(false);
 
             // 2. Client-Side Duplicate Suppression for IRC Echoes
-            if (user && msg.sender === user.name && msg.source === 'irc') {
+            if (userRef.current && msg.sender === userRef.current.name && msg.source === 'irc') {
                 console.log(`🛡️ Suppressed self-echo from IRC: ${msg.id}`);
                 seenIdsRef.current.add(msg.id);
                 return;
@@ -155,7 +157,7 @@ export function useChat(roomId, user) {
         };
 
         const handleUserTyping = ({ user: typingUser }) => {
-            if (typingUser !== user?.name) {
+            if (typingUser !== userRef.current?.name) {
                 setTypingUsers(prev => new Set(prev).add(typingUser));
             }
         };
@@ -168,13 +170,6 @@ export function useChat(roomId, user) {
             });
         };
 
-        // Duplicate listener prevention
-        if (socket.hasListeners('chat-message')) {
-            console.warn('⚠️ useChat: socket already has listeners, might be dupe mount');
-            // In strict mode, we might want to let it happen if cleanup worked?
-            // But if cleanup worked, hasListeners should be false?
-            // socket.io doesn't clear listeners on unmount unless we tell it.
-        }
 
 
 
@@ -278,8 +273,10 @@ export function useChat(roomId, user) {
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
+
+            hasRequestedHistoryRef.current = false;
         };
-    }, [socket, isConnected, user]);
+    }, [socket, isConnected, roomId]); // Removed 'user' to prevent redundant history requests on nick changes
 
     // Memoize array conversion to prevent effect loops
     const typingUsersList = useMemo(() => Array.from(typingUsers), [typingUsers]);

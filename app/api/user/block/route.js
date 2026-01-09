@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
     const session = await getServerSession(authOptions);
-    if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
         const { targetId, action } = await req.json(); // action: 'block' or 'unblock'
@@ -42,7 +42,7 @@ export async function POST(req) {
 
 export async function GET(req) {
     const session = await getServerSession(authOptions);
-    if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // Return list of blocked IDs
     const blocks = await prisma.block.findMany({
