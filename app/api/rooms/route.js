@@ -67,6 +67,8 @@ export async function GET() {
             // Fetch recent messages for analysis
             let recentMessages = [];
 
+            // EMERGENCY DISABLE: 500 Error persists. Disabling summary fetch to restore site.
+            /*
             try {
                 if (lookupId) {
                     recentMessages = await prisma.chatMessage.findMany({
@@ -79,6 +81,7 @@ export async function GET() {
             } catch (err) {
                 console.error(`[API] Failed to fetch msgs for ${lookupId}:`, err);
             }
+            */
 
             if (recentMessages.length > 0) {
                 // Sentiment Analysis
