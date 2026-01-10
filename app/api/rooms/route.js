@@ -66,13 +66,16 @@ export async function GET() {
 
             // Fetch recent messages for analysis
             let recentMessages = [];
+
             try {
-                recentMessages = await prisma.chatMessage.findMany({
-                    where: { roomId: lookupId, isWiped: false },
-                    orderBy: { timestamp: 'desc' },
-                    take: 20,
-                    select: { sender: true, text: true, timestamp: true }
-                });
+                if (lookupId) {
+                    recentMessages = await prisma.chatMessage.findMany({
+                        where: { roomId: lookupId, isWiped: false },
+                        orderBy: { timestamp: 'desc' },
+                        take: 20,
+                        select: { sender: true, text: true, timestamp: true }
+                    });
+                }
             } catch (err) {
                 console.error(`[API] Failed to fetch msgs for ${lookupId}:`, err);
             }
