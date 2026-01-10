@@ -128,6 +128,21 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     const [customStatus, setCustomStatus] = useState("");
     const [showCreateModal, setShowCreateModal] = useState(false);
 
+    // Zoom Transition Logic
+    const [zoomLevel, setZoomLevel] = useState(0);
+
+    useEffect(() => {
+        if (selectedRoom) setZoomLevel(1);
+        else setZoomLevel(0);
+    }, [selectedRoom]);
+
+    const handleJoinWithZoom = (data) => {
+        setZoomLevel(2); // Trigger "Warp Speed" zoom
+        setTimeout(() => {
+            onJoin(data);
+        }, 800); // Wait for transition before unmounting/switching
+    };
+
     // Load saved guest data on mount
     useEffect(() => {
         const savedToken = getCookie('guest_token');
@@ -295,21 +310,6 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         showStatusInput, setShowStatusInput,
         customStatus, setCustomStatus,
         handleDiscordLogin
-    };
-
-    // Zoom Transition Logic
-    const [zoomLevel, setZoomLevel] = useState(0);
-
-    useEffect(() => {
-        if (selectedRoom) setZoomLevel(1);
-        else setZoomLevel(0);
-    }, [selectedRoom]);
-
-    const handleJoinWithZoom = (data) => {
-        setZoomLevel(2); // Trigger "Warp Speed" zoom
-        setTimeout(() => {
-            onJoin(data);
-        }, 800); // Wait for transition before unmounting/switching
     };
 
     // Step 1: Room Selection
