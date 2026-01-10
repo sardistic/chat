@@ -122,16 +122,17 @@ body {
 }
 
 /* Layer 2: Wind (The "Gusts") */
-/* "Wind over a plain" effect: Seamless, repeating waves of visibility */
-/* Fixed-cycle animation for perfect looping */
+/* "Wind over a plain" effect: Restored RNG feel with seamless dual-layer loop */
+/* Strategy: Dual Tile & Slide. Two layers move at different rates but loop perfectly at 100% */
 @keyframes wind-drift {
   0% {
-    -webkit-mask-position: 0px 0px;
+    -webkit-mask-position: 0px 0px, 0px 0px;
   }
 
   100% {
-    /* Move exactly one repetition unit (1200px) to loop seamlessly */
-    -webkit-mask-position: 1200px 0px;
+    /* Layer 1 moves 2000px (1 cycle). Layer 2 moves 1200px (1 cycle). */
+    /* They finish exactly together, creating a perfect loop with internal chaos. */
+    -webkit-mask-position: 2000px 1000px, 1200px 1200px;
   }
 }
 
@@ -141,38 +142,33 @@ body {
   inset: 0;
   z-index: 2;
 
-  /* Wind Dots */
-  background-image: radial-gradient(rgba(255, 255, 255, 0.4) 1.5px, transparent 1.5px);
+  /* Wind Dots - Brighter to stand out in gusts */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.5) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
 
-  /* Mask Strategy: Repeating soft bands with FIXED PIXEL sizes */
-  /* Cycle length = 1200px (matches animation) */
-  /* Angle -45deg means wind comes from top-left */
-  -webkit-mask-image: repeating-linear-gradient(-45deg,
-      transparent 0px,
-      transparent 100px,
-      black 400px,
-      black 600px,
-      transparent 1200px);
-  mask-image: repeating-linear-gradient(-45deg,
-      transparent 0px,
-      transparent 100px,
-      black 400px,
-      black 600px,
-      transparent 1200px);
+  /* Mask Strategy: Dual Intersecting Gradients */
+  /* Layer 1: Large slow clouds (2000px) */
+  /* Layer 2: Faster chopping waves (1200px) */
+  -webkit-mask-image:
+    linear-gradient(110deg, transparent 5%, black 40%, black 60%, transparent 95%),
+    radial-gradient(ellipse at center, black 40%, transparent 80%);
+  mask-image:
+    linear-gradient(110deg, transparent 5%, black 40%, black 60%, transparent 95%),
+    radial-gradient(ellipse at center, black 40%, transparent 80%);
 
-  /* Ensure mask covers screen */
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
+  /* Tile Sizes must match the animation delta exactly */
+  -webkit-mask-size: 2000px 1000px, 1200px 1200px;
+  mask-size: 2000px 1000px, 1200px 1200px;
 
-  /* We repeat the gradient pattern itself, not the mask image tile */
-  /* But strictly speaking repeating-linear-gradient fills the box */
+  -webkit-mask-repeat: repeat, repeat;
+  mask-repeat: repeat, repeat;
 
-  -webkit-mask-composite: source-over;
-  mask-composite: add;
+  /* Composite: Intersect creates "gusts" where both alignment */
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 
-  /* Slow, organic drift */
+  /* 40s duration makes Layer 1 move 50px/s and Layer 2 move 30px/s */
   animation: wind-drift 40s linear infinite;
   pointer-events: none;
 }
