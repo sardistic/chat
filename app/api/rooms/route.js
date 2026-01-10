@@ -61,28 +61,20 @@ export async function GET() {
             let summary = room.shortSummary;
 
             // Always analyze chat history for sentiment and summary
-            // Support both ID and Slug for message lookup (DB rooms use CUID id but Slug for socket/msgs)
-            const roomIds = [room.id];
-            if (room.slug) roomIds.push(room.slug);
+            // Support ID or Slug for message lookup (prefer Slug as it mimics client join)
+            const lookupId = room.slug || room.id;
 
-            // Fetch recent messages for analysis (always, not just when members online)
+            // Fetch recent messages for analysis
             let recentMessages = [];
             try {
-                // Ensure unique non-null IDs
-                const uniqueIds = Array.from(new Set(roomIds)).filter(Boolean);
-
                 recentMessages = await prisma.chatMessage.findMany({
-                    where: {
-                        roomId: { in: uniqueIds },
-                        isWiped: false
-                    },
+                    where: { roomId: lookupId, isWiped: false },
                     orderBy: { timestamp: 'desc' },
                     take: 20,
                     select: { sender: true, text: true, timestamp: true }
                 });
             } catch (err) {
-                console.error(`[API] Failed to fetch messages for room ${room.id}:`, err);
-                // Continue without messages
+                console.error(`[API] Failed to fetch msgs for ${lookupId}:`, err);
             }
 
             if (recentMessages.length > 0) {
