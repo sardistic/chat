@@ -23,18 +23,18 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         const ctx = canvas.getContext('2d');
 
-        // Parameters - refined for smaller dots, wider hover, wave gusts
+        // Parameters - ultra-small, dark dots with wave motion
         const params = {
-            // Grid - smaller dots
-            size: 26,
-            baseRadius: 0.35,     // Even smaller dots
-            proximity: 280,       // WIDER mouse effect
-            growth: 6,            // Subtle growth
-            ease: 0.045,          // Smoother easing
+            // Grid - even smaller dots
+            size: 24,
+            baseRadius: 0.25,     // Ultra small
+            proximity: 280,       // Wide mouse effect
+            growth: 4,            // Subtle growth
+            ease: 0.04,           // Very smooth
 
-            // Dark aesthetic
-            baseOpacity: 0.025,
-            maxOpacity: 0.65,
+            // Very dark aesthetic
+            baseOpacity: 0.015,   // Nearly invisible base
+            maxOpacity: 0.55,
 
             // Wave animations - WIND GUST LIKE
             waveSpeed: 0.004,     // Faster for visible motion

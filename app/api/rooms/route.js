@@ -165,11 +165,16 @@ export async function GET() {
                 sentiment = 'Quiet 🌙';
             }
 
+            // Calculate if room was active in last 24 hours
+            const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+            const isActive24h = (now - lastActive) < TWENTY_FOUR_HOURS;
+
             return {
                 ...room,
                 activityScore: score,
                 shortSummary: summary,
                 sentiment,
+                isActive24h,
                 creatorName: room.creatorId ? (creatorMap.get(room.creatorId) || 'Unknown') : 'System'
             };
         }));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 
 export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateModal: externalShowModal, setShowCreateModal: externalSetShowModal }) {
@@ -21,6 +21,10 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
     const [tagInput, setTagInput] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [createError, setCreateError] = useState(null);
+
+    // Split rooms by 24h activity
+    const activeRooms = useMemo(() => rooms.filter(r => r.isActive24h !== false), [rooms]);
+    const inactiveRooms = useMemo(() => rooms.filter(r => r.isActive24h === false), [rooms]);
 
     // Tag suggestions - fun categories for chat rooms
     const SUGGESTED_TAGS = [
@@ -402,161 +406,230 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                 </div>
             )}
 
-            {/* Room Grid */}
-            <div className="room-grid">
-                {rooms.map(room => (
-                    <div
-                        key={room.id}
-                        className={`room-card ${getActivityClass(room.activityScore)}`}
-                        onClick={() => onSelectRoom(room)}
-                        style={{ position: 'relative' }}
-                    >
-                        <div className="room-card-banner" style={{
-                            background: !room.bannerUrl ? '#000' : 'none'
-                        }}>
-                            {isVideo(room.bannerUrl) ? (
-                                <video
-                                    src={room.bannerUrl}
-                                    className="room-banner-media"
-                                    autoPlay loop muted playsInline
-                                />
-                            ) : (
-                                // GENERATED PIXEL ART
-                                <div
-                                    className="room-banner-media"
-                                    style={{
-                                        backgroundImage: room.bannerUrl ? `url(${room.bannerUrl})` : generatePixelPattern(room.name, room.activityScore || 0),
-                                        backgroundSize: room.bannerUrl ? 'cover' : 'cover',
-                                        imageRendering: room.bannerUrl ? 'auto' : 'pixelated'
-                                    }}
-                                />
-                            )}
-
-                            <div className="room-banner-overlay" />
-                            <div className="room-icon" style={{
-                                position: 'absolute', bottom: '12px', left: '16px',
-                                width: '40px', height: '40px', borderRadius: '12px',
-                                background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)',
-                                overflow: 'hidden', zIndex: 2
+            {/* Active Room Grid (Hero Cards) */}
+            {activeRooms.length > 0 && (
+                <div className="room-grid">
+                    {activeRooms.map(room => (
+                        <div
+                            key={room.id}
+                            className={`room-card ${getActivityClass(room.activityScore)}`}
+                            onClick={() => onSelectRoom(room)}
+                            style={{ position: 'relative' }}
+                        >
+                            <div className="room-card-banner" style={{
+                                background: !room.bannerUrl ? '#000' : 'none'
                             }}>
-                                {room.iconUrl ? (
-                                    isVideo(room.iconUrl) ? (
-                                        <video src={room.iconUrl} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    )
+                                {isVideo(room.bannerUrl) ? (
+                                    <video
+                                        src={room.bannerUrl}
+                                        className="room-banner-media"
+                                        autoPlay loop muted playsInline
+                                    />
                                 ) : (
-                                    <Icon icon="fa:hashtag" width="20" color="#fff" />
+                                    // GENERATED PIXEL ART
+                                    <div
+                                        className="room-banner-media"
+                                        style={{
+                                            backgroundImage: room.bannerUrl ? `url(${room.bannerUrl})` : generatePixelPattern(room.name, room.activityScore || 0),
+                                            backgroundSize: room.bannerUrl ? 'cover' : 'cover',
+                                            imageRendering: room.bannerUrl ? 'auto' : 'pixelated'
+                                        }}
+                                    />
                                 )}
-                            </div>
-                            <div style={{ position: 'absolute', bottom: '12px', left: '68px', right: '12px', zIndex: 2 }}>
-                                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
-                                    {room.name}
-                                </h3>
-                            </div>
-                        </div>
 
-                        <div className="room-card-content" style={{ padding: '12px' }}>
-                            {room.currentVideoTitle && (
-                                <div className="now-playing" title={room.currentVideoTitle}>
-                                    <Icon icon="fa:youtube-play" width="12" style={{ color: '#ff5050', flexShrink: 0 }} />
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{room.currentVideoTitle}</span>
-                                </div>
-                            )}
-                            {room.shortSummary ? (
-                                <div className="ai-summary">
-                                    <Icon icon="fa:magic" width="12" style={{ marginTop: '2px', color: 'var(--accent-primary)' }} />
-                                    <span>{room.shortSummary}</span>
-                                </div>
-                            ) : (
-                                <p className="room-description" style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
-                                    {room.description || "No description provided."}
-                                </p>
-                            )}
-
-                            {/* Tags */}
-                            {room.tags && room.tags.length > 0 && (
-                                <div className="room-tags">
-                                    {room.tags.slice(0, 3).map(tag => {
-                                        const tagInfo = SUGGESTED_TAGS.find(t => t.name === tag);
-                                        return (
-                                            <span key={tag} className="room-tag" style={tagInfo ? { background: `${tagInfo.color}20`, color: tagInfo.color, borderColor: `${tagInfo.color}50` } : {}}>
-                                                {tagInfo?.emoji} {tag}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            <div className="room-card-footer" style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <Icon icon="fa:users" width="12" />
-                                        <span>{room.memberCount}</span>
-                                    </div>
-                                    {room.sentiment && room.sentiment !== 'Quiet' && (
-                                        <span style={{
-                                            fontSize: '11px',
-                                            padding: '2px 8px',
-                                            borderRadius: '10px',
-                                            background: 'rgba(167, 139, 250, 0.15)',
-                                            color: '#a78bfa'
-                                        }}>
-                                            {room.sentiment}
-                                        </span>
+                                <div className="room-banner-overlay" />
+                                <div className="room-icon" style={{
+                                    position: 'absolute', bottom: '12px', left: '16px',
+                                    width: '40px', height: '40px', borderRadius: '12px',
+                                    background: '#1e1e24', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)',
+                                    overflow: 'hidden', zIndex: 2
+                                }}>
+                                    {room.iconUrl ? (
+                                        isVideo(room.iconUrl) ? (
+                                            <video src={room.iconUrl} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        )
+                                    ) : (
+                                        <Icon icon="fa:hashtag" width="20" color="#fff" />
                                     )}
                                 </div>
-                                <span>{formatTimeAgo(room.lastActive)}</span>
+                                <div style={{ position: 'absolute', bottom: '12px', left: '68px', right: '12px', zIndex: 2 }}>
+                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                                        {room.name}
+                                    </h3>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Hover Overlay */}
-                        <div className="room-hover-details" onClick={(e) => { e.stopPropagation(); onSelectRoom(room); }}>
-                            <div style={{ transform: 'translateY(10px)', transition: 'transform 0.2s' }}>
-                                <h4 style={{ color: 'white', margin: '0 0 4px', fontSize: '16px' }}>{room.name}</h4>
-                                {room.creatorName && (
-                                    <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '8px' }}>
-                                        <Icon icon="fa:user-circle" style={{ marginRight: '4px' }} />
-                                        Owner: {room.creatorName}
+                            <div className="room-card-content" style={{ padding: '12px' }}>
+                                {room.currentVideoTitle && (
+                                    <div className="now-playing" title={room.currentVideoTitle}>
+                                        <Icon icon="fa:youtube-play" width="12" style={{ color: '#ff5050', flexShrink: 0 }} />
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{room.currentVideoTitle}</span>
                                     </div>
                                 )}
-                                {room.shortSummary && (
-                                    <div style={{ fontSize: '11px', color: '#eee', margin: '4px 0 8px', maxWidth: '85%', lineHeight: '1.4' }}>
-                                        {room.shortSummary}
+                                {room.shortSummary ? (
+                                    <div className="ai-summary">
+                                        <Icon icon="fa:magic" width="12" style={{ marginTop: '2px', color: 'var(--accent-primary)' }} />
+                                        <span>{room.shortSummary}</span>
+                                    </div>
+                                ) : (
+                                    <p className="room-description" style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+                                        {room.description || "No description provided."}
+                                    </p>
+                                )}
+
+                                {/* Tags */}
+                                {room.tags && room.tags.length > 0 && (
+                                    <div className="room-tags">
+                                        {room.tags.slice(0, 3).map(tag => {
+                                            const tagInfo = SUGGESTED_TAGS.find(t => t.name === tag);
+                                            return (
+                                                <span key={tag} className="room-tag" style={tagInfo ? { background: `${tagInfo.color}20`, color: tagInfo.color, borderColor: `${tagInfo.color}50` } : {}}>
+                                                    {tagInfo?.emoji} {tag}
+                                                </span>
+                                            );
+                                        })}
                                     </div>
                                 )}
-                                {room.sentiment && room.sentiment !== 'Quiet' && (
-                                    <div style={{ fontSize: '10px', color: '#a78bfa', marginBottom: '8px', fontStyle: 'italic', background: 'rgba(167, 139, 250, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                                        <Icon icon="fa:magic" style={{ marginRight: '4px' }} />
-                                        Mood: {room.sentiment}
+
+                                <div className="room-card-footer" style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <Icon icon="fa:users" width="12" />
+                                            <span>{room.memberCount}</span>
+                                        </div>
+                                        {room.sentiment && room.sentiment !== 'Quiet' && (
+                                            <span style={{
+                                                fontSize: '11px',
+                                                padding: '2px 8px',
+                                                borderRadius: '10px',
+                                                background: 'rgba(167, 139, 250, 0.15)',
+                                                color: '#a78bfa'
+                                            }}>
+                                                {room.sentiment}
+                                            </span>
+                                        )}
                                     </div>
-                                )}
-                                {room.activityScore > 50 && (
-                                    <div style={{
-                                        background: 'rgba(255, 107, 107, 0.2)',
-                                        color: '#ff6b6b',
-                                        padding: '4px 8px', borderRadius: '12px', fontSize: '11px',
-                                        display: 'inline-block', marginBottom: '12px'
-                                    }}>
-                                        🔥 High Activity
+                                    <span>{formatTimeAgo(room.lastActive)}</span>
+                                </div>
+                            </div>
+
+                            {/* Hover Overlay */}
+                            <div className="room-hover-details" onClick={(e) => { e.stopPropagation(); onSelectRoom(room); }}>
+                                <div style={{ transform: 'translateY(10px)', transition: 'transform 0.2s' }}>
+                                    <h4 style={{ color: 'white', margin: '0 0 4px', fontSize: '16px' }}>{room.name}</h4>
+                                    {room.creatorName && (
+                                        <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '8px' }}>
+                                            <Icon icon="fa:user-circle" style={{ marginRight: '4px' }} />
+                                            Owner: {room.creatorName}
+                                        </div>
+                                    )}
+                                    {room.shortSummary && (
+                                        <div style={{ fontSize: '11px', color: '#eee', margin: '4px 0 8px', maxWidth: '85%', lineHeight: '1.4' }}>
+                                            {room.shortSummary}
+                                        </div>
+                                    )}
+                                    {room.sentiment && room.sentiment !== 'Quiet' && (
+                                        <div style={{ fontSize: '10px', color: '#a78bfa', marginBottom: '8px', fontStyle: 'italic', background: 'rgba(167, 139, 250, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                            <Icon icon="fa:magic" style={{ marginRight: '4px' }} />
+                                            Mood: {room.sentiment}
+                                        </div>
+                                    )}
+                                    {room.activityScore > 50 && (
+                                        <div style={{
+                                            background: 'rgba(255, 107, 107, 0.2)',
+                                            color: '#ff6b6b',
+                                            padding: '4px 8px', borderRadius: '12px', fontSize: '11px',
+                                            display: 'inline-block', marginBottom: '12px'
+                                        }}>
+                                            🔥 High Activity
+                                        </div>
+                                    )}
+                                    <div className="btn primary small" style={{ width: 'auto', margin: '0 auto' }}>
+                                        Join Room
                                     </div>
-                                )}
-                                <div className="btn primary small" style={{ width: 'auto', margin: '0 auto' }}>
-                                    Join Room
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
+            )}
 
-                {rooms.length === 0 && !error && (
-                    <div className="room-browser-empty">
-                        <Icon icon="fa:comments-o" width="48" />
-                        <p>No rooms found.</p>
+            {/* Inactive Rooms Section */}
+            {inactiveRooms.length > 0 && (
+                <div style={{
+                    marginTop: '32px',
+                    paddingTop: '24px',
+                    borderTop: '1px solid rgba(255,255,255,0.08)'
+                }}>
+                    <h3 style={{
+                        fontSize: '14px',
+                        color: 'var(--text-muted)',
+                        marginBottom: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
+                        <Icon icon="fa:moon-o" width="14" />
+                        Inactive Rooms
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {inactiveRooms.map(room => (
+                            <div
+                                key={room.id}
+                                onClick={() => onSelectRoom(room)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    padding: '10px 14px',
+                                    background: 'rgba(20, 20, 25, 0.4)',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.2s, transform 0.2s',
+                                    border: '1px solid rgba(255,255,255,0.04)'
+                                }}
+                            >
+                                <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '8px',
+                                    background: '#1e1e24',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    overflow: 'hidden',
+                                    flexShrink: 0
+                                }}>
+                                    {room.iconUrl ? (
+                                        <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <Icon icon="fa:hashtag" width="14" color="#666" />
+                                    )}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '14px', color: '#ccc', fontWeight: '500' }}>
+                                        {room.name}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                        {room.memberCount} members • {formatTimeAgo(room.lastActive)}
+                                    </div>
+                                </div>
+                                <Icon icon="fa:chevron-right" width="12" color="#555" />
+                            </div>
+                        ))}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {rooms.length === 0 && !error && (
+                <div className="room-browser-empty">
+                    <Icon icon="fa:comments-o" width="48" />
+                    <p>No rooms found.</p>
+                </div>
+            )}
 
             {/* Create Room Modal */}
             {showCreateModal && (
