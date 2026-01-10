@@ -33,151 +33,17 @@ export async function GET() {
             }
         });
 
-        // Computed metadata (Server-side heuristic)
-        const creatorIds = [...new Set(rooms.map(r => r.creatorId).filter(Boolean))];
-        const creators = creatorIds.length > 0
-            ? await prisma.user.findMany({
-                where: { id: { in: creatorIds } },
-                select: { id: true, name: true, displayName: true }
-            })
-            : [];
+        // DIAGNOSTIC LOOPBACK: Return raw DB result
+        return NextResponse.json(rooms);
 
-        const creatorMap = new Map(creators.map(u => [u.id, u.displayName || u.name || 'Unknown']));
+        /*
+        // ... (Disabled enrichment logic)
+        // ...
+        */
 
-        const enrichedRooms = await Promise.all(rooms.map(async (room) => {
-            const now = new Date();
-            const lastActive = new Date(room.lastActive);
-            const diffMins = (now - lastActive) / 1000 / 60;
 
-            // Dynamic Activity Score: strict time-decay
-            // Score drops to 0 after 10 minutes of inactivity
-            let score = Math.max(0, 100 - Math.floor(diffMins * 10));
+        // Code removed for diagnostic isolation
 
-            // Boost score for member count ONLY if room is recently active
-            if (score > 0 && room.memberCount > 0) {
-                score = Math.min(100, score + (room.memberCount * 5));
-            }
-
-            let summary = room.shortSummary;
-
-            // Always analyze chat history for sentiment and summary
-            // Support ID or Slug for message lookup (prefer Slug as it mimics client join)
-            const lookupId = room.slug || room.id;
-
-            // Fetch recent messages for analysis
-            let recentMessages = [];
-
-            // EMERGENCY DISABLE: 500 Error persists. Disabling summary fetch to restore site.
-            /*
-            try {
-                if (lookupId) {
-                    recentMessages = await prisma.chatMessage.findMany({
-                        where: { roomId: lookupId, isWiped: false },
-                        orderBy: { timestamp: 'desc' },
-                        take: 20,
-                        select: { sender: true, text: true, timestamp: true }
-                    });
-                }
-            } catch (err) {
-                console.error(`[API] Failed to fetch msgs for ${lookupId}:`, err);
-            }
-            */
-
-            if (recentMessages.length > 0) {
-                // Sentiment Analysis
-                let sentimentScore = 0;
-                const positive = /(:D|:\)|lol|lmao|haha|love|nice|cool|🔥|❤️|✨|pog|based|goat|fire|lit|vibe)/i;
-                const negative = /(:\(|sad|hate|bad|angry|ugh|🙄|cry|die|cringe|L|ratio|mid)/i;
-                const chaotic = /(lmao|omg|wtf|bruh|dead|💀|😭|chaos)/i;
-
-                recentMessages.forEach(m => {
-                    if (positive.test(m.text)) sentimentScore++;
-                    if (negative.test(m.text)) sentimentScore--;
-                });
-
-                // Count chaotic messages
-                const chaoticCount = recentMessages.filter(m => chaotic.test(m.text)).length;
-
-                if (chaoticCount > 5) sentiment = 'Chaotic 🌀';
-                else if (sentimentScore > 4) sentiment = 'Hype 🔥';
-                else if (sentimentScore > 1) sentiment = 'Positive ✨';
-                else if (sentimentScore < -2) sentiment = 'Tense 🌩️';
-                else if (recentMessages.length > 5) sentiment = 'Chill 😌';
-                else sentiment = 'Quiet 🌙';
-
-                // Generate summary if not already set
-                if (!summary) {
-                    const uniqueUsers = [...new Set(recentMessages.map(m => m.sender))];
-                    // Filter out SimUsers and system messages for display
-                    const realUsers = uniqueUsers.filter(u => !u.startsWith('SimUser') && u !== 'System');
-
-                    if (realUsers.length > 0) {
-                        const users = realUsers.slice(0, 2).join(' & ');
-                        const extra = realUsers.length > 2 ? ` +${realUsers.length - 2}` : '';
-
-                        // Check how recent the last message was
-                        const lastMsg = recentMessages[0];
-                        const timeDiff = Date.now() - new Date(lastMsg.timestamp).getTime();
-                        const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-
-                        if (hours < 1) {
-                            summary = `${users}${extra} chatting recently`;
-                        } else if (hours < 24) {
-                            summary = `${users}${extra} were here today`;
-                        } else {
-                            summary = `Last active: ${users}${extra}`;
-                        }
-                    } else {
-                        // Extract keywords from message content for a topic-based summary
-                        const allText = recentMessages.map(m => m.text).join(' ').toLowerCase();
-
-                        // Topic detection
-                        const topics = [];
-                        if (/game|gaming|play|stream/.test(allText)) topics.push('gaming');
-                        if (/music|song|listen|beat/.test(allText)) topics.push('music');
-                        if (/anime|manga|watch|episode/.test(allText)) topics.push('anime');
-                        if (/movie|film|watch|show/.test(allText)) topics.push('movies');
-                        if (/code|dev|programming|bug/.test(allText)) topics.push('coding');
-                        if (/art|draw|design|creative/.test(allText)) topics.push('art');
-                        if (/lol|lmao|meme|funny/.test(allText)) topics.push('memes');
-                        if (/chill|vibe|hang|relax/.test(allText)) topics.push('vibes');
-
-                        if (topics.length > 0) {
-                            summary = `Chatting about ${topics.slice(0, 2).join(' & ')}`;
-                        } else if (recentMessages.length > 0) {
-                            // Show the actual last message if it's safe/short
-                            const lastMsg = recentMessages[0];
-                            const lastText = lastMsg.text;
-                            if (lastText.length < 30 && !lastText.includes('http')) {
-                                summary = `"${lastText}"`;
-                            } else {
-                                summary = `${recentMessages.length} messages recently`;
-                            }
-                        }
-                    }
-                }
-            } else {
-                // No messages yet - provide helpful fallback
-                if (!summary) {
-                    if (room.memberCount > 0) {
-                        summary = `${room.memberCount} ${room.memberCount === 1 ? 'person' : 'people'} waiting to chat`;
-                    } else {
-                        summary = room.description || 'Be the first to say hi! 👋';
-                    }
-                }
-                sentiment = 'Quiet 🌙';
-            }
-
-            return {
-                ...room,
-                activityScore: score,
-                shortSummary: summary,
-                sentiment,
-                creatorName: room.creatorId ? (creatorMap.get(room.creatorId) || 'Unknown') : 'System'
-            };
-        }));
-
-        return NextResponse.json(enrichedRooms);
     } catch (error) {
         console.error('[Rooms API] GET error:', error);
         return NextResponse.json({ error: 'Failed to fetch rooms' }, { status: 500 });
