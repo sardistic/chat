@@ -132,10 +132,15 @@ export async function GET() {
 
                         if (topics.length > 0) {
                             summary = `Chatting about ${topics.slice(0, 2).join(' & ')}`;
-                        } else if (recentMessages.length > 10) {
-                            summary = `Active conversation (${recentMessages.length} recent msgs)`;
                         } else if (recentMessages.length > 0) {
-                            summary = `${recentMessages.length} messages today`;
+                            // Show the actual last message if it's safe/short
+                            const lastMsg = recentMessages[0];
+                            const lastText = lastMsg.text;
+                            if (lastText.length < 30 && !lastText.includes('http')) {
+                                summary = `"${lastText}"`;
+                            } else {
+                                summary = `${recentMessages.length} messages recently`;
+                            }
                         }
                     }
                 }

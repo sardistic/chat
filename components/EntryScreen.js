@@ -420,7 +420,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     if (!selectedRoom) {
         return (
             <div className="entry-screen-container" style={{
-                paddingTop: '80px',
+                paddingTop: '72px',
                 marginTop: '0',
                 minHeight: '100dvh',
                 height: 'auto',
