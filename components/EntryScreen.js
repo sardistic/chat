@@ -154,11 +154,18 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
 
     // Mouse tracking for starmap background highlight
     useEffect(() => {
+        let ticking = false;
         const handleMouseMove = (e) => {
-            const x = (e.clientX / window.innerWidth) * 100;
-            const y = (e.clientY / window.innerHeight) * 100;
-            document.documentElement.style.setProperty('--mouse-x', `${x}%`);
-            document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const x = (e.clientX / window.innerWidth) * 100;
+                    const y = (e.clientY / window.innerHeight) * 100;
+                    document.documentElement.style.setProperty('--mouse-x', `${x}%`);
+                    document.documentElement.style.setProperty('--mouse-y', `${y}%`);
+                    ticking = false;
+                });
+                ticking = true;
+            }
         };
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
