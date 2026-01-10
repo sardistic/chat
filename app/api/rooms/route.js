@@ -28,7 +28,8 @@ export async function GET() {
                 activityScore: true,
                 creatorId: true,
                 currentVideoId: true,
-                currentVideoTitle: true
+                currentVideoTitle: true,
+                tags: true
             }
         });
 
@@ -124,7 +125,7 @@ export async function POST(request) {
         }
 
         const body = await request.json();
-        const { name, description, bannerUrl } = body;
+        const { name, description, bannerUrl, tags } = body;
 
         // Validate name
         if (!name || typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 32) {
@@ -133,6 +134,11 @@ export async function POST(request) {
                 { status: 400 }
             );
         }
+
+        // Validate tags (optional array of strings)
+        const validTags = Array.isArray(tags)
+            ? tags.filter(t => typeof t === 'string' && t.length > 0).slice(0, 5).map(t => t.toLowerCase().replace(/[^a-z0-9]/g, ''))
+            : [];
 
         // Generate slug from name (lowercase, alphanumeric + hyphens)
         const slug = name.trim()
@@ -170,7 +176,8 @@ export async function POST(request) {
                 ircChannel,
                 creatorId: session.user.id,
                 isPublic: true,
-                memberCount: 0
+                memberCount: 0,
+                tags: validTags
             }
         });
 

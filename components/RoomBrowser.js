@@ -17,8 +17,26 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
     const [newRoomName, setNewRoomName] = useState('');
     const [newRoomDesc, setNewRoomDesc] = useState('');
     const [newRoomBanner, setNewRoomBanner] = useState('');
+    const [newRoomTags, setNewRoomTags] = useState([]);
+    const [tagInput, setTagInput] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [createError, setCreateError] = useState(null);
+
+    // Tag suggestions - fun categories for chat rooms
+    const SUGGESTED_TAGS = [
+        { name: 'gaming', emoji: '🎮', color: '#9333ea' },
+        { name: 'music', emoji: '🎵', color: '#ec4899' },
+        { name: 'chill', emoji: '😌', color: '#14b8a6' },
+        { name: 'anime', emoji: '🌸', color: '#f472b6' },
+        { name: 'movies', emoji: '🎬', color: '#f59e0b' },
+        { name: 'tech', emoji: '💻', color: '#3b82f6' },
+        { name: 'art', emoji: '🎨', color: '#8b5cf6' },
+        { name: 'memes', emoji: '🤣', color: '#22c55e' },
+        { name: 'sports', emoji: '⚽', color: '#ef4444' },
+        { name: 'coding', emoji: '👨‍💻', color: '#06b6d4' },
+        { name: 'vtuber', emoji: '🦋', color: '#a855f7' },
+        { name: 'irl', emoji: '📷', color: '#f97316' },
+    ];
 
     // Fetch rooms on mount
     useEffect(() => {
@@ -55,7 +73,8 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                 body: JSON.stringify({
                     name: newRoomName.trim(),
                     description: newRoomDesc.trim() || null,
-                    bannerUrl: newRoomBanner.trim() || null
+                    bannerUrl: newRoomBanner.trim() || null,
+                    tags: newRoomTags
                 })
             });
 
@@ -71,6 +90,8 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
             setNewRoomName('');
             setNewRoomDesc('');
             setNewRoomBanner('');
+            setNewRoomTags([]);
+            setTagInput('');
             onSelectRoom(data);
         } catch (err) {
             console.error('[RoomBrowser] Create error:', err);
@@ -179,6 +200,16 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                     70% { box-shadow: 0 0 0 10px rgba(167, 139, 250, 0); border-color: rgba(167, 139, 250, 0.3); }
                     100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0); border-color: rgba(167, 139, 250, 0.6); }
                 }
+                @keyframes tag-pop {
+                    0% { transform: scale(0.5); opacity: 0; }
+                    50% { transform: scale(1.1); }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes tag-wiggle {
+                    0%, 100% { transform: rotate(0deg); }
+                    25% { transform: rotate(-3deg); }
+                    75% { transform: rotate(3deg); }
+                }
                 .activity-high {
                     animation: pulse-glow 2s infinite;
                     border: 1px solid var(--accent-primary) !important;
@@ -223,8 +254,8 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                 .room-card {
                     overflow: hidden;
                     transition: transform 0.2s, box-shadow 0.2s;
-                    background: rgba(20, 20, 25, 0.4); /* More transparent */
-                    backdrop-filter: blur(8px); /* slightly less blur for clarity of bg */
+                    background: rgba(20, 20, 25, 0.6);
+                    backdrop-filter: blur(8px);
                     border: 1px solid rgba(255, 255, 255, 0.08);
                     border-radius: 12px;
                 }
@@ -248,6 +279,74 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                     text-overflow: ellipsis;
                 }
                 .room-card:hover .room-hover-details {
+                    opacity: 1;
+                }
+                .room-tags {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 4px;
+                    margin-top: 8px;
+                }
+                .room-tag {
+                    font-size: 10px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    background: rgba(147, 51, 234, 0.15);
+                    color: #a78bfa;
+                    border: 1px solid rgba(147, 51, 234, 0.3);
+                }
+                .tag-picker {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-top: 8px;
+                }
+                .tag-suggestion {
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-size: 13px;
+                    cursor: pointer;
+                    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+                    border: 2px solid transparent;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .tag-suggestion:hover {
+                    transform: scale(1.05);
+                    animation: tag-wiggle 0.3s ease-in-out;
+                }
+                .tag-suggestion.selected {
+                    animation: tag-pop 0.3s ease-out forwards;
+                    border-color: currentColor;
+                    box-shadow: 0 0 12px currentColor;
+                }
+                .selected-tags {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    margin-top: 12px;
+                }
+                .selected-tag {
+                    padding: 4px 10px;
+                    border-radius: 16px;
+                    font-size: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    animation: tag-pop 0.2s ease-out;
+                }
+                .selected-tag button {
+                    background: none;
+                    border: none;
+                    color: inherit;
+                    cursor: pointer;
+                    padding: 0;
+                    font-size: 14px;
+                    opacity: 0.7;
+                    transition: opacity 0.2s;
+                }
+                .selected-tag button:hover {
                     opacity: 1;
                 }
             `}</style>
@@ -341,7 +440,21 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                 </p>
                             )}
 
-                            <div className="room-card-footer" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {/* Tags */}
+                            {room.tags && room.tags.length > 0 && (
+                                <div className="room-tags">
+                                    {room.tags.slice(0, 3).map(tag => {
+                                        const tagInfo = SUGGESTED_TAGS.find(t => t.name === tag);
+                                        return (
+                                            <span key={tag} className="room-tag" style={tagInfo ? { background: `${tagInfo.color}20`, color: tagInfo.color, borderColor: `${tagInfo.color}50` } : {}}>
+                                                {tagInfo?.emoji} {tag}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            <div className="room-card-footer" style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <Icon icon="fa:users" width="12" />
                                     <span>{room.memberCount}</span>
@@ -353,11 +466,11 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                         {/* Hover Overlay */}
                         <div className="room-hover-details" onClick={(e) => { e.stopPropagation(); onSelectRoom(room); }}>
                             <div style={{ transform: 'translateY(10px)', transition: 'transform 0.2s' }}>
-                                <h4 style={{ color: 'white', margin: '0 0 4px', fontSize: '16px' }} title={`Created by ${room.creatorName || 'System'}`}>{room.name}</h4>
+                                <h4 style={{ color: 'white', margin: '0 0 4px', fontSize: '16px' }}>{room.name}</h4>
                                 {room.creatorName && (
                                     <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '8px' }}>
                                         <Icon icon="fa:user-circle" style={{ marginRight: '4px' }} />
-                                        Owner: {room.creatorName || room.creatorId}
+                                        Owner: {room.creatorName}
                                     </div>
                                 )}
                                 {room.shortSummary && (
@@ -371,14 +484,16 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                         Mood: {room.sentiment}
                                     </div>
                                 )}
-                                <div style={{
-                                    background: room.activityScore > 50 ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255,255,255,0.1)',
-                                    color: room.activityScore > 50 ? '#ff6b6b' : '#fff',
-                                    padding: '4px 8px', borderRadius: '12px', fontSize: '11px',
-                                    display: 'inline-block', marginBottom: '12px'
-                                }}>
-                                    {room.activityScore > 50 ? '🔥 High Activity' : '🟢 Online'}
-                                </div>
+                                {room.activityScore > 50 && (
+                                    <div style={{
+                                        background: 'rgba(255, 107, 107, 0.2)',
+                                        color: '#ff6b6b',
+                                        padding: '4px 8px', borderRadius: '12px', fontSize: '11px',
+                                        display: 'inline-block', marginBottom: '12px'
+                                    }}>
+                                        🔥 High Activity
+                                    </div>
+                                )}
                                 <div className="btn primary small" style={{ width: 'auto', margin: '0 auto' }}>
                                     Join Room
                                 </div>
@@ -440,6 +555,53 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                     maxLength={200}
                                     rows={3}
                                 />
+                            </div>
+
+                            {/* Fun Tag Picker */}
+                            <div className="form-group">
+                                <label>Tags ✨ <span style={{ fontWeight: 'normal', fontSize: '11px', color: 'var(--text-muted)' }}>(pick up to 5)</span></label>
+                                <div className="tag-picker">
+                                    {SUGGESTED_TAGS.map(tag => {
+                                        const isSelected = newRoomTags.includes(tag.name);
+                                        return (
+                                            <div
+                                                key={tag.name}
+                                                className={`tag-suggestion ${isSelected ? 'selected' : ''}`}
+                                                style={{
+                                                    background: isSelected ? `${tag.color}30` : `${tag.color}15`,
+                                                    color: tag.color
+                                                }}
+                                                onClick={() => {
+                                                    if (isSelected) {
+                                                        setNewRoomTags(prev => prev.filter(t => t !== tag.name));
+                                                    } else if (newRoomTags.length < 5) {
+                                                        setNewRoomTags(prev => [...prev, tag.name]);
+                                                    }
+                                                }}
+                                            >
+                                                <span style={{ fontSize: '16px' }}>{tag.emoji}</span>
+                                                {tag.name}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                {newRoomTags.length > 0 && (
+                                    <div className="selected-tags">
+                                        {newRoomTags.map(tagName => {
+                                            const tag = SUGGESTED_TAGS.find(t => t.name === tagName);
+                                            return (
+                                                <div
+                                                    key={tagName}
+                                                    className="selected-tag"
+                                                    style={{ background: `${tag?.color || '#a78bfa'}30`, color: tag?.color || '#a78bfa' }}
+                                                >
+                                                    {tag?.emoji} {tagName}
+                                                    <button type="button" onClick={() => setNewRoomTags(prev => prev.filter(t => t !== tagName))}>×</button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
 
                             {createError && (

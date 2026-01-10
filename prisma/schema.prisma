@@ -154,6 +154,9 @@ model Room {
   currentVideoId    String?   // ID of currently playing video
   currentVideoTitle String?   // Title of currently playing video
 
+  // Tags
+  tags          String[]  @default([])  // Topic tags for discoverability
+  requireTags   Boolean   @default(false) // Require tags on room creation
   
   // Ownership & Stats
   creatorId   String?           // Discord user ID who created it (null for system rooms)
