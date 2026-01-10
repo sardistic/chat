@@ -122,14 +122,16 @@ body {
 }
 
 /* Layer 2: Wind (The "Gusts") */
-/* Simplified for performance and alignment */
+/* "Wind over a plain" effect: Seamless, repeating waves of visibility */
+/* Fixed-cycle animation for perfect looping */
 @keyframes wind-drift {
   0% {
-    -webkit-mask-position: 0% 0%;
+    -webkit-mask-position: 0px 0px;
   }
 
   100% {
-    -webkit-mask-position: 100% 50%;
+    /* Move exactly one repetition unit (1200px) to loop seamlessly */
+    -webkit-mask-position: 1200px 0px;
   }
 }
 
@@ -139,31 +141,39 @@ body {
   inset: 0;
   z-index: 2;
 
-  /* Wind Dots - Brighter than base, darker than hover */
+  /* Wind Dots */
   background-image: radial-gradient(rgba(255, 255, 255, 0.4) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
 
-  /* Single Mask - Moving Clouds */
-  -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 50%),
-    linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
-  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E"),
-    radial-gradient(circle at 50% 50%, black, transparent);
+  /* Mask Strategy: Repeating soft bands with FIXED PIXEL sizes */
+  /* Cycle length = 1200px (matches animation) */
+  /* Angle -45deg means wind comes from top-left */
+  -webkit-mask-image: repeating-linear-gradient(-45deg,
+      transparent 0px,
+      transparent 100px,
+      black 400px,
+      black 600px,
+      transparent 1200px);
+  mask-image: repeating-linear-gradient(-45deg,
+      transparent 0px,
+      transparent 100px,
+      black 400px,
+      black 600px,
+      transparent 1200px);
 
-  /* Fallback to simple gradient if SVG mask is too heavy, but let's try a simple moving gradient first */
-  -webkit-mask-image: linear-gradient(45deg, transparent 40%, black 50%, transparent 60%);
-  mask-image: linear-gradient(45deg, transparent 40%, black 50%, transparent 60%);
+  /* Ensure mask covers screen */
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 
-  -webkit-mask-size: 200% 200%;
-  mask-size: 200% 200%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
+  /* We repeat the gradient pattern itself, not the mask image tile */
+  /* But strictly speaking repeating-linear-gradient fills the box */
 
-  /* Remove mask-composite (expensive) */
   -webkit-mask-composite: source-over;
   mask-composite: add;
 
-  animation: wind-drift 20s linear infinite;
+  /* Slow, organic drift */
+  animation: wind-drift 40s linear infinite;
   pointer-events: none;
 }
 
