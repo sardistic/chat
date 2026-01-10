@@ -420,13 +420,18 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     if (!selectedRoom) {
         return (
             <div className="entry-screen-container" style={{
-                paddingTop: '0',
-                marginTop: '64px',
-                minHeight: 'calc(100dvh - 64px)',
+                paddingTop: '80px',
+                marginTop: '0',
+                minHeight: '100dvh',
                 height: 'auto',
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
                 overflowY: 'auto',
                 overflowX: 'hidden',
-                paddingBottom: '60px',
+                paddingBottom: '80px',
                 boxSizing: 'border-box'
             }}>
                 <div className="starmap-bg" />
