@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 
-export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
+export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateModal: externalShowModal, setShowCreateModal: externalSetShowModal }) {
     const [rooms, setRooms] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [internalShowModal, setInternalShowModal] = useState(false);
+
+    // Use external state if provided, otherwise use internal
+    const showCreateModal = externalShowModal !== undefined ? externalShowModal : internalShowModal;
+    const setShowCreateModal = externalSetShowModal !== undefined ? externalSetShowModal : setInternalShowModal;
 
     // Create Room State
     const [newRoomName, setNewRoomName] = useState('');
@@ -254,15 +258,6 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
                     <h2>Explore Rooms</h2>
                     <p>Discover active communities or start your own</p>
                 </div>
-                {isDiscordUser && (
-                    <button
-                        className="btn primary"
-                        onClick={() => setShowCreateModal(true)}
-                    >
-                        <Icon icon="fa:plus" width="14" />
-                        Create Room
-                    </button>
-                )}
             </div>
 
             {error && (
@@ -348,8 +343,8 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser }) {
 
                             <div className="room-card-footer" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <div className="status-dot" style={{ background: room.memberCount > 0 ? '#3ba55d' : '#888' }}></div>
-                                    <span>{room.memberCount} online</span>
+                                    <Icon icon="fa:users" width="12" />
+                                    <span>{room.memberCount}</span>
                                 </div>
                                 <span>{formatTimeAgo(room.lastActive)}</span>
                             </div>

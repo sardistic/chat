@@ -126,6 +126,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [showStatusInput, setShowStatusInput] = useState(false);
     const [customStatus, setCustomStatus] = useState("");
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     // Load saved guest data on mount
     useEffect(() => {
@@ -304,7 +305,19 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 </div>
             </div>
 
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* Create Room Button - Only for Discord users */}
+                {!selectedRoom && isDiscordUser && (
+                    <button
+                        className="btn primary"
+                        onClick={() => setShowCreateModal(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px' }}
+                    >
+                        <Icon icon="fa:plus" width="12" />
+                        Create
+                    </button>
+                )}
+
                 {status === 'authenticated' && session?.user ? (
                     <div style={{ position: 'relative' }}>
                         <button
@@ -353,7 +366,16 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                         )}
                     </div>
                 ) : (
-                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '12px' }}>Guest</div>
+                    <button
+                        className="btn"
+                        onClick={handleDiscordLogin}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', background: '#5865F2', border: 'none', color: 'white' }}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 71 55" fill="currentColor">
+                            <path d="M60.1 4.9A58.5 58.5 0 0045.4.5a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.6a.2.2 0 00-.2-.1 58.4 58.4 0 00-14.7 4.4.2.2 0 00-.1.1C1.5 18.2-.9 31 .3 43.7a.2.2 0 00.1.1 58.8 58.8 0 0017.7 8.9.2.2 0 00.2 0 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.6.2.2 0 010-.4l1.1-.9a.2.2 0 01.2 0 42 42 0 0035.6 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.2 0 58.6 58.6 0 0017.7-8.9.2.2 0 00.1-.1c1.4-14.5-2.4-27.1-10-38.3a.2.2 0 00-.1-.1zM23.7 35.8c-3.3 0-6-3-6-6.7s2.7-6.7 6-6.7c3.4 0 6.1 3 6 6.7 0 3.7-2.6 6.7-6 6.7zm22.2 0c-3.3 0-6-3-6-6.7s2.6-6.7 6-6.7c3.3 0 6 3 6 6.7 0 3.7-2.7 6.7-6 6.7z" />
+                        </svg>
+                        Login
+                    </button>
                 )}
             </div>
 
@@ -382,7 +404,8 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
             <ProfileModal
                 user={session?.user}
@@ -390,7 +413,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 onClose={() => setShowProfileModal(false)}
                 currentUser={session?.user}
             />
-        </div>
+        </div >
     );
 
     // Step 1: Room Selection
@@ -402,6 +425,8 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 <RoomBrowser
                     onSelectRoom={setSelectedRoom}
                     isDiscordUser={isDiscordUser}
+                    showCreateModal={showCreateModal}
+                    setShowCreateModal={setShowCreateModal}
                 />
             </div>
         );
