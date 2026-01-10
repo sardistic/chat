@@ -423,6 +423,21 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         </div >
     );
 
+    // Zoom Transition Logic
+    const [zoomLevel, setZoomLevel] = useState(0);
+
+    useEffect(() => {
+        if (selectedRoom) setZoomLevel(1);
+        else setZoomLevel(0);
+    }, [selectedRoom]);
+
+    const handleJoinWithZoom = (data) => {
+        setZoomLevel(2); // Trigger "Warp Speed" zoom
+        setTimeout(() => {
+            onJoin(data);
+        }, 800); // Wait for transition before unmounting/switching
+    };
+
     // Step 1: Room Selection
     if (!selectedRoom) {
         return (
@@ -441,7 +456,8 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 paddingBottom: '80px',
                 boxSizing: 'border-box'
             }}>
-                <div className="starmap-bg" />
+                <div className={`starmap-bg ${zoomLevel >= 2 ? 'zoom-2' : ''}`} />
+
                 <AppHeader />
                 <RoomBrowser
                     onSelectRoom={setSelectedRoom}
@@ -456,7 +472,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     // Step 2: Identity Selection
     return (
         <div className="entry-screen">
-            <div className="starmap-bg" />
+            <div className={`starmap-bg ${zoomLevel === 1 ? 'zoom-1' : ''} ${zoomLevel >= 2 ? 'zoom-2' : ''}`} />
             <AppHeader />
             <div className="entry-card">
                 {/* Room Badge */}
@@ -514,7 +530,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                         onClick={isDiscordUser ? () => {
                             const customNick = getCookie('custom_nick');
                             const finalName = sanitizeUsername(customNick || session.user.displayName || session.user.globalName || session.user.name);
-                            onJoin({
+                            handleJoinWithZoom({
                                 name: finalName,
                                 avatar: session.user.image || session.user.avatarUrl,
                                 image: session.user.image,
@@ -541,7 +557,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                                     username: finalName
                                 }
                             });
-                        } : handleGuestJoin}
+                        } : () => handleJoinWithZoom(startData)}
                     >
                         <Icon icon="fa:sign-in" width="16" />
                         Continue{isDiscordUser ? ` as ${session.user.globalName || session.user.name}` : ''}
