@@ -115,9 +115,28 @@ export async function GET() {
                         } else {
                             summary = `Last active: ${users}${extra}`;
                         }
-                    } else if (uniqueUsers.length > 0) {
-                        // Only simulated/system users, show generic message
-                        summary = `${recentMessages.length} messages in history`;
+                    } else {
+                        // Extract keywords from message content for a topic-based summary
+                        const allText = recentMessages.map(m => m.text).join(' ').toLowerCase();
+
+                        // Topic detection
+                        const topics = [];
+                        if (/game|gaming|play|stream/.test(allText)) topics.push('gaming');
+                        if (/music|song|listen|beat/.test(allText)) topics.push('music');
+                        if (/anime|manga|watch|episode/.test(allText)) topics.push('anime');
+                        if (/movie|film|watch|show/.test(allText)) topics.push('movies');
+                        if (/code|dev|programming|bug/.test(allText)) topics.push('coding');
+                        if (/art|draw|design|creative/.test(allText)) topics.push('art');
+                        if (/lol|lmao|meme|funny/.test(allText)) topics.push('memes');
+                        if (/chill|vibe|hang|relax/.test(allText)) topics.push('vibes');
+
+                        if (topics.length > 0) {
+                            summary = `Chatting about ${topics.slice(0, 2).join(' & ')}`;
+                        } else if (recentMessages.length > 10) {
+                            summary = `Active conversation (${recentMessages.length} recent msgs)`;
+                        } else if (recentMessages.length > 0) {
+                            summary = `${recentMessages.length} messages today`;
+                        }
                     }
                 }
             }

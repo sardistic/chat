@@ -1634,20 +1634,51 @@ body,
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 24px 16px;
+  box-sizing: border-box;
 }
 
-/* Invisible container for room cards */
+/* Responsive room cards grid */
 .room-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 16px;
   padding: 16px;
   background: rgba(0, 0, 0, 0.15);
   border-radius: var(--radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Tablet adjustments */
+@media (max-width: 768px) {
+  .room-browser {
+    padding: 16px 12px;
+    gap: 16px;
+  }
+
+  .room-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .room-browser {
+    padding: 12px 8px;
+    gap: 12px;
+  }
+
+  .room-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 10px;
+  }
 }
 
 .room-browser-header {
