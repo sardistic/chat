@@ -23,36 +23,37 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         const ctx = canvas.getContext('2d');
 
-        // Parameters - closer to CodePen reference
+        // Parameters - smaller dots, more wave, less RNG
         const params = {
-            // Grid (CodePen-like)
+            // Grid
             size: 28,
-            baseRadius: 0.8,
-            proximity: 140,       // CodePen: 125
-            growth: 25,           // CodePen: 60 (scaled down for dark aesthetic)
-            ease: 0.065,          // CodePen: 0.075
+            baseRadius: 0.5,      // Smaller dots
+            proximity: 160,
+            growth: 12,           // Less growth on hover
+            ease: 0.055,
 
             // Dark aesthetic
-            baseOpacity: 0.04,
-            maxOpacity: 0.8,
+            baseOpacity: 0.03,
+            maxOpacity: 0.7,
 
-            // Wave animations
-            waveSpeed: 0.0012,
-            waveGrowth: 1.5,
+            // Wave animations - MORE PROMINENT
+            waveSpeed: 0.003,     // Faster waves
+            waveGrowth: 2.5,      // Stronger wave effect on size
+            waveOpacityBoost: 0.2, // Stronger opacity boost from waves
 
-            // RNG Energy bursts
-            burstChance: 0.0008,  // Chance per dot per frame
-            burstDuration: 120,   // Frames
-            burstGrowth: 8,
-            burstOpacity: 0.6,
+            // RNG Energy bursts - MUCH LESS
+            burstChance: 0.00008, // Very rare (was 0.0008)
+            burstDuration: 80,
+            burstGrowth: 3,       // Smaller burst
+            burstOpacity: 0.3,
 
             // Floating particles
-            particleCount: 25,
-            particleRadius: 0.6,
-            particleOpacity: 0.2,
-            particleSpeed: 0.25,
-            lineDistance: 100,
-            lineOpacity: 0.06,
+            particleCount: 15,    // Fewer particles
+            particleRadius: 0.5,
+            particleOpacity: 0.15,
+            particleSpeed: 0.2,
+            lineDistance: 80,
+            lineOpacity: 0.04,
         };
 
         let gridDots = [];
@@ -98,7 +99,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 const normalizedWave = (waveValue + 1) / 2;
 
                 const waveGrowth = normalizedWave * params.waveGrowth;
-                const waveOpacity = normalizedWave * 0.08;
+                const waveOpacity = normalizedWave * params.waveOpacityBoost;
 
                 // Mouse proximity (CodePen-like calculation)
                 const distance = Math.sqrt(Math.pow(this.x - mouseX, 2) + Math.pow(this.y - mouseY, 2));
