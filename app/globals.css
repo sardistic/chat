@@ -77,12 +77,23 @@ body {
   z-index: 0;
   pointer-events: none;
 
-  /* Base Layer: Darkest Black + Faint Base Dots */
-  background-color: #000000;
-  /* Layer 1: The "Floor". Very faint, sharp dots. (Darkened from 0.08 to 0.04) */
-  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1.5px, transparent 1.5px);
-  background-size: 32px 32px;
-  background-position: 0 0;
+  /* Base: Ultra dark with subtle aurora gradient (Linear/Stripe inspired) */
+  background:
+    /* Dot grid - nearly invisible base layer */
+    radial-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    /* Aurora glow - subtle color hints */
+    radial-gradient(ellipse 80% 50% at 20% 80%, rgba(120, 80, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(60, 180, 255, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 50%, rgba(255, 100, 180, 0.04) 0%, transparent 40%),
+    /* Pure black base */
+    #000000;
+  background-size:
+    32px 32px,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+
 
   /* Optimization */
   transform: translateZ(0);
@@ -98,7 +109,6 @@ body {
 .starmap-bg.zoom-2 {
   transform: scale(1.6) translateZ(0);
   opacity: 0;
-  /* Fade out as we enter */
   transition: transform 0.8s ease-in, opacity 0.8s ease-in;
 }
 
@@ -109,28 +119,39 @@ body {
   inset: 0;
   z-index: 3;
 
-  /* Crisp White Dots (Brightest) */
-  background-image: radial-gradient(rgba(255, 255, 255, 0.9) 1.5px, transparent 1.5px);
+  /* Crisp Dots (Brightest) */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.85) 1px, transparent 1px);
   background-size: 32px 32px;
   background-position: 0 0;
 
   /* Mouse Reveal Mask */
-  -webkit-mask-image: radial-gradient(250px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
-  mask-image: radial-gradient(250px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+  -webkit-mask-image: radial-gradient(200px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+  mask-image: radial-gradient(200px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
 
   pointer-events: none;
 }
 
-/* Layer 2: Wind (The "Gusts") */
-/* "Wind over a plain" effect: PERLIN NOISE for organic, non-stepping flow */
+/* Layer 2: Twinkle Wind */
+/* Lightweight: Simple gradient mask + subtle pulse animation */
 @keyframes wind-drift {
   0% {
-    -webkit-mask-position: 0px 0px;
+    -webkit-mask-position: 0 0;
   }
 
   100% {
-    /* Move exactly the mask size to loop seamlessly */
-    -webkit-mask-position: 1000px 0px;
+    -webkit-mask-position: 800px 400px;
+  }
+}
+
+@keyframes twinkle-pulse {
+
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+
+  50% {
+    opacity: 0.6;
   }
 }
 
@@ -140,30 +161,25 @@ body {
   inset: 0;
   z-index: 2;
 
-  /* Wind Dots - Significantly brighter (0.45 -> 0.7) to stand out against dark base */
-  background-image: radial-gradient(rgba(255, 255, 255, 0.7) 1.5px, transparent 1.5px);
+  /* Faint dots that shimmer */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px);
   background-size: 32px 32px;
   background-position: 0 0;
-  mix-blend-mode: screen;
 
-  /* Mask Strategy: SVG Noise Texture (Turbulence) */
-  /* Increased contrast (slope 3.5) to make "gusts" more defined and obvious */
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3CcomponentTransfer%3E%3CfuncA type='linear' slope='3.5' intercept='-0.5'/%3E%3C/componentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='1'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3CcomponentTransfer%3E%3CfuncA type='linear' slope='3.5' intercept='-0.5'/%3E%3C/componentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='1'/%3E%3C/svg%3E");
+  /* Simple soft gradient mask - no heavy SVG filters */
+  -webkit-mask-image: radial-gradient(ellipse 60% 40% at 50% 50%, black 0%, transparent 70%);
+  mask-image: radial-gradient(ellipse 60% 40% at 50% 50%, black 0%, transparent 70%);
 
-  /* Fixed size for the noise tile (1000px matches SVG viewBox) */
-  -webkit-mask-size: 1000px 1000px;
-  mask-size: 1000px 1000px;
-
+  -webkit-mask-size: 800px 400px;
+  mask-size: 800px 400px;
   -webkit-mask-repeat: repeat;
   mask-repeat: repeat;
 
-  /* Remove mask-composite (simple single layer is best for performance/smoothness) */
-  -webkit-mask-composite: source-over;
-  mask-composite: add;
+  /* Dual animation: Drift + Twinkle */
+  animation:
+    wind-drift 45s linear infinite,
+    twinkle-pulse 4s ease-in-out infinite;
 
-  /* Animation: Slow horizontal drift */
-  animation: wind-drift 60s linear infinite;
   pointer-events: none;
 }
 
