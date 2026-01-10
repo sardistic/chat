@@ -285,143 +285,17 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         );
     }
 
-    const renderAppHeader = () => (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, height: '64px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '0 24px', zIndex: 100,
-            background: 'rgba(10, 10, 15, 0.8)',
-            backdropFilter: 'blur(12px)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <img src="https://i.imgur.com/MfbxoHW.gif" alt="Logo" style={{ height: '20px' }} />
-                <div style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.7)' }}>
-                    <span
-                        onClick={() => setSelectedRoom(null)}
-                        style={{ cursor: 'pointer', color: selectedRoom ? 'rgba(255,255,255,0.7)' : 'white' }}
-                    >
-                        Browser
-                    </span>
-                    {selectedRoom && (
-                        <>
-                            <span style={{ opacity: 0.3, margin: '0 4px' }}>/</span>
-                            <span style={{ color: 'white' }}>{selectedRoom.name}</span>
-                        </>
-                    )}
-                </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {/* Create Room Button - Only for Discord users */}
-                {!selectedRoom && isDiscordUser && (
-                    <button
-                        className="btn primary"
-                        onClick={() => setShowCreateModal(true)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px' }}
-                    >
-                        <Icon icon="fa:plus" width="12" />
-                        Create
-                    </button>
-                )}
-
-                {status === 'authenticated' && session?.user ? (
-                    <div style={{ position: 'relative' }}>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                                padding: '4px 8px 4px 4px', borderRadius: '32px', cursor: 'pointer',
-                                color: 'white', fontSize: '13px', transition: 'all 0.2s'
-                            }}
-                            className="header-profile-btn"
-                        >
-                            <img src={session.user.image} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
-                            <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {session.user.name}
-                            </span>
-                            <Icon icon="fa:caret-down" width="10" style={{ opacity: 0.5 }} />
-                        </button>
-
-                        {showProfileMenu && (
-                            <div className="profile-menu" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', zIndex: 100 }}>
-                                <div style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
-                                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{session.user.globalName || session.user.name}</div>
-                                    <div style={{ fontSize: '11px', color: '#3ba55d', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <span style={{ width: '8px', height: '8px', background: '#3ba55d', borderRadius: '50%', display: 'inline-block' }}></span>
-                                        {customStatus || 'Online'}
-                                    </div>
-                                </div>
-
-                                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowProfileModal(true); }}>
-                                    <Icon icon="fa:user" width="16" /> View Profile
-                                </button>
-                                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>
-                                    <Icon icon="fa:comment" width="16" /> Set Status
-                                </button>
-                                <button className="menu-item disabled">
-                                    <Icon icon="fa:cog" width="16" /> Settings
-                                </button>
-
-                                <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
-
-                                <button className="menu-item danger" onClick={() => signOut({ callbackUrl: '/' })}>
-                                    <Icon icon="fa:sign-out" width="16" /> Disconnect
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <button
-                        className="btn"
-                        onClick={handleDiscordLogin}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', background: '#5865F2', border: 'none', color: 'white' }}
-                    >
-                        <svg width="16" height="16" viewBox="0 0 71 55" fill="currentColor">
-                            <path d="M60.1 4.9A58.5 58.5 0 0045.4.5a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.6a.2.2 0 00-.2-.1 58.4 58.4 0 00-14.7 4.4.2.2 0 00-.1.1C1.5 18.2-.9 31 .3 43.7a.2.2 0 00.1.1 58.8 58.8 0 0017.7 8.9.2.2 0 00.2 0 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.6.2.2 0 010-.4l1.1-.9a.2.2 0 01.2 0 42 42 0 0035.6 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.2 0 58.6 58.6 0 0017.7-8.9.2.2 0 00.1-.1c1.4-14.5-2.4-27.1-10-38.3a.2.2 0 00-.1-.1zM23.7 35.8c-3.3 0-6-3-6-6.7s2.7-6.7 6-6.7c3.4 0 6.1 3 6 6.7 0 3.7-2.6 6.7-6 6.7zm22.2 0c-3.3 0-6-3-6-6.7s2.6-6.7 6-6.7c3.3 0 6 3 6 6.7 0 3.7-2.7 6.7-6 6.7z" />
-                        </svg>
-                        Login
-                    </button>
-                )}
-            </div>
-
-            {/* Modals placed here to be available in all views */}
-            {showStatusInput && (
-                <div className="profile-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div className="profile-modal" style={{ padding: '20px', width: '300px', background: '#1E1E24', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Set Custom Status</h3>
-                        <input
-                            type="text"
-                            placeholder="What's on your mind?"
-                            value={customStatus}
-                            onChange={(e) => setCustomStatus(e.target.value)}
-                            maxLength={50}
-                            autoFocus
-                            className="chat-input"
-                            style={{ width: '100%', marginBottom: '12px' }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') setShowStatusInput(false);
-                                if (e.key === 'Escape') { setCustomStatus(''); setShowStatusInput(false); }
-                            }}
-                        />
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            <button className="btn" onClick={() => { setCustomStatus(''); setShowStatusInput(false); }}>Clear</button>
-                            <button className="btn primary" onClick={() => setShowStatusInput(false)}>Save</button>
-                        </div>
-                    </div>
-                </div>
-            )
-            }
-
-            <ProfileModal
-                user={session?.user}
-                isOpen={showProfileModal}
-                onClose={() => setShowProfileModal(false)}
-                currentUser={session?.user}
-            />
-        </div >
-    );
+    const headerProps = {
+        selectedRoom, setSelectedRoom,
+        isDiscordUser,
+        showCreateModal, setShowCreateModal,
+        status, session,
+        showProfileMenu, setShowProfileMenu,
+        showProfileModal, setShowProfileModal,
+        showStatusInput, setShowStatusInput,
+        customStatus, setCustomStatus,
+        handleDiscordLogin
+    };
 
     // Zoom Transition Logic
     const [zoomLevel, setZoomLevel] = useState(0);
@@ -458,7 +332,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
             }}>
                 <div className={`starmap-bg ${zoomLevel >= 2 ? 'zoom-2' : ''}`} />
 
-                {renderAppHeader()}
+                <AppHeader {...headerProps} />
                 <RoomBrowser
                     onSelectRoom={setSelectedRoom}
                     isDiscordUser={isDiscordUser}
@@ -473,7 +347,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     return (
         <div className="entry-screen">
             <div className={`starmap-bg ${zoomLevel === 1 ? 'zoom-1' : ''} ${zoomLevel >= 2 ? 'zoom-2' : ''}`} />
-            {renderAppHeader()}
+            <AppHeader {...headerProps} />
             <div className="entry-card">
                 {/* Room Badge */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--accent-surface)', borderRadius: 'var(--radius-sm)', marginBottom: '20px', fontSize: '13px', color: 'var(--accent-primary)' }}>
@@ -621,3 +495,152 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         </div>
     );
 }
+
+// Extracted AppHeader Component
+const AppHeader = ({
+    selectedRoom, setSelectedRoom,
+    isDiscordUser,
+    showCreateModal, setShowCreateModal,
+    status, session,
+    showProfileMenu, setShowProfileMenu,
+    showProfileModal, setShowProfileModal,
+    showStatusInput, setShowStatusInput,
+    customStatus, setCustomStatus,
+    handleDiscordLogin
+}) => (
+    <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, height: '64px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 24px', zIndex: 100,
+        background: 'rgba(10, 10, 15, 0.8)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+    }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img src="https://i.imgur.com/MfbxoHW.gif" alt="Logo" style={{ height: '20px' }} />
+            <div style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.7)' }}>
+                <span
+                    onClick={() => setSelectedRoom(null)}
+                    style={{ cursor: 'pointer', color: selectedRoom ? 'rgba(255,255,255,0.7)' : 'white' }}
+                >
+                    Browser
+                </span>
+                {selectedRoom && (
+                    <>
+                        <span style={{ opacity: 0.3, margin: '0 4px' }}>/</span>
+                        <span style={{ color: 'white' }}>{selectedRoom.name}</span>
+                    </>
+                )}
+            </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Create Room Button - Only for Discord users */}
+            {!selectedRoom && isDiscordUser && (
+                <button
+                    className="btn primary"
+                    onClick={() => setShowCreateModal(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px' }}
+                >
+                    <Icon icon="fa:plus" width="12" />
+                    Create
+                </button>
+            )}
+
+            {status === 'authenticated' && session?.user ? (
+                <div style={{ position: 'relative' }}>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                            padding: '4px 8px 4px 4px', borderRadius: '32px', cursor: 'pointer',
+                            color: 'white', fontSize: '13px', transition: 'all 0.2s'
+                        }}
+                        className="header-profile-btn"
+                    >
+                        <img src={session.user.image} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                        <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {session.user.name}
+                        </span>
+                        <Icon icon="fa:caret-down" width="10" style={{ opacity: 0.5 }} />
+                    </button>
+
+                    {showProfileMenu && (
+                        <div className="profile-menu" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '220px', zIndex: 100 }}>
+                            <div style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
+                                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{session.user.globalName || session.user.name}</div>
+                                <div style={{ fontSize: '11px', color: '#3ba55d', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ width: '8px', height: '8px', background: '#3ba55d', borderRadius: '50%', display: 'inline-block' }}></span>
+                                    {customStatus || 'Online'}
+                                </div>
+                            </div>
+
+                            <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowProfileModal(true); }}>
+                                <Icon icon="fa:user" width="16" /> View Profile
+                            </button>
+                            <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>
+                                <Icon icon="fa:comment" width="16" /> Set Status
+                            </button>
+                            <button className="menu-item disabled">
+                                <Icon icon="fa:cog" width="16" /> Settings
+                            </button>
+
+                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+
+                            <button className="menu-item danger" onClick={() => signOut({ callbackUrl: '/' })}>
+                                <Icon icon="fa:sign-out" width="16" /> Disconnect
+                            </button>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <button
+                    className="btn"
+                    onClick={handleDiscordLogin}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', background: '#5865F2', border: 'none', color: 'white' }}
+                >
+                    <svg width="16" height="16" viewBox="0 0 71 55" fill="currentColor">
+                        <path d="M60.1 4.9A58.5 58.5 0 0045.4.5a.2.2 0 00-.2.1 40.8 40.8 0 00-1.8 3.7 54 54 0 00-16.2 0A37.4 37.4 0 0025.4.6a.2.2 0 00-.2-.1 58.4 58.4 0 00-14.7 4.4.2.2 0 00-.1.1C1.5 18.2-.9 31 .3 43.7a.2.2 0 00.1.1 58.8 58.8 0 0017.7 8.9.2.2 0 00.2 0 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.6.2.2 0 010-.4l1.1-.9a.2.2 0 01.2 0 42 42 0 0035.6 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .4 36.4 36.4 0 01-5.5 2.6.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.2 0 58.6 58.6 0 0017.7-8.9.2.2 0 00.1-.1c1.4-14.5-2.4-27.1-10-38.3a.2.2 0 00-.1-.1zM23.7 35.8c-3.3 0-6-3-6-6.7s2.7-6.7 6-6.7c3.4 0 6.1 3 6 6.7 0 3.7-2.6 6.7-6 6.7zm22.2 0c-3.3 0-6-3-6-6.7s2.6-6.7 6-6.7c3.3 0 6 3 6 6.7 0 3.7-2.7 6.7-6 6.7z" />
+                    </svg>
+                    Login
+                </button>
+            )}
+        </div>
+
+        {/* Modals placed here to be available in all views */}
+        {showStatusInput && (
+            <div className="profile-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="profile-modal" style={{ padding: '20px', width: '300px', background: '#1E1E24', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Set Custom Status</h3>
+                    <input
+                        type="text"
+                        placeholder="What's on your mind?"
+                        value={customStatus}
+                        onChange={(e) => setCustomStatus(e.target.value)}
+                        maxLength={50}
+                        autoFocus
+                        className="chat-input"
+                        style={{ width: '100%', marginBottom: '12px' }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') setShowStatusInput(false);
+                            if (e.key === 'Escape') { setCustomStatus(''); setShowStatusInput(false); }
+                        }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button className="btn" onClick={() => { setCustomStatus(''); setShowStatusInput(false); }}>Clear</button>
+                        <button className="btn primary" onClick={() => setShowStatusInput(false)}>Save</button>
+                    </div>
+                </div>
+            </div>
+        )
+        }
+
+        <ProfileModal
+            user={session?.user}
+            isOpen={showProfileModal}
+            onClose={() => setShowProfileModal(false)}
+            currentUser={session?.user}
+        />
+    </div >
+);
