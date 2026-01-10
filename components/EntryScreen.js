@@ -256,7 +256,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         }
 
         // Join as guest
-        onJoin(startData);
+        handleJoinWithZoom(startData);
     };
 
     const handleDiscordLogin = () => {
@@ -285,7 +285,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         );
     }
 
-    const AppHeader = () => (
+    const renderAppHeader = () => (
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, height: '64px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -458,7 +458,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
             }}>
                 <div className={`starmap-bg ${zoomLevel >= 2 ? 'zoom-2' : ''}`} />
 
-                <AppHeader />
+                {renderAppHeader()}
                 <RoomBrowser
                     onSelectRoom={setSelectedRoom}
                     isDiscordUser={isDiscordUser}
@@ -473,7 +473,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     return (
         <div className="entry-screen">
             <div className={`starmap-bg ${zoomLevel === 1 ? 'zoom-1' : ''} ${zoomLevel >= 2 ? 'zoom-2' : ''}`} />
-            <AppHeader />
+            {renderAppHeader()}
             <div className="entry-card">
                 {/* Room Badge */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--accent-surface)', borderRadius: 'var(--radius-sm)', marginBottom: '20px', fontSize: '13px', color: 'var(--accent-primary)' }}>
@@ -557,7 +557,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                                     username: finalName
                                 }
                             });
-                        } : () => handleJoinWithZoom(startData)}
+                        } : handleGuestJoin}
                     >
                         <Icon icon="fa:sign-in" width="16" />
                         Continue{isDiscordUser ? ` as ${session.user.globalName || session.user.name}` : ''}
