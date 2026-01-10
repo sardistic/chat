@@ -139,6 +139,16 @@ export async function GET() {
                         }
                     }
                 }
+            } else {
+                // No messages yet - provide helpful fallback
+                if (!summary) {
+                    if (room.memberCount > 0) {
+                        summary = `${room.memberCount} ${room.memberCount === 1 ? 'person' : 'people'} waiting to chat`;
+                    } else {
+                        summary = room.description || 'Be the first to say hi! 👋';
+                    }
+                }
+                sentiment = 'Quiet 🌙';
             }
 
             return {
