@@ -419,7 +419,12 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     // Step 1: Room Selection
     if (!selectedRoom) {
         return (
-            <div className="entry-screen-container" style={{ paddingTop: '64px' }}>
+            <div className="entry-screen-container" style={{
+                paddingTop: '64px',
+                minHeight: '100vh',
+                overflowY: 'auto',
+                paddingBottom: '40px'
+            }}>
                 <div className="starmap-bg" />
                 <AppHeader />
                 <RoomBrowser
