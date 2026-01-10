@@ -23,37 +23,37 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         const ctx = canvas.getContext('2d');
 
-        // Parameters - smaller dots, more wave, less RNG
+        // Parameters - refined for smaller dots, wider hover, wave gusts
         const params = {
-            // Grid
-            size: 28,
-            baseRadius: 0.5,      // Smaller dots
-            proximity: 160,
-            growth: 12,           // Less growth on hover
-            ease: 0.055,
+            // Grid - smaller dots
+            size: 26,
+            baseRadius: 0.35,     // Even smaller dots
+            proximity: 280,       // WIDER mouse effect
+            growth: 6,            // Subtle growth
+            ease: 0.045,          // Smoother easing
 
             // Dark aesthetic
-            baseOpacity: 0.03,
-            maxOpacity: 0.7,
+            baseOpacity: 0.025,
+            maxOpacity: 0.65,
 
-            // Wave animations - MORE PROMINENT
-            waveSpeed: 0.003,     // Faster waves
-            waveGrowth: 2.5,      // Stronger wave effect on size
-            waveOpacityBoost: 0.2, // Stronger opacity boost from waves
+            // Wave animations - WIND GUST LIKE
+            waveSpeed: 0.004,     // Faster for visible motion
+            waveGrowth: 1.8,      // Wave affects size
+            waveOpacityBoost: 0.25, // Stronger opacity from waves
 
-            // RNG Energy bursts - MUCH LESS
-            burstChance: 0.00008, // Very rare (was 0.0008)
-            burstDuration: 80,
-            burstGrowth: 3,       // Smaller burst
-            burstOpacity: 0.3,
+            // RNG Energy bursts - minimal
+            burstChance: 0.00003,
+            burstDuration: 60,
+            burstGrowth: 2,
+            burstOpacity: 0.2,
 
-            // Floating particles
-            particleCount: 15,    // Fewer particles
-            particleRadius: 0.5,
-            particleOpacity: 0.15,
-            particleSpeed: 0.2,
-            lineDistance: 80,
-            lineOpacity: 0.04,
+            // Floating particles - subtle
+            particleCount: 12,
+            particleRadius: 0.4,
+            particleOpacity: 0.12,
+            particleSpeed: 0.15,
+            lineDistance: 60,
+            lineOpacity: 0.03,
         };
 
         let gridDots = [];
@@ -101,12 +101,18 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 const waveGrowth = normalizedWave * params.waveGrowth;
                 const waveOpacity = normalizedWave * params.waveOpacityBoost;
 
-                // Mouse proximity (CodePen-like calculation)
+                // Mouse proximity - GAUSSIAN-LIKE gradient, peaks in middle
                 const distance = Math.sqrt(Math.pow(this.x - mouseX, 2) + Math.pow(this.y - mouseY, 2));
-                let mouseGrowth = map(distance, this._radius, this._radius + params.proximity, params.growth, 0);
-                if (mouseGrowth < 0) mouseGrowth = 0;
+                let mouseGrowth = 0;
+                let mouseOpacity = 0;
 
-                const mouseOpacity = mouseGrowth > 0 ? map(distance, 0, params.proximity, 0.7, 0) : 0;
+                if (distance < params.proximity) {
+                    // Gaussian-like falloff: peaks at ~30% distance from center
+                    const normalizedDist = distance / params.proximity;
+                    const gaussianFalloff = Math.exp(-Math.pow((normalizedDist - 0.15) * 2.5, 2));
+                    mouseGrowth = gaussianFalloff * params.growth;
+                    mouseOpacity = gaussianFalloff * 0.55;
+                }
 
                 // RNG Energy burst
                 if (this.burstTimer > 0) {
