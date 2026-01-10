@@ -1634,8 +1634,20 @@ body,
   flex-direction: column;
   gap: 24px;
   width: 100%;
-  max-width: 900px;
-  padding: 0 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+/* Invisible container for room cards */
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .room-browser-header {
@@ -1704,25 +1716,20 @@ body,
   font-size: 13px;
 }
 
-/* Room Grid */
-.room-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-}
+/* Room Grid - Already defined above */
 
 /* Room Card */
 .room-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 
 .room-card:hover {

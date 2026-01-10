@@ -279,9 +279,12 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
 
     const AppHeader = () => (
         <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: '64px',
+            position: 'fixed', top: 0, left: 0, right: 0, height: '64px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '0 24px', zIndex: 50
+            padding: '0 24px', zIndex: 100,
+            background: 'rgba(10, 10, 15, 0.8)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <img src="https://i.imgur.com/MfbxoHW.gif" alt="Logo" style={{ height: '20px' }} />
