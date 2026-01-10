@@ -61,11 +61,16 @@ export async function GET() {
             let summary = room.shortSummary;
 
             // Always analyze chat history for sentiment and summary
-            let sentiment = 'Quiet';
+            // Support both ID and Slug for message lookup (DB rooms use CUID id but Slug for socket/msgs)
+            const roomIds = [room.id];
+            if (room.slug) roomIds.push(room.slug);
 
             // Fetch recent messages for analysis (always, not just when members online)
             const recentMessages = await prisma.chatMessage.findMany({
-                where: { roomId: room.id, isWiped: false },
+                where: {
+                    roomId: { in: roomIds },
+                    isWiped: false
+                },
                 orderBy: { timestamp: 'desc' },
                 take: 20,
                 select: { sender: true, text: true, timestamp: true }
