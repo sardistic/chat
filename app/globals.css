@@ -132,53 +132,84 @@ body {
 }
 
 /* Layer 2: Twinkle Wind */
-/* Lightweight: Simple gradient mask + subtle pulse animation */
-@keyframes wind-drift {
+/* Pseudo-RNG gusts via animation phase interference (prime durations) */
+/* No heavy filters - just overlapping simple animations */
+
+@keyframes drift {
   0% {
-    -webkit-mask-position: 0 0;
+    transform: translateX(0) translateY(0);
   }
 
   100% {
-    -webkit-mask-position: 800px 400px;
+    transform: translateX(200px) translateY(100px);
   }
 }
 
-@keyframes twinkle-pulse {
+@keyframes gust-pulse {
 
   0%,
   100% {
-    opacity: 0.3;
+    opacity: 0.15;
+  }
+
+  15% {
+    opacity: 0.5;
+  }
+
+  20% {
+    opacity: 0.1;
   }
 
   50% {
-    opacity: 0.6;
+    opacity: 0.35;
+  }
+
+  85% {
+    opacity: 0.55;
+  }
+
+  90% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes shimmer {
+
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.3);
   }
 }
 
 .starmap-bg::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -50px;
+  /* Overflow to hide edge during drift */
   z-index: 2;
 
-  /* Faint dots that shimmer */
-  background-image: radial-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+  /* Dot grid for wind layer */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px);
   background-size: 32px 32px;
   background-position: 0 0;
 
-  /* Simple soft gradient mask - no heavy SVG filters */
-  -webkit-mask-image: radial-gradient(ellipse 60% 40% at 50% 50%, black 0%, transparent 70%);
-  mask-image: radial-gradient(ellipse 60% 40% at 50% 50%, black 0%, transparent 70%);
-
-  -webkit-mask-size: 800px 400px;
-  mask-size: 800px 400px;
+  /* Simple soft mask - no heavy SVG */
+  -webkit-mask-image: radial-gradient(ellipse 70% 50% at 50% 50%, black 0%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 50% at 50% 50%, black 0%, transparent 80%);
+  -webkit-mask-size: 600px 400px;
+  mask-size: 600px 400px;
   -webkit-mask-repeat: repeat;
   mask-repeat: repeat;
 
-  /* Dual animation: Drift + Twinkle */
+  /* Multi-animation stack: Prime durations create pseudo-RNG interference */
   animation:
-    wind-drift 45s linear infinite,
-    twinkle-pulse 4s ease-in-out infinite;
+    drift 23s linear infinite,
+    gust-pulse 7s ease-in-out infinite,
+    shimmer 11s ease-in-out infinite;
 
   pointer-events: none;
 }
