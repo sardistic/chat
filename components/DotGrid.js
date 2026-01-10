@@ -25,35 +25,35 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         // Parameters - ultra-small, dark dots with wave motion
         const params = {
-            // Grid - even smaller dots
+            // Grid - small dots
             size: 24,
-            baseRadius: 0.25,     // Ultra small
-            proximity: 280,       // Wide mouse effect
-            growth: 4,            // Subtle growth
-            ease: 0.04,           // Very smooth
+            baseRadius: 0.25,
+            proximity: 320,       // Even wider mouse effect
+            growth: 7,            // More noticeable growth on hover
+            ease: 0.055,          // Slightly faster response
 
             // Very dark aesthetic
-            baseOpacity: 0.015,   // Nearly invisible base
-            maxOpacity: 0.55,
+            baseOpacity: 0.015,
+            maxOpacity: 0.7,      // Brighter max for hover
 
-            // Wave animations - WIND GUST LIKE
-            waveSpeed: 0.004,     // Faster for visible motion
-            waveGrowth: 1.8,      // Wave affects size
-            waveOpacityBoost: 0.25, // Stronger opacity from waves
+            // Wave animations - MORE ANIMATION
+            waveSpeed: 0.006,     // Faster waves
+            waveGrowth: 2.5,      // More wave size effect
+            waveOpacityBoost: 0.35, // Stronger wave visibility
 
-            // RNG Energy bursts - minimal
-            burstChance: 0.00003,
-            burstDuration: 60,
-            burstGrowth: 2,
-            burstOpacity: 0.2,
+            // RNG Energy bursts - slightly more
+            burstChance: 0.00008,
+            burstDuration: 80,
+            burstGrowth: 3,
+            burstOpacity: 0.3,
 
-            // Floating particles - subtle
-            particleCount: 12,
-            particleRadius: 0.4,
-            particleOpacity: 0.12,
-            particleSpeed: 0.15,
-            lineDistance: 60,
-            lineOpacity: 0.03,
+            // Floating particles
+            particleCount: 15,
+            particleRadius: 0.45,
+            particleOpacity: 0.15,
+            particleSpeed: 0.18,
+            lineDistance: 80,
+            lineOpacity: 0.05,
         };
 
         let gridDots = [];
