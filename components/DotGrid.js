@@ -23,37 +23,39 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         const ctx = canvas.getContext('2d');
 
-        // Parameters - ultra-small, dark dots with wave motion
+        // Parameters - dark dots with strong wave motion
         const params = {
-            // Grid - small dots
+            // Grid
             size: 24,
-            baseRadius: 0.25,
-            proximity: 320,       // Even wider mouse effect
-            growth: 7,            // More noticeable growth on hover
-            ease: 0.055,          // Slightly faster response
+            baseRadius: 0.2,      // Smaller base
+            radiusVariation: 0.15, // Random size variation
+            proximity: 320,
+            growth: 7,
+            ease: 0.055,
 
-            // Very dark aesthetic
-            baseOpacity: 0.015,
-            maxOpacity: 0.7,      // Brighter max for hover
+            // Darker aesthetic with variation
+            baseOpacity: 0.01,    // Very dark base
+            opacityVariation: 0.025, // Random opacity variation
+            maxOpacity: 0.7,
 
-            // Wave animations - MORE ANIMATION
-            waveSpeed: 0.006,     // Faster waves
-            waveGrowth: 2.5,      // More wave size effect
-            waveOpacityBoost: 0.35, // Stronger wave visibility
+            // Wave animations - STRONG
+            waveSpeed: 0.008,     // Faster waves
+            waveGrowth: 3.5,      // Strong wave size effect
+            waveOpacityBoost: 0.45, // Very visible waves
 
-            // RNG Energy bursts - slightly more
-            burstChance: 0.00008,
-            burstDuration: 80,
-            burstGrowth: 3,
-            burstOpacity: 0.3,
+            // RNG Energy bursts - MINIMAL
+            burstChance: 0.00001, // Very rare
+            burstDuration: 60,
+            burstGrowth: 2,
+            burstOpacity: 0.15,
 
             // Floating particles
-            particleCount: 15,
-            particleRadius: 0.45,
-            particleOpacity: 0.15,
-            particleSpeed: 0.18,
-            lineDistance: 80,
-            lineOpacity: 0.05,
+            particleCount: 10,
+            particleRadius: 0.4,
+            particleOpacity: 0.1,
+            particleSpeed: 0.12,
+            lineDistance: 70,
+            lineOpacity: 0.03,
         };
 
         let gridDots = [];
@@ -77,7 +79,11 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
                 this.phase = Math.random() * Math.PI * 2;
                 this.wavePhase = Math.random() * Math.PI * 2;
-                this.baseOpacity = params.baseOpacity + Math.random() * 0.02;
+
+                // Random variation per dot
+                this._radius = params.baseRadius + (Math.random() * params.radiusVariation);
+                this.radius = this._radius;
+                this.baseOpacity = params.baseOpacity + (Math.random() * params.opacityVariation);
                 this.opacity = this.baseOpacity;
                 this.targetOpacity = this.baseOpacity;
 
