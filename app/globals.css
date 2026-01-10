@@ -122,17 +122,15 @@ body {
 }
 
 /* Layer 2: Wind (The "Gusts") */
-/* "Wind over a plain" effect: Restored RNG feel with seamless dual-layer loop */
-/* Strategy: Dual Tile & Slide. Two layers move at different rates but loop perfectly at 100% */
+/* "Wind over a plain" effect: PERLIN NOISE for organic, non-stepping flow */
 @keyframes wind-drift {
   0% {
-    -webkit-mask-position: 0px 0px, 0px 0px;
+    -webkit-mask-position: 0px 0px;
   }
 
   100% {
-    /* Layer 1 moves 2000px (1 cycle). Layer 2 moves 1200px (1 cycle). */
-    /* They finish exactly together, creating a perfect loop with internal chaos. */
-    -webkit-mask-position: 2000px 1000px, 1200px 1200px;
+    /* Move exactly the mask size to loop seamlessly */
+    -webkit-mask-position: 1000px 0px;
   }
 }
 
@@ -142,34 +140,30 @@ body {
   inset: 0;
   z-index: 2;
 
-  /* Wind Dots - Brighter to stand out in gusts */
-  background-image: radial-gradient(rgba(255, 255, 255, 0.5) 1.5px, transparent 1.5px);
+  /* Wind Dots - Slightly brighter with linear-dodge for glow */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.45) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
+  mix-blend-mode: plus-lighter;
 
-  /* Mask Strategy: Dual Intersecting Gradients */
-  /* Layer 1: Large slow clouds (2000px) */
-  /* Layer 2: Faster chopping waves (1200px) */
-  -webkit-mask-image:
-    linear-gradient(110deg, transparent 5%, black 40%, black 60%, transparent 95%),
-    radial-gradient(ellipse at center, black 40%, transparent 80%);
-  mask-image:
-    linear-gradient(110deg, transparent 5%, black 40%, black 60%, transparent 95%),
-    radial-gradient(ellipse at center, black 40%, transparent 80%);
+  /* Mask Strategy: SVG Noise Texture (Turbulence) */
+  /* This creates a seamless organic cloud texture, avoiding the "stepper" effect of linear gradients */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3CcomponentTransfer%3E%3CfuncA type='linear' slope='1.5' intercept='-0.2'/%3E%3C/componentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='1'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3CcomponentTransfer%3E%3CfuncA type='linear' slope='1.5' intercept='-0.2'/%3E%3C/componentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='1'/%3E%3C/svg%3E");
 
-  /* Tile Sizes must match the animation delta exactly */
-  -webkit-mask-size: 2000px 1000px, 1200px 1200px;
-  mask-size: 2000px 1000px, 1200px 1200px;
+  /* Fixed size for the noise tile (1000px matches SVG viewBox) */
+  -webkit-mask-size: 1000px 1000px;
+  mask-size: 1000px 1000px;
 
-  -webkit-mask-repeat: repeat, repeat;
-  mask-repeat: repeat, repeat;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
 
-  /* Composite: Intersect creates "gusts" where both alignment */
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
+  /* Remove mask-composite (simple single layer is best for performance/smoothness) */
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
 
-  /* 40s duration makes Layer 1 move 50px/s and Layer 2 move 30px/s */
-  animation: wind-drift 40s linear infinite;
+  /* Animation: Slow horizontal drift */
+  animation: wind-drift 60s linear infinite;
   pointer-events: none;
 }
 
