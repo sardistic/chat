@@ -54,10 +54,29 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
         }
     };
 
-    // Fetch rooms on mount
+    // Fetch rooms on mount and poll every 30 seconds for live updates
     useEffect(() => {
         fetchRooms();
+
+        // Poll for updates every 30 seconds
+        const pollInterval = setInterval(() => {
+            fetchRoomsQuiet(); // Silent refresh without loading state
+        }, 30000);
+
+        return () => clearInterval(pollInterval);
     }, []);
+
+    // Silent fetch without loading spinner
+    const fetchRoomsQuiet = async () => {
+        try {
+            const res = await fetch('/api/rooms');
+            if (!res.ok) return;
+            const data = await res.json();
+            setRooms(data);
+        } catch (err) {
+            // Silent fail on background refresh
+        }
+    };
 
     const fetchRooms = async () => {
         try {
