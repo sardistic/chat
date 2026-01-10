@@ -25,12 +25,12 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         // Parameters - sparse dots, revealed by mouse/waves
         const params = {
-            // Grid
-            size: 26,             // Slightly more spacing
-            baseRadius: 0.2,
-            radiusVariation: 0.15,
-            proximity: 380,       // Wide mouse reveal area
-            growth: 8,
+            // Grid - very small base dots, grow on hover
+            size: 26,
+            baseRadius: 0.12,     // Very small base
+            radiusVariation: 0.08,
+            proximity: 380,
+            growth: 10,           // Strong growth on hover
             ease: 0.055,
 
             // SPARSE - nearly invisible base, mouse/waves reveal
