@@ -77,10 +77,10 @@ body {
   z-index: 0;
   pointer-events: none;
 
-  /* Base Layer: Darkest Black + Faint Dots */
+  /* Base Layer: Darkest Black + Faint, Soft Dots */
   background-color: #000000;
-  /* Faint dots always visible - Darker as requested */
-  background-image: radial-gradient(#1e293b 1.5px, transparent 1.5px);
+  /* Faint dots always visible - Softer gradient, larger spread, lower opacity */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 4px);
   background-size: 32px 32px;
   background-position: 0 0;
 
@@ -97,8 +97,8 @@ body {
   z-index: 2;
   /* Interact above wind */
 
-  /* Illuminated dots - Brighter (Slate-200) */
-  background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
+  /* Illuminated dots - Crisp white */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.9) 1px, transparent 3px);
   background-size: 32px 32px;
   background-position: 0 0;
 
@@ -113,40 +113,45 @@ body {
 }
 
 /* Wind Layer (Subtle Rolling Effect on Dots Only) */
-/* Color Dodge ensures it only affects the dots (non-black pixels) */
+/* Color Dodge ensures it only affects the dots */
 @keyframes wind-drift {
   0% {
-    transform: translate(0, 0);
+    transform: translate(0, 0) rotate(0deg);
   }
 
-  50% {
-    transform: translate(-30px, 15px);
+  33% {
+    transform: translate(-20px, 10px) rotate(1deg);
+  }
+
+  66% {
+    transform: translate(10px, 20px) rotate(-1deg);
   }
 
   100% {
-    transform: translate(0, 0);
+    transform: translate(0, 0) rotate(0deg);
   }
 }
 
 .starmap-bg::after {
   content: "";
   position: absolute;
-  inset: -50%;
+  inset: -100%;
+  /* Massive overflow to allow wide movement */
   z-index: 1;
-  /* Below mouse layer */
 
-  /* Large, faint, blurred gradients */
+  /* Brighter gradients to ensure they 'catch' the dots in color-dodge */
   background:
-    radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.4) 0%, transparent 50%),
-    radial-gradient(circle at 80% 60%, rgba(139, 92, 246, 0.4) 0%, transparent 50%);
+    radial-gradient(circle at 30% 20%, rgba(100, 200, 255, 0.8) 0%, transparent 40%),
+    radial-gradient(circle at 70% 80%, rgba(180, 150, 255, 0.8) 0%, transparent 40%),
+    radial-gradient(circle at 40% 60%, rgba(100, 255, 200, 0.6) 0%, transparent 30%);
 
-  filter: blur(60px);
-  opacity: 0.3;
-  /* Very subtle */
+  filter: blur(80px);
+  /* Heavy blur for soft wind */
+  opacity: 0.6;
+  /* Higher opacity because color-dodge needs signal */
   mix-blend-mode: color-dodge;
-  /* MAGIC: Only lights up the grey dots below, ignores black bg */
 
-  animation: wind-drift 40s ease-in-out infinite;
+  animation: wind-drift 30s ease-in-out infinite;
   pointer-events: none;
 }
 
