@@ -4,16 +4,17 @@ import { useEffect, useRef } from 'react';
 
 /**
  * DotGrid - Animated dot grid with proximity growth + wave effects + floating particles
- * Combines grid-based dots with sparse floating particles (particles.js inspired)
+ * Parameters tuned closer to CodePen reference with RNG energy bursts
  */
 export default function DotGrid({ className = '', zoomLevel = 0 }) {
     const canvasRef = useRef(null);
     const mouseRef = useRef({ x: -1000, y: -1000 });
     const animationRef = useRef(null);
-    const zoomRef = useRef(zoomLevel);
+    const zoomRef = useRef({ current: zoomLevel, target: zoomLevel, velocity: 0 });
 
     useEffect(() => {
-        zoomRef.current = zoomLevel;
+        // Smooth zoom transition with easing
+        zoomRef.current.target = zoomLevel;
     }, [zoomLevel]);
 
     useEffect(() => {
@@ -22,118 +23,144 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         const ctx = canvas.getContext('2d');
 
-        // Parameters - darkened and smaller
+        // Parameters - closer to CodePen reference
         const params = {
-            // Grid dots
-            size: 32,
-            baseRadius: 0.6,      // Smaller dots
-            baseOpacity: 0.06,    // Much darker
-            proximity: 200,
-            growth: 4,            // Less growth
-            ease: 0.06,
-            waveSpeed: 0.0015,
-            waveGrowth: 1.2,
+            // Grid (CodePen-like)
+            size: 28,
+            baseRadius: 0.8,
+            proximity: 140,       // CodePen: 125
+            growth: 25,           // CodePen: 60 (scaled down for dark aesthetic)
+            ease: 0.065,          // CodePen: 0.075
 
-            // Floating particles (particles.js inspired)
-            particleCount: 35,    // Sparse
-            particleRadius: 0.8,
-            particleOpacity: 0.25,
-            particleSpeed: 0.3,
-            lineDistance: 120,    // Connect particles within this range to mouse
-            lineOpacity: 0.08,    // Very subtle lines
+            // Dark aesthetic
+            baseOpacity: 0.04,
+            maxOpacity: 0.8,
+
+            // Wave animations
+            waveSpeed: 0.0012,
+            waveGrowth: 1.5,
+
+            // RNG Energy bursts
+            burstChance: 0.0008,  // Chance per dot per frame
+            burstDuration: 120,   // Frames
+            burstGrowth: 8,
+            burstOpacity: 0.6,
+
+            // Floating particles
+            particleCount: 25,
+            particleRadius: 0.6,
+            particleOpacity: 0.2,
+            particleSpeed: 0.25,
+            lineDistance: 100,
+            lineOpacity: 0.06,
         };
 
         let gridDots = [];
         let particles = [];
         let width, height;
 
-        // Grid dot class
+        // Utility: map function from CodePen
+        const map = (value, min1, max1, min2, max2) => {
+            const normalized = (value - min1) / (max1 - min1);
+            return min2 + (max2 - min2) * normalized;
+        };
+
+        // Grid dot class (CodePen-inspired structure)
         class GridDot {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.baseRadius = params.baseRadius;
+                this._radius = params.baseRadius;
                 this.radius = params.baseRadius;
-                this.targetRadius = params.baseRadius;
+                this.growthValue = 0;
+
                 this.phase = Math.random() * Math.PI * 2;
                 this.wavePhase = Math.random() * Math.PI * 2;
-                this.baseOpacity = params.baseOpacity + Math.random() * 0.03;
+                this.baseOpacity = params.baseOpacity + Math.random() * 0.02;
                 this.opacity = this.baseOpacity;
                 this.targetOpacity = this.baseOpacity;
+
+                // Energy burst state
+                this.burstTimer = 0;
+                this.burstIntensity = 0;
             }
 
-            update(mouseX, mouseY, time, ease) {
+            addRadius(value) {
+                this.growthValue = value;
+            }
+
+            update(mouseX, mouseY, time) {
                 // Wave contribution
-                const wave1 = Math.sin(this.x * 0.005 + this.y * 0.003 + time * params.waveSpeed);
-                const wave2 = Math.sin(this.x * 0.004 - this.y * 0.002 + time * params.waveSpeed * 1.5 + this.phase);
-                const wave3 = Math.sin((this.x + this.y) * 0.002 + time * params.waveSpeed * 0.7 + this.wavePhase);
+                const wave1 = Math.sin(this.x * 0.004 + this.y * 0.003 + time * params.waveSpeed);
+                const wave2 = Math.sin(this.x * 0.003 - this.y * 0.002 + time * params.waveSpeed * 1.4 + this.phase);
+                const wave3 = Math.sin((this.x + this.y) * 0.002 + time * params.waveSpeed * 0.6 + this.wavePhase);
                 const waveValue = (wave1 * 0.5 + wave2 * 0.3 + wave3 * 0.2);
                 const normalizedWave = (waveValue + 1) / 2;
 
                 const waveGrowth = normalizedWave * params.waveGrowth;
+                const waveOpacity = normalizedWave * 0.08;
 
-                // Mouse proximity
-                const dx = this.x - mouseX;
-                const dy = this.y - mouseY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                // Mouse proximity (CodePen-like calculation)
+                const distance = Math.sqrt(Math.pow(this.x - mouseX, 2) + Math.pow(this.y - mouseY, 2));
+                let mouseGrowth = map(distance, this._radius, this._radius + params.proximity, params.growth, 0);
+                if (mouseGrowth < 0) mouseGrowth = 0;
 
-                let mouseGrowth = 0;
-                let mouseOpacity = 0;
-                if (distance < params.proximity) {
-                    const factor = 1 - (distance / params.proximity);
-                    mouseGrowth = factor * factor * params.growth;
-                    mouseOpacity = factor * factor * 0.5;
+                const mouseOpacity = mouseGrowth > 0 ? map(distance, 0, params.proximity, 0.7, 0) : 0;
+
+                // RNG Energy burst
+                if (this.burstTimer > 0) {
+                    this.burstTimer--;
+                    this.burstIntensity = (this.burstTimer / params.burstDuration) * params.burstGrowth;
+                } else if (Math.random() < params.burstChance) {
+                    this.burstTimer = params.burstDuration;
+                    this.burstIntensity = params.burstGrowth;
                 }
 
-                this.targetRadius = this.baseRadius + waveGrowth + mouseGrowth;
-                this.targetOpacity = this.baseOpacity + (normalizedWave * 0.08) + mouseOpacity;
+                // Apply growth with easing (CodePen formula)
+                const targetRadius = this._radius + waveGrowth + mouseGrowth + this.burstIntensity;
+                this.radius += (targetRadius - this.radius) * params.ease;
 
-                this.radius += (this.targetRadius - this.radius) * ease;
-                this.opacity += (this.targetOpacity - this.opacity) * ease;
+                this.targetOpacity = this.baseOpacity + waveOpacity +
+                    Math.max(0, mouseOpacity) +
+                    (this.burstIntensity / params.burstGrowth) * params.burstOpacity;
+                this.opacity += (this.targetOpacity - this.opacity) * params.ease;
             }
 
             draw(ctx) {
-                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
                 ctx.arc(this.x, this.y, Math.max(0.3, this.radius), 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, this.opacity)})`;
-                ctx.fill();
             }
         }
 
-        // Floating particle class (particles.js inspired)
+        // Floating particle
         class Particle {
             constructor() {
-                this.reset();
+                this.reset(true);
             }
 
-            reset() {
-                this.x = Math.random() * width;
+            reset(initial = false) {
+                this.x = initial ? Math.random() * width : (Math.random() < 0.5 ? 0 : width);
                 this.y = Math.random() * height;
                 this.vx = (Math.random() - 0.5) * params.particleSpeed;
                 this.vy = (Math.random() - 0.5) * params.particleSpeed;
-                this.radius = params.particleRadius + Math.random() * 0.5;
-                this.opacity = params.particleOpacity + Math.random() * 0.1;
+                this.radius = params.particleRadius + Math.random() * 0.4;
+                this.opacity = params.particleOpacity + Math.random() * 0.08;
             }
 
             update() {
                 this.x += this.vx;
                 this.y += this.vy;
-
-                // Wrap around edges
-                if (this.x < 0) this.x = width;
-                if (this.x > width) this.x = 0;
-                if (this.y < 0) this.y = height;
-                if (this.y > height) this.y = 0;
+                if (this.x < -10 || this.x > width + 10 || this.y < -10 || this.y > height + 10) {
+                    this.reset();
+                }
             }
 
             draw(ctx, mouseX, mouseY) {
-                // Draw particle
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
                 ctx.fill();
 
-                // Draw line to mouse if close enough
                 const dx = this.x - mouseX;
                 const dy = this.y - mouseY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -150,14 +177,12 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             }
         }
 
-        // Build grid and particles
         const build = () => {
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
 
-            // Grid dots
             gridDots = [];
             const columns = Math.ceil(width / params.size) + 1;
             const rows = Math.ceil(height / params.size) + 1;
@@ -167,38 +192,42 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 }
             }
 
-            // Floating particles
             particles = [];
             for (let i = 0; i < params.particleCount; i++) {
                 particles.push(new Particle());
             }
         };
 
-        // Mouse handler
         const handleMouseMove = (e) => {
             mouseRef.current = { x: e.clientX, y: e.clientY };
         };
 
-        // Animation loop
         let time = 0;
         const animate = () => {
             time += 1;
+
+            // Smooth zoom easing
+            const zoomState = zoomRef.current;
+            const zoomDiff = zoomState.target - zoomState.current;
+            zoomState.velocity += zoomDiff * 0.02;
+            zoomState.velocity *= 0.85; // Damping
+            zoomState.current += zoomState.velocity;
+
+            const zoom = zoomState.current;
+            const globalOpacity = zoom >= 1.8 ? Math.max(0, 1 - (zoom - 1.5) * 1.5) : 1;
+
             ctx.clearRect(0, 0, width, height);
-
-            const mouse = mouseRef.current;
-            const zoom = zoomRef.current;
-
-            // Zoom fade out
-            const globalOpacity = zoom >= 2 ? Math.max(0, 1 - (zoom - 1.5) * 2) : 1;
 
             if (globalOpacity <= 0) {
                 animationRef.current = requestAnimationFrame(animate);
                 return;
             }
 
-            // Apply zoom transform
-            if (zoom > 0) {
-                const scale = 1 + zoom * 0.15;
+            const mouse = mouseRef.current;
+
+            // Apply smooth zoom transform
+            if (zoom > 0.01) {
+                const scale = 1 + zoom * 0.2;
                 const centerX = width / 2;
                 const centerY = height / 2;
                 ctx.save();
@@ -208,10 +237,24 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 ctx.globalAlpha = globalOpacity;
             }
 
-            // Draw grid dots
+            // Draw grid dots (batched for performance)
+            ctx.beginPath();
             for (const dot of gridDots) {
-                dot.update(mouse.x, mouse.y, time, params.ease);
+                dot.update(mouse.x, mouse.y, time);
                 dot.draw(ctx);
+            }
+            // Use average opacity for batch fill (simplified)
+            ctx.fillStyle = `rgba(255, 255, 255, 0.35)`;
+            ctx.fill();
+
+            // Draw individual opacities for visible dots
+            for (const dot of gridDots) {
+                if (dot.opacity > 0.1 || dot.radius > 1.5) {
+                    ctx.beginPath();
+                    ctx.arc(dot.x, dot.y, Math.max(0.3, dot.radius), 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(params.maxOpacity, dot.opacity)})`;
+                    ctx.fill();
+                }
             }
 
             // Draw floating particles
@@ -220,14 +263,13 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 particle.draw(ctx, mouse.x, mouse.y);
             }
 
-            if (zoom > 0) {
+            if (zoom > 0.01) {
                 ctx.restore();
             }
 
             animationRef.current = requestAnimationFrame(animate);
         };
 
-        // Initialize
         build();
         window.addEventListener('resize', build);
         window.addEventListener('mousemove', handleMouseMove);
@@ -236,7 +278,6 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         });
         animate();
 
-        // Cleanup
         return () => {
             window.removeEventListener('resize', build);
             window.removeEventListener('mousemove', handleMouseMove);
