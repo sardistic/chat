@@ -23,25 +23,26 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         const ctx = canvas.getContext('2d');
 
-        // Parameters - dark dots with strong wave motion
+        // Parameters - sparse dots, revealed by mouse/waves
         const params = {
             // Grid
-            size: 24,
-            baseRadius: 0.2,      // Smaller base
-            radiusVariation: 0.15, // Random size variation
-            proximity: 320,
-            growth: 7,
+            size: 26,             // Slightly more spacing
+            baseRadius: 0.2,
+            radiusVariation: 0.15,
+            proximity: 380,       // Wide mouse reveal area
+            growth: 8,
             ease: 0.055,
 
-            // Darker aesthetic with variation
-            baseOpacity: 0.01,    // Very dark base
-            opacityVariation: 0.025, // Random opacity variation
-            maxOpacity: 0.7,
+            // SPARSE - nearly invisible base, mouse/waves reveal
+            baseOpacity: 0.003,   // Almost invisible
+            opacityVariation: 0.01,
+            maxOpacity: 0.75,
+            mouseOpacityBoost: 0.7, // Strong mouse reveal
 
-            // Wave animations - STRONG
-            waveSpeed: 0.008,     // Faster waves
-            waveGrowth: 3.5,      // Strong wave size effect
-            waveOpacityBoost: 0.45, // Very visible waves
+            // Wave animations - reveal dots
+            waveSpeed: 0.008,
+            waveGrowth: 3.5,
+            waveOpacityBoost: 0.35, // Waves also reveal dots
 
             // RNG Energy bursts - MINIMAL
             burstChance: 0.00001, // Very rare
@@ -117,7 +118,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                     const normalizedDist = distance / params.proximity;
                     const gaussianFalloff = Math.exp(-Math.pow((normalizedDist - 0.15) * 2.5, 2));
                     mouseGrowth = gaussianFalloff * params.growth;
-                    mouseOpacity = gaussianFalloff * 0.55;
+                    mouseOpacity = gaussianFalloff * params.mouseOpacityBoost;
                 }
 
                 // RNG Energy burst
