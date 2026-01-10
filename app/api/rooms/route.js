@@ -60,10 +60,10 @@ export async function GET() {
 
             let summary = room.shortSummary;
 
-            // Generate heuristic summary if missing and room is active
+            // Generate heuristic summary if missing and room is ACTUALLY active (has members)
             let sentiment = 'Quiet';
 
-            if (!summary && score > 5) { // Lower threshold to show info more often
+            if (!summary && score > 5 && room.memberCount > 0) { // Only when people are actually online
                 const recentMessages = await prisma.chatMessage.findMany({
                     where: { roomId: room.id, isWiped: false },
                     orderBy: { timestamp: 'desc' },
