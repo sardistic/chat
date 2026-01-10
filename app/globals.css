@@ -78,7 +78,8 @@ body {
   pointer-events: none;
 
   /* Base Layer: Dim Stars */
-  background-color: #0b0c0e;
+  /* Base Layer: Darkest Black */
+  background-color: #000000;
   background-position: 0 0;
 
   /* Optimization */
@@ -92,14 +93,15 @@ body {
   position: absolute;
   inset: 0;
 
-  /* Bright white/blueish stars */
-  background-image: radial-gradient(#A78BFA 1.5px, transparent 1.5px);
+  /* Illuminated dots - subtle white/blue */
+  background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
 
-  /* The Flashlight Mask */
-  -webkit-mask-image: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
-  mask-image: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+  /* The Flashlight Mask - reveals dots based on mouse position */
+  /* Includes hover-like effect via mouse movement */
+  -webkit-mask-image: radial-gradient(350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
+  mask-image: radial-gradient(350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), black 0%, transparent 100%);
 
   /* Optimization */
   transform: translateZ(0);
