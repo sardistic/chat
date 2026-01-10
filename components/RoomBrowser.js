@@ -24,9 +24,9 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
 
     // Tag suggestions - fun categories for chat rooms
     const SUGGESTED_TAGS = [
+        // Topics
         { name: 'gaming', emoji: '🎮', color: '#9333ea' },
         { name: 'music', emoji: '🎵', color: '#ec4899' },
-        { name: 'chill', emoji: '😌', color: '#14b8a6' },
         { name: 'anime', emoji: '🌸', color: '#f472b6' },
         { name: 'movies', emoji: '🎬', color: '#f59e0b' },
         { name: 'tech', emoji: '💻', color: '#3b82f6' },
@@ -36,7 +36,23 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
         { name: 'coding', emoji: '👨‍💻', color: '#06b6d4' },
         { name: 'vtuber', emoji: '🦋', color: '#a855f7' },
         { name: 'irl', emoji: '📷', color: '#f97316' },
+        // Vibes/Mood
+        { name: 'chill', emoji: '😌', color: '#14b8a6' },
+        { name: 'hype', emoji: '🔥', color: '#ef4444' },
+        { name: 'cozy', emoji: '☕', color: '#a16207' },
+        { name: 'chaotic', emoji: '🌀', color: '#7c3aed' },
+        { name: 'wholesome', emoji: '💖', color: '#db2777' },
+        { name: 'late-night', emoji: '🌙', color: '#4f46e5' },
     ];
+
+    // Helper to add custom tag
+    const addCustomTag = (tagName) => {
+        const sanitized = tagName.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 20);
+        if (sanitized.length > 1 && !newRoomTags.includes(sanitized) && newRoomTags.length < 5) {
+            setNewRoomTags(prev => [...prev, sanitized]);
+            setTagInput('');
+        }
+    };
 
     // Fetch rooms on mount
     useEffect(() => {
@@ -585,6 +601,43 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                         );
                                     })}
                                 </div>
+
+                                {/* Custom tag input */}
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                    <input
+                                        type="text"
+                                        value={tagInput}
+                                        onChange={e => setTagInput(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                addCustomTag(tagInput);
+                                            }
+                                        }}
+                                        placeholder="+ Custom tag..."
+                                        maxLength={20}
+                                        disabled={newRoomTags.length >= 5}
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 12px',
+                                            borderRadius: '20px',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            color: 'white',
+                                            fontSize: '13px'
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn"
+                                        onClick={() => addCustomTag(tagInput)}
+                                        disabled={!tagInput.trim() || newRoomTags.length >= 5}
+                                        style={{ borderRadius: '20px', padding: '8px 16px' }}
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+
                                 {newRoomTags.length > 0 && (
                                     <div className="selected-tags">
                                         {newRoomTags.map(tagName => {
@@ -595,7 +648,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                                     className="selected-tag"
                                                     style={{ background: `${tag?.color || '#a78bfa'}30`, color: tag?.color || '#a78bfa' }}
                                                 >
-                                                    {tag?.emoji} {tagName}
+                                                    {tag?.emoji || '🏷️'} {tagName}
                                                     <button type="button" onClick={() => setNewRoomTags(prev => prev.filter(t => t !== tagName))}>×</button>
                                                 </div>
                                             );
