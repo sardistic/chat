@@ -60,38 +60,65 @@ export async function GET() {
 
             let summary = room.shortSummary;
 
-            // Generate heuristic summary if missing and room is ACTUALLY active (has members)
+            // Always analyze chat history for sentiment and summary
             let sentiment = 'Quiet';
 
-            if (!summary && score > 5 && room.memberCount > 0) { // Only when people are actually online
-                const recentMessages = await prisma.chatMessage.findMany({
-                    where: { roomId: room.id, isWiped: false },
-                    orderBy: { timestamp: 'desc' },
-                    take: 10,
-                    select: { sender: true, text: true }
+            // Fetch recent messages for analysis (always, not just when members online)
+            const recentMessages = await prisma.chatMessage.findMany({
+                where: { roomId: room.id, isWiped: false },
+                orderBy: { timestamp: 'desc' },
+                take: 20,
+                select: { sender: true, text: true, timestamp: true }
+            });
+
+            if (recentMessages.length > 0) {
+                // Sentiment Analysis
+                let sentimentScore = 0;
+                const positive = /(:D|:\)|lol|lmao|haha|love|nice|cool|🔥|❤️|✨|pog|based|goat|fire|lit|vibe)/i;
+                const negative = /(:\(|sad|hate|bad|angry|ugh|🙄|cry|die|cringe|L|ratio|mid)/i;
+                const chaotic = /(lmao|omg|wtf|bruh|dead|💀|😭|chaos)/i;
+
+                recentMessages.forEach(m => {
+                    if (positive.test(m.text)) sentimentScore++;
+                    if (negative.test(m.text)) sentimentScore--;
                 });
 
-                if (recentMessages.length > 0) {
-                    // Sentiment Analysis
-                    let sentimentScore = 0;
-                    const positive = /(:D|:\)|lol|lmao|haha|love|nice|cool|🔥|❤️|✨|w|pog)/i;
-                    const negative = /(:\(|sad|hate|bad|angry|ugh|🙄|cry|die)/i;
+                // Count chaotic messages
+                const chaoticCount = recentMessages.filter(m => chaotic.test(m.text)).length;
 
-                    recentMessages.forEach(m => {
-                        if (positive.test(m.text)) sentimentScore++;
-                        if (negative.test(m.text)) sentimentScore--;
-                    });
+                if (chaoticCount > 5) sentiment = 'Chaotic 🌀';
+                else if (sentimentScore > 4) sentiment = 'Hype 🔥';
+                else if (sentimentScore > 1) sentiment = 'Positive ✨';
+                else if (sentimentScore < -2) sentiment = 'Tense 🌩️';
+                else if (recentMessages.length > 5) sentiment = 'Chill 😌';
+                else sentiment = 'Quiet 🌙';
 
-                    if (sentimentScore > 2) sentiment = 'Hype 🔥';
-                    else if (sentimentScore > 0) sentiment = 'Positive ✨';
-                    else if (sentimentScore < -1) sentiment = 'Tense 🌩️';
-                    else sentiment = 'Chill 😌';
-
+                // Generate summary if not already set
+                if (!summary) {
                     const uniqueUsers = [...new Set(recentMessages.map(m => m.sender))];
-                    const users = uniqueUsers.slice(0, 2).join(' & ');
-                    const count = uniqueUsers.length > 2 ? ` +${uniqueUsers.length - 2}` : '';
+                    // Filter out SimUsers and system messages for display
+                    const realUsers = uniqueUsers.filter(u => !u.startsWith('SimUser') && u !== 'System');
 
-                    summary = `${users}${count} are active.`;
+                    if (realUsers.length > 0) {
+                        const users = realUsers.slice(0, 2).join(' & ');
+                        const extra = realUsers.length > 2 ? ` +${realUsers.length - 2}` : '';
+
+                        // Check how recent the last message was
+                        const lastMsg = recentMessages[0];
+                        const timeDiff = Date.now() - new Date(lastMsg.timestamp).getTime();
+                        const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+
+                        if (hours < 1) {
+                            summary = `${users}${extra} chatting recently`;
+                        } else if (hours < 24) {
+                            summary = `${users}${extra} were here today`;
+                        } else {
+                            summary = `Last active: ${users}${extra}`;
+                        }
+                    } else if (uniqueUsers.length > 0) {
+                        // Only simulated/system users, show generic message
+                        summary = `${recentMessages.length} messages in history`;
+                    }
                 }
             }
 

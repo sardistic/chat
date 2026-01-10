@@ -471,9 +471,22 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                             )}
 
                             <div className="room-card-footer" style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <Icon icon="fa:users" width="12" />
-                                    <span>{room.memberCount}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Icon icon="fa:users" width="12" />
+                                        <span>{room.memberCount}</span>
+                                    </div>
+                                    {room.sentiment && room.sentiment !== 'Quiet' && (
+                                        <span style={{
+                                            fontSize: '11px',
+                                            padding: '2px 8px',
+                                            borderRadius: '10px',
+                                            background: 'rgba(167, 139, 250, 0.15)',
+                                            color: '#a78bfa'
+                                        }}>
+                                            {room.sentiment}
+                                        </span>
+                                    )}
                                 </div>
                                 <span>{formatTimeAgo(room.lastActive)}</span>
                             </div>
