@@ -79,8 +79,8 @@ body {
 
   /* Base Layer: Darkest Black + Faint Base Dots */
   background-color: #000000;
-  /* Layer 1: The "Floor". Very faint, sharp dots. */
-  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px);
+  /* Layer 1: The "Floor". Very faint, sharp dots. (Darkened from 0.08 to 0.04) */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
 
@@ -109,7 +109,7 @@ body {
   inset: 0;
   z-index: 3;
 
-  /* Crisp White Dots */
+  /* Crisp White Dots (Brightest) */
   background-image: radial-gradient(rgba(255, 255, 255, 0.9) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
@@ -140,16 +140,16 @@ body {
   inset: 0;
   z-index: 2;
 
-  /* Wind Dots - Slightly brighter with linear-dodge for glow */
-  background-image: radial-gradient(rgba(255, 255, 255, 0.45) 1.5px, transparent 1.5px);
+  /* Wind Dots - Significantly brighter (0.45 -> 0.7) to stand out against dark base */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.7) 1.5px, transparent 1.5px);
   background-size: 32px 32px;
   background-position: 0 0;
-  mix-blend-mode: plus-lighter;
+  mix-blend-mode: screen;
 
   /* Mask Strategy: SVG Noise Texture (Turbulence) */
-  /* This creates a seamless organic cloud texture, avoiding the "stepper" effect of linear gradients */
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3CcomponentTransfer%3E%3CfuncA type='linear' slope='1.5' intercept='-0.2'/%3E%3C/componentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='1'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3CcomponentTransfer%3E%3CfuncA type='linear' slope='1.5' intercept='-0.2'/%3E%3C/componentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='1'/%3E%3C/svg%3E");
+  /* Increased contrast (slope 3.5) to make "gusts" more defined and obvious */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3CcomponentTransfer%3E%3CfuncA type='linear' slope='3.5' intercept='-0.5'/%3E%3C/componentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='1'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3CcomponentTransfer%3E%3CfuncA type='linear' slope='3.5' intercept='-0.5'/%3E%3C/componentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opactiy='1'/%3E%3C/svg%3E");
 
   /* Fixed size for the noise tile (1000px matches SVG viewBox) */
   -webkit-mask-size: 1000px 1000px;
