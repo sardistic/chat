@@ -66,15 +66,24 @@ export async function GET() {
             if (room.slug) roomIds.push(room.slug);
 
             // Fetch recent messages for analysis (always, not just when members online)
-            const recentMessages = await prisma.chatMessage.findMany({
-                where: {
-                    roomId: { in: roomIds },
-                    isWiped: false
-                },
-                orderBy: { timestamp: 'desc' },
-                take: 20,
-                select: { sender: true, text: true, timestamp: true }
-            });
+            let recentMessages = [];
+            try {
+                // Ensure unique non-null IDs
+                const uniqueIds = Array.from(new Set(roomIds)).filter(Boolean);
+
+                recentMessages = await prisma.chatMessage.findMany({
+                    where: {
+                        roomId: { in: uniqueIds },
+                        isWiped: false
+                    },
+                    orderBy: { timestamp: 'desc' },
+                    take: 20,
+                    select: { sender: true, text: true, timestamp: true }
+                });
+            } catch (err) {
+                console.error(`[API] Failed to fetch messages for room ${room.id}:`, err);
+                // Continue without messages
+            }
 
             if (recentMessages.length > 0) {
                 // Sentiment Analysis
