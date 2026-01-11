@@ -18,61 +18,8 @@ export function useWebRTC(roomId, user, autoStart = true) {
     const hasJoinedRoom = useRef(false);
     const userRef = useRef(user);
 
-    // Initialize local media stream
-    const initializeMedia = useCallback(async () => {
-        console.log('[Camera] Starting initializeMedia...');
-
-        // Check if getUserMedia is available
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            const msg = 'getUserMedia not supported. Ensure you are on HTTPS.';
-            console.error('[Camera] ' + msg);
-            setError(msg);
-            throw new Error(msg);
-        }
-
-        try {
-            // Try with simplest possible constraints first for maximum compatibility
-            console.log('[Camera] Requesting with simple constraints: { video: true, audio: true }');
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            });
-
-            console.log('[Camera] Got stream:', stream.getTracks().map(t => `${t.kind}: ${t.label}`));
-
-            // Enforce initial mute state
-            stream.getAudioTracks().forEach(track => {
-                track.enabled = false;
-            });
-
-            localStreamRef.current = stream;
-            setLocalStream(stream);
-            setError(null);
-            console.log('[Camera] Stream initialized successfully');
-            return stream;
-        } catch (err) {
-            console.error('[Camera] getUserMedia failed:', err.name, err.message);
-
-            // Provide specific error messages
-            let errorMsg = 'Camera access failed: ';
-            if (err.name === 'NotAllowedError') {
-                errorMsg += 'Permission denied. Please allow camera access in your browser settings.';
-            } else if (err.name === 'NotFoundError') {
-                errorMsg += 'No camera found on this device.';
-            } else if (err.name === 'NotReadableError') {
-                errorMsg += 'Camera is in use by another application.';
-            } else if (err.name === 'OverconstrainedError') {
-                errorMsg += 'Camera does not support the requested settings.';
-            } else if (err.name === 'SecurityError') {
-                errorMsg += 'Camera access blocked. Ensure site is HTTPS.';
-            } else {
-                errorMsg += err.message || 'Unknown error';
-            }
-
-            setError(errorMsg);
-            throw err;
-        }
-    }, []);
+    // NOTE: initializeMedia removed - getUserMedia is now called directly in startBroadcast
+    // to ensure it happens immediately in the user gesture context
 
     // Helper: Broadcast Status
     const broadcastStatus = useCallback((status) => {
