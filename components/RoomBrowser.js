@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 
-export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateModal: externalShowModal, setShowCreateModal: externalSetShowModal }) {
+export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateModal: externalShowModal, setShowCreateModal: externalSetShowModal, onOpenSettings }) {
     const [rooms, setRooms] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -396,6 +396,35 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                     <h2>Explore Rooms</h2>
                     <p>Discover active communities or start your own</p>
                 </div>
+                {onOpenSettings && (
+                    <button
+                        onClick={onOpenSettings}
+                        style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            padding: '8px 16px',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '14px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => {
+                            e.target.style.background = 'rgba(255,255,255,0.1)';
+                            e.target.style.color = 'white';
+                        }}
+                        onMouseLeave={e => {
+                            e.target.style.background = 'rgba(255,255,255,0.05)';
+                            e.target.style.color = 'var(--text-secondary)';
+                        }}
+                    >
+                        <Icon icon="fa:cog" width="16" />
+                        Settings
+                    </button>
+                )}
             </div>
 
             {error && (

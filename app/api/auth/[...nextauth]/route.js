@@ -49,6 +49,8 @@ export const authOptions = {
                 // Display name priority: DB displayName > Discord name > email prefix
                 session.user.displayName = user.displayName;
                 session.user.globalName = user.name; // Discord global name stored as 'name' in DB
+                session.user.avatarSeed = user.avatarSeed;
+                session.user.avatarUrl = user.avatarUrl;
             }
             return session;
         },

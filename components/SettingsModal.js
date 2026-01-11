@@ -15,7 +15,12 @@ export default function SettingsModal({ isOpen, onClose, user }) {
         theme: 'dark'
     });
     const [nickname, setNickname] = useState(user?.globalName || user?.name || '');
+
+    // Avatar State
+    const [avatarMode, setAvatarMode] = useState('generated'); // 'discord', 'generated', 'custom'
     const [avatarSeed, setAvatarSeed] = useState(Math.floor(Math.random() * 999999));
+    const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const { status, data: session } = useSession();
@@ -30,13 +35,26 @@ export default function SettingsModal({ isOpen, onClose, user }) {
                     if (data.userId) {
                         setSettings(prev => ({ ...prev, ...data }));
                         if (data.nickname) setNickname(data.nickname);
-                        if (data.avatarSeed) setAvatarSeed(data.avatarSeed);
+
+                        // Avatar Logic
+                        if (data.avatarUrl) {
+                            setAvatarMode('custom');
+                            setCustomAvatarUrl(data.avatarUrl);
+                        } else if (data.avatarSeed) {
+                            setAvatarMode('generated');
+                            setAvatarSeed(data.avatarSeed);
+                        } else {
+                            setAvatarMode('discord');
+                        }
+                    } else {
+                        // Default to Discord if logged in, else generated
+                        setAvatarMode(session?.user?.image ? 'discord' : 'generated');
                     }
                 })
                 .catch(err => console.error("Failed to load settings:", err))
                 .finally(() => setLoading(false));
         }
-    }, [isOpen, status]);
+    }, [isOpen, status, session]);
 
     // Update nickname when user changes
     useEffect(() => {
@@ -54,7 +72,8 @@ export default function SettingsModal({ isOpen, onClose, user }) {
                 body: JSON.stringify({
                     ...settings,
                     nickname,
-                    avatarSeed
+                    avatarSeed: avatarMode === 'generated' ? avatarSeed : null,
+                    avatarUrl: avatarMode === 'custom' ? customAvatarUrl : null
                 })
             });
             onClose();
@@ -119,8 +138,10 @@ export default function SettingsModal({ isOpen, onClose, user }) {
 
     if (!isOpen) return null;
 
-    // Generate avatar URL from seed
-    const avatarUrl = session?.user?.image || `/api/avatar/${avatarSeed}`;
+    // Calculate display avatar based on current editing state
+    let displayAvatar = `/api/avatar/${avatarSeed}`;
+    if (avatarMode === 'discord' && session?.user?.image) displayAvatar = session.user.image;
+    if (avatarMode === 'custom' && customAvatarUrl) displayAvatar = customAvatarUrl;
 
     return (
         <div className="settings-modal-overlay" style={{
@@ -149,36 +170,110 @@ export default function SettingsModal({ isOpen, onClose, user }) {
                     <section>
                         <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Profile</h3>
 
-                        {/* Avatar */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                        {/* Mode Switcher */}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px' }}>
+                            {session?.user?.image && (
+                                <button
+                                    onClick={() => setAvatarMode('discord')}
+                                    style={{
+                                        flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
+                                        background: avatarMode === 'discord' ? '#5865F2' : 'transparent',
+                                        color: avatarMode === 'discord' ? 'white' : 'rgba(255,255,255,0.5)',
+                                        cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
+                                    }}
+                                >
+                                    Discord
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setAvatarMode('generated')}
+                                style={{
+                                    flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
+                                    background: avatarMode === 'generated' ? 'var(--accent-primary, #6366f1)' : 'transparent',
+                                    color: avatarMode === 'generated' ? 'white' : 'rgba(255,255,255,0.5)',
+                                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
+                                }}
+                            >
+                                Random
+                            </button>
+                            <button
+                                onClick={() => setAvatarMode('custom')}
+                                style={{
+                                    flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
+                                    background: avatarMode === 'custom' ? 'var(--accent-primary, #6366f1)' : 'transparent',
+                                    color: avatarMode === 'custom' ? 'white' : 'rgba(255,255,255,0.5)',
+                                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
+                                }}
+                            >
+                                Custom
+                            </button>
+                        </div>
+
+                        {/* Avatar Preview & Controls */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px' }}>
                             <div style={{ position: 'relative' }}>
                                 <img
-                                    src={avatarUrl}
+                                    src={displayAvatar}
                                     alt="Avatar"
                                     style={{
                                         width: '80px', height: '80px', borderRadius: '50%',
                                         border: '3px solid rgba(255,255,255,0.1)',
                                         objectFit: 'cover'
                                     }}
+                                    onError={(e) => { e.target.src = `/api/avatar/${avatarSeed}`; }}
                                 />
+                                {avatarMode === 'custom' && (
+                                    <div style={{ position: 'absolute', bottom: -5, right: -5, background: '#10b981', padding: '4px', borderRadius: '50%' }}>
+                                        <Icon icon="fa:link" width="12" style={{ color: 'white' }} />
+                                    </div>
+                                )}
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <button
-                                    onClick={rollRandomAvatar}
-                                    style={{
-                                        padding: '8px 16px', borderRadius: '6px',
-                                        border: 'none', background: 'rgba(88, 101, 242, 0.2)',
-                                        color: '#5865F2', fontWeight: '500', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', gap: '6px',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    <Icon icon="fa:random" width="14" />
-                                    Roll Random Avatar
-                                </button>
-                                <div style={{ fontSize: '11px', color: '#666' }}>
-                                    {session?.user?.image ? 'Using Discord avatar' : `Seed: ${avatarSeed}`}
-                                </div>
+
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {avatarMode === 'generated' && (
+                                    <>
+                                        <button
+                                            onClick={rollRandomAvatar}
+                                            style={{
+                                                padding: '10px 16px', borderRadius: '8px',
+                                                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                                                color: 'white', fontWeight: '500', cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', gap: '8px',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
+                                            onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                                        >
+                                            <Icon icon="fa:dice" width="14" />
+                                            Roll Random
+                                        </button>
+                                        <div style={{ fontSize: '11px', color: '#666' }}>Seed: {avatarSeed}</div>
+                                    </>
+                                )}
+
+                                {avatarMode === 'custom' && (
+                                    <>
+                                        <label style={{ fontSize: '12px', color: '#888' }}>Image URL</label>
+                                        <input
+                                            type="text"
+                                            placeholder="https://..."
+                                            value={customAvatarUrl}
+                                            onChange={e => setCustomAvatarUrl(e.target.value)}
+                                            style={{
+                                                width: '100%', padding: '10px',
+                                                background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+                                                borderRadius: '6px', color: 'white', fontSize: '14px'
+                                            }}
+                                        />
+                                    </>
+                                )}
+
+                                {avatarMode === 'discord' && (
+                                    <div style={{ fontSize: '13px', color: '#aaa', fontStyle: 'italic' }}>
+                                        Using your Discord profile picture. <br />
+                                        Switch tabs to change.
+                                    </div>
+                                )}
                             </div>
                         </div>
 

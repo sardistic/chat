@@ -342,6 +342,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                     isDiscordUser={isDiscordUser}
                     showCreateModal={showCreateModal}
                     setShowCreateModal={setShowCreateModal}
+                    onOpenSettings={() => setShowSettingsModal(true)}
                 />
             </div>
         );
