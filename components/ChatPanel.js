@@ -362,7 +362,7 @@ export default function ChatPanel({
             <div style={{
                 flex: 1,
                 overflowY: 'auto',
-                padding: '16px',
+                padding: '16px 16px 60px 16px', // Extra bottom padding to clear input box
                 display: 'flex',
                 flexDirection: 'column',
                 scrollBehavior: 'smooth'

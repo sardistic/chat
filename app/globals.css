@@ -2295,10 +2295,15 @@ body,
 [data-nextjs-toast],
 [data-nextjs-refresh],
 nextjs-portal {
-  z-index: 99999 !important;
-  bottom: 100px !important;
-  /* Move up above chat input */
+  position: fixed !important;
+  /* Ensure it's not restricted by containers */
+  z-index: 2147483647 !important;
+  /* Max Z-Index */
+  bottom: 120px !important;
+  /* Clear input box safely */
   right: 20px !important;
+  /* Move up above chat input */
+
   /* Fuzzy Throbbing Effect */
   animation: global-throb 2s ease-in-out infinite !important;
   filter: drop-shadow(0 0 8px #22c55e) drop-shadow(0 0 15px #22c55e) !important;
@@ -2354,10 +2359,12 @@ nextjs-portal {
     opacity: 0;
   }
 }
+
 .throb-drip-green {
   box-shadow: 0 0 8px #22c55e;
   animation: global-throb 2s ease-in-out infinite;
 }
+
 .throb-drip-green::after {
   content: '';
   position: absolute;
