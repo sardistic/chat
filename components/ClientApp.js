@@ -984,7 +984,6 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                 })}
             </div>
           </div>
-          {/* Mobile Persistent Navigation Footer */}
         </aside>
       </div>
 
