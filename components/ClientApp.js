@@ -109,6 +109,21 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const [chatReactions, setChatReactions] = useState([]);
   const { tubeState, receivedAt, updateTubeState, isOwner: isTubeOwner } = useYouTubeSync(roomId, user);
 
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(false);
+  const [isUltraSmall, setIsUltraSmall] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      setIsUltraSmall(window.innerWidth <= 480);
+    };
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
+
   // HACK: Force Next.js HMR Toast/Portal to be visible and clear of input box
   useEffect(() => {
     const fixToast = () => {
@@ -457,48 +472,50 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         {/* Right Header Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
-          {/* Avatar Aquarium - to the left of controls */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            marginRight: '8px'
-          }}>
-            {(() => {
-              const uniqueMap = new Map();
-              if (user && user.name) uniqueMap.set(user.name, user);
-              peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
-              ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
-              return Array.from(uniqueMap.values())
-                .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
-                .map((u, i) => {
-                  const isUserTyping = typingUsers.includes(u.name);
-                  const base = u.avatar || `/ api / avatar / ${u.name} `;
-                  // Only animate if it's our internal avatar API
-                  let avatarUrl = base;
-                  if (isUserTyping && base.includes('/api/avatar')) {
-                    const hasQuery = base.includes('?');
-                    avatarUrl = `${base}${hasQuery ? '&' : '?'} expr = typing`;
-                  }
-                  return (
-                    <div
-                      key={u.name + i}
-                      className="aquarium-avatar"
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => handleProfileClick(u, e)}
-                      title={u.name}
-                    >
-                      <img
-                        src={avatarUrl}
-                        alt={u.name}
-                        className={tubeState?.playing && ((u.name === user.name) ? isLocalTubeUnmuted : u.isTubeUnmuted) ? 'dancing' : ''}
-                        style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
-                      />
-                    </div>
-                  )
-                });
-            })()}
-          </div>
+          {/* Avatar Aquarium - Moved to header if room permits, otherwise displaced to video grid area */}
+          {!isMobile && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              marginRight: '8px'
+            }}>
+              {(() => {
+                const uniqueMap = new Map();
+                if (user && user.name) uniqueMap.set(user.name, user);
+                peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
+                ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
+                return Array.from(uniqueMap.values())
+                  .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
+                  .map((u, i) => {
+                    const isUserTyping = typingUsers.includes(u.name);
+                    const base = u.avatar || `/api/avatar/${u.name}`;
+                    // Only animate if it's our internal avatar API
+                    let avatarUrl = base;
+                    if (isUserTyping && base.includes('/api/avatar')) {
+                      const hasQuery = base.includes('?');
+                      avatarUrl = `${base}${hasQuery ? '&' : '?'}expr=typing`;
+                    }
+                    return (
+                      <div
+                        key={u.name + i}
+                        className="aquarium-avatar"
+                        style={{ cursor: 'pointer' }}
+                        onClick={(e) => handleProfileClick(u, e)}
+                        title={u.name}
+                      >
+                        <img
+                          src={avatarUrl}
+                          alt={u.name}
+                          className={tubeState?.playing && ((u.name === user.name) ? isLocalTubeUnmuted : u.isTubeUnmuted) ? 'dancing' : ''}
+                          style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    )
+                  });
+              })()}
+            </div>
+          )}
 
           <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
 
@@ -530,10 +547,13 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
           <button
             className={`btn ${isBroadcasting ? 'danger' : 'primary'} `}
-            style={{ padding: '6px 12px', fontSize: '12px', height: '32px' }}
+            style={{ padding: isUltraSmall ? '6px' : '6px 12px', fontSize: '12px', height: '32px', minWidth: isUltraSmall ? '32px' : '80px' }}
             onClick={handleToggleBroadcast}
+            title={isBroadcasting ? 'Stream Off' : 'Stream On'}
           >
-            {isBroadcasting ? 'Stream Off' : 'Stream'}
+            {isUltraSmall ? (
+              <Icon icon={isBroadcasting ? "fa:stop" : "fa:play"} width="14" />
+            ) : (isBroadcasting ? 'Stream Off' : 'Stream')}
           </button>
 
           <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
@@ -594,10 +614,64 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
         {/* Left Stage (Cams) */}
         <div className="main-stage">
+          {isMobile && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              opacity: 0.4,
+              pointerEvents: 'none',
+              overflow: 'hidden'
+            }}>
+              {/* Animating drift background for avatars */}
+              <style>{`
+                @keyframes avatarDrift {
+                  0% { transform: translate(0, 0) rotate(0deg); }
+                  33% { transform: translate(10px, -5px) rotate(5deg); }
+                  66% { transform: translate(-5px, 10px) rotate(-5deg); }
+                  100% { transform: translate(0, 0) rotate(0deg); }
+                }
+              `}</style>
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                flexWrap: 'wrap',
+                padding: '20px',
+                justifyContent: 'center'
+              }}>
+                {(() => {
+                  const uniqueMap = new Map();
+                  if (user && user.name) uniqueMap.set(user.name, user);
+                  peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
+                  ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
+                  return Array.from(uniqueMap.values())
+                    .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
+                    .map((u, i) => (
+                      <img
+                        key={u.name + i}
+                        src={u.avatar || `/api/avatar/${u.name}`}
+                        alt={u.name}
+                        onClick={(e) => handleProfileClick(u, e)}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          animation: `avatarDrift ${10 + (i % 5) * 2}s ease-in-out infinite`,
+                          pointerEvents: 'auto',
+                          cursor: 'pointer'
+                        }}
+                      />
+                    ));
+                })()}
+              </div>
+            </div>
+          )}
           <VideoGrid
             localStream={isBroadcasting ? localStream : null}
             peers={peers}
             localUser={user}
+            style={{ position: 'relative', zIndex: 10 }} // Ensure grid is above aquarium
             isVideoEnabled={isVideoEnabled}
             isAudioEnabled={isAudioEnabled}
             isDeafened={isDeafened}

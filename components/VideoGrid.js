@@ -507,7 +507,8 @@ export default function VideoGrid({
     onUpdateTubeState = () => { },
     isTubeOwner = false,
     blockedIds = new Set(), // Passed from useChat
-    onMuteChange // Passed from page.js
+    onMuteChange, // Passed from page.js
+    style = {}
 }) {
     const { socket } = useSocket();
     const [incomingReactions, setIncomingReactions] = useState(new Map());
@@ -646,7 +647,7 @@ export default function VideoGrid({
 
     return (
         <>
-            <div className="grid" ref={gridRef} style={{ overflow: 'hidden' }}>
+            <div className="grid" ref={gridRef} style={{ ...style, overflow: 'hidden' }}>
                 {/* Tube Tile */}
                 {tubeState && (
                     <TubeTile

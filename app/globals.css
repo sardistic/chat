@@ -1413,18 +1413,24 @@ body {
   .app-content {
     flex-direction: column !important;
     padding: 0 !important;
+    overflow: hidden;
+    /* Prevent body scroll */
+    margin-top: 50px !important;
+    height: calc(100vh - 50px) !important;
   }
 
-  /* Main stage takes full width, positioned below header */
+  /* Video stage with overlap room */
   .main-stage {
     width: 100% !important;
-    height: calc(45vh - 25px) !important;
-    min-height: 180px;
-    margin-right: 0 !important;
-    margin-top: 0 !important;
+    height: calc(40vh - 20px) !important;
+    min-height: 200px;
+    margin: 0 !important;
+    padding-bottom: 20px !important;
+    /* Visual breathing room */
+    z-index: 10;
   }
 
-  /* Sidebar becomes bottom panel, below main stage */
+  /* Sidebar overlaps video stage with fade */
   .floating-sidebar {
     position: fixed !important;
     bottom: 0 !important;
@@ -1432,9 +1438,26 @@ body {
     right: 0 !important;
     top: auto !important;
     width: 100% !important;
-    height: calc(55vh - 25px) !important;
-    border-radius: 16px 16px 0 0 !important;
+    height: 65vh !important;
+    /* Larger overlap */
+    border-radius: 24px 24px 0 0 !important;
     margin: 0 !important;
+    z-index: 50;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
+    background: linear-gradient(to top,
+        rgba(10, 11, 14, 1) 0%,
+        rgba(10, 11, 14, 0.98) 85%,
+        rgba(10, 11, 14, 0.7) 95%,
+        transparent 100%) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-left: none !important;
+  }
+
+  /* Chat list padding to start below the transparency fade */
+  .side-header {
+    margin-top: 15px !important;
   }
 
   /* Hide resize handle on mobile */
@@ -1448,9 +1471,16 @@ body {
     padding: 0 12px !important;
   }
 
-  /* Hide breadcrumb text on small screens */
+  /* Hide breadcrumb elements that don't fit */
   .app-header .text-btn {
     display: none;
+  }
+
+  /* Prevent breadcrumb group from growing too much */
+  .app-header>div:first-child {
+    max-width: 120px;
+    overflow: hidden;
+    white-space: nowrap;
   }
 
   /* Adjust video grid for mobile */
