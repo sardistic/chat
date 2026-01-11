@@ -134,6 +134,78 @@ export function useChat(roomId, user) {
                 return;
             }
 
+            // 2.5. Join/Leave Consolidation
+            // Consolidates rapid join/leave events into a single "join-leave" summary message
+            if (msg.systemType === 'user-join' || msg.systemType === 'user-leave') {
+                const lastMsgIndex = messagesRef.current.length - 1;
+                const lastMsg = messagesRef.current[lastMsgIndex];
+                const isRecent = lastMsg && (new Date(msg.timestamp) - new Date(lastMsg.timestamp) < 60000); // 1 minute window
+
+                // If last message allows grouping (either 'join-leave' or first 'user-join'/'user-leave' converting to 'join-leave')
+                if (isRecent && (lastMsg.systemType === 'join-leave' || lastMsg.systemType === 'user-join' || lastMsg.systemType === 'user-leave')) {
+
+                    // Normalize existing users list
+                    let existingUsers = [];
+                    if (lastMsg.metadata?.users) {
+                        existingUsers = lastMsg.metadata.users;
+                    } else if (lastMsg.systemType !== 'join-leave') {
+                        // Convert the previous single message into a user object
+                        // We have to extract name/avatar effectively from the previous message
+                        // Assuming previous message matches the structure
+                        existingUsers.push({
+                            name: lastMsg.sender || 'User',
+                            avatar: lastMsg.senderAvatar,
+                            action: lastMsg.systemType === 'user-join' ? 'joined' : 'left',
+                            timestamp: lastMsg.timestamp
+                        });
+                    }
+
+                    // Create new user object
+                    const action = msg.systemType === 'user-join' ? 'joined' : 'left';
+                    const newUser = {
+                        name: msg.sender || 'User',
+                        avatar: msg.senderAvatar,
+                        action: action,
+                        timestamp: msg.timestamp
+                    };
+
+                    const newUsers = [...existingUsers, newUser];
+
+                    // Generate summary text
+                    const joiners = newUsers.filter(u => u.action === 'joined').map(u => u.name);
+                    const leavers = newUsers.filter(u => u.action === 'left').map(u => u.name);
+
+                    let parts = [];
+                    if (joiners.length > 0) {
+                        parts.push(joiners.length <= 3 ? `${joiners.join(', ')} popped in` : `${joiners.length} users popped in`);
+                    }
+                    if (leavers.length > 0) {
+                        parts.push(leavers.length <= 3 ? `${leavers.join(', ')} floated away` : `${leavers.length} users floated away`);
+                    }
+                    const summaryText = parts.join(' • ');
+
+                    const updatedMsg = {
+                        ...lastMsg,
+                        id: lastMsg.id, // Keep ID to maintain reaction thread if any (unlikely for system)
+                        systemType: 'join-leave', // Force type to aggregate
+                        text: summaryText,
+                        metadata: { ...lastMsg.metadata, users: newUsers },
+                        timestamp: msg.timestamp,
+                        updatedAt: Date.now() // Force re-render key
+                    };
+
+                    messagesRef.current[lastMsgIndex] = updatedMsg;
+                    setMessages(prev => {
+                        const copy = [...prev];
+                        copy[copy.length - 1] = updatedMsg;
+                        return copy;
+                    });
+
+                    seenIdsRef.current.add(msg.id); // Mark new ID as handled
+                    return; // SENTINEL: Stop processing this message
+                }
+            }
+
             // 3. Fuzzy Deduplication (Sender + Text + Time Window)
             // Prevents "same message, different ID" (e.g. Web ID vs IRC ID race)
             const isFuzzyDuplicate = messagesRef.current.some(existing => {

@@ -246,11 +246,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     top: 0,
                     bottom: 0,
                     width: '3px',
-                    background: style.borderColor,
-                    // Apply throb/drip if green (or just generally pulse if it's the "green bar")
-                    // If style.borderColor contains '22c55e' (green) or similar
-                    boxShadow: style.borderColor.includes('22c55e') ? '0 0 8px #22c55e' : 'none',
-                    animation: style.borderColor.includes('22c55e') ? 'global-throb 2s ease-in-out infinite' : 'none'
+                    background: style.color, // Use solid color for the bar
+                    // Apply throb/drip if green
+                    boxShadow: style.color === '#22c55e' ? '0 0 8px #22c55e' : 'none',
+                    animation: style.color === '#22c55e' ? 'global-throb 2s ease-in-out infinite' : 'none'
                 }} />
                 {children || text}
             </div>
