@@ -707,10 +707,12 @@ export default function ChatPanel({
                 )}
 
                 <div style={{
-                    background: 'var(--bg-card)',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    overflow: 'hidden'
+                    // background: 'var(--bg-card)', // Removed per user request
+                    // borderRadius: '12px',
+                    // border: '1px solid rgba(255,255,255,0.08)',
+                    overflow: 'visible', // Allow toast to be seen if mixed? No, toast is global.
+                    position: 'relative',
+                    zIndex: 1 // Keep low to let globals override
                 }}>
                     {/* Top row: Avatar + Input + Send */}
                     <div style={{
@@ -780,7 +782,7 @@ export default function ChatPanel({
                         alignItems: 'center',
                         gap: '4px',
                         padding: '6px 14px 10px',
-                        borderTop: '1px solid rgba(255,255,255,0.05)',
+                        // borderTop: '1px solid rgba(255,255,255,0.05)', // Removed
                         position: 'relative'
                     }}>
                         <button
