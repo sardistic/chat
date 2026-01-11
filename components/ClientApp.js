@@ -649,50 +649,6 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
         {/* Left Stage (Cams) */}
         <div className="main-stage">
-          {isMobile && (
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 1,
-              opacity: 0.35,
-              pointerEvents: 'none',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                display: 'flex',
-                gap: '8px', // Tighter
-                flexWrap: 'wrap',
-                padding: '12px', // Tighter
-                justifyContent: 'center'
-              }}>
-                {(() => {
-                  const uniqueMap = new Map();
-                  if (user && user.name) uniqueMap.set(user.name, user);
-                  peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
-                  ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
-                  return Array.from(uniqueMap.values())
-                    .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
-                    .map((u, i) => (
-                      <img
-                        key={u.name + i}
-                        src={u.avatar || `/api/avatar/${u.name}`}
-                        alt={u.name}
-                        onClick={(e) => handleProfileClick(u, e)}
-                        style={{
-                          width: '28px', // Tighter
-                          height: '28px',
-                          borderRadius: '50%',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          animation: `avatarDrift ${12 + (i % 6) * 2}s ease-in-out infinite`,
-                          pointerEvents: 'auto',
-                          cursor: 'pointer'
-                        }}
-                      />
-                    ));
-                })()}
-              </div>
-            </div>
-          )}
           <VideoGrid
             localStream={isBroadcasting ? localStream : null}
             peers={peers}
@@ -762,26 +718,74 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           </div>
 
           {/* Sidebar Tabs */}
-          <div className="side-header" style={{ padding: isMobile ? '0 8px' : '0 16px', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', minHeight: isMobile ? '36px' : '48px' }}>
-            <button
-              className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
-              style={{ flex: 1, fontSize: '12px', padding: '6px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent' }}
-              onClick={() => setActiveTab('logs')}
-            >
-              Chat
-            </button>
-            <button
-              className={`btn ${activeTab === 'services' ? 'primary' : ''} `}
-              style={{ flex: 1, fontSize: '12px', padding: '6px', border: 'none', background: activeTab === 'services' ? 'rgba(255,255,255,0.1)' : 'transparent' }}
-              onClick={() => setActiveTab('services')}
-            >
-              Users ({(() => {
-                // Deduplicate: count web users + IRC users not already in web
-                const webUserNames = new Set([user.name, ...Array.from(peers.values()).map(p => p.user?.name).filter(Boolean)]);
-                const uniqueIrcCount = Array.from(ircUsers.values()).filter(u => !webUserNames.has(u.name)).length;
-                return webUserNames.size + uniqueIrcCount;
-              })()})
-            </button>
+          <div className="side-header" style={{
+            padding: isMobile ? '0 8px' : '0 16px',
+            gap: '8px',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            minHeight: isMobile ? '36px' : '48px',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+              <button
+                className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
+                style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
+                onClick={() => setActiveTab('logs')}
+              >
+                Chat
+              </button>
+              <button
+                className={`btn ${activeTab === 'services' ? 'primary' : ''} `}
+                style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'services' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
+                onClick={() => setActiveTab('services')}
+              >
+                Users ({(() => {
+                  const webUserNames = new Set([user.name, ...Array.from(peers.values()).map(p => p.user?.name).filter(Boolean)]);
+                  const uniqueIrcCount = Array.from(ircUsers.values()).filter(u => !webUserNames.has(u.name)).length;
+                  return webUserNames.size + uniqueIrcCount;
+                })()})
+              </button>
+            </div>
+
+            {/* Mobile Avatars - Compactly listed next to tabs */}
+            {isMobile && (
+              <div style={{
+                display: 'flex',
+                gap: '4px',
+                marginLeft: 'auto',
+                paddingLeft: '8px',
+                borderLeft: '1px solid rgba(255,255,255,0.05)',
+                overflowX: 'auto',
+                maxWidth: '40%',
+                maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)'
+              }}>
+                {(() => {
+                  const uniqueMap = new Map();
+                  if (user && user.name) uniqueMap.set(user.name, user);
+                  peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
+                  ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
+                  return Array.from(uniqueMap.values())
+                    .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
+                    .map((u, i) => (
+                      <img
+                        key={u.name + i}
+                        src={u.avatar || `/api/avatar/${u.name}`}
+                        alt={u.name}
+                        onClick={(e) => handleProfileClick(u, e)}
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          cursor: 'pointer',
+                          flexShrink: 0
+                        }}
+                      />
+                    ));
+                })()}
+              </div>
+            )}
           </div>
 
           <div className="side-content" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>

@@ -145,7 +145,8 @@ function VideoTile({
     onUpdateSettings = () => { },
     width,
     height,
-    isMusicPlaying = false
+    isMusicPlaying = false,
+    isMobile = false
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
@@ -701,6 +702,7 @@ export default function VideoGrid({
                     width={layout.width}
                     height={layout.height}
                     isMusicPlaying={tubeState?.isPlaying}
+                    isMobile={isMobile}
                 />
 
                 {/* Remote Peer Tiles */}
@@ -736,6 +738,7 @@ export default function VideoGrid({
                             width={layout.width}
                             height={layout.height}
                             isMusicPlaying={tubeState?.isPlaying}
+                            isMobile={isMobile}
                         />
                     );
                 })}
