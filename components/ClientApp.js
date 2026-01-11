@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getCookie, setCookie } from 'cookies-next';
 import { Icon } from '@iconify/react';
 import { SocketProvider } from "@/lib/socket";
@@ -43,6 +43,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRoomSettingsOpen, setIsRoomSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false); // Admin Modal
+  const mobileResizeRef = useRef({ isResizing: false });
 
   // State initialization with cookie fallback
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -797,7 +798,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               const touchY = e.touches[0].clientY;
               const newHeight = window.innerHeight - touchY;
               const clamped = Math.max(100, Math.min(window.innerHeight - 60, newHeight));
-              setChatHeight(clamped);
+              setSidebarHeight(clamped);
             }}
             onTouchEnd={() => {
               mobileResizeRef.current.isResizing = false;
