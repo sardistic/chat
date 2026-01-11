@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import CameraReactiveGrid from "./CameraReactiveGrid";
+
 import { useCameraEffects } from "@/hooks/useCameraEffects";
 import { useSocket } from "@/lib/socket";
 import { Icon } from '@iconify/react';
@@ -331,11 +331,7 @@ function VideoTile({
                 }}
             />
 
-            <CameraReactiveGrid
-                videoRef={tileVideoRef}
-                isActive={isVideoEnabled && !!stream}
-                reactionTimestamp={latestReactionTime.current}
-            />
+
 
             {isVideoEnabled && stream && !isVideoHidden ? (
                 <video
