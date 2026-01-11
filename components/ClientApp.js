@@ -412,6 +412,13 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   }, [socket]);
 
   // Resize Logic
+  const handleMobileResizeStart = (e) => {
+    mobileResizeRef.current.isResizing = true;
+    setIsResizing(true);
+    // Prevent default to avoid scrolling/selection
+    // e.preventDefault(); // Sometimes touch event default prevention is tricky, better to use touch-action: none CSS
+  };
+
   const handleMouseDown = (e) => {
     setIsResizing(true);
     e.preventDefault();
