@@ -636,20 +636,27 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                maxWidth: '100px',
+                maxWidth: '120px',
                 overflowX: 'auto',
-                maskImage: 'linear-gradient(to right, black 80%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)',
-                paddingRight: '6px'
+                paddingRight: '6px',
+                scrollbarWidth: 'none', // Hide scrollbar for cleaner look
+                msOverflowStyle: 'none'
               }}>
                 {(() => {
                   const uniqueMap = new Map();
-                  if (user && user.name) uniqueMap.set(user.name, user);
+                  // Note: We intentionally DO NOT add 'user' (self) to this map anymore
+                  // if (user && user.name) uniqueMap.set(user.name, user); 
+
                   peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
                   ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
 
                   return Array.from(uniqueMap.values())
-                    .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
+                    .filter(u => {
+                      // Filter bots AND current user
+                      if (['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase())) return false;
+                      if (u.name === user.name) return false;
+                      return true;
+                    })
                     .map((u, i) => (
                       <img
                         key={u.name + i}
@@ -660,11 +667,13 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                           width: '24px',
                           height: '24px',
                           borderRadius: '50%',
-                          border: '2px solid #1a1b1e',
-                          marginLeft: i === 0 ? '0' : '-10px',
+                          border: '2px solid #282b30', // Match darker bg for cutout effect
+                          marginLeft: i === 0 ? '0' : '-12px', // Tighter overlap
                           cursor: 'pointer',
                           flexShrink: 0,
-                          zIndex: 10 + i
+                          zIndex: 10 + i,
+                          transition: 'transform 0.2s',
+                          position: 'relative'
                         }}
                       />
                     ));
