@@ -61,14 +61,20 @@ function ImageEmbed({ url, alt }) {
                 alt={alt || 'Embedded image'}
                 onLoad={() => setLoaded(true)}
                 onError={() => setError(true)}
+                className="interactive-media"
                 style={{
-                    maxWidth: '200px',
-                    maxHeight: '150px',
-                    borderRadius: '6px',
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    width: 'auto',
+                    borderRadius: '8px',
                     display: loaded ? 'block' : 'none',
-                    cursor: 'pointer',
+                    cursor: 'zoom-in',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    transition: 'transform 0.2s ease'
                 }}
                 onClick={() => window.open(url, '_blank')}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             />
         </div>
     );
@@ -82,9 +88,11 @@ function VideoEmbed({ url }) {
                 src={url}
                 controls
                 style={{
-                    maxWidth: '200px',
-                    maxHeight: '150px',
-                    borderRadius: '6px',
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    background: 'black'
                 }}
             />
         </div>
@@ -99,13 +107,18 @@ function YouTubeEmbed({ url }) {
     return (
         <div className="embed-youtube" style={{ marginTop: '8px' }}>
             <iframe
-                width="200"
-                height="112"
+                width="100%"
+                height="auto"
                 src={`https://www.youtube.com/embed/${videoId}`}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                style={{ borderRadius: '6px', maxWidth: '100%' }}
+                style={{
+                    borderRadius: '8px',
+                    maxWidth: '350px',
+                    aspectRatio: '16/9',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                }}
             />
         </div>
     );
@@ -115,19 +128,16 @@ function YouTubeEmbed({ url }) {
 function AudioEmbed({ url }) {
     return (
         <div className="embed-audio" style={{ marginTop: '8px' }}>
-            <audio src={url} controls style={{ maxWidth: '100%' }} />
+            <audio src={url} controls style={{ maxWidth: '100%', borderRadius: '8px' }} />
         </div>
     );
 }
 
 // Link preview component (for regular links)
 function LinkEmbed({ url }) {
-    const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Try to fetch OpenGraph data
-        // For now, just show a simple link card
         setLoading(false);
     }, [url]);
 
@@ -144,32 +154,56 @@ function LinkEmbed({ url }) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="embed-link"
+            className="embed-link glass-panel"
             style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px 12px',
+                gap: '10px',
+                padding: '10px 14px',
                 marginTop: '8px',
-                background: 'rgba(255,255,255,0.05)',
-                borderRadius: '6px',
-                borderLeft: '3px solid #5865F2',
+                background: 'rgba(255, 255, 255, 0.03)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
                 textDecoration: 'none',
                 color: 'inherit',
                 maxWidth: '100%',
                 boxSizing: 'border-box',
+                transition: 'background 0.2s, transform 0.2s',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                e.currentTarget.style.transform = 'translateY(0)';
             }}
         >
+            <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: 'rgba(255,255,255,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+            }}>
+                <Icon icon="fa:link" width="14" color="rgba(255,255,255,0.7)" />
+            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '11px', marginTop: '4px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Icon icon="fa:link" width="12" /> {hostname}
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '2px', fontWeight: '500' }}>
+                    {hostname.toUpperCase()}
                 </div>
                 <div style={{
-                    fontSize: '14px',
-                    color: '#00AFF4',
+                    fontSize: '13px',
+                    color: '#60A5FA', // Use a nice blue that isn't default link blue
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
+                    fontWeight: '500'
                 }}>
                     {url}
                 </div>
@@ -184,19 +218,22 @@ function TenorEmbed({ url }) {
     // For simplicity, just render it as an image since most Tenor links end with .gif
     return (
         <div className="embed-tenor" style={{ marginTop: '8px' }}>
-            <a href={url} target="_blank" rel="noopener noreferrer">
+            <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                 <div style={{
                     padding: '8px 12px',
-                    background: 'rgba(255,255,255,0.05)',
+                    background: 'rgba(255,255,255,0.03)',
+                    backdropFilter: 'blur(4px)',
                     borderRadius: '8px',
-                    borderLeft: '3px solid #FF6F61',
-                    fontSize: '14px',
-                    color: '#00AFF4',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    fontSize: '13px',
+                    color: '#F472B6', // Tenor pink-ish
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '8px',
+                    fontWeight: '500'
                 }}>
-                    <Icon icon="fa:film" width="16" /> Tenor GIF - Click to view
+                    <Icon icon="fa:film" width="14" />
+                    <span>Tenor GIF <span style={{ opacity: 0.5, fontSize: '11px', marginLeft: '4px' }}>OPEN EXT</span></span>
                 </div>
             </a>
         </div>
