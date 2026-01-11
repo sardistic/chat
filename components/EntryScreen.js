@@ -5,7 +5,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { setCookie } from "cookies-next";
 import { Icon } from '@iconify/react';
 import RoomBrowser from './RoomBrowser';
-import DotGrid from './DotGrid';
+import ParticlesBackground from './ParticlesBackground';
 
 // Expanded name generator with gaming/internet culture
 function generateName(seed) {
@@ -289,7 +289,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     if (isLoading || status === 'loading') {
         return (
             <div className="entry-screen">
-                <DotGrid zoomLevel={0} />
+                <ParticlesBackground zoomLevel={0} />
                 <div className="entry-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '64px', marginBottom: '24px', animation: 'spin 3s linear infinite' }}>
@@ -331,7 +331,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 paddingBottom: '80px',
                 boxSizing: 'border-box'
             }}>
-                <DotGrid zoomLevel={zoomLevel} />
+                <ParticlesBackground zoomLevel={zoomLevel} />
 
                 <AppHeader {...headerProps} />
                 <RoomBrowser
@@ -347,7 +347,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     // Step 2: Identity Selection
     return (
         <div className="entry-screen">
-            <DotGrid zoomLevel={zoomLevel} />
+            <ParticlesBackground zoomLevel={zoomLevel} />
             <AppHeader {...headerProps} />
             <div className="entry-card">
                 {/* Room Badge */}
