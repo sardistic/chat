@@ -2290,3 +2290,10 @@ body,
   text-align: center;
   color: var(--text-secondary);
 }
+
+/* Next.js HMR Update Toast - Always on Top */
+[data-nextjs-toast],
+[data-nextjs-refresh],
+nextjs-portal {
+  z-index: 99999 !important;
+}
