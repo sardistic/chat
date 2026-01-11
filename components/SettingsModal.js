@@ -73,32 +73,45 @@ export default function SettingsModal({ isOpen, onClose, user }) {
     const BackgroundToggle = () => {
         const { backgroundType, setBackgroundType } = useBackground();
         return (
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button
                     onClick={() => setBackgroundType(BACKGROUND_TYPES.STARMAP)}
                     style={{
-                        flex: 1, padding: '14px', borderRadius: '10px', cursor: 'pointer',
+                        flex: '1 1 30%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
                         background: backgroundType === BACKGROUND_TYPES.STARMAP ? 'rgba(88, 101, 242, 0.2)' : 'rgba(255,255,255,0.03)',
                         border: backgroundType === BACKGROUND_TYPES.STARMAP ? '2px solid #5865F2' : '2px solid transparent',
                         textAlign: 'center', transition: 'all 0.2s',
                     }}
                 >
-                    <Icon icon="fa:star" width="20" style={{ color: backgroundType === BACKGROUND_TYPES.STARMAP ? '#5865F2' : '#666', marginBottom: '6px' }} />
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: backgroundType === BACKGROUND_TYPES.STARMAP ? 'white' : '#aaa' }}>Star Map</div>
-                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>Floating particles</div>
+                    <Icon icon="fa:star" width="18" style={{ color: backgroundType === BACKGROUND_TYPES.STARMAP ? '#5865F2' : '#666', marginBottom: '4px' }} />
+                    <div style={{ fontSize: '12px', fontWeight: '500', color: backgroundType === BACKGROUND_TYPES.STARMAP ? 'white' : '#aaa' }}>Star Map</div>
+                    <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>Particles</div>
                 </button>
                 <button
                     onClick={() => setBackgroundType(BACKGROUND_TYPES.GRID)}
                     style={{
-                        flex: 1, padding: '14px', borderRadius: '10px', cursor: 'pointer',
+                        flex: '1 1 30%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
                         background: backgroundType === BACKGROUND_TYPES.GRID ? 'rgba(88, 101, 242, 0.2)' : 'rgba(255,255,255,0.03)',
                         border: backgroundType === BACKGROUND_TYPES.GRID ? '2px solid #5865F2' : '2px solid transparent',
                         textAlign: 'center', transition: 'all 0.2s',
                     }}
                 >
-                    <Icon icon="fa:th" width="20" style={{ color: backgroundType === BACKGROUND_TYPES.GRID ? '#5865F2' : '#666', marginBottom: '6px' }} />
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: backgroundType === BACKGROUND_TYPES.GRID ? 'white' : '#aaa' }}>Dot Grid</div>
-                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>Wave animation</div>
+                    <Icon icon="fa:th" width="18" style={{ color: backgroundType === BACKGROUND_TYPES.GRID ? '#5865F2' : '#666', marginBottom: '4px' }} />
+                    <div style={{ fontSize: '12px', fontWeight: '500', color: backgroundType === BACKGROUND_TYPES.GRID ? 'white' : '#aaa' }}>Dot Grid</div>
+                    <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>Animated</div>
+                </button>
+                <button
+                    onClick={() => setBackgroundType(BACKGROUND_TYPES.STATIC)}
+                    style={{
+                        flex: '1 1 30%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                        background: backgroundType === BACKGROUND_TYPES.STATIC ? 'rgba(88, 101, 242, 0.2)' : 'rgba(255,255,255,0.03)',
+                        border: backgroundType === BACKGROUND_TYPES.STATIC ? '2px solid #5865F2' : '2px solid transparent',
+                        textAlign: 'center', transition: 'all 0.2s',
+                    }}
+                >
+                    <Icon icon="fa:stop" width="18" style={{ color: backgroundType === BACKGROUND_TYPES.STATIC ? '#5865F2' : '#666', marginBottom: '4px' }} />
+                    <div style={{ fontSize: '12px', fontWeight: '500', color: backgroundType === BACKGROUND_TYPES.STATIC ? 'white' : '#aaa' }}>Static</div>
+                    <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>No Animation</div>
                 </button>
             </div>
         );

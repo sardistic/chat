@@ -8,6 +8,7 @@ import ParticlesBackground from './ParticlesBackground';
 export const BACKGROUND_TYPES = {
     STARMAP: 'starmap',
     GRID: 'grid',
+    STATIC: 'static',
 };
 
 // Context for background preference
@@ -48,6 +49,23 @@ export function BackgroundProvider({ children }) {
     );
 }
 
+// Simple static grid - no animations, just CSS pattern
+function StaticGrid() {
+    return (
+        <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 0,
+            background: '#000000',
+            backgroundImage: `
+                radial-gradient(circle at center, rgba(255,255,255,0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '32px 32px',
+            pointerEvents: 'none',
+        }} />
+    );
+}
+
 // Background component that switches based on preference
 export default function Background({ zoomLevel = 0 }) {
     const { backgroundType } = useBackground();
@@ -67,6 +85,10 @@ export default function Background({ zoomLevel = 0 }) {
                 background: '#000000',
             }} />
         );
+    }
+
+    if (backgroundType === BACKGROUND_TYPES.STATIC) {
+        return <StaticGrid />;
     }
 
     if (backgroundType === BACKGROUND_TYPES.GRID) {
