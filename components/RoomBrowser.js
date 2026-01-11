@@ -26,8 +26,7 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
     const activeRooms = useMemo(() => rooms.filter(r => r.isActive24h !== false), [rooms]);
     const inactiveRooms = useMemo(() => rooms.filter(r => r.isActive24h === false), [rooms]);
 
-    const [viewMode, setViewMode] = useState('active'); // 'active' | 'inactive'
-    const displayedRooms = viewMode === 'active' ? activeRooms : inactiveRooms;
+
 
     // Tag suggestions - fun categories for chat rooms
     const SUGGESTED_TAGS = [
@@ -394,42 +393,6 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
             `}</style>
 
             {/* Header */}
-            <div className="room-browser-header">
-                <div>
-                    <h2>Explore Rooms</h2>
-                    <p>Discover active communities or start your own</p>
-                </div>
-                {onOpenSettings && (
-                    <button
-                        onClick={onOpenSettings}
-                        style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '8px',
-                            padding: '8px 16px',
-                            color: 'var(--text-secondary)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            fontSize: '14px',
-                            transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={e => {
-                            e.target.style.background = 'rgba(255,255,255,0.1)';
-                            e.target.style.color = 'white';
-                        }}
-                        onMouseLeave={e => {
-                            e.target.style.background = 'rgba(255,255,255,0.05)';
-                            e.target.style.color = 'var(--text-secondary)';
-                        }}
-                    >
-                        <Icon icon="fa:cog" width="16" />
-                        Settings
-                    </button>
-                )}
-            </div>
-
             {error && (
                 <div className="room-browser-error">
                     <Icon icon="fa:exclamation-triangle" width="16" />
@@ -438,44 +401,10 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                 </div>
             )}
 
-            {/* View Tabs */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0px' }}>
-                <button
-                    onClick={() => setViewMode('active')}
-                    style={{
-                        padding: '8px 12px',
-                        background: 'transparent',
-                        border: 'none',
-                        borderBottom: viewMode === 'active' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                        color: viewMode === 'active' ? 'white' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        fontWeight: '500',
-                        fontSize: '14px'
-                    }}
-                >
-                    Active Rooms ({activeRooms.length})
-                </button>
-                <button
-                    onClick={() => setViewMode('inactive')}
-                    style={{
-                        padding: '8px 12px',
-                        background: 'transparent',
-                        border: 'none',
-                        borderBottom: viewMode === 'inactive' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                        color: viewMode === 'inactive' ? 'white' : 'var(--text-secondary)',
-                        cursor: 'pointer',
-                        fontWeight: '500',
-                        fontSize: '14px'
-                    }}
-                >
-                    Archive ({inactiveRooms.length})
-                </button>
-            </div>
-
-            {/* Room Grid */}
-            {displayedRooms.length > 0 ? (
+            {/* Active Room Grid */}
+            {activeRooms.length > 0 ? (
                 <div className="room-grid">
-                    {displayedRooms.map(room => (
+                    {activeRooms.map(room => (
                         <div
                             key={room.id}
                             className={`room-card ${getActivityClass(room.activityScore)}`}
@@ -492,7 +421,6 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                         autoPlay loop muted playsInline
                                     />
                                 ) : (
-                                    // GENERATED PIXEL ART
                                     <div
                                         className="room-banner-media"
                                         style={{
@@ -546,7 +474,6 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                     </p>
                                 )}
 
-                                {/* Tags */}
                                 {room.tags && room.tags.length > 0 && (
                                     <div className="room-tags">
                                         {room.tags.slice(0, 3).map(tag => {
@@ -582,7 +509,6 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                 </div>
                             </div>
 
-                            {/* Hover Overlay */}
                             <div className="room-hover-details" onClick={(e) => { e.stopPropagation(); onSelectRoom(room); }}>
                                 <div style={{ transform: 'translateY(10px)', transition: 'transform 0.2s' }}>
                                     <h4 style={{ color: 'white', margin: '0 0 4px', fontSize: '16px' }}>{room.name}</h4>
@@ -623,7 +549,48 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                 </div>
             ) : (
                 <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    {viewMode === 'active' ? 'No active rooms found.' : 'No archived rooms found.'}
+                    No active rooms found. Be the first to start one!
+                </div>
+            )}
+
+            {/* Inactive Rooms List */}
+            {inactiveRooms.length > 0 && (
+                <div className="inactive-rooms-section" style={{ marginTop: '40px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
+                    <h3 style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                        Archived Rooms
+                    </h3>
+                    <div className="inactive-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {inactiveRooms.map(room => (
+                            <div
+                                key={room.id}
+                                className="inactive-row"
+                                onClick={() => onSelectRoom(room)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px',
+                                    background: 'rgba(20, 20, 25, 0.4)', borderRadius: '8px', cursor: 'pointer',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)', transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(20, 20, 25, 0.4)'}
+                            >
+                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#333', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    {room.iconUrl ? <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Icon icon="fa:hashtag" color="#666" />}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <h4 style={{ margin: 0, fontSize: '14px', color: '#ccc' }}>{room.name}</h4>
+                                        {room.sentiment && <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: '#888' }}>{room.sentiment}</span>}
+                                    </div>
+                                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {room.shortSummary || room.description || "No description"}
+                                    </p>
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#555', whiteSpace: 'nowrap' }}>
+                                    {formatTimeAgo(room.lastActive)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
