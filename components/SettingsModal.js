@@ -14,14 +14,11 @@ export default function SettingsModal({ isOpen, onClose, user }) {
         dmEnabled: true,
         theme: 'dark'
     });
-    const [profile, setProfile] = useState({
-        displayName: user?.name || '',
-        bio: '', // Need to add bio to schema eventually, or store in metadata? For now just UI.
-        avatarUrl: user?.image || ''
-    });
+    const [nickname, setNickname] = useState(user?.globalName || user?.name || '');
+    const [avatarSeed, setAvatarSeed] = useState(Math.floor(Math.random() * 999999));
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const { status } = useSession();
+    const { status, data: session } = useSession();
 
     // Fetch settings on mount
     useEffect(() => {
@@ -30,8 +27,10 @@ export default function SettingsModal({ isOpen, onClose, user }) {
             fetch('/api/user/settings')
                 .then(res => res.ok ? res.json() : {})
                 .then(data => {
-                    if (data.userId) { // If valid data
+                    if (data.userId) {
                         setSettings(prev => ({ ...prev, ...data }));
+                        if (data.nickname) setNickname(data.nickname);
+                        if (data.avatarSeed) setAvatarSeed(data.avatarSeed);
                     }
                 })
                 .catch(err => console.error("Failed to load settings:", err))
@@ -39,13 +38,24 @@ export default function SettingsModal({ isOpen, onClose, user }) {
         }
     }, [isOpen, status]);
 
+    // Update nickname when user changes
+    useEffect(() => {
+        if (user) {
+            setNickname(user.globalName || user.name || '');
+        }
+    }, [user]);
+
     const handleSave = async () => {
         setSaving(true);
         try {
             await fetch('/api/user/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...settings, ...profile })
+                body: JSON.stringify({
+                    ...settings,
+                    nickname,
+                    avatarSeed
+                })
             });
             onClose();
         } catch (err) {
@@ -53,6 +63,10 @@ export default function SettingsModal({ isOpen, onClose, user }) {
         } finally {
             setSaving(false);
         }
+    };
+
+    const rollRandomAvatar = () => {
+        setAvatarSeed(Math.floor(Math.random() * 999999));
     };
 
     // Background toggle component
@@ -92,6 +106,9 @@ export default function SettingsModal({ isOpen, onClose, user }) {
 
     if (!isOpen) return null;
 
+    // Generate avatar URL from seed
+    const avatarUrl = session?.user?.image || `/api/avatar/${avatarSeed}`;
+
     return (
         <div className="settings-modal-overlay" style={{
             position: 'fixed', inset: 0, zIndex: 9999,
@@ -100,6 +117,7 @@ export default function SettingsModal({ isOpen, onClose, user }) {
         }} onClick={onClose}>
             <div className="settings-modal" style={{
                 background: '#1a1b1e', width: '500px', maxWidth: '90vw',
+                maxHeight: '90vh', overflowY: 'auto',
                 borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)',
                 overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
             }} onClick={e => e.stopPropagation()}>
@@ -113,6 +131,71 @@ export default function SettingsModal({ isOpen, onClose, user }) {
                 </div>
 
                 <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                    {/* Profile Section */}
+                    <section>
+                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Profile</h3>
+
+                        {/* Avatar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                            <div style={{ position: 'relative' }}>
+                                <img
+                                    src={avatarUrl}
+                                    alt="Avatar"
+                                    style={{
+                                        width: '80px', height: '80px', borderRadius: '50%',
+                                        border: '3px solid rgba(255,255,255,0.1)',
+                                        objectFit: 'cover'
+                                    }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <button
+                                    onClick={rollRandomAvatar}
+                                    style={{
+                                        padding: '8px 16px', borderRadius: '6px',
+                                        border: 'none', background: 'rgba(88, 101, 242, 0.2)',
+                                        color: '#5865F2', fontWeight: '500', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Icon icon="fa:random" width="14" />
+                                    Roll Random Avatar
+                                </button>
+                                <div style={{ fontSize: '11px', color: '#666' }}>
+                                    {session?.user?.image ? 'Using Discord avatar' : `Seed: ${avatarSeed}`}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Nickname */}
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Nickname</label>
+                            <input
+                                type="text"
+                                value={nickname}
+                                onChange={e => setNickname(e.target.value)}
+                                placeholder="Enter your nickname"
+                                maxLength={32}
+                                style={{
+                                    width: '100%', padding: '10px 12px', borderRadius: '6px',
+                                    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)',
+                                    color: 'white', fontSize: '14px', outline: 'none',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                                This is how other users will see you
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Background Style */}
+                    <section>
+                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Background Style</h3>
+                        <BackgroundToggle />
+                    </section>
 
                     {/* Audio Settings */}
                     <section>
@@ -131,12 +214,6 @@ export default function SettingsModal({ isOpen, onClose, user }) {
                                 />
                             </div>
                         </div>
-                    </section>
-
-                    {/* Background Style */}
-                    <section>
-                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Background Style</h3>
-                        <BackgroundToggle />
                     </section>
 
                     {/* Privacy Settings */}
