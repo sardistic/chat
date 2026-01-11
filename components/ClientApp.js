@@ -596,6 +596,81 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           {/* Connection Status */}
           <div className={`status - dot ${isConnected ? 'connected' : 'disconnected'} `} title={isConnected ? 'Connected' : 'Disconnected'} />
 
+          {/* Mobile Navigation Header (Relocated & Crowded) */}
+          {isMobile && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '0 6px',
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: '20px',
+              height: '32px',
+              border: '1px solid rgba(255,255,255,0.05)'
+            }}>
+              {/* Chat Tab Icon */}
+              <button
+                onClick={() => setActiveTab('logs')}
+                style={{
+                  background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '26px',
+                  height: '26px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: activeTab === 'logs' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                <Icon icon="mdi:chat" width="16" />
+              </button>
+
+              {/* Divider */}
+              <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.1)' }} />
+
+              {/* Crowded Avatar List */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                maxWidth: '100px',
+                overflowX: 'auto',
+                maskImage: 'linear-gradient(to right, black 80%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent 100%)',
+                paddingRight: '6px'
+              }}>
+                {(() => {
+                  const uniqueMap = new Map();
+                  if (user && user.name) uniqueMap.set(user.name, user);
+                  peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
+                  ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
+
+                  return Array.from(uniqueMap.values())
+                    .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
+                    .map((u, i) => (
+                      <img
+                        key={u.name + i}
+                        src={u.avatar || `/api/avatar/${u.name}`}
+                        alt={u.name}
+                        onClick={() => setActiveTab('services')}
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          border: '2px solid #1a1b1e',
+                          marginLeft: i === 0 ? '0' : '-10px',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                          zIndex: 10 + i
+                        }}
+                      />
+                    ));
+                })()}
+              </div>
+            </div>
+          )}
+
           {/* Profile Dropdown */}
           <div style={{ position: 'relative' }}>
             <button
@@ -910,78 +985,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
             </div>
           </div>
           {/* Mobile Persistent Navigation Footer */}
-          {isMobile && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '10px 12px',
-              borderTop: '1px solid rgba(255,255,255,0.05)',
-              background: 'var(--bg-tertiary)',
-              zIndex: 100
-            }}>
-              {/* Chat Tab Icon */}
-              <button
-                onClick={() => setActiveTab('logs')}
-                style={{
-                  background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  border: 'none',
-                  borderRadius: '8px',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: activeTab === 'logs' ? 'var(--text-primary)' : 'var(--text-muted)',
-                  cursor: 'pointer'
-                }}
-              >
-                <Icon icon="mdi:chat" width="20" />
-              </button>
-
-              {/* Divider */}
-              <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.05)' }} />
-
-              {/* Participant Avatars */}
-              <div style={{
-                display: 'flex',
-                gap: '8px',
-                overflowX: 'auto',
-                flex: 1,
-                paddingBottom: '2px',
-                maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)'
-              }}>
-                {(() => {
-                  const uniqueMap = new Map();
-                  if (user && user.name) uniqueMap.set(user.name, user);
-                  peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
-                  ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
-
-                  return Array.from(uniqueMap.values())
-                    .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
-                    .map((u, i) => (
-                      <img
-                        key={u.name + i}
-                        src={u.avatar || `/api/avatar/${u.name}`}
-                        alt={u.name}
-                        onClick={() => setActiveTab('services')}
-                        style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '50%',
-                          border: '1.5px solid rgba(255,255,255,0.1)',
-                          cursor: 'pointer',
-                          flexShrink: 0
-                        }}
-                      />
-                    ));
-                })()}
-              </div>
-            </div>
-          )}
         </aside>
-
       </div>
 
       {/* Error Toast */}
