@@ -305,6 +305,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         // Server handles cam status notification via update-user handler
       } catch (err) {
         console.error("Error starting broadcast:", err);
+        // Show visible error to user (mobile-friendly)
+        const errorMessage = error || err.message || 'Failed to start camera. Please check permissions.';
+        alert('Camera Error: ' + errorMessage);
         setIsBroadcasting(false);
       }
     }
