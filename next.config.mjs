@@ -8,7 +8,8 @@ const nextConfig = {
         headers: [
           {
             key: 'Permissions-Policy',
-            value: 'camera=*, microphone=*, geolocation=()'
+            // Correct syntax: (self) allows own origin, () blocks entirely
+            value: 'camera=(self), microphone=(self), geolocation=()'
           }
         ]
       }
