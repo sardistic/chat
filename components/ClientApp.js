@@ -50,13 +50,37 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     return saved ? parseInt(saved, 10) : 320;
   });
 
-  // Persist sidebar width
+  const [sidebarHeight, setSidebarHeight] = useState(() => {
+    const saved = getCookie('sidebarHeight');
+    return saved ? parseInt(saved, 10) : 450;
+  });
+
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(false);
+  const [isUltraSmall, setIsUltraSmall] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      setIsUltraSmall(window.innerWidth <= 480);
+    };
+    if (typeof window !== 'undefined') {
+      checkSize();
+      window.addEventListener('resize', checkSize);
+    }
+    return () => {
+      if (typeof window !== 'undefined') window.removeEventListener('resize', checkSize);
+    };
+  }, []);
+
+  // Persist sidebar sizes
   useEffect(() => {
     const timer = setTimeout(() => {
-      setCookie('sidebarWidth', sidebarWidth, { maxAge: 60 * 60 * 24 * 365 }); // 1 year
-    }, 500); // Debounce
+      setCookie('sidebarWidth', sidebarWidth, { maxAge: 60 * 60 * 24 * 365 });
+      setCookie('sidebarHeight', sidebarHeight, { maxAge: 60 * 60 * 24 * 365 });
+    }, 500);
     return () => clearTimeout(timer);
-  }, [sidebarWidth]);
+  }, [sidebarWidth, sidebarHeight]);
 
   // Sanity check on mount (Fix stuck "fullscreen" cookies)
   // And apply 20% default if no cookie exists
@@ -109,19 +133,6 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const [chatReactions, setChatReactions] = useState([]);
   const { tubeState, receivedAt, updateTubeState, isOwner: isTubeOwner } = useYouTubeSync(roomId, user);
 
-  // Responsive state
-  const [isMobile, setIsMobile] = useState(false);
-  const [isUltraSmall, setIsUltraSmall] = useState(false);
-
-  useEffect(() => {
-    const checkSize = () => {
-      setIsMobile(window.innerWidth <= 768);
-      setIsUltraSmall(window.innerWidth <= 480);
-    };
-    checkSize();
-    window.addEventListener('resize', checkSize);
-    return () => window.removeEventListener('resize', checkSize);
-  }, []);
 
 
   // HACK: Force Next.js HMR Toast/Portal to be visible and clear of input box
@@ -408,12 +419,18 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
   const handleMouseMove = useCallback((e) => {
     if (!isResizing) return;
-    const newWidth = window.innerWidth - e.clientX;
-    // Allow resizing up to 80% of screen if user really wants to
-    const maxWidth = window.innerWidth * 0.8;
-    const constrained = Math.max(280, Math.min(maxWidth, newWidth));
-    setSidebarWidth(constrained);
-  }, [isResizing]);
+    if (isMobile) {
+      const newHeight = window.innerHeight - e.clientY;
+      const maxHeight = window.innerHeight * 0.85;
+      const minHeight = 150;
+      setSidebarHeight(Math.max(minHeight, Math.min(maxHeight, newHeight)));
+    } else {
+      const newWidth = window.innerWidth - e.clientX;
+      const maxWidth = window.innerWidth * 0.8;
+      const constrained = Math.max(280, Math.min(maxWidth, newWidth));
+      setSidebarWidth(constrained);
+    }
+  }, [isResizing, isMobile]);
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
@@ -433,7 +450,13 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className={`app ${isBuilding ? 'building-mode' : ''} `} style={{ '--dynamic-sidebar-w': `${sidebarWidth}px` }}>
+    <div
+      className={`app ${isBuilding ? 'building-mode' : ''} `}
+      style={{
+        '--dynamic-sidebar-w': `${sidebarWidth}px`,
+        '--dynamic-sidebar-h': `${sidebarHeight}px`
+      }}
+    >
 
       {/* Background Layer (Explicit) */}
       <Background />
@@ -693,11 +716,28 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
         {/* Floating Right Sidebar (Chat) */}
         <aside className="floating-sidebar">
-          {/* Resize Handle */}
+          {/* Resize Handle (Vertical on Desktop, Horizontal on Mobile) */}
           <div
             className={`drag-handle ${isBuilding ? 'active-pulse' : ''} `}
             onMouseDown={handleMouseDown}
-            style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', cursor: 'col-resize', zIndex: 10 }}
+            style={isMobile ? {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '8px',
+              cursor: 'ns-resize',
+              zIndex: 10,
+              background: 'rgba(255,255,255,0.05)'
+            } : {
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '4px',
+              cursor: 'col-resize',
+              zIndex: 10
+            }}
           />
 
           {/* Sidebar Tabs */}

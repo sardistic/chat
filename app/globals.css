@@ -1419,14 +1419,13 @@ body {
     height: calc(100vh - 50px) !important;
   }
 
-  /* Video stage with overlap room */
+  /* Video stage adapts to sidebar height */
   .main-stage {
     width: 100% !important;
-    height: calc(40vh - 20px) !important;
-    min-height: 200px;
+    height: calc(100vh - var(--dynamic-sidebar-h) - 50px) !important;
+    min-height: 180px;
     margin: 0 !important;
     padding-bottom: 20px !important;
-    /* Visual breathing room */
     z-index: 10;
   }
 
@@ -1438,7 +1437,7 @@ body {
     right: 0 !important;
     top: auto !important;
     width: 100% !important;
-    height: 65vh !important;
+    height: var(--dynamic-sidebar-h) !important;
     /* Larger overlap */
     border-radius: 24px 24px 0 0 !important;
     margin: 0 !important;
@@ -1460,10 +1459,7 @@ body {
     margin-top: 15px !important;
   }
 
-  /* Hide resize handle on mobile */
-  .drag-handle {
-    display: none !important;
-  }
+  /* Drag handle is enabled on mobile but uses js style overrides */
 
   /* Smaller header */
   .app-header {
