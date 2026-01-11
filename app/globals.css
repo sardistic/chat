@@ -235,8 +235,17 @@ body {
 @media (max-width: 768px) {
   .app-content {
     margin-top: 64px;
-    /* Ensure this matches header height or slightly more */
+    /* Ensure this matches header height */
     height: calc(100vh - 64px);
+    flex-direction: column;
+    /* Stack vertically on mobile */
+  }
+
+  /* Reset main-stage to fill remaining space */
+  .main-stage {
+    height: auto !important;
+    min-height: 0;
+    flex: 1;
   }
 }
 

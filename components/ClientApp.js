@@ -416,8 +416,8 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const handleMobileResizeStart = (e) => {
     mobileResizeRef.current.isResizing = true;
     setIsResizing(true);
-    // Prevent default to avoid scrolling/selection
-    // e.preventDefault(); // Sometimes touch event default prevention is tricky, better to use touch-action: none CSS
+    // Prevent default to avoid scrolling/selection - Critical for mobile drag
+    if (e.cancelable) e.preventDefault();
   };
 
   const handleMouseDown = (e) => {
@@ -797,13 +797,14 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               handleMobileResizeStart(e);
             }}
             style={{
-              height: '32px',
-              margin: '-16px 0',
+              height: '4px', // Visual line height
+              padding: '12px 0', // Interactive hit area
+              margin: '-12px 0', // Negative margin to center hit area
               zIndex: 1000,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'ns-resize',
+              cursor: 'row-resize',
               touchAction: 'none',
               background: 'transparent',
               position: 'relative'
