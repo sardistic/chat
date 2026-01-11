@@ -50,6 +50,9 @@ export const authOptions = {
                 session.user.displayName = user.displayName;
                 session.user.globalName = user.name; // Discord global name stored as 'name' in DB
 
+                // Source of truth for Discord image (before overrides)
+                session.user.originalImage = user.image;
+
                 // Custom Avatar overrides
                 if (user.avatarUrl) {
                     session.user.image = user.avatarUrl;

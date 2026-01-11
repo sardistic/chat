@@ -63,6 +63,11 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
         }
     }, [user]);
 
+    // Calculate display avatar based on current editing state
+    let displayAvatar = `/api/avatar/${avatarSeed}`;
+    if (avatarMode === 'discord') displayAvatar = session?.user?.originalImage || session?.user?.image;
+    if (avatarMode === 'custom' && customAvatarUrl) displayAvatar = customAvatarUrl;
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -83,7 +88,7 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
             // If we have a success callback, pass the new values back
             if (onSaveSuccess) {
                 // Compute new image URL for immediate local update
-                let newImage = displayAvatar; // Default to current display logic
+                let newImage = displayAvatar;
 
                 onSaveSuccess({
                     name: nickname,
@@ -157,11 +162,6 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
     };
 
     if (!isOpen) return null;
-
-    // Calculate display avatar based on current editing state
-    let displayAvatar = `/api/avatar/${avatarSeed}`;
-    if (avatarMode === 'discord' && session?.user?.image) displayAvatar = session.user.image;
-    if (avatarMode === 'custom' && customAvatarUrl) displayAvatar = customAvatarUrl;
 
     return (
         <div className="settings-modal-overlay" style={{
