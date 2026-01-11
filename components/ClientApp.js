@@ -296,31 +296,60 @@ function MainApp({ user, setUser, onLeaveRoom }) {
       } finally {
         setIsBroadcasting(false);
       }
-      // Server handles cam status notification via update-user handler
+      return;
+    }
 
-    } else {
-      // CRITICAL: Request camera IMMEDIATELY in the click handler, not in a nested function
-      let stream;
-      try {
-        console.log('[Camera] Requesting from click handler...');
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        console.log('[Camera] Got stream!');
-      } catch (err) {
-        console.error('[Camera] Permission error:', err.name, err.message);
-        alert('Camera Error: ' + (err.message || 'Permission denied. Please allow camera access.'));
+    // BEST PRACTICE: Check permission state FIRST using Permissions API
+    try {
+      const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+      const micPermission = await navigator.permissions.query({ name: 'microphone' });
+
+      console.log('[Permissions] Camera:', cameraPermission.state, 'Mic:', micPermission.state);
+
+      // If either was denied (not just "prompt"), user needs to manually reset in browser
+      if (cameraPermission.state === 'denied' || micPermission.state === 'denied') {
+        alert(
+          'Camera/Microphone access was previously denied.\n\n' +
+          'To fix this:\n' +
+          '1. Tap the lock icon (🔒) in the address bar\n' +
+          '2. Find "Camera" and "Microphone"\n' +
+          '3. Change them to "Allow"\n' +
+          '4. Refresh the page'
+        );
         return;
       }
+    } catch (permErr) {
+      // Permissions API not supported on this browser, continue anyway
+      console.warn('[Permissions] API not supported, continuing...');
+    }
 
-      try {
-        // Now pass the stream to startBroadcast
-        await startBroadcast(stream);
-        setIsBroadcasting(true);
-      } catch (err) {
-        console.error("Error starting broadcast:", err);
-        // Stop the stream we got since broadcast failed
-        stream?.getTracks().forEach(t => t.stop());
-        setIsBroadcasting(false);
+    // Now request camera - should show prompt if state was "prompt"
+    let stream;
+    try {
+      console.log('[Camera] Requesting from click handler...');
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log('[Camera] Got stream!');
+    } catch (err) {
+      console.error('[Camera] Permission error:', err.name, err.message);
+      if (err.name === 'NotAllowedError') {
+        alert(
+          'Camera access denied.\n\n' +
+          'Please tap the lock icon (🔒) in the address bar, ' +
+          'set Camera and Microphone to "Allow", then refresh the page.'
+        );
+      } else {
+        alert('Camera Error: ' + (err.message || 'Unknown error'));
       }
+      return;
+    }
+
+    try {
+      await startBroadcast(stream);
+      setIsBroadcasting(true);
+    } catch (err) {
+      console.error("Error starting broadcast:", err);
+      stream?.getTracks().forEach(t => t.stop());
+      setIsBroadcasting(false);
     }
   };
 
