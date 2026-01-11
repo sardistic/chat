@@ -721,26 +721,7 @@ export default function ChatPanel({
                         gap: '10px',
                         padding: '8px 12px 6px'
                     }}>
-                        {/* User Avatar */}
-                        <img
-                            src={(() => {
-                                const base = user?.avatar || user?.image || `/api/avatar/${user?.name || 'guest'}`;
-                                if (isTyping && base.includes('/api/avatar')) {
-                                    const hasQuery = base.includes('?');
-                                    return `${base}${hasQuery ? '&' : '?'}expr=typing`;
-                                }
-                                return base;
-                            })()}
-                            alt=""
-                            style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                flexShrink: 0,
-                                marginTop: '4px'
-                            }}
-                        />
+
 
                         {/* Multiline Input */}
                         <textarea
