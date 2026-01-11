@@ -1409,49 +1409,54 @@ body {
     --header-h: 50px;
   }
 
-  /* Stack layout vertically */
+  /* Stack layout vertically using flexbox for better reliability */
   .app-content {
+    display: flex !important;
     flex-direction: column !important;
     padding: 0 !important;
     overflow: hidden;
-    /* Prevent body scroll */
     margin-top: 50px !important;
-    height: calc(100vh - 50px) !important;
+    height: calc(100dvh - 50px) !important;
+    /* Use dynamic viewport height */
   }
 
-  /* Video stage adapts to sidebar height */
+  /* Video stage takes remaining area, but allow sidebar to overlap via margin */
   .main-stage {
     width: 100% !important;
-    height: calc(100vh - var(--dynamic-sidebar-h) - 50px) !important;
-    min-height: 180px;
+    flex: 1 !important;
+    /* Fill space above sidebar */
+    min-height: 150px !important;
+    height: auto !important;
     margin: 0 !important;
-    padding-bottom: 20px !important;
+    padding-bottom: 30px !important;
+    /* Extra padding for the sidebar overlap */
     z-index: 10;
+    position: relative;
+    overflow: hidden;
   }
 
-  /* Sidebar overlaps video stage with fade */
+  /* Sidebar as a bottom panel in flex flow */
   .floating-sidebar {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: auto !important;
+    position: relative !important;
+    /* Switch from fixed to flow */
     width: 100% !important;
     height: var(--dynamic-sidebar-h) !important;
-    /* Larger overlap */
+    margin-top: -30px !important;
+    /* Bleed into main-stage for the fade effect */
     border-radius: 24px 24px 0 0 !important;
-    margin: 0 !important;
     z-index: 50;
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.9);
     background: linear-gradient(to top,
         rgba(10, 11, 14, 1) 0%,
-        rgba(10, 11, 14, 0.98) 85%,
-        rgba(10, 11, 14, 0.7) 95%,
+        rgba(10, 11, 14, 1) 85%,
+        rgba(10, 11, 14, 0.8) 95%,
         transparent 100%) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
     border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-left: none !important;
+    flex-shrink: 0;
+    /* Don't collapse height */
   }
 
   /* Chat list padding to start below the transparency fade */
