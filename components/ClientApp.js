@@ -792,17 +792,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           <div
             className="mobile-drag-bar"
             onMouseDown={handleMobileResizeStart}
-            onTouchStart={handleMobileResizeStart}
-            onTouchMove={(e) => {
-              if (!mobileResizeRef.current.isResizing) return;
-              const touchY = e.touches[0].clientY;
-              const newHeight = window.innerHeight - touchY;
-              const clamped = Math.max(100, Math.min(window.innerHeight - 60, newHeight));
-              setSidebarHeight(clamped);
-            }}
-            onTouchEnd={() => {
-              mobileResizeRef.current.isResizing = false;
-              setIsResizing(false);
+            onTouchStart={(e) => {
+              e.stopPropagation(); // vital for keeping the touch
+              handleMobileResizeStart(e);
             }}
             style={{
               height: '32px',
