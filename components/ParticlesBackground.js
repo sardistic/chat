@@ -43,65 +43,69 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
                 resize: {
                     enable: true,
                 },
-            },
-            modes: {
-                grab: {
-                    distance: 180,
-                    links: {
-                        opacity: 0.12,
-                        color: "#ffffff"
-                    }
-                },
-                bubble: {
-                    distance: 160,
-                    size: 3.5,
-                    duration: 0.3,
-                    opacity: 0.5,
-                },
-            },
-        },
-        particles: {
-            color: {
-                value: "#ffffff",
-            },
-            links: {
-                enable: true,
-                distance: 80,
-                color: "#ffffff",
-                opacity: 0.04,
-                width: 0.3,
-            },
-            move: {
-                enable: true,
-                speed: 0.15,
-                direction: "none",
-                random: true,
-                straight: false,
-                outModes: {
-                    default: "bounce",
+                modes: {
+                    grab: {
+                        distance: 200,
+                        links: {
+                            opacity: 0.15,
+                            color: "#ffffff"
+                        }
+                    },
+                    bubble: {
+                        distance: 200,
+                        size: 8,
+                        duration: 0.2,
+                        opacity: 0.9,
+                    },
+                    slow: {
+                        factor: 3,
+                        radius: 200,
+                    },
                 },
             },
-            number: {
-                value: 500,
-                density: {
+            particles: {
+                color: {
+                    value: "#ffffff",
+                },
+                links: {
                     enable: true,
-                    width: 1920,
-                    height: 1080,
+                    distance: 80,
+                    color: "#ffffff",
+                    opacity: 0.04,
+                    width: 0.3,
                 },
-            },
-            opacity: {
-                value: {
-                    min: 0.06,
-                    max: 0.18,
+                move: {
+                    enable: true,
+                    speed: 0.15,
+                    direction: "none",
+                    random: true,
+                    straight: false,
+                    outModes: {
+                        default: "bounce",
+                    },
                 },
-            },
-            shape: {
-                type: "circle",
-            },
-            size: {
-                value: {
-                    min: 0.6,
-                    max: 1.6,
+                number: {
+                    value: 500,
+                    density: {
+                        enable: true,
+                        width: 1920,
+                        height: 1080,
+                    },
+                },
+                opacity: {
+                    value: {
+                        min: 0.06,
+                        max: 0.18,
+                    },
+                },
+                shape: {
+                    type: "circle",
+                },
+                size: {
+                    value: {
+                        min: 0.6,
+                        max: 1.6,
+                    },
                 },
             },
         },
