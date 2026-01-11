@@ -5,7 +5,8 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { setCookie } from "cookies-next";
 import { Icon } from '@iconify/react';
 import RoomBrowser from './RoomBrowser';
-import ParticlesBackground from './ParticlesBackground';
+import Background, { useBackground, BACKGROUND_TYPES } from './Background';
+import SettingsModal from './SettingsModal';
 
 // Expanded name generator with gaming/internet culture
 function generateName(seed) {
@@ -126,6 +127,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     // Feature States
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [showStatusInput, setShowStatusInput] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [customStatus, setCustomStatus] = useState("");
     const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -289,7 +291,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     if (isLoading || status === 'loading') {
         return (
             <div className="entry-screen">
-                <ParticlesBackground zoomLevel={0} />
+                <Background zoomLevel={0} />
                 <div className="entry-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '64px', marginBottom: '24px', animation: 'spin 3s linear infinite' }}>
@@ -331,7 +333,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 paddingBottom: '80px',
                 boxSizing: 'border-box'
             }}>
-                <ParticlesBackground zoomLevel={zoomLevel} />
+                <Background zoomLevel={zoomLevel} />
 
                 <AppHeader {...headerProps} />
                 <RoomBrowser
@@ -347,7 +349,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     // Step 2: Identity Selection
     return (
         <div className="entry-screen">
-            <ParticlesBackground zoomLevel={zoomLevel} />
+            <Background zoomLevel={zoomLevel} />
             <AppHeader {...headerProps} />
             <div className="entry-card">
                 {/* Room Badge */}
@@ -583,7 +585,7 @@ const AppHeader = ({
                             <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>
                                 <Icon icon="fa:comment" width="16" /> Set Status
                             </button>
-                            <button className="menu-item disabled">
+                            <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowSettingsModal(true); }}>
                                 <Icon icon="fa:cog" width="16" /> Settings
                             </button>
 
@@ -636,6 +638,14 @@ const AppHeader = ({
             </div>
         )
         }
+
+        {/* Settings Modal */}
+        {showSettingsModal && (
+            <SettingsModal
+                isOpen={showSettingsModal}
+                onClose={() => setShowSettingsModal(false)}
+            />
+        )}
 
         <ProfileModal
             user={session?.user}
