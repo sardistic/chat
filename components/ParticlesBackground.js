@@ -35,7 +35,7 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             events: {
                 onHover: {
                     enable: true,
-                    mode: "bubble",
+                    mode: ["grab", "bubble"],
                     parallax: {
                         enable: false,
                     }
@@ -45,11 +45,18 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
                 },
             },
             modes: {
+                grab: {
+                    distance: 150,
+                    links: {
+                        opacity: 0.08,
+                        color: "#ffffff"
+                    }
+                },
                 bubble: {
-                    distance: 200,
-                    size: 5,
-                    duration: 0.4,
-                    opacity: 0.8,
+                    distance: 180,
+                    size: 4,
+                    duration: 0.3,
+                    opacity: 0.6,
                 },
             },
         },
@@ -58,21 +65,17 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
                 value: "#ffffff",
             },
             links: {
-                enable: false,
+                enable: true,
+                distance: 120,
+                color: "#ffffff",
+                opacity: 0.03,
+                width: 0.5,
             },
             move: {
-                enable: true,
-                speed: 0.08,
-                direction: "none",
-                random: false,
-                straight: false,
-                outModes: {
-                    default: "out",
-                },
-                vibrate: true,
+                enable: false,
             },
             number: {
-                value: 200,
+                value: 350,
                 density: {
                     enable: true,
                     width: 1920,
@@ -81,8 +84,8 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             },
             opacity: {
                 value: {
-                    min: 0.01,
-                    max: 0.08,
+                    min: 0.05,
+                    max: 0.2,
                 },
             },
             shape: {
@@ -90,8 +93,8 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             },
             size: {
                 value: {
-                    min: 0.5,
-                    max: 1.5,
+                    min: 0.8,
+                    max: 1.8,
                 },
             },
         },
