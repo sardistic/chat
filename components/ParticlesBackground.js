@@ -5,8 +5,8 @@ import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 
 /**
- * ParticlesBackground - tsParticles with grid-like sparse dots
- * Fullscreen, no connecting lines, mouse hover reveals dots
+ * ParticlesBackground - tsParticles with grid-like dots
+ * Dense grid, subtle 3D lines, zoom transition support
  */
 export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
     const [init, setInit] = useState(false);
@@ -46,17 +46,17 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             },
             modes: {
                 grab: {
-                    distance: 150,
+                    distance: 180,
                     links: {
-                        opacity: 0.08,
+                        opacity: 0.12,
                         color: "#ffffff"
                     }
                 },
                 bubble: {
-                    distance: 180,
-                    size: 4,
+                    distance: 160,
+                    size: 3.5,
                     duration: 0.3,
-                    opacity: 0.6,
+                    opacity: 0.5,
                 },
             },
         },
@@ -66,16 +66,20 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             },
             links: {
                 enable: true,
-                distance: 120,
+                distance: 80,
                 color: "#ffffff",
-                opacity: 0.03,
-                width: 0.5,
+                opacity: 0.04,
+                width: 0.3,
+                triangles: {
+                    enable: true,
+                    opacity: 0.01,
+                }
             },
             move: {
                 enable: false,
             },
             number: {
-                value: 350,
+                value: 500,
                 density: {
                     enable: true,
                     width: 1920,
@@ -84,8 +88,8 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             },
             opacity: {
                 value: {
-                    min: 0.05,
-                    max: 0.2,
+                    min: 0.06,
+                    max: 0.18,
                 },
             },
             shape: {
@@ -93,8 +97,8 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             },
             size: {
                 value: {
-                    min: 0.8,
-                    max: 1.8,
+                    min: 0.6,
+                    max: 1.6,
                 },
             },
         },
@@ -105,27 +109,41 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
         // Particles loaded
     }, []);
 
+    // Zoom transition styles
+    const zoomOpacity = zoomLevel >= 1.8 ? Math.max(0, 1 - (zoomLevel - 1.5) * 1.5) : 1;
+    const zoomScale = zoomLevel > 0.01 ? 1 + zoomLevel * 0.15 : 1;
+
+    const wrapperStyle = useMemo(() => ({
+        position: 'fixed',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        opacity: zoomOpacity,
+        transform: `scale(${zoomScale})`,
+        transition: 'transform 0.4s ease-out, opacity 0.4s ease-out',
+        transformOrigin: 'center center',
+    }), [zoomOpacity, zoomScale]);
+
     if (!init) {
         return (
             <div
                 className={className}
                 style={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: 0,
+                    ...wrapperStyle,
                     background: '#000000',
-                    pointerEvents: 'none',
                 }}
             />
         );
     }
 
     return (
-        <Particles
-            id="tsparticles"
-            className={className}
-            particlesLoaded={particlesLoaded}
-            options={options}
-        />
+        <div style={wrapperStyle}>
+            <Particles
+                id="tsparticles"
+                className={className}
+                particlesLoaded={particlesLoaded}
+                options={options}
+            />
+        </div>
     );
 }
