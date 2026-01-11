@@ -430,7 +430,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     if (isMobile) {
       const newHeight = window.innerHeight - clientY;
       const maxHeight = window.innerHeight * 0.9; // Slightly more range
-      const minHeight = 120; // More economical
+      const minHeight = 110; // Even tighter for true economy
       setSidebarHeight(Math.max(minHeight, Math.min(maxHeight, newHeight)));
     } else {
       const newWidth = window.innerWidth - clientX;
@@ -680,15 +680,19 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           <div
             className={`drag-handle ${isBuilding ? 'active-pulse' : ''} `}
             onMouseDown={handleMouseDown}
-            onTouchStart={handleMouseDown}
+            onTouchStart={(e) => {
+              // Ensure we stop propagation to not trigger other mobile gestures
+              e.stopPropagation();
+              handleMouseDown(e);
+            }}
             style={isMobile ? {
               position: 'absolute',
-              top: '-12px', // Pull it up to overlap the fade area
+              top: '-20px', // Stick out 20px above the panel
               left: 0,
               right: 0,
-              height: '32px', // Large invisible hit area
+              height: '40px', // Massive 40px hit area
               cursor: 'ns-resize',
-              zIndex: 1000, // Stay above EVERYTHING
+              zIndex: 1000,
               background: 'transparent',
               display: 'flex',
               alignItems: 'center',
@@ -707,12 +711,12 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           >
             {isMobile && (
               <div style={{
-                width: '36px',
+                width: '32px',
                 height: '4px',
                 borderRadius: '2px',
-                background: 'rgba(255,255,255,0.4)',
+                background: isResizing ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)',
                 boxShadow: '0 0 10px rgba(0,0,0,0.5)',
-                marginTop: '8px' // Align visually with the top of the dark panel
+                marginTop: '16px' // Visual anchor
               }} />
             )}
           </div>

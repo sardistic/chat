@@ -1441,8 +1441,8 @@ body {
     /* Switch from fixed to flow */
     width: 100% !important;
     height: var(--dynamic-sidebar-h) !important;
-    margin-top: -20px !important;
-    /* Less bleed to save vertical space */
+    margin-top: -12px !important;
+    /* Minimal bleed to save vertical space */
     border-radius: 20px 20px 0 0 !important;
     z-index: 50;
     box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.9);
@@ -1457,6 +1457,14 @@ body {
     border-left: none !important;
     flex-shrink: 0;
     /* Don't collapse height */
+    overflow: visible !important;
+    /* CRITICAL: Allow resizer hit area to stick out */
+  }
+
+  /* Move clipping to inner content to preserve rounded corners for tabs/chat */
+  .side-content {
+    overflow: hidden !important;
+    border-radius: 20px 20px 0 0 !important;
   }
 
   /* Chat list padding to start below the transparency fade */
@@ -1507,6 +1515,13 @@ body {
   .grid {
     padding: 2px !important;
     gap: 4px !important;
+  }
+
+  /* Global resizing protection */
+  body.resizing {
+    cursor: ns-resize !important;
+    user-select: none !important;
+    touch-action: none !important;
   }
 
   /* Avatar aquarium adjustments */
