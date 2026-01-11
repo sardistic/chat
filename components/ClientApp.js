@@ -507,19 +507,23 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                 className="profile-menu"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
+                <div
+                  style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px', cursor: 'pointer', transition: 'background 0.2s' }}
+                  onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'white' }}>{user.globalName || user.name}</div>
                   <div style={{ fontSize: '11px', color: '#3ba55d', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span style={{ width: '8px', height: '8px', background: '#3ba55d', borderRadius: '50%', display: 'inline-block' }}></span>
                     {customStatus || 'Online'}
+                    <Icon icon="fa:pencil" width="10" style={{ marginLeft: '6px', opacity: 0.5 }} />
                   </div>
                 </div>
                 <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowOwnProfile(true); }}>
                   <Icon icon="fa:user" width="16" /> View Profile
                 </button>
-                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>
-                  <Icon icon="fa:comment" width="16" /> Set Status
-                </button>
+
                 <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowSettingsModal(true); }}>
                   <Icon icon="fa:cog" width="16" /> Settings
                 </button>
