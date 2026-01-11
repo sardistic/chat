@@ -362,7 +362,7 @@ export default function ChatPanel({
             <div style={{
                 flex: 1,
                 overflowY: 'auto',
-                padding: '16px 16px 60px 16px', // Extra bottom padding to clear input box
+                padding: '16px',
                 display: 'flex',
                 flexDirection: 'column',
                 scrollBehavior: 'smooth'
@@ -613,7 +613,7 @@ export default function ChatPanel({
                     </motion.div>
                 )}
 
-                <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} style={{ height: '20px', flexShrink: 0 }} />
             </div>
 
             <style jsx>{`

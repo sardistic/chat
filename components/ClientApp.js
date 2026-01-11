@@ -109,6 +109,36 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const [chatReactions, setChatReactions] = useState([]);
   const { tubeState, receivedAt, updateTubeState, isOwner: isTubeOwner } = useYouTubeSync(roomId, user);
 
+  // HACK: Force Next.js HMR Toast/Portal to be visible and clear of input box
+  useEffect(() => {
+    const fixToast = () => {
+      const portals = document.querySelectorAll('nextjs-portal, [data-nextjs-toast]');
+      portals.forEach(el => {
+        // Force Host Styles
+        el.style.setProperty('position', 'fixed', 'important');
+        el.style.setProperty('z-index', '2147483647', 'important');
+        el.style.setProperty('bottom', '120px', 'important');
+        el.style.setProperty('right', '20px', 'important');
+
+        // Force Shadow DOM Content
+        try {
+          if (el.shadowRoot) {
+            const inner = el.shadowRoot.querySelector('[data-nextjs-toast], [data-nextjs-refresh]');
+            if (inner) {
+              inner.style.setProperty('position', 'fixed', 'important');
+              inner.style.setProperty('z-index', '2147483647', 'important');
+              inner.style.setProperty('bottom', '120px', 'important');
+              inner.style.setProperty('right', '20px', 'important');
+            }
+          }
+        } catch (e) { /* Ignore */ }
+      });
+    };
+    const interval = setInterval(fixToast, 1000);
+    fixToast();
+    return () => clearInterval(interval);
+  }, []);
+
   const handleUpdatePeerSettings = (userId, newSettings) => {
     setPeerSettings(prev => ({
       ...prev,
