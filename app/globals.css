@@ -232,6 +232,14 @@ body {
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  .app-content {
+    margin-top: 64px;
+    /* Ensure this matches header height or slightly more */
+    height: calc(100vh - 64px);
+  }
+}
+
 /* Left Space (Cams) */
 .main-stage {
   flex: 1;

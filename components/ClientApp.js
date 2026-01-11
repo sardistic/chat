@@ -787,248 +787,260 @@ function MainApp({ user, setUser, onLeaveRoom }) {
             onTouchStart={(e) => {
               e.stopPropagation();
               handleMouseDown(e);
+              onMouseDown = { handleMobileResizeStart }
+              onTouchStart = { handleMobileResizeStart }
+              onTouchMove = {(e) => {
+              if (!mobileResizeRef.current.isResizing) return;
+        const touchY = e.touches[0].clientY;
+        const newHeight = window.innerHeight - touchY;
+        const clamped = Math.max(100, Math.min(window.innerHeight - 60, newHeight));
+        setChatHeight(clamped);
             }}
-            style={{
-              height: '32px',
-              margin: '-16px 0',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'ns-resize',
-              touchAction: 'none',
-              background: 'transparent',
-              position: 'relative'
-            }}
+        onTouchEnd={() => {
+          mobileResizeRef.current.isResizing = false;
+          setIsResizing(false);
+        }}
+        style={{
+          height: '32px',
+          margin: '-16px 0',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'ns-resize',
+          touchAction: 'none',
+          background: 'transparent',
+          position: 'relative'
+        }}
           >
-            <div style={{
-              width: '40px',
-              height: '4px',
-              borderRadius: '2px',
-              background: isResizing ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.4)',
-              boxShadow: '0 0 10px rgba(0,0,0,0.5)',
-              transition: 'background 0.2s, transform 0.2s',
-              transform: isResizing ? 'scaleY(1.5)' : 'none'
-            }} />
+        <div style={{
+          width: '40px',
+          height: '4px',
+          borderRadius: '2px',
+          background: isResizing ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.4)',
+          boxShadow: '0 0 10px rgba(0,0,0,0.5)',
+          transition: 'background 0.2s, transform 0.2s',
+          transform: isResizing ? 'scaleY(1.5)' : 'none'
+        }} />
+      </div>
+        )}
+
+      {/* Floating Right Sidebar (Chat) */}
+      <aside className="floating-sidebar">
+        {/* Desktop Resize Handle */}
+        {!isMobile && (
+          <div
+            className={`drag-handle ${isBuilding ? 'active-pulse' : ''} `}
+            onMouseDown={handleMouseDown}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '4px',
+              cursor: 'col-resize',
+              zIndex: 10,
+              touchAction: 'none'
+            }}
+          />
+        )}
+
+        {/* Sidebar Tabs - Hidden on Mobile (moved to ChatPanel bottom row) */}
+        {!isMobile && (
+          <div className="side-header" style={{
+            padding: isMobile ? '0 8px' : '0 16px',
+            gap: '8px',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            minHeight: isMobile ? '30px' : '48px',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+              <button
+                className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
+                style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
+                onClick={() => setActiveTab('logs')}
+              >
+                Chat
+              </button>
+              <button
+                className={`btn ${activeTab === 'services' ? 'primary' : ''} `}
+                style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'services' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
+                onClick={() => setActiveTab('services')}
+              >
+                Users ({(() => {
+                  const webUserNames = new Set([user.name, ...Array.from(peers.values()).map(p => p.user?.name).filter(Boolean)]);
+                  const uniqueIrcCount = Array.from(ircUsers.values()).filter(u => !webUserNames.has(u.name)).length;
+                  return webUserNames.size + uniqueIrcCount;
+                })()})
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Floating Right Sidebar (Chat) */}
-        <aside className="floating-sidebar">
-          {/* Desktop Resize Handle */}
-          {!isMobile && (
-            <div
-              className={`drag-handle ${isBuilding ? 'active-pulse' : ''} `}
-              onMouseDown={handleMouseDown}
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: '4px',
-                cursor: 'col-resize',
-                zIndex: 10,
-                touchAction: 'none'
-              }}
+        <div className="side-content" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+          {/* Chat Panel - Always mounted to preserve state */}
+          <div style={{ flex: 1, height: '100%', display: activeTab === 'logs' ? 'flex' : 'none', flexDirection: 'column', minWidth: 0 }}>
+            <ChatPanel
+              roomId={roomId}
+              user={user}
+              currentUser={user} // Pass local user state for self-lookup
+              users={Array.from(peers.values())}
+              ircUsers={Array.from(ircUsers.values())}
+              onUserClick={handleProfileClick}
+              sendToIRC={sendToIRC}
+              isMobile={isMobile}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              peers={peers}
+              {...chat}
             />
-          )}
+          </div>
 
-          {/* Sidebar Tabs - Hidden on Mobile (moved to ChatPanel bottom row) */}
-          {!isMobile && (
-            <div className="side-header" style={{
-              padding: isMobile ? '0 8px' : '0 16px',
-              gap: '8px',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
-              minHeight: isMobile ? '30px' : '48px',
-              display: 'flex',
-              alignItems: 'center'
-            }}>
-              <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-                <button
-                  className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
-                  style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
-                  onClick={() => setActiveTab('logs')}
-                >
-                  Chat
-                </button>
-                <button
-                  className={`btn ${activeTab === 'services' ? 'primary' : ''} `}
-                  style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'services' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
-                  onClick={() => setActiveTab('services')}
-                >
-                  Users ({(() => {
-                    const webUserNames = new Set([user.name, ...Array.from(peers.values()).map(p => p.user?.name).filter(Boolean)]);
-                    const uniqueIrcCount = Array.from(ircUsers.values()).filter(u => !webUserNames.has(u.name)).length;
-                    return webUserNames.size + uniqueIrcCount;
-                  })()})
-                </button>
+          {/* User List (Services) - Always mounted for consistency */}
+          <div style={{ padding: '16px', display: activeTab === 'services' ? 'flex' : 'none', flexDirection: 'column', gap: '8px' }}>
+            {/* Local User */}
+            <div className="user-item">
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <img
+                  src={user.avatar || `/api/avatar/${user.name}`}
+                  alt={user.name}
+                  className=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                  <Icon icon="fa:circle" width="10" color="var(--status-online)" />
+                  {isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
+                  {!isAudioEnabled && <Icon icon="fa:microphone-slash" width="14" />}
+                  {isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
+                </div>
               </div>
             </div>
-          )}
 
-          <div className="side-content" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-            {/* Chat Panel - Always mounted to preserve state */}
-            <div style={{ flex: 1, height: '100%', display: activeTab === 'logs' ? 'flex' : 'none', flexDirection: 'column', minWidth: 0 }}>
-              <ChatPanel
-                roomId={roomId}
-                user={user}
-                currentUser={user} // Pass local user state for self-lookup
-                users={Array.from(peers.values())}
-                ircUsers={Array.from(ircUsers.values())}
-                onUserClick={handleProfileClick}
-                sendToIRC={sendToIRC}
-                isMobile={isMobile}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                peers={peers}
-                {...chat}
-              />
-            </div>
+            {/* Remote Users (WebRTC) */}
+            {Array.from(peers, ([socketId, p]) => {
+              // Skip if it's the local user
+              if (p.user?.name === user.name) return null;
 
-            {/* User List (Services) - Always mounted for consistency */}
-            <div style={{ padding: '16px', display: activeTab === 'services' ? 'flex' : 'none', flexDirection: 'column', gap: '8px' }}>
-              {/* Local User */}
-              <div className="user-item">
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <img
-                    src={user.avatar || `/api/avatar/${user.name}`}
-                    alt={user.name}
-                    className=""
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name} (You)</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                    <Icon icon="fa:circle" width="10" color="var(--status-online)" />
-                    {isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
-                    {!isAudioEnabled && <Icon icon="fa:microphone-slash" width="14" />}
-                    {isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
+              return (
+                <div key={socketId} className="user-item" onClick={(e) => handleProfileClick(p.user, e)} style={{ cursor: 'pointer' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <img
+                      src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
+                      alt={p.user?.name}
+                      className=""
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                      {p.user?.isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
+                      {p.user?.isAudioEnabled === false && <Icon icon="fa:microphone-slash" width="14" />}
+                      {p.user?.isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
+                      {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <Icon icon="fa:cloud" width="14" />}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
+            })}
 
-              {/* Remote Users (WebRTC) */}
-              {Array.from(peers, ([socketId, p]) => {
-                // Skip if it's the local user
-                if (p.user?.name === user.name) return null;
+            {/* IRC Users */}
+            {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
+            {/* IRC Users (Humans) */}
+            {Array.from(ircUsers.values())
+              .filter(u => {
+                const isBot = ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase());
+                const isMe = u.name === user.name;
+                const isPeer = Array.from(peers.values()).some(p => p.user?.name === u.name);
+                return !isBot && !isMe && !isPeer;
+              })
+              .map((u) => (
+                <div key={u.name} className="user-item" onClick={(e) => {
+                  setSelectedProfileUser(u);
+                  setModalPosition({ x: e.clientX, y: e.clientY });
+                }} style={{ cursor: 'pointer' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <img
+                      src={u.avatar || `/api/avatar/${u.name}`}
+                      alt={u.name}
+                      className={tubeState?.playing ? 'dancing' : ''}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
+                      <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
+                      <Icon icon="fa:keyboard-o" width="14" />
+                      {u.modes && u.modes.length > 0 && <span>+{u.modes.join('')}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+            {/* System Bots */}
+            <div style={{ marginTop: '16px', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '10px', fontWeight: '800', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              System
+            </div>
+            {Array.from(ircUsers.values())
+              .filter(u => ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()))
+              .map((u) => {
+                let displayName = u.name;
+                let role = 'BOT';
+                let description = 'System Bot';
+
+                if (u.name.toLowerCase() === 'camroomslogbot' || u.name.toLowerCase() === 'chatlogbot') {
+                  displayName = 'LogBot';
+                  role = 'OFFICIAL';
+                  description = 'Archives & Logs';
+                } else if (u.name.toLowerCase() === 'chanserv') {
+                  displayName = 'ChanServ';
+                  role = 'SERVICE';
+                  description = 'Channel Services';
+                }
+
+                let icon = 'fa:android';
+                if (role === 'OFFICIAL') icon = 'fa:file-text-o';
+                if (role === 'SERVICE') icon = 'fa:shield';
 
                 return (
-                  <div key={socketId} className="user-item" onClick={(e) => handleProfileClick(p.user, e)} style={{ cursor: 'pointer' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <img
-                        src={p.user?.avatar || `/api/avatar/${p.user?.name || 'Guest'}`}
-                        alt={p.user?.name}
-                        className=""
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.user?.name || 'Unknown'}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                        {p.user?.isVideoEnabled ? <Icon icon="fa:video-camera" width="14" /> : <Icon icon="fa:eye" width="14" />}
-                        {p.user?.isAudioEnabled === false && <Icon icon="fa:microphone-slash" width="14" />}
-                        {p.user?.isDeafened && <Icon icon="fontelico:headphones" width="14" style={{ opacity: 0.5 }} />}
-                        {!p.user?.isVideoEnabled && !p.user?.isAudioEnabled && <Icon icon="fa:cloud" width="14" />}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {/* IRC Users */}
-              {ircUsers.size > 0 && <div style={{ marginTop: '12px', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>IRC / Text Only</div>}
-              {/* IRC Users (Humans) */}
-              {Array.from(ircUsers.values())
-                .filter(u => {
-                  const isBot = ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase());
-                  const isMe = u.name === user.name;
-                  const isPeer = Array.from(peers.values()).some(p => p.user?.name === u.name);
-                  return !isBot && !isMe && !isPeer;
-                })
-                .map((u) => (
-                  <div key={u.name} className="user-item" onClick={(e) => {
-                    setSelectedProfileUser(u);
-                    setModalPosition({ x: e.clientX, y: e.clientY });
-                  }} style={{ cursor: 'pointer' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <img
-                        src={u.avatar || `/api/avatar/${u.name}`}
-                        alt={u.name}
-                        className={tubeState?.playing ? 'dancing' : ''}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
+                  <div key={u.name} className="user-item" style={{ background: 'rgba(79, 70, 229, 0.05)', borderColor: 'rgba(79, 70, 229, 0.2)' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(79, 70, 229, 0.4)' }}>
+                      <Icon icon={icon} width="16" color="white" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
-                        <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: '#333', color: '#888', fontWeight: 'bold' }}>IRC</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
+                        <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: 'white', color: 'var(--accent-primary)', fontWeight: 'bold' }}>{role}</span>
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px', marginTop: '2px', alignItems: 'center' }}>
-                        <Icon icon="fa:keyboard-o" width="14" />
-                        {u.modes && u.modes.length > 0 && <span>+{u.modes.join('')}</span>}
-                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--accent-primary)' }}>{description}</div>
                     </div>
                   </div>
-                ))}
-
-              {/* System Bots */}
-              <div style={{ marginTop: '16px', marginBottom: '8px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '10px', fontWeight: '800', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                System
-              </div>
-              {Array.from(ircUsers.values())
-                .filter(u => ['camroomslogbot', 'chatlogbot', 'chanserv'].includes(u.name.toLowerCase()))
-                .map((u) => {
-                  let displayName = u.name;
-                  let role = 'BOT';
-                  let description = 'System Bot';
-
-                  if (u.name.toLowerCase() === 'camroomslogbot' || u.name.toLowerCase() === 'chatlogbot') {
-                    displayName = 'LogBot';
-                    role = 'OFFICIAL';
-                    description = 'Archives & Logs';
-                  } else if (u.name.toLowerCase() === 'chanserv') {
-                    displayName = 'ChanServ';
-                    role = 'SERVICE';
-                    description = 'Channel Services';
-                  }
-
-                  let icon = 'fa:android';
-                  if (role === 'OFFICIAL') icon = 'fa:file-text-o';
-                  if (role === 'SERVICE') icon = 'fa:shield';
-
-                  return (
-                    <div key={u.name} className="user-item" style={{ background: 'rgba(79, 70, 229, 0.05)', borderColor: 'rgba(79, 70, 229, 0.2)' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent-primary)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 10px rgba(79, 70, 229, 0.4)' }}>
-                        <Icon icon={icon} width="16" color="white" />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</span>
-                          <span style={{ fontSize: '9px', padding: '2px 4px', borderRadius: '4px', background: 'white', color: 'var(--accent-primary)', fontWeight: 'bold' }}>{role}</span>
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--accent-primary)' }}>{description}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
+                );
+              })}
           </div>
-        </aside>
+        </div>
+      </aside>
+    </div>
+
+      {/* Error Toast */ }
+  {
+    error && (
+      <div style={{
+        position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+        background: '#F87171', color: 'white', padding: '10px 20px', borderRadius: '8px',
+        fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 9999
+      }}>
+        {error}
       </div>
-
-      {/* Error Toast */}
-      {
-        error && (
-          <div style={{
-            position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-            background: '#F87171', color: 'white', padding: '10px 20px', borderRadius: '8px',
-            fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 9999
-          }}>
-            {error}
-          </div>
-        )
-      }
+    )
+  }
 
       <ProfileModal
         user={{ ...user, customStatus }}
@@ -1043,65 +1055,65 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         user={user}
       />
 
-      {/* Admin Modal */}
-      {/* Admin Modal */}
-      <AdminModal
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        onlineCount={peers.size + 1}
-      />
+  {/* Admin Modal */ }
+  {/* Admin Modal */ }
+  <AdminModal
+    isOpen={isAdminOpen}
+    onClose={() => setIsAdminOpen(false)}
+    onlineCount={peers.size + 1}
+  />
 
 
 
-      {/* Status Input Dialog */}
-      {
-        showStatusInput && (
-          <div className="profile-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="profile-modal" style={{ padding: '20px', width: '300px' }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Set Custom Status</h3>
-              <input
-                type="text"
-                placeholder="What's on your mind?"
-                value={customStatus}
-                onChange={(e) => setCustomStatus(e.target.value)}
-                maxLength={50}
-                autoFocus
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  background: 'rgba(0,0,0,0.3)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                  color: 'white',
-                  fontSize: '14px',
-                  marginBottom: '12px',
-                  outline: 'none',
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') setShowStatusInput(false);
-                  if (e.key === 'Escape') { setCustomStatus(''); setShowStatusInput(false); }
-                }}
-              />
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                <button
-                  className="btn"
-                  onClick={() => { setCustomStatus(''); setShowStatusInput(false); }}
-                  style={{ padding: '8px 16px' }}
-                >
-                  Clear
-                </button>
-                <button
-                  className="btn primary"
-                  onClick={() => setShowStatusInput(false)}
-                  style={{ padding: '8px 16px' }}
-                >
-                  Save
-                </button>
-              </div>
-            </div>
+  {/* Status Input Dialog */ }
+  {
+    showStatusInput && (
+      <div className="profile-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="profile-modal" style={{ padding: '20px', width: '300px' }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Set Custom Status</h3>
+          <input
+            type="text"
+            placeholder="What's on your mind?"
+            value={customStatus}
+            onChange={(e) => setCustomStatus(e.target.value)}
+            maxLength={50}
+            autoFocus
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              color: 'white',
+              fontSize: '14px',
+              marginBottom: '12px',
+              outline: 'none',
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setShowStatusInput(false);
+              if (e.key === 'Escape') { setCustomStatus(''); setShowStatusInput(false); }
+            }}
+          />
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <button
+              className="btn"
+              onClick={() => { setCustomStatus(''); setShowStatusInput(false); }}
+              style={{ padding: '8px 16px' }}
+            >
+              Clear
+            </button>
+            <button
+              className="btn primary"
+              onClick={() => setShowStatusInput(false)}
+              style={{ padding: '8px 16px' }}
+            >
+              Save
+            </button>
           </div>
-        )
-      }
+        </div>
+      </div>
+    )
+  }
       <ProfileModal
         user={selectedProfileUser}
         isOpen={!!selectedProfileUser}
@@ -1119,19 +1131,19 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         onClose={() => setIsRoomSettingsOpen(false)}
       />
 
-      {
-        showSettingsModal && (
-          <SettingsModal
-            isOpen={showSettingsModal}
-            onClose={() => setShowSettingsModal(false)}
-            user={user}
-            onSaveSuccess={(newData) => {
-              setUser(prev => ({ ...prev, ...newData }));
-            }}
-          />
-        )
-      }
-    </div>
+  {
+    showSettingsModal && (
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        user={user}
+        onSaveSuccess={(newData) => {
+          setUser(prev => ({ ...prev, ...newData }));
+        }}
+      />
+    )
+  }
+    </div >
   );
 }
 
