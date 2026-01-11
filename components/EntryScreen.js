@@ -116,7 +116,7 @@ function getCookie(name) {
 import ProfileModal from "@/components/ProfileModal";
 
 export default function EntryScreen({ onJoin, initialRoom = null }) {
-    const { data: session, status } = useSession();
+    const { data: session, status, update } = useSession();
     const [username, setUsername] = useState("");
     const [characterSeed, setCharacterSeed] = useState(Math.floor(Math.random() * 2147483647));
     const [isLoading, setIsLoading] = useState(true);
@@ -647,6 +647,10 @@ const AppHeader = ({
             <SettingsModal
                 isOpen={showSettingsModal}
                 onClose={() => setShowSettingsModal(false)}
+                user={session?.user}
+                onSaveSuccess={() => {
+                    update(); // Refresh NextAuth session
+                }}
             />
         )}
 

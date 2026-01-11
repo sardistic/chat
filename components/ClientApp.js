@@ -935,6 +935,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
           user={user}
+          onSaveSuccess={(newData) => {
+            setUser(prev => ({ ...prev, ...newData }));
+          }}
         />
       )}
     </div>

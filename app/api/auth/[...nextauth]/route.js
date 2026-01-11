@@ -49,6 +49,14 @@ export const authOptions = {
                 // Display name priority: DB displayName > Discord name > email prefix
                 session.user.displayName = user.displayName;
                 session.user.globalName = user.name; // Discord global name stored as 'name' in DB
+
+                // Custom Avatar overrides
+                if (user.avatarUrl) {
+                    session.user.image = user.avatarUrl;
+                } else if (user.avatarSeed) {
+                    session.user.image = `/api/avatar/${user.avatarSeed}`;
+                }
+
                 session.user.avatarSeed = user.avatarSeed;
                 session.user.avatarUrl = user.avatarUrl;
             }

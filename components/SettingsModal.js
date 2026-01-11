@@ -6,7 +6,7 @@ import { useSocket } from "@/lib/socket";
 import { useSession } from "next-auth/react";
 import { useBackground, BACKGROUND_TYPES } from './Background';
 
-export default function SettingsModal({ isOpen, onClose, user }) {
+export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) {
     const [settings, setSettings] = useState({
         volume: 1.0,
         autoDeafen: false,
@@ -66,16 +66,36 @@ export default function SettingsModal({ isOpen, onClose, user }) {
     const handleSave = async () => {
         setSaving(true);
         try {
+            const avatarSeedVal = avatarMode === 'generated' ? avatarSeed : null;
+            const avatarUrlVal = avatarMode === 'custom' ? customAvatarUrl : null;
+
             await fetch('/api/user/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...settings,
                     nickname,
-                    avatarSeed: avatarMode === 'generated' ? avatarSeed : null,
-                    avatarUrl: avatarMode === 'custom' ? customAvatarUrl : null
+                    avatarSeed: avatarSeedVal,
+                    avatarUrl: avatarUrlVal
                 })
             });
+
+            // If we have a success callback, pass the new values back
+            if (onSaveSuccess) {
+                // Compute new image URL for immediate local update
+                let newImage = displayAvatar; // Default to current display logic
+
+                onSaveSuccess({
+                    name: nickname,
+                    displayName: nickname,
+                    avatar: newImage,
+                    image: newImage,
+                    avatarSeed: avatarSeedVal,
+                    avatarUrl: avatarUrlVal,
+                    ...settings
+                });
+            }
+
             onClose();
         } catch (err) {
             console.error("Failed to save settings:", err);
