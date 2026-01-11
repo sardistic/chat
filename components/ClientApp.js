@@ -658,24 +658,35 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                       return true;
                     })
                     .map((u, i) => (
-                      <img
+                      <div
                         key={u.name + i}
-                        src={u.avatar || `/api/avatar/${u.name}`}
-                        alt={u.name}
                         onClick={() => setActiveTab('services')}
                         style={{
                           width: '24px',
                           height: '24px',
                           borderRadius: '50%',
-                          border: '2px solid #282b30', // Match darker bg for cutout effect
-                          marginLeft: i === 0 ? '0' : '-12px', // Tighter overlap
+                          // Use box-shadow for the 'border' to avoid box-sizing issues
+                          boxShadow: '0 0 0 2px #1e1f22', // Dark background color wrapper
+                          marginLeft: i === 0 ? '0' : '-10px',
                           cursor: 'pointer',
                           flexShrink: 0,
                           zIndex: 10 + i,
-                          transition: 'transform 0.2s',
-                          position: 'relative'
+                          position: 'relative',
+                          overflow: 'hidden',
+                          background: '#1e1f22' // Fallback bg
                         }}
-                      />
+                      >
+                        <img
+                          src={u.avatar || `/api/avatar/${u.name}`}
+                          alt={u.name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block'
+                          }}
+                        />
+                      </div>
                     ));
                 })()}
               </div>
