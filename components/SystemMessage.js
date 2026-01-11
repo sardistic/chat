@@ -391,32 +391,132 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 from { opacity: 0; transform: translateX(-5px); }
             }
 
-            /* Progress Bar Animation - Slow steady progress */
+            /* Progress Bar Animation - Magical sweep with sparkles */
             .progress-bar-container {
-                height: 3px;
+                height: 4px;
                 width: 100%;
                 background: rgba(0,0,0,0.5);
                 overflow: hidden;
                 position: relative;
             }
+            .progress-bar-container::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(90deg, 
+                    transparent 0%, 
+                    rgba(255,255,255,0.1) 50%, 
+                    transparent 100%
+                );
+                animation: shimmer 2s ease-in-out infinite;
+            }
             .progress-bar-fill {
                 height: 100%;
-                width: 30%;
-                background: linear-gradient(90deg, transparent, ${style.color}, transparent);
-                animation: progress-sweep 3s ease-in-out infinite;
+                width: 40%;
+                background: linear-gradient(90deg, 
+                    transparent, 
+                    ${style.color}80, 
+                    ${style.color}, 
+                    ${style.color}80, 
+                    transparent
+                );
+                filter: drop-shadow(0 0 8px ${style.color}) drop-shadow(0 0 16px ${style.color}40);
+                animation: progress-sweep 2.5s ease-in-out infinite;
+            }
+            .progress-bar-fill::after {
+                content: '✦';
+                position: absolute;
+                right: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 8px;
+                color: white;
+                text-shadow: 0 0 8px ${style.color};
+                animation: sparkle-pulse 0.5s ease-in-out infinite alternate;
             }
             @keyframes progress-sweep {
-                0% { transform: translateX(-100%); opacity: 0.5; }
+                0% { transform: translateX(-100%); opacity: 0.3; }
                 50% { opacity: 1; }
-                100% { transform: translateX(400%); opacity: 0.5; }
+                100% { transform: translateX(300%); opacity: 0.3; }
+            }
+            @keyframes shimmer {
+                0%, 100% { opacity: 0; transform: translateX(-100%); }
+                50% { opacity: 1; transform: translateX(100%); }
+            }
+            @keyframes sparkle-pulse {
+                from { opacity: 0.5; transform: translateY(-50%) scale(0.8); }
+                to { opacity: 1; transform: translateY(-50%) scale(1.2); }
             }
 
-            /* Building Progress Animation - Slow cog rotation */
+            /* Magical Pulse Animation for cards */
+            .pulse {
+                animation: magical-pulse 3s ease-in-out infinite;
+            }
+            @keyframes magical-pulse {
+                0%, 100% { 
+                    box-shadow: 0 0 5px ${style.color}40, 
+                                0 0 10px ${style.color}20,
+                                inset 0 0 20px ${style.color}10;
+                }
+                50% { 
+                    box-shadow: 0 0 15px ${style.color}60, 
+                                0 0 30px ${style.color}40,
+                                0 0 45px ${style.color}20,
+                                inset 0 0 30px ${style.color}15;
+                }
+            }
+
+            /* Building Progress Animation - Enhanced cog with glow */
+            .building-progress {
+                position: relative;
+                overflow: hidden;
+            }
+            .building-progress::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: conic-gradient(
+                    from 0deg,
+                    transparent 0deg,
+                    ${style.color}10 90deg,
+                    transparent 180deg
+                );
+                animation: rotate-glow 4s linear infinite;
+                pointer-events: none;
+            }
             .building-progress .cog-icon {
                 animation: slow-spin 4s linear infinite;
+                filter: drop-shadow(0 0 4px ${style.color});
             }
             @keyframes slow-spin {
                 100% { transform: rotate(360deg); }
+            }
+            @keyframes rotate-glow {
+                100% { transform: rotate(360deg); }
+            }
+
+            /* Sparkle burst effect */
+            .building-progress::after {
+                content: '✨';
+                position: absolute;
+                top: 10%;
+                right: 10%;
+                font-size: 12px;
+                animation: float-sparkle 3s ease-in-out infinite;
+                pointer-events: none;
+            }
+            @keyframes float-sparkle {
+                0%, 100% { 
+                    transform: translateY(0) scale(1); 
+                    opacity: 0.3; 
+                }
+                50% { 
+                    transform: translateY(-5px) scale(1.2); 
+                    opacity: 1; 
+                }
             }
 
             /* Terminal Polish */
@@ -443,6 +543,12 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 opacity: 1 !important;
                 background: rgba(255,255,255,0.05);
             }
+            :global(.spin) {
+                animation: spin 1s linear infinite;
+                display: inline-block;
+                filter: drop-shadow(0 0 4px currentColor);
+            }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
             `}</style>
         </div>
     );
