@@ -795,15 +795,56 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         {isMobile && (
           <div
             className="mobile-drag-bar"
-            onMouseDown={handleMobileResizeStart}
             onTouchStart={(e) => {
-              e.stopPropagation(); // vital for keeping the touch
-              handleMobileResizeStart(e);
+              e.preventDefault();
+              e.stopPropagation();
+              const startY = e.touches[0].clientY;
+              const startHeight = sidebarHeight;
+
+              const onMove = (moveEvent) => {
+                const currentY = moveEvent.touches[0].clientY;
+                const delta = startY - currentY;
+                const newHeight = startHeight + delta;
+                const clamped = Math.max(100, Math.min(window.innerHeight - 80, newHeight));
+                setSidebarHeight(clamped);
+              };
+
+              const onEnd = () => {
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+                setIsResizing(false);
+              };
+
+              setIsResizing(true);
+              document.addEventListener('touchmove', onMove, { passive: false });
+              document.addEventListener('touchend', onEnd);
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const startY = e.clientY;
+              const startHeight = sidebarHeight;
+
+              const onMove = (moveEvent) => {
+                const delta = startY - moveEvent.clientY;
+                const newHeight = startHeight + delta;
+                const clamped = Math.max(100, Math.min(window.innerHeight - 80, newHeight));
+                setSidebarHeight(clamped);
+              };
+
+              const onEnd = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                setIsResizing(false);
+              };
+
+              setIsResizing(true);
+              document.addEventListener('mousemove', onMove);
+              document.addEventListener('mouseup', onEnd);
             }}
             style={{
-              height: '4px', // Visual line height
-              padding: '12px 0', // Interactive hit area
-              margin: '-12px 0', // Negative margin to center hit area
+              height: '4px',
+              padding: '16px 0',
+              margin: '-16px 0',
               zIndex: 1000,
               display: 'flex',
               alignItems: 'center',
