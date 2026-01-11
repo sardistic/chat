@@ -84,11 +84,40 @@ export function useWebRTC(roomId, user, autoStart = true) {
 
     // Start broadcasting
     const startBroadcast = useCallback(async () => {
-        try {
-            console.log('📹 Starting broadcast...');
+        console.log('📹 Starting broadcast...');
 
-            // 1. Get Media
-            const stream = await initializeMedia();
+        // CRITICAL: Call getUserMedia IMMEDIATELY to preserve user gesture context
+        // Browsers require this to be called synchronously from a user action
+        let stream;
+        try {
+            console.log('[Camera] Requesting media (synchronous start)...');
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+            console.log('[Camera] Got stream successfully');
+        } catch (err) {
+            console.error('[Camera] getUserMedia failed:', err.name, err.message);
+            let errorMsg = 'Camera access failed: ';
+            if (err.name === 'NotAllowedError') {
+                errorMsg += 'Permission denied. Please allow camera access.';
+            } else if (err.name === 'NotFoundError') {
+                errorMsg += 'No camera found.';
+            } else {
+                errorMsg += err.message || 'Unknown error';
+            }
+            setError(errorMsg);
+            throw err;
+        }
+
+        try {
+            // Enforce initial mute state
+            stream.getAudioTracks().forEach(track => {
+                track.enabled = false;
+            });
+
+            localStreamRef.current = stream;
+            setLocalStream(stream);
 
             // 2. Set State
             setIsVideoEnabled(true);
