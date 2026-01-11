@@ -2296,6 +2296,9 @@ body,
 [data-nextjs-refresh],
 nextjs-portal {
   z-index: 99999 !important;
+  bottom: 100px !important;
+  /* Move up above chat input */
+  right: 20px !important;
   /* Fuzzy Throbbing Effect */
   animation: global-throb 2s ease-in-out infinite !important;
   filter: drop-shadow(0 0 8px #22c55e) drop-shadow(0 0 15px #22c55e) !important;

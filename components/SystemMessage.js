@@ -230,15 +230,29 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 margin: '2px 0',
                 padding: '2px 8px',
                 background: style.bgColor,
-                borderLeft: `2px solid ${style.borderColor}`,
+                // borderLeft: `2px solid ${style.borderColor}`, // Replaced with div below
+                position: 'relative',
                 fontSize: '11px',
                 fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", monospace',
                 color: '#9ca3af',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-all',
-                opacity: 0.85
+                opacity: 0.85,
+                paddingLeft: '12px' // Make room for bar
             }}>
-                {text}
+                <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '3px',
+                    background: style.borderColor,
+                    // Apply throb/drip if green (or just generally pulse if it's the "green bar")
+                    // If style.borderColor contains '22c55e' (green) or similar
+                    boxShadow: style.borderColor.includes('22c55e') ? '0 0 8px #22c55e' : 'none',
+                    animation: style.borderColor.includes('22c55e') ? 'global-throb 2s ease-in-out infinite' : 'none'
+                }} />
+                {children || text}
             </div>
         );
     }

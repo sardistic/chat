@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getCookie, setCookie } from 'cookies-next';
 import { Icon } from '@iconify/react';
 import { SocketProvider } from "@/lib/socket";
+import Background from './Background';
 import VideoGrid from "@/components/VideoGrid";
 import EntryScreen from "@/components/EntryScreen";
 import ChatPanel from "@/components/ChatPanel";
@@ -370,7 +371,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     <div className={`app ${isBuilding ? 'building-mode' : ''} `} style={{ '--dynamic-sidebar-w': `${sidebarWidth}px` }}>
 
       {/* Background Layer (Explicit) */}
-      <div className="starmap-bg" />
+      <Background />
 
       {/* Fixed Header */}
       <header className="app-header">
