@@ -1572,13 +1572,8 @@ body {
 
 /* Small phone breakpoint */
 @media (max-width: 480px) {
-  .main-stage {
-    height: 35vh !important;
-  }
-
-  .floating-sidebar {
-    height: 60vh !important;
-  }
+  /* Heights are now controlled by JavaScript for drag-to-resize */
+  /* .main-stage and .floating-sidebar heights are set inline */
 
   /* Even smaller avatars */
   .aquarium-avatar {
