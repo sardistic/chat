@@ -26,6 +26,9 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
     const activeRooms = useMemo(() => rooms.filter(r => r.isActive24h !== false), [rooms]);
     const inactiveRooms = useMemo(() => rooms.filter(r => r.isActive24h === false), [rooms]);
 
+    const [viewMode, setViewMode] = useState('active'); // 'active' | 'inactive'
+    const displayedRooms = viewMode === 'active' ? activeRooms : inactiveRooms;
+
     // Tag suggestions - fun categories for chat rooms
     const SUGGESTED_TAGS = [
         // Topics
@@ -435,10 +438,44 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                 </div>
             )}
 
-            {/* Active Room Grid (Hero Cards) */}
-            {activeRooms.length > 0 && (
+            {/* View Tabs */}
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0px' }}>
+                <button
+                    onClick={() => setViewMode('active')}
+                    style={{
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: viewMode === 'active' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                        color: viewMode === 'active' ? 'white' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        fontSize: '14px'
+                    }}
+                >
+                    Active Rooms ({activeRooms.length})
+                </button>
+                <button
+                    onClick={() => setViewMode('inactive')}
+                    style={{
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: viewMode === 'inactive' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                        color: viewMode === 'inactive' ? 'white' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        fontSize: '14px'
+                    }}
+                >
+                    Archive ({inactiveRooms.length})
+                </button>
+            </div>
+
+            {/* Room Grid */}
+            {displayedRooms.length > 0 ? (
                 <div className="room-grid">
-                    {activeRooms.map(room => (
+                    {displayedRooms.map(room => (
                         <div
                             key={room.id}
                             className={`room-card ${getActivityClass(room.activityScore)}`}
@@ -584,232 +621,165 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                         </div>
                     ))}
                 </div>
-            )}
-
-            {/* Inactive Rooms Section */}
-            {inactiveRooms.length > 0 && (
-                <div style={{
-                    marginTop: '32px',
-                    paddingTop: '24px',
-                    borderTop: '1px solid rgba(255,255,255,0.08)'
-                }}>
-                    <h3 style={{
-                        fontSize: '14px',
-                        color: 'var(--text-muted)',
-                        marginBottom: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}>
-                        <Icon icon="fa:moon-o" width="14" />
-                        Inactive Rooms
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {inactiveRooms.map(room => (
-                            <div
-                                key={room.id}
-                                onClick={() => onSelectRoom(room)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    padding: '10px 14px',
-                                    background: 'rgba(20, 20, 25, 0.4)',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    transition: 'background 0.2s, transform 0.2s',
-                                    border: '1px solid rgba(255,255,255,0.04)'
-                                }}
-                            >
-                                <div style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    borderRadius: '8px',
-                                    background: '#1e1e24',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    overflow: 'hidden',
-                                    flexShrink: 0
-                                }}>
-                                    {room.iconUrl ? (
-                                        <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <Icon icon="fa:hashtag" width="14" color="#666" />
-                                    )}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: '14px', color: '#ccc', fontWeight: '500' }}>
-                                        {room.name}
-                                    </div>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                        {room.memberCount} members • {formatTimeAgo(room.lastActive)}
-                                    </div>
-                                </div>
-                                <Icon icon="fa:chevron-right" width="12" color="#555" />
-                            </div>
-                        ))}
-                    </div>
+            ) : (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    {viewMode === 'active' ? 'No active rooms found.' : 'No archived rooms found.'}
                 </div>
             )}
 
-            {rooms.length === 0 && !error && (
-                <div className="room-browser-empty">
-                    <Icon icon="fa:comments-o" width="48" />
-                    <p>No rooms found.</p>
-                </div>
-            )}
 
             {/* Create Room Modal */}
-            {showCreateModal && (
-                <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-                    <div className="create-room-modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>Create a New Room</h3>
-                            <button className="btn icon-btn" onClick={() => setShowCreateModal(false)}>
-                                <Icon icon="fa:times" width="18" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleCreateRoom}>
-                            <div className="form-group">
-                                <label>Room Name *</label>
-                                <input
-                                    type="text"
-                                    value={newRoomName}
-                                    onChange={e => setNewRoomName(e.target.value)}
-                                    placeholder="e.g., Chill Vibes"
-                                    maxLength={32}
-                                    autoFocus
-                                    required
-                                />
+            {
+                showCreateModal && (
+                    <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+                        <div className="create-room-modal" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3>Create a New Room</h3>
+                                <button className="btn icon-btn" onClick={() => setShowCreateModal(false)}>
+                                    <Icon icon="fa:times" width="18" />
+                                </button>
                             </div>
 
-                            <div className="form-group">
-                                <label>Banner URL (optional)</label>
-                                <input
-                                    type="text"
-                                    value={newRoomBanner}
-                                    onChange={e => setNewRoomBanner(e.target.value)}
-                                    placeholder="https://..."
-                                />
-                                <p className="form-hint">Image for the room card background</p>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Description / Topic</label>
-                                <textarea
-                                    value={newRoomDesc}
-                                    onChange={e => setNewRoomDesc(e.target.value)}
-                                    placeholder="What's happening here?"
-                                    maxLength={200}
-                                    rows={3}
-                                />
-                            </div>
-
-                            {/* Fun Tag Picker */}
-                            <div className="form-group">
-                                <label>Tags ✨ <span style={{ fontWeight: 'normal', fontSize: '11px', color: 'var(--text-muted)' }}>(pick up to 5)</span></label>
-                                <div className="tag-picker">
-                                    {SUGGESTED_TAGS.map(tag => {
-                                        const isSelected = newRoomTags.includes(tag.name);
-                                        return (
-                                            <div
-                                                key={tag.name}
-                                                className={`tag-suggestion ${isSelected ? 'selected' : ''}`}
-                                                style={{
-                                                    background: isSelected ? `${tag.color}30` : `${tag.color}15`,
-                                                    color: tag.color
-                                                }}
-                                                onClick={() => {
-                                                    if (isSelected) {
-                                                        setNewRoomTags(prev => prev.filter(t => t !== tag.name));
-                                                    } else if (newRoomTags.length < 5) {
-                                                        setNewRoomTags(prev => [...prev, tag.name]);
-                                                    }
-                                                }}
-                                            >
-                                                <span style={{ fontSize: '16px' }}>{tag.emoji}</span>
-                                                {tag.name}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Custom tag input */}
-                                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                            <form onSubmit={handleCreateRoom}>
+                                <div className="form-group">
+                                    <label>Room Name *</label>
                                     <input
                                         type="text"
-                                        value={tagInput}
-                                        onChange={e => setTagInput(e.target.value)}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                addCustomTag(tagInput);
-                                            }
-                                        }}
-                                        placeholder="+ Custom tag..."
-                                        maxLength={20}
-                                        disabled={newRoomTags.length >= 5}
-                                        style={{
-                                            flex: 1,
-                                            padding: '8px 12px',
-                                            borderRadius: '20px',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            background: 'rgba(255,255,255,0.05)',
-                                            color: 'white',
-                                            fontSize: '13px'
-                                        }}
+                                        value={newRoomName}
+                                        onChange={e => setNewRoomName(e.target.value)}
+                                        placeholder="e.g., Chill Vibes"
+                                        maxLength={32}
+                                        autoFocus
+                                        required
                                     />
-                                    <button
-                                        type="button"
-                                        className="btn"
-                                        onClick={() => addCustomTag(tagInput)}
-                                        disabled={!tagInput.trim() || newRoomTags.length >= 5}
-                                        style={{ borderRadius: '20px', padding: '8px 16px' }}
-                                    >
-                                        Add
-                                    </button>
                                 </div>
 
-                                {newRoomTags.length > 0 && (
-                                    <div className="selected-tags">
-                                        {newRoomTags.map(tagName => {
-                                            const tag = SUGGESTED_TAGS.find(t => t.name === tagName);
+                                <div className="form-group">
+                                    <label>Banner URL (optional)</label>
+                                    <input
+                                        type="text"
+                                        value={newRoomBanner}
+                                        onChange={e => setNewRoomBanner(e.target.value)}
+                                        placeholder="https://..."
+                                    />
+                                    <p className="form-hint">Image for the room card background</p>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Description / Topic</label>
+                                    <textarea
+                                        value={newRoomDesc}
+                                        onChange={e => setNewRoomDesc(e.target.value)}
+                                        placeholder="What's happening here?"
+                                        maxLength={200}
+                                        rows={3}
+                                    />
+                                </div>
+
+                                {/* Fun Tag Picker */}
+                                <div className="form-group">
+                                    <label>Tags ✨ <span style={{ fontWeight: 'normal', fontSize: '11px', color: 'var(--text-muted)' }}>(pick up to 5)</span></label>
+                                    <div className="tag-picker">
+                                        {SUGGESTED_TAGS.map(tag => {
+                                            const isSelected = newRoomTags.includes(tag.name);
                                             return (
                                                 <div
-                                                    key={tagName}
-                                                    className="selected-tag"
-                                                    style={{ background: `${tag?.color || '#a78bfa'}30`, color: tag?.color || '#a78bfa' }}
+                                                    key={tag.name}
+                                                    className={`tag-suggestion ${isSelected ? 'selected' : ''}`}
+                                                    style={{
+                                                        background: isSelected ? `${tag.color}30` : `${tag.color}15`,
+                                                        color: tag.color
+                                                    }}
+                                                    onClick={() => {
+                                                        if (isSelected) {
+                                                            setNewRoomTags(prev => prev.filter(t => t !== tag.name));
+                                                        } else if (newRoomTags.length < 5) {
+                                                            setNewRoomTags(prev => [...prev, tag.name]);
+                                                        }
+                                                    }}
                                                 >
-                                                    {tag?.emoji || '🏷️'} {tagName}
-                                                    <button type="button" onClick={() => setNewRoomTags(prev => prev.filter(t => t !== tagName))}>×</button>
+                                                    <span style={{ fontSize: '16px' }}>{tag.emoji}</span>
+                                                    {tag.name}
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                )}
-                            </div>
 
-                            {createError && (
-                                <div className="form-error">
-                                    <Icon icon="fa:exclamation-circle" width="14" />
-                                    {createError}
+                                    {/* Custom tag input */}
+                                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                        <input
+                                            type="text"
+                                            value={tagInput}
+                                            onChange={e => setTagInput(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addCustomTag(tagInput);
+                                                }
+                                            }}
+                                            placeholder="+ Custom tag..."
+                                            maxLength={20}
+                                            disabled={newRoomTags.length >= 5}
+                                            style={{
+                                                flex: 1,
+                                                padding: '8px 12px',
+                                                borderRadius: '20px',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                color: 'white',
+                                                fontSize: '13px'
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="btn"
+                                            onClick={() => addCustomTag(tagInput)}
+                                            disabled={!tagInput.trim() || newRoomTags.length >= 5}
+                                            style={{ borderRadius: '20px', padding: '8px 16px' }}
+                                        >
+                                            Add
+                                        </button>
+                                    </div>
+
+                                    {newRoomTags.length > 0 && (
+                                        <div className="selected-tags">
+                                            {newRoomTags.map(tagName => {
+                                                const tag = SUGGESTED_TAGS.find(t => t.name === tagName);
+                                                return (
+                                                    <div
+                                                        key={tagName}
+                                                        className="selected-tag"
+                                                        style={{ background: `${tag?.color || '#a78bfa'}30`, color: tag?.color || '#a78bfa' }}
+                                                    >
+                                                        {tag?.emoji || '🏷️'} {tagName}
+                                                        <button type="button" onClick={() => setNewRoomTags(prev => prev.filter(t => t !== tagName))}>×</button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
 
-                            <div className="modal-actions">
-                                <button type="button" className="btn" onClick={() => setShowCreateModal(false)}>Cancel</button>
-                                <button type="submit" className="btn primary" disabled={isCreating || !newRoomName.trim()}>
-                                    {isCreating ? 'Creating...' : 'Create Room'}
-                                </button>
-                            </div>
-                        </form>
+                                {createError && (
+                                    <div className="form-error">
+                                        <Icon icon="fa:exclamation-circle" width="14" />
+                                        {createError}
+                                    </div>
+                                )}
+
+                                <div className="modal-actions">
+                                    <button type="button" className="btn" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                                    <button type="submit" className="btn primary" disabled={isCreating || !newRoomName.trim()}>
+                                        {isCreating ? 'Creating...' : 'Create Room'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Removed redundant Discord login prompt - now in header */}
-        </div>
+        </div >
     );
 }

@@ -145,7 +145,8 @@ export default function SettingsModal({ isOpen, onClose, user }) {
 
     return (
         <div className="settings-modal-overlay" style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
+            position: 'fixed', inset: 0, zIndex: 2147483647,
+            width: '100vw', height: '100vh',
             background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
         }} onClick={onClose}>
