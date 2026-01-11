@@ -822,7 +822,14 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         )}
 
         {/* Floating Right Sidebar (Chat) */}
-        <aside className="floating-sidebar">
+        <aside
+          className="floating-sidebar"
+          style={{
+            height: isMobile ? `${sidebarHeight}px` : '100%',
+            width: isMobile ? '100%' : `${sidebarWidth}px`,
+            // If strictly mobile, we want dynamic height. If desktop, dynamic width.
+          }}
+        >
           {/* Desktop Resize Handle */}
           {!isMobile && (
             <div
