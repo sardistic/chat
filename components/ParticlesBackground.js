@@ -6,7 +6,7 @@ import { loadSlim } from "@tsparticles/slim";
 
 /**
  * ParticlesBackground - tsParticles with grid-like dots
- * Dense grid, subtle 3D lines, zoom transition support
+ * Dense grid, subtle lines, zoom transition support
  */
 export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
     const [init, setInit] = useState(false);
@@ -43,69 +43,65 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
                 resize: {
                     enable: true,
                 },
-                modes: {
-                    grab: {
-                        distance: 200,
-                        links: {
-                            opacity: 0.15,
-                            color: "#ffffff"
-                        }
-                    },
-                    bubble: {
-                        distance: 200,
-                        size: 8,
-                        duration: 0.2,
-                        opacity: 0.9,
-                    },
-                    slow: {
-                        factor: 3,
-                        radius: 200,
-                    },
+            },
+            modes: {
+                grab: {
+                    distance: 200,
+                    links: {
+                        opacity: 0.15,
+                        color: "#ffffff"
+                    }
+                },
+                bubble: {
+                    distance: 200,
+                    size: 8,
+                    duration: 0.2,
+                    opacity: 0.9,
                 },
             },
-            particles: {
-                color: {
-                    value: "#ffffff",
+        },
+        particles: {
+            color: {
+                value: "#ffffff",
+            },
+            links: {
+                enable: true,
+                distance: 80,
+                color: "#ffffff",
+                opacity: 0.04,
+                width: 0.3,
+            },
+            move: {
+                enable: true,
+                speed: 0.15,
+                direction: "none",
+                random: true,
+                straight: false,
+                outModes: {
+                    default: "bounce",
                 },
-                links: {
+            },
+            number: {
+                value: 500,
+                density: {
                     enable: true,
-                    distance: 80,
-                    color: "#ffffff",
-                    opacity: 0.04,
-                    width: 0.3,
+                    width: 1920,
+                    height: 1080,
                 },
-                move: {
-                    enable: true,
-                    speed: 0.15,
-                    direction: "none",
-                    random: true,
-                    straight: false,
-                    outModes: {
-                        default: "bounce",
-                    },
+            },
+            opacity: {
+                value: {
+                    min: 0.06,
+                    max: 0.18,
                 },
-                number: {
-                    value: 500,
-                    density: {
-                        enable: true,
-                        width: 1920,
-                        height: 1080,
-                    },
-                },
-                opacity: {
-                    value: {
-                        min: 0.06,
-                        max: 0.18,
-                    },
-                },
-                shape: {
-                    type: "circle",
-                },
-                size: {
-                    value: {
-                        min: 0.6,
-                        max: 1.6,
-                    },
+            },
+            shape: {
+                type: "circle",
+            },
+            size: {
+                value: {
+                    min: 0.6,
+                    max: 1.6,
                 },
             },
         },
