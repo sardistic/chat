@@ -435,11 +435,15 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
     const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
 
+    console.log('[ResizeDebug] Move:', { isMobile, clientY, innerHeight: window.innerHeight });
+
     if (isMobile) {
       const newHeight = window.innerHeight - clientY;
       const maxHeight = window.innerHeight * 0.9; // Slightly more range
       const minHeight = 110; // Even tighter for true economy
-      setSidebarHeight(Math.max(minHeight, Math.min(maxHeight, newHeight)));
+      const clamped = Math.max(minHeight, Math.min(maxHeight, newHeight));
+      console.log('[ResizeDebug] Setting Height:', clamped);
+      setSidebarHeight(clamped);
     } else {
       const newWidth = window.innerWidth - clientX;
       const maxWidth = window.innerWidth * 0.8;
