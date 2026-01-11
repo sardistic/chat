@@ -99,6 +99,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showOwnProfile, setShowOwnProfile] = useState(false);
   const [showStatusInput, setShowStatusInput] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [customStatus, setCustomStatus] = useState('');
   const [selectedProfileUser, setSelectedProfileUser] = useState(null);
   const [modalPosition, setModalPosition] = useState(null);
@@ -518,7 +519,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                 <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowStatusInput(true); }}>
                   <Icon icon="fa:comment" width="16" /> Set Status
                 </button>
-                <button className="menu-item disabled">
+                <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowSettingsModal(true); }}>
                   <Icon icon="fa:cog" width="16" /> Settings
                 </button>
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
@@ -873,6 +874,14 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         isOpen={isRoomSettingsOpen}
         onClose={() => setIsRoomSettingsOpen(false)}
       />
+
+      {showSettingsModal && (
+        <SettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          user={user}
+        />
+      )}
     </div>
   );
 }
