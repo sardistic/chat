@@ -911,7 +911,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                 const currentY = moveEvent.touches[0].clientY;
                 const delta = startY - currentY;
                 const newHeight = startHeight + delta;
-                const clamped = Math.max(100, Math.min(window.innerHeight - 80, newHeight));
+                const clamped = Math.max(160, Math.min(window.innerHeight - 80, newHeight));
                 setSidebarHeight(clamped);
               };
 
@@ -933,7 +933,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               const onMove = (moveEvent) => {
                 const delta = startY - moveEvent.clientY;
                 const newHeight = startHeight + delta;
-                const clamped = Math.max(100, Math.min(window.innerHeight - 80, newHeight));
+                const clamped = Math.max(160, Math.min(window.innerHeight - 80, newHeight));
                 setSidebarHeight(clamped);
               };
 
