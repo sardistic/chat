@@ -1482,6 +1482,12 @@ body {
   .side-content {
     overflow: hidden !important;
     border-radius: 20px 20px 0 0 !important;
+    /* Ensure content fills sidebar height and constrains children */
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    /* Critical for flex overflow to work */
   }
 
   /* Chat list padding to start below the transparency fade */
