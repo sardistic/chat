@@ -60,7 +60,7 @@ function StaticGrid() {
             backgroundImage: `
                 radial-gradient(circle at center, rgba(255,255,255,0.03) 1px, transparent 1px)
             `,
-            backgroundSize: '32px 32px',
+            backgroundSize: '48px 48px',
             pointerEvents: 'none',
         }} />
     );

@@ -26,7 +26,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         // Parameters - sparse dots, revealed by mouse/waves
         const params = {
             // Grid - more sparse, smaller dots
-            size: 32,             // More sparse
+            size: 48,             // More sparse
             baseRadius: 0.1,      // Tiny base
             radiusVariation: 0.06,
             proximity: 380,

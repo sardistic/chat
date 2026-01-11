@@ -85,7 +85,7 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
                 },
             },
             number: {
-                value: 500,
+                value: 200,
                 density: {
                     enable: true,
                     width: 1920,
