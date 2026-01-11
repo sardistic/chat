@@ -22,7 +22,7 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
     const options = useMemo(() => ({
         fullScreen: {
             enable: true,
-            zIndex: 0
+            zIndex: -1
         },
         background: {
             color: {
@@ -130,7 +130,7 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
     const wrapperStyle = useMemo(() => ({
         position: 'fixed',
         inset: 0,
-        zIndex: 0,
+        zIndex: -1,
         pointerEvents: 'none',
         opacity: zoomOpacity,
         transform: `scale(${zoomScale})`,
