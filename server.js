@@ -10,6 +10,8 @@ const fs = require('fs');
 const path = require('path');
 const valkey = require("./lib/valkey");
 const { createAdapter } = require("@socket.io/redis-adapter");
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
 
 const prisma = new PrismaClient();
 
@@ -507,7 +509,7 @@ app.prepare().then(async () => {
     if (parsedUrl.pathname === '/api/webhooks/deploy' && req.method === 'POST') {
       let body = '';
       req.on('data', chunk => { body += chunk.toString(); });
-      req.on('end', () => {
+      req.on('end', async () => {
         try {
           // 1. Verify Secret
           // Check Query Param first (Reliable), then Headers
@@ -734,6 +736,20 @@ app.prepare().then(async () => {
               systemMessage = text;
               systemType = 'git-push';
               metadata = { pusher, commitMsg, branch, commitUrl, shortHash, totalCommits };
+
+              // Cinematic Code Update: Fetch Diff
+              try {
+                const { stdout } = await exec(`git show ${shortHash} --no-color`);
+                if (stdout) {
+                  const lines = stdout.split('\n');
+                  // Limit to 150 lines for UX
+                  const diffLines = lines.slice(0, 150);
+                  if (lines.length > 150) diffLines.push(`... and ${lines.length - 150} more lines`);
+                  metadata.logs = diffLines;
+                }
+              } catch (e) {
+                console.log('[Git Diff] Failed to fetch:', e.message);
+              }
             }
           }
           // --- Generic Text Fallback ---

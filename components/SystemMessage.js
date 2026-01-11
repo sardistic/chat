@@ -555,7 +555,20 @@ function CinematicScanline({ logs, timestamp, type }) {
     }, [displayIndex, logs.length, timestamp]);
 
     const currentLine = logs[displayIndex] || '';
-    const html = convert.toHtml(currentLine);
+    let html = convert.toHtml(currentLine);
+
+    // Auto-Colorize Diff syntax if this is a git-push
+    if (type === 'git-push') {
+        if (currentLine.startsWith('+') && !currentLine.startsWith('+++')) {
+            html = `<span style="color: #4ade80">${html}</span>`;
+        } else if (currentLine.startsWith('-') && !currentLine.startsWith('---')) {
+            html = `<span style="color: #f87171">${html}</span>`;
+        } else if (currentLine.startsWith('@@')) {
+            html = `<span style="color: #60a5fa">${html}</span>`;
+        } else if (currentLine.startsWith('diff') || currentLine.startsWith('index')) {
+            html = `<span style="color: #fbbf24; font-weight: bold">${html}</span>`;
+        }
+    }
     const isBoring = /^(npm|yarn|download|copy|fetch|progress|> |\[\d+\/\d+\])|^\s*$/i.test(currentLine) || currentLine.includes('modules');
 
     return (
