@@ -311,6 +311,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         showProfileMenu, setShowProfileMenu,
         showProfileModal, setShowProfileModal,
         showStatusInput, setShowStatusInput,
+        showSettingsModal, setShowSettingsModal,
         customStatus, setCustomStatus,
         handleDiscordLogin
     };
@@ -508,6 +509,7 @@ const AppHeader = ({
     showProfileMenu, setShowProfileMenu,
     showProfileModal, setShowProfileModal,
     showStatusInput, setShowStatusInput,
+    showSettingsModal, setShowSettingsModal,
     customStatus, setCustomStatus,
     handleDiscordLogin
 }) => (
