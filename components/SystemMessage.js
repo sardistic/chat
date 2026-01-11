@@ -240,15 +240,17 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 opacity: 0.85,
                 paddingLeft: '12px' // Make room for bar
             }}>
-                <div style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: '3px',
-                    background: style.color, // Use solid color for the bar
-                    className: style.color === '#22c55e' ? 'throb-drip-green' : ''
-                }} />
+                <div
+                    className={style.color === '#22c55e' ? 'throb-drip-green' : ''}
+                    style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: '3px',
+                        background: style.color // Use solid color for the bar
+                    }}
+                />
                 {children || text}
             </div>
         );
