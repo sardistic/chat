@@ -70,13 +70,16 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
                 color: "#ffffff",
                 opacity: 0.04,
                 width: 0.3,
-                triangles: {
-                    enable: true,
-                    opacity: 0.01,
-                }
             },
             move: {
-                enable: false,
+                enable: true,
+                speed: 0.15,
+                direction: "none",
+                random: true,
+                straight: false,
+                outModes: {
+                    default: "bounce",
+                },
             },
             number: {
                 value: 500,
