@@ -419,13 +419,18 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
   const handleMouseMove = useCallback((e) => {
     if (!isResizing) return;
+
+    // Get the correct coordinate depending on touch vs mouse
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
     if (isMobile) {
-      const newHeight = window.innerHeight - e.clientY;
+      const newHeight = window.innerHeight - clientY;
       const maxHeight = window.innerHeight * 0.85;
       const minHeight = 150;
       setSidebarHeight(Math.max(minHeight, Math.min(maxHeight, newHeight)));
     } else {
-      const newWidth = window.innerWidth - e.clientX;
+      const newWidth = window.innerWidth - clientX;
       const maxWidth = window.innerWidth * 0.8;
       const constrained = Math.max(280, Math.min(maxWidth, newWidth));
       setSidebarWidth(constrained);
@@ -441,10 +446,14 @@ function MainApp({ user, setUser, onLeaveRoom }) {
       document.body.classList.add('resizing');
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleMouseMove, { passive: false });
+      document.addEventListener('touchend', handleMouseUp);
       return () => {
         document.body.classList.remove('resizing');
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleMouseMove);
+        document.removeEventListener('touchend', handleMouseUp);
       };
     }
   }, [isResizing, handleMouseMove, handleMouseUp]);
@@ -720,15 +729,20 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           <div
             className={`drag-handle ${isBuilding ? 'active-pulse' : ''} `}
             onMouseDown={handleMouseDown}
+            onTouchStart={handleMouseDown}
             style={isMobile ? {
               position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
-              height: '8px',
+              height: '16px', // Taller for easier touch
               cursor: 'ns-resize',
-              zIndex: 10,
-              background: 'rgba(255,255,255,0.05)'
+              zIndex: 100,
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              touchAction: 'none'
             } : {
               position: 'absolute',
               left: 0,
@@ -736,9 +750,20 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               bottom: 0,
               width: '4px',
               cursor: 'col-resize',
-              zIndex: 10
+              zIndex: 10,
+              touchAction: 'none'
             }}
-          />
+          >
+            {isMobile && (
+              <div style={{
+                width: '40px',
+                height: '4px',
+                borderRadius: '2px',
+                background: 'rgba(255,255,255,0.3)',
+                boxShadow: '0 0 10px rgba(0,0,0,0.5)'
+              }} />
+            )}
+          </div>
 
           {/* Sidebar Tabs */}
           <div className="side-header" style={{ padding: '0 16px', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
