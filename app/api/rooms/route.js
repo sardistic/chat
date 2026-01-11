@@ -83,23 +83,57 @@ export async function GET() {
             if (recentMessages.length > 0) {
                 // Sentiment Analysis
                 let sentimentScore = 0;
-                const positive = /(:D|:\)|lol|lmao|haha|love|nice|cool|🔥|❤️|✨|pog|based|goat|fire|lit|vibe)/i;
-                const negative = /(:\(|sad|hate|bad|angry|ugh|🙄|cry|die|cringe|L|ratio|mid)/i;
-                const chaotic = /(lmao|omg|wtf|bruh|dead|💀|😭|chaos)/i;
+
+                // Enhanced keyword lists
+                const positive = /(:D|:\)|lol|lmao|haha|love|nice|cool|🔥|❤️|✨|pog|based|goat|fire|lit|vibe|good|great|awesome|thanks|thx|ty|gg|wp|yep|yeah)/i;
+                const negative = /(:\(|sad|hate|bad|angry|ugh|🙄|cry|die|terrible|awful|worst|stop|no|nope|nah)/i;
+                const toxic = /(cringe|ra?tio|mid|L\b|stupid|idiot|dumb|shut\s*up|kys)/i;
+                const chaotic = /(lmao|omg|wtf|bruh|dead|💀|😭|chaos|scream|caps|aa+h+)/i;
+                const cozy = /(sleep|night|cozy|comfy|tea|chill|lofi|relax|tired|gn|warm|blanket|rain|soft)/i;
+                const coding = /(code|fix|bug|dev|pr|git|react|js|css|html|api|deploy|error|fail|stack|repo|commit)/i;
+                const funny = /(lol|lmao|haha|xd|kek|funny|joke|waiting|ded)/i;
+                const deep = /(think|wonder|maybe|what\s+if|feel|believe|life|universe|space|time|theory)/i;
+
+                let counts = {
+                    positive: 0,
+                    negative: 0,
+                    chaotic: 0,
+                    cozy: 0,
+                    coding: 0,
+                    funny: 0,
+                    deep: 0,
+                    toxic: 0
+                };
 
                 recentMessages.forEach(m => {
-                    if (positive.test(m.text)) sentimentScore++;
-                    if (negative.test(m.text)) sentimentScore--;
+                    const text = m.text || '';
+                    if (positive.test(text)) counts.positive++;
+                    if (negative.test(text)) counts.negative++;
+                    if (toxic.test(text)) counts.toxic++;
+                    if (chaotic.test(text)) counts.chaotic++;
+                    if (cozy.test(text)) counts.cozy++;
+                    if (coding.test(text)) counts.coding++;
+                    if (funny.test(text)) counts.funny++;
+                    if (deep.test(text)) counts.deep++;
+
+                    // Base sentiment score
+                    if (positive.test(text)) sentimentScore++;
+                    if (negative.test(text)) sentimentScore--;
+                    if (toxic.test(text)) sentimentScore -= 2; // heavier weight
                 });
 
-                // Count chaotic messages
-                const chaoticCount = recentMessages.filter(m => chaotic.test(m.text)).length;
-
-                if (chaoticCount > 5) sentiment = 'Chaotic 🌀';
+                // Determine dominant Mood
+                const total = recentMessages.length;
+                if (counts.coding > 2) sentiment = 'Coding 💻';
+                else if (counts.chaotic > 4) sentiment = 'Chaotic 🌀';
+                else if (counts.funny > 3) sentiment = 'Funny 😂';
+                else if (counts.cozy > 2) sentiment = 'Cozy ☕';
+                else if (counts.deep > 2) sentiment = 'Deep 🧠';
+                else if (counts.toxic > 2 || sentimentScore < -3) sentiment = 'Tense 🌩️';
                 else if (sentimentScore > 4) sentiment = 'Hype 🔥';
                 else if (sentimentScore > 1) sentiment = 'Positive ✨';
-                else if (sentimentScore < -2) sentiment = 'Tense 🌩️';
-                else if (recentMessages.length > 5) sentiment = 'Chill 😌';
+                else if (total > 8) sentiment = 'Active 🟢';
+                else if (total > 2) sentiment = 'Chill 😌';
                 else sentiment = 'Quiet 🌙';
 
                 // Generate summary if not already set
