@@ -28,16 +28,14 @@ function FloatingReaction({ emoji, onComplete }) {
 }
 
 // Helper to calculate optimal layout
-function calculateLayout(containerWidth, containerHeight, videoCount, aspectRatio = 16 / 9) {
+function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, aspectRatio = 16 / 9) {
     let bestLayout = { cols: 1, rows: 1, width: 320, height: 180 };
     if (videoCount === 0) return bestLayout;
 
-    // Deduct padding/gap (approx 24px padding + 12px gap)
-    // Increase safeguards to prevent overflow
-    // We assume containerWidth includes padding, but we need to subtract it for available space
-    const paddingX = 48;
-    const paddingY = 48;
-    const gap = 12;
+    // Deduct padding/gap (economical on mobile)
+    const paddingX = isMobile ? 12 : 48;
+    const paddingY = isMobile ? 12 : 48;
+    const gap = isMobile ? 6 : 12;
 
     for (let cols = 1; cols <= videoCount; cols++) {
         const rows = Math.ceil(videoCount / cols);
@@ -378,16 +376,16 @@ function VideoTile({
                 </div>
             )}
 
-            {/* Name & Controls Overlay */}
+            {/* Name & Controls Overlay - Tighter on mobile */}
             <div className="overlay" style={{
                 pointerEvents: 'auto',
                 zIndex: 30, // Even higher than border
                 background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
-                padding: '12px',
+                padding: isMobile ? '6px 10px' : '12px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'flex-end',
-                height: '50px',
+                height: isMobile ? '36px' : '50px',
                 position: 'absolute',
                 bottom: 0,
                 left: 0,
@@ -508,6 +506,7 @@ export default function VideoGrid({
     isTubeOwner = false,
     blockedIds = new Set(), // Passed from useChat
     onMuteChange, // Passed from page.js
+    isMobile = false,
     style = {}
 }) {
     const { socket } = useSocket();
@@ -569,7 +568,7 @@ export default function VideoGrid({
         const updateLayout = () => {
             if (gridRef.current) {
                 const { clientWidth, clientHeight } = gridRef.current;
-                const { width, height } = calculateLayout(clientWidth, clientHeight, totalTiles);
+                const { width, height } = calculateLayout(clientWidth, clientHeight, totalTiles, isMobile);
                 setLayout({ width, height });
             }
         };

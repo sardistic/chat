@@ -1415,9 +1415,9 @@ body {
     flex-direction: column !important;
     padding: 0 !important;
     overflow: hidden;
-    margin-top: 50px !important;
-    height: calc(100dvh - 50px) !important;
-    /* Use dynamic viewport height */
+    margin-top: 44px !important;
+    height: calc(100dvh - 44px) !important;
+    /* Fixed to header height */
   }
 
   /* Video stage takes remaining area, but allow sidebar to overlap via margin */
@@ -1425,11 +1425,11 @@ body {
     width: 100% !important;
     flex: 1 !important;
     /* Fill space above sidebar */
-    min-height: 150px !important;
+    min-height: 120px !important;
     height: auto !important;
     margin: 0 !important;
-    padding-bottom: 30px !important;
-    /* Extra padding for the sidebar overlap */
+    padding-bottom: 20px !important;
+    /* Tighter padding for overlap */
     z-index: 10;
     position: relative;
     overflow: hidden;
@@ -1441,15 +1441,15 @@ body {
     /* Switch from fixed to flow */
     width: 100% !important;
     height: var(--dynamic-sidebar-h) !important;
-    margin-top: -30px !important;
-    /* Bleed into main-stage for the fade effect */
-    border-radius: 24px 24px 0 0 !important;
+    margin-top: -20px !important;
+    /* Less bleed to save vertical space */
+    border-radius: 20px 20px 0 0 !important;
     z-index: 50;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.9);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.9);
     background: linear-gradient(to top,
         rgba(10, 11, 14, 1) 0%,
-        rgba(10, 11, 14, 1) 85%,
-        rgba(10, 11, 14, 0.8) 95%,
+        rgba(10, 11, 14, 1) 90%,
+        rgba(10, 11, 14, 0.85) 96%,
         transparent 100%) !important;
     backdrop-filter: blur(15px) !important;
     -webkit-backdrop-filter: blur(15px) !important;
@@ -1461,15 +1461,15 @@ body {
 
   /* Chat list padding to start below the transparency fade */
   .side-header {
-    margin-top: 15px !important;
+    margin-top: 12px !important;
   }
 
   /* Drag handle is enabled on mobile but uses js style overrides */
 
   /* Smaller header */
   .app-header {
-    height: 50px !important;
-    padding: 0 12px !important;
+    height: 44px !important;
+    padding: 0 8px !important;
   }
 
   /* Hide breadcrumb elements that don't fit */
@@ -1484,10 +1484,29 @@ body {
     white-space: nowrap;
   }
 
+  /* Avatar drift animation for background aquarium */
+  @keyframes avatarDrift {
+    0% {
+      transform: translate(0, 0) rotate(0deg);
+    }
+
+    33% {
+      transform: translate(6px, -3px) rotate(2deg);
+    }
+
+    66% {
+      transform: translate(-3px, 6px) rotate(-2deg);
+    }
+
+    100% {
+      transform: translate(0, 0) rotate(0deg);
+    }
+  }
+
   /* Adjust video grid for mobile */
   .grid {
-    padding: 8px !important;
-    gap: 8px !important;
+    padding: 2px !important;
+    gap: 4px !important;
   }
 
   /* Avatar aquarium adjustments */

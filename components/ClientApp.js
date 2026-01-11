@@ -420,14 +420,17 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const handleMouseMove = useCallback((e) => {
     if (!isResizing) return;
 
+    // Prevent default scrolling behavior on mobile while resizing
+    if (e.cancelable) e.preventDefault();
+
     // Get the correct coordinate depending on touch vs mouse
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+    const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
 
     if (isMobile) {
       const newHeight = window.innerHeight - clientY;
-      const maxHeight = window.innerHeight * 0.85;
-      const minHeight = 150;
+      const maxHeight = window.innerHeight * 0.9; // Slightly more range
+      const minHeight = 120; // More economical
       setSidebarHeight(Math.max(minHeight, Math.min(maxHeight, newHeight)));
     } else {
       const newWidth = window.innerWidth - clientX;
@@ -651,24 +654,15 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               position: 'absolute',
               inset: 0,
               zIndex: 1,
-              opacity: 0.4,
+              opacity: 0.35,
               pointerEvents: 'none',
               overflow: 'hidden'
             }}>
-              {/* Animating drift background for avatars */}
-              <style>{`
-                @keyframes avatarDrift {
-                  0% { transform: translate(0, 0) rotate(0deg); }
-                  33% { transform: translate(10px, -5px) rotate(5deg); }
-                  66% { transform: translate(-5px, 10px) rotate(-5deg); }
-                  100% { transform: translate(0, 0) rotate(0deg); }
-                }
-              `}</style>
               <div style={{
                 display: 'flex',
-                gap: '12px',
+                gap: '8px', // Tighter
                 flexWrap: 'wrap',
-                padding: '20px',
+                padding: '12px', // Tighter
                 justifyContent: 'center'
               }}>
                 {(() => {
@@ -685,11 +679,11 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                         alt={u.name}
                         onClick={(e) => handleProfileClick(u, e)}
                         style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '28px', // Tighter
+                          height: '28px',
                           borderRadius: '50%',
                           border: '1px solid rgba(255,255,255,0.1)',
-                          animation: `avatarDrift ${10 + (i % 5) * 2}s ease-in-out infinite`,
+                          animation: `avatarDrift ${12 + (i % 6) * 2}s ease-in-out infinite`,
                           pointerEvents: 'auto',
                           cursor: 'pointer'
                         }}
@@ -703,7 +697,8 @@ function MainApp({ user, setUser, onLeaveRoom }) {
             localStream={isBroadcasting ? localStream : null}
             peers={peers}
             localUser={user}
-            style={{ position: 'relative', zIndex: 10 }} // Ensure grid is above aquarium
+            style={{ position: 'relative', zIndex: 10 }}
+            isMobile={isMobile}
             isVideoEnabled={isVideoEnabled}
             isAudioEnabled={isAudioEnabled}
             isDeafened={isDeafened}
@@ -732,12 +727,12 @@ function MainApp({ user, setUser, onLeaveRoom }) {
             onTouchStart={handleMouseDown}
             style={isMobile ? {
               position: 'absolute',
-              top: 0,
+              top: '-12px', // Pull it up to overlap the fade area
               left: 0,
               right: 0,
-              height: '16px', // Taller for easier touch
+              height: '32px', // Large invisible hit area
               cursor: 'ns-resize',
-              zIndex: 100,
+              zIndex: 1000, // Stay above EVERYTHING
               background: 'transparent',
               display: 'flex',
               alignItems: 'center',
@@ -756,17 +751,18 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           >
             {isMobile && (
               <div style={{
-                width: '40px',
+                width: '36px',
                 height: '4px',
                 borderRadius: '2px',
-                background: 'rgba(255,255,255,0.3)',
-                boxShadow: '0 0 10px rgba(0,0,0,0.5)'
+                background: 'rgba(255,255,255,0.4)',
+                boxShadow: '0 0 10px rgba(0,0,0,0.5)',
+                marginTop: '8px' // Align visually with the top of the dark panel
               }} />
             )}
           </div>
 
           {/* Sidebar Tabs */}
-          <div className="side-header" style={{ padding: '0 16px', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="side-header" style={{ padding: isMobile ? '0 8px' : '0 16px', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)', minHeight: isMobile ? '36px' : '48px' }}>
             <button
               className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
               style={{ flex: 1, fontSize: '12px', padding: '6px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent' }}
