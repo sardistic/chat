@@ -674,59 +674,66 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           />
         </div>
 
-        {/* Floating Right Sidebar (Chat) */}
-        <aside className="floating-sidebar">
-          {/* Resize Handle (Vertical on Desktop, Horizontal on Mobile) */}
+        {/* Mobile Dedicated Resizer Bar - Standalone in flex flow to avoid clipping */}
+        {isMobile && (
           <div
-            className={`drag-handle ${isBuilding ? 'active-pulse' : ''} `}
+            className="mobile-drag-bar"
             onMouseDown={handleMouseDown}
             onTouchStart={(e) => {
-              // Ensure we stop propagation to not trigger other mobile gestures
               e.stopPropagation();
               handleMouseDown(e);
             }}
-            style={isMobile ? {
-              position: 'absolute',
-              top: '-20px', // Stick out 20px above the panel
-              left: 0,
-              right: 0,
-              height: '40px', // Massive 40px hit area
-              cursor: 'ns-resize',
+            style={{
+              height: '32px',
+              margin: '-16px 0',
               zIndex: 1000,
-              background: 'transparent',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              touchAction: 'none'
-            } : {
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: '4px',
-              cursor: 'col-resize',
-              zIndex: 10,
-              touchAction: 'none'
+              cursor: 'ns-resize',
+              touchAction: 'none',
+              background: 'transparent',
+              position: 'relative'
             }}
           >
-            {isMobile && (
-              <div style={{
-                width: '32px',
-                height: '4px',
-                borderRadius: '2px',
-                background: isResizing ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)',
-                boxShadow: '0 0 10px rgba(0,0,0,0.5)',
-                marginTop: '16px' // Visual anchor
-              }} />
-            )}
+            <div style={{
+              width: '40px',
+              height: '4px',
+              borderRadius: '2px',
+              background: isResizing ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.4)',
+              boxShadow: '0 0 10px rgba(0,0,0,0.5)',
+              transition: 'background 0.2s, transform 0.2s',
+              transform: isResizing ? 'scaleY(1.5)' : 'none'
+            }} />
           </div>
+        )}
+
+        {/* Floating Right Sidebar (Chat) */}
+        <aside className="floating-sidebar">
+          {/* Desktop Resize Handle */}
+          {!isMobile && (
+            <div
+              className={`drag-handle ${isBuilding ? 'active-pulse' : ''} `}
+              onMouseDown={handleMouseDown}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '4px',
+                cursor: 'col-resize',
+                zIndex: 10,
+                touchAction: 'none'
+              }}
+            />
+          )}
 
           {/* Sidebar Tabs */}
           <div className="side-header" style={{
             padding: isMobile ? '0 8px' : '0 16px',
             gap: '8px',
             borderBottom: '1px solid rgba(255,255,255,0.05)',
-            minHeight: isMobile ? '36px' : '48px',
+            minHeight: isMobile ? '30px' : '48px',
             display: 'flex',
             alignItems: 'center'
           }}>
