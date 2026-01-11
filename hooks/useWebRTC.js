@@ -29,31 +29,13 @@ export function useWebRTC(roomId, user, autoStart = true) {
         }
     }, [socket, isConnected]);
 
-    // Start broadcasting
-    const startBroadcast = useCallback(async () => {
-        console.log('📹 Starting broadcast...');
+    // Start broadcasting - receives stream from caller (who handles getUserMedia in click context)
+    const startBroadcast = useCallback(async (stream) => {
+        console.log('📹 Starting broadcast with provided stream...');
 
-        // CRITICAL: Call getUserMedia IMMEDIATELY to preserve user gesture context
-        // Browsers require this to be called synchronously from a user action
-        let stream;
-        try {
-            console.log('[Camera] Requesting media (synchronous start)...');
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            });
-            console.log('[Camera] Got stream successfully');
-        } catch (err) {
-            console.error('[Camera] getUserMedia failed:', err.name, err.message);
-            let errorMsg = 'Camera access failed: ';
-            if (err.name === 'NotAllowedError') {
-                errorMsg += 'Permission denied. Please allow camera access.';
-            } else if (err.name === 'NotFoundError') {
-                errorMsg += 'No camera found.';
-            } else {
-                errorMsg += err.message || 'Unknown error';
-            }
-            setError(errorMsg);
+        if (!stream) {
+            const err = new Error('No stream provided to startBroadcast');
+            setError(err.message);
             throw err;
         }
 

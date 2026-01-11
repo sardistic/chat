@@ -299,15 +299,26 @@ function MainApp({ user, setUser, onLeaveRoom }) {
       // Server handles cam status notification via update-user handler
 
     } else {
+      // CRITICAL: Request camera IMMEDIATELY in the click handler, not in a nested function
+      let stream;
       try {
-        await startBroadcast();
+        console.log('[Camera] Requesting from click handler...');
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log('[Camera] Got stream!');
+      } catch (err) {
+        console.error('[Camera] Permission error:', err.name, err.message);
+        alert('Camera Error: ' + (err.message || 'Permission denied. Please allow camera access.'));
+        return;
+      }
+
+      try {
+        // Now pass the stream to startBroadcast
+        await startBroadcast(stream);
         setIsBroadcasting(true);
-        // Server handles cam status notification via update-user handler
       } catch (err) {
         console.error("Error starting broadcast:", err);
-        // Show visible error to user (mobile-friendly)
-        const errorMessage = error || err.message || 'Failed to start camera. Please check permissions.';
-        alert('Camera Error: ' + errorMessage);
+        // Stop the stream we got since broadcast failed
+        stream?.getTracks().forEach(t => t.stop());
         setIsBroadcasting(false);
       }
     }
