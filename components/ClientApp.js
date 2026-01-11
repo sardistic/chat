@@ -134,6 +134,16 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const [chatReactions, setChatReactions] = useState([]);
   const { tubeState, receivedAt, updateTubeState, isOwner: isTubeOwner } = useYouTubeSync(roomId, user);
 
+  // Activity-based UI state (mobile optimization)
+  // Tracks last activity timestamp per username: { [username]: timestamp }
+  const [userActivity, setUserActivity] = useState({});
+  // Computed display states: 'active' | 'semi-active' | 'inactive'
+  const [displayStates, setDisplayStates] = useState({});
+
+  // Activity thresholds (in ms)
+  const SEMI_ACTIVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+  const INACTIVE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
 
 
   // HACK: Force Next.js HMR Toast/Portal to be visible and clear of input box
@@ -400,6 +410,12 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         [author]: content
       }));
 
+      // Update activity tracking (user is active if they sent a message)
+      setUserActivity(prev => ({
+        ...prev,
+        [author]: Date.now()
+      }));
+
       // 1. Detect Mentions for Camera Glow (Target gets glow)
       const mentionedUsers = [];
       const allKnownUsers = [...peers.values().map(p => p.user?.name), user?.name].filter(Boolean);
@@ -515,6 +531,51 @@ function MainApp({ user, setUser, onLeaveRoom }) {
       };
     }
   }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  // Activity-based display state calculation (mobile optimization)
+  // Runs every 30s to recompute which users should be full/collapsed/hidden
+  useEffect(() => {
+    if (!isMobile) return; // Only active on mobile
+
+    const computeDisplayStates = () => {
+      const now = Date.now();
+      const newStates = {};
+
+      // Get all users: peers + local user
+      const allUsers = [...peers.values().map(p => p.user?.name), user?.name].filter(Boolean);
+
+      allUsers.forEach(username => {
+        const lastActivity = userActivity[username] || 0;
+        const timeSinceActivity = now - lastActivity;
+
+        // Check if user has video enabled (always active if streaming)
+        const peerData = [...peers.values()].find(p => p.user?.name === username);
+        const hasVideo = peerData?.user?.isVideoEnabled || (username === user?.name && isVideoEnabled);
+        const hasAudio = peerData?.user?.isAudioEnabled || (username === user?.name && isAudioEnabled);
+
+        // Users with video/audio are always active
+        if (hasVideo || hasAudio) {
+          newStates[username] = 'active';
+        } else if (timeSinceActivity < SEMI_ACTIVE_TIMEOUT) {
+          newStates[username] = 'active';
+        } else if (timeSinceActivity < INACTIVE_TIMEOUT) {
+          newStates[username] = 'semi-active';
+        } else {
+          newStates[username] = 'inactive';
+        }
+      });
+
+      setDisplayStates(newStates);
+    };
+
+    // Initial computation
+    computeDisplayStates();
+
+    // Recompute every 30 seconds
+    const interval = setInterval(computeDisplayStates, 30000);
+    return () => clearInterval(interval);
+  }, [isMobile, peers, user, userActivity, isVideoEnabled, isAudioEnabled, SEMI_ACTIVE_TIMEOUT, INACTIVE_TIMEOUT]);
+
 
   return (
     <div
@@ -831,6 +892,8 @@ function MainApp({ user, setUser, onLeaveRoom }) {
             isTubeOwner={isTubeOwner}
             blockedIds={blockedIds}
             onMuteChange={onMuteChange}
+            displayStates={displayStates}
+            chatBubbles={chatBubbles}
           />
         </div>
 

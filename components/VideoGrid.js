@@ -27,6 +27,73 @@ function FloatingReaction({ emoji, onComplete }) {
     );
 }
 
+// Collapsed user bar for semi-active users (mobile)
+function CollapsedUserBar({ user, lastMessage, onClick }) {
+    const userColor = user?.name ? getUserColor(user.name) : 'oklch(60% 0.15 250)';
+
+    return (
+        <div
+            className="collapsed-user-bar"
+            onClick={onClick}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 10px',
+                background: 'rgba(0,0,0,0.6)',
+                backdropFilter: 'blur(8px)',
+                borderRadius: '8px',
+                borderLeft: `3px solid ${userColor}`,
+                cursor: 'pointer',
+                marginBottom: '4px',
+                width: '100%',
+            }}
+        >
+            {/* Avatar */}
+            <div
+                style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${userColor}, ${getSecondaryColor(userColor)})`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    flexShrink: 0,
+                    overflow: 'hidden',
+                }}
+            >
+                {user?.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                    user?.name?.charAt(0).toUpperCase()
+                )}
+            </div>
+
+            {/* Name + Last Message */}
+            <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>
+                    {user?.name || 'Unknown'}
+                </div>
+                {lastMessage && (
+                    <div style={{
+                        fontSize: '10px',
+                        color: 'rgba(255,255,255,0.5)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                    }}>
+                        {lastMessage}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // Helper to calculate optimal layout
 function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, aspectRatio = 16 / 9) {
     let bestLayout = { cols: 1, rows: 1, width: 320, height: 180 };
@@ -508,7 +575,11 @@ export default function VideoGrid({
     blockedIds = new Set(), // Passed from useChat
     onMuteChange, // Passed from page.js
     isMobile = false,
-    style = {}
+    style = {},
+
+    // Activity-based mobile props
+    displayStates = {},
+    chatBubbles = {}
 }) {
     const { socket } = useSocket();
     const [incomingReactions, setIncomingReactions] = useState(new Map());
@@ -708,9 +779,30 @@ export default function VideoGrid({
                 {/* Remote Peer Tiles */}
                 {peerArray.map(([peerId, peerData]) => {
                     const userId = peerData.user?.id || peerId;
+                    const username = peerData.user?.name;
 
                     // Filter Blocked Users
                     if (blockedIds.has(userId)) return null;
+
+                    // Activity-based filtering (mobile only)
+                    if (isMobile && username) {
+                        const displayState = displayStates[username] || 'active';
+
+                        // Inactive users don't render in grid (they appear in header avatars)
+                        if (displayState === 'inactive') return null;
+
+                        // Semi-active users render as collapsed bars
+                        if (displayState === 'semi-active') {
+                            return (
+                                <CollapsedUserBar
+                                    key={peerId}
+                                    user={peerData.user}
+                                    lastMessage={chatBubbles[username]}
+                                    onClick={(e) => handleTileClick(e, peerData.user)}
+                                />
+                            );
+                        }
+                    }
 
                     const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
                     const isRemoteMuted = peerData.user?.isAudioEnabled === false;
