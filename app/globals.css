@@ -2354,3 +2354,20 @@ nextjs-portal {
     opacity: 0;
   }
 }
+.throb-drip-green {
+  box-shadow: 0 0 8px #22c55e;
+  animation: global-throb 2s ease-in-out infinite;
+}
+.throb-drip-green::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 5px #22c55e;
+  animation: global-drip 3s ease-in infinite;
+  transform: translateX(-50%);
+}

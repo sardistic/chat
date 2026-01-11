@@ -247,9 +247,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     bottom: 0,
                     width: '3px',
                     background: style.color, // Use solid color for the bar
-                    // Apply throb/drip if green
-                    boxShadow: style.color === '#22c55e' ? '0 0 8px #22c55e' : 'none',
-                    animation: style.color === '#22c55e' ? 'global-throb 2s ease-in-out infinite' : 'none'
+                    className: style.color === '#22c55e' ? 'throb-drip-green' : ''
                 }} />
                 {children || text}
             </div>
