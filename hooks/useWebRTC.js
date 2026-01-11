@@ -139,7 +139,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             setError('Failed to start camera');
             throw err;
         }
-    }, [socket, initializeMedia, peers, broadcastStatus, isDeafened]);
+    }, [socket, peers, broadcastStatus, isDeafened]);
 
     // Stop broadcasting
     const stopBroadcast = useCallback(() => {
