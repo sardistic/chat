@@ -2291,9 +2291,63 @@ body,
   color: var(--text-secondary);
 }
 
-/* Next.js HMR Update Toast - Always on Top */
+/* Next.js HMR Update Toast - Always on Top & Magical */
 [data-nextjs-toast],
 [data-nextjs-refresh],
 nextjs-portal {
   z-index: 99999 !important;
+  /* Fuzzy Throbbing Effect */
+  animation: global-throb 2s ease-in-out infinite !important;
+  filter: drop-shadow(0 0 8px #22c55e) drop-shadow(0 0 15px #22c55e) !important;
+}
+
+[data-nextjs-toast]::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #22c55e;
+  animation: global-drip 1.5s ease-in infinite;
+  transform: translateX(-50%);
+}
+
+@keyframes global-throb {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+    filter: blur(0px) brightness(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+    filter: blur(1px) brightness(1.3);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+    filter: blur(0px) brightness(1);
+  }
+}
+
+@keyframes global-drip {
+  0% {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  80% {
+    transform: translateX(-50%) translateY(20px) scale(0.5);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translateX(-50%) translateY(40px) scale(0);
+    opacity: 0;
+  }
 }
