@@ -482,7 +482,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
             <img
               src="https://i.imgur.com/MfbxoHW.gif"
               alt="gem"
-              style={{ height: '20px', marginRight: '4px' }}
+              onClick={onLeaveRoom}
+              style={{ height: '20px', marginRight: '4px', cursor: 'pointer' }}
+              title="Return to Browser"
             />
             <button
               onClick={onLeaveRoom}
@@ -707,6 +709,14 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                 <button className="menu-item" onClick={() => { setShowProfileMenu(false); setShowSettingsModal(true); }}>
                   <Icon icon="fa:cog" width="16" /> Settings
                 </button>
+
+                {/* Mission Control (Relocated from absolute bottom-left) */}
+                {(user?.role === 'ADMIN' || user?.role === 'MODERATOR' || user?.role === 'OWNER') && (
+                  <button className="menu-item" style={{ color: 'var(--accent-primary)' }} onClick={() => { setShowProfileMenu(false); setIsAdminOpen(true); }}>
+                    <Icon icon="fa:shield" width="16" /> Mission Control
+                  </button>
+                )}
+
                 <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
                 <button className="menu-item danger" onClick={onLeaveRoom}>
                   <Icon icon="fa:sign-out" width="16" /> Disconnect
@@ -1021,43 +1031,6 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         onlineCount={peers.size + 1}
       />
 
-      {/* Admin Button (Bottom Left, above Settings) */}
-      {
-        (user?.role === 'ADMIN' || user?.role === 'MODERATOR' || user?.role === 'OWNER') && (
-          <button
-            onClick={() => setIsAdminOpen(true)}
-            className="btn icon-btn"
-            style={{
-              position: 'fixed', bottom: '70px', left: '20px', zIndex: 100,
-              width: '40px', height: '40px', borderRadius: '50%',
-              background: 'rgba(99, 102, 241, 0.8)', border: '1px solid rgba(255,255,255,0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', cursor: 'pointer', backdropFilter: 'blur(4px)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-            }}
-            title="Mission Control"
-          >
-            <Icon icon="fa:shield" width="18" />
-          </button>
-        )
-      }
-
-      {/* Settings Toggle (Fixed Bottom Left) */}
-      <button
-        onClick={() => setIsSettingsOpen(true)}
-        className="btn icon-btn"
-        style={{
-          position: 'fixed', bottom: '20px', left: '20px', zIndex: 100,
-          width: '40px', height: '40px', borderRadius: '50%',
-          background: 'rgba(15, 16, 19, 0.8)', border: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'rgba(255,255,255,0.7)', cursor: 'pointer', backdropFilter: 'blur(4px)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-        }}
-        title="Settings"
-      >
-        <Icon icon="fa:cog" width="18" />
-      </button>
 
 
       {/* Status Input Dialog */}
