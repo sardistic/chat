@@ -64,13 +64,24 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     const checkSize = () => {
       setIsMobile(window.innerWidth <= 768);
       setIsUltraSmall(window.innerWidth <= 480);
+
+      // Set CSS variable for true viewport height (handles mobile address bar)
+      // Use visualViewport if available (more accurate on mobile), fallback to innerHeight
+      const vh = window.visualViewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty('--true-vh', `${vh}px`);
     };
+
     if (typeof window !== 'undefined') {
       checkSize();
       window.addEventListener('resize', checkSize);
+      // Also listen for visualViewport changes (mobile address bar show/hide)
+      window.visualViewport?.addEventListener('resize', checkSize);
     }
     return () => {
-      if (typeof window !== 'undefined') window.removeEventListener('resize', checkSize);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', checkSize);
+        window.visualViewport?.removeEventListener('resize', checkSize);
+      }
     };
   }, []);
 
@@ -911,7 +922,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                 const currentY = moveEvent.touches[0].clientY;
                 const delta = startY - currentY;
                 const newHeight = startHeight + delta;
-                const clamped = Math.max(160, Math.min(window.innerHeight - 80, newHeight));
+                // Use visualViewport for accurate mobile height (handles address bar)
+                const viewportHeight = window.visualViewport?.height || window.innerHeight;
+                const clamped = Math.max(160, Math.min(viewportHeight - 80, newHeight));
                 setSidebarHeight(clamped);
               };
 

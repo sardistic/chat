@@ -236,7 +236,11 @@ body {
   .app-content {
     margin-top: 40px;
     /* Mobile header is 40px, not 64px */
+    /* Use dvh for mobile to handle address bar properly */
     height: calc(100vh - 40px);
+    /* Fallback for older browsers */
+    height: calc(100dvh - 40px);
+    /* Dynamic viewport height - handles address bar */
     flex-direction: column;
     /* Stack vertically on mobile */
   }
