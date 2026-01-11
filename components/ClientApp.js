@@ -728,76 +728,38 @@ function MainApp({ user, setUser, onLeaveRoom }) {
             />
           )}
 
-          {/* Sidebar Tabs */}
-          <div className="side-header" style={{
-            padding: isMobile ? '0 8px' : '0 16px',
-            gap: '8px',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
-            minHeight: isMobile ? '30px' : '48px',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-              <button
-                className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
-                style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
-                onClick={() => setActiveTab('logs')}
-              >
-                Chat
-              </button>
-              <button
-                className={`btn ${activeTab === 'services' ? 'primary' : ''} `}
-                style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'services' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
-                onClick={() => setActiveTab('services')}
-              >
-                Users ({(() => {
-                  const webUserNames = new Set([user.name, ...Array.from(peers.values()).map(p => p.user?.name).filter(Boolean)]);
-                  const uniqueIrcCount = Array.from(ircUsers.values()).filter(u => !webUserNames.has(u.name)).length;
-                  return webUserNames.size + uniqueIrcCount;
-                })()})
-              </button>
-            </div>
-
-            {/* Mobile Avatars - Compactly listed next to tabs */}
-            {isMobile && (
-              <div style={{
-                display: 'flex',
-                gap: '4px',
-                marginLeft: 'auto',
-                paddingLeft: '8px',
-                borderLeft: '1px solid rgba(255,255,255,0.05)',
-                overflowX: 'auto',
-                maxWidth: '40%',
-                maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)'
-              }}>
-                {(() => {
-                  const uniqueMap = new Map();
-                  if (user && user.name) uniqueMap.set(user.name, user);
-                  peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
-                  ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
-                  return Array.from(uniqueMap.values())
-                    .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
-                    .map((u, i) => (
-                      <img
-                        key={u.name + i}
-                        src={u.avatar || `/api/avatar/${u.name}`}
-                        alt={u.name}
-                        onClick={(e) => handleProfileClick(u, e)}
-                        style={{
-                          width: '24px',
-                          height: '24px',
-                          borderRadius: '50%',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          cursor: 'pointer',
-                          flexShrink: 0
-                        }}
-                      />
-                    ));
-                })()}
+          {/* Sidebar Tabs - Hidden on Mobile (moved to ChatPanel bottom row) */}
+          {!isMobile && (
+            <div className="side-header" style={{
+              padding: isMobile ? '0 8px' : '0 16px',
+              gap: '8px',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              minHeight: isMobile ? '30px' : '48px',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                <button
+                  className={`btn ${activeTab === 'logs' ? 'primary' : ''} `}
+                  style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
+                  onClick={() => setActiveTab('logs')}
+                >
+                  Chat
+                </button>
+                <button
+                  className={`btn ${activeTab === 'services' ? 'primary' : ''} `}
+                  style={{ flex: 1, fontSize: '11px', padding: '4px', border: 'none', background: activeTab === 'services' ? 'rgba(255,255,255,0.1)' : 'transparent', height: '28px' }}
+                  onClick={() => setActiveTab('services')}
+                >
+                  Users ({(() => {
+                    const webUserNames = new Set([user.name, ...Array.from(peers.values()).map(p => p.user?.name).filter(Boolean)]);
+                    const uniqueIrcCount = Array.from(ircUsers.values()).filter(u => !webUserNames.has(u.name)).length;
+                    return webUserNames.size + uniqueIrcCount;
+                  })()})
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="side-content" style={{ padding: 0, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
             {/* Chat Panel - Always mounted to preserve state */}
@@ -810,6 +772,10 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                 ircUsers={Array.from(ircUsers.values())}
                 onUserClick={handleProfileClick}
                 sendToIRC={sendToIRC}
+                isMobile={isMobile}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                peers={peers}
                 {...chat}
               />
             </div>
@@ -882,7 +848,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                   }} style={{ cursor: 'pointer' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#242424', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <img
-                        src={u.avatar || `/ api / avatar / ${u.name} `}
+                        src={u.avatar || `/api/avatar/${u.name}`}
                         alt={u.name}
                         className={tubeState?.playing ? 'dancing' : ''}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -945,18 +911,20 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           </div>
         </aside>
 
-      </div>
+      </div >
 
       {/* Error Toast */}
-      {error && (
-        <div style={{
-          position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-          background: '#F87171', color: 'white', padding: '10px 20px', borderRadius: '8px',
-          fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 9999
-        }}>
-          {error}
-        </div>
-      )}
+      {
+        error && (
+          <div style={{
+            position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+            background: '#F87171', color: 'white', padding: '10px 20px', borderRadius: '8px',
+            fontWeight: '500', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 9999
+          }}>
+            {error}
+          </div>
+        )
+      }
 
       <ProfileModal
         user={{ ...user, customStatus }}
@@ -980,23 +948,25 @@ function MainApp({ user, setUser, onLeaveRoom }) {
       />
 
       {/* Admin Button (Bottom Left, above Settings) */}
-      {(user?.role === 'ADMIN' || user?.role === 'MODERATOR' || user?.role === 'OWNER') && (
-        <button
-          onClick={() => setIsAdminOpen(true)}
-          className="btn icon-btn"
-          style={{
-            position: 'fixed', bottom: '70px', left: '20px', zIndex: 100,
-            width: '40px', height: '40px', borderRadius: '50%',
-            background: 'rgba(99, 102, 241, 0.8)', border: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', cursor: 'pointer', backdropFilter: 'blur(4px)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-          }}
-          title="Mission Control"
-        >
-          <Icon icon="fa:shield" width="18" />
-        </button>
-      )}
+      {
+        (user?.role === 'ADMIN' || user?.role === 'MODERATOR' || user?.role === 'OWNER') && (
+          <button
+            onClick={() => setIsAdminOpen(true)}
+            className="btn icon-btn"
+            style={{
+              position: 'fixed', bottom: '70px', left: '20px', zIndex: 100,
+              width: '40px', height: '40px', borderRadius: '50%',
+              background: 'rgba(99, 102, 241, 0.8)', border: '1px solid rgba(255,255,255,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', cursor: 'pointer', backdropFilter: 'blur(4px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+            }}
+            title="Mission Control"
+          >
+            <Icon icon="fa:shield" width="18" />
+          </button>
+        )
+      }
 
       {/* Settings Toggle (Fixed Bottom Left) */}
       <button
@@ -1017,52 +987,54 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
 
       {/* Status Input Dialog */}
-      {showStatusInput && (
-        <div className="profile-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="profile-modal" style={{ padding: '20px', width: '300px' }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Set Custom Status</h3>
-            <input
-              type="text"
-              placeholder="What's on your mind?"
-              value={customStatus}
-              onChange={(e) => setCustomStatus(e.target.value)}
-              maxLength={50}
-              autoFocus
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                background: 'rgba(0,0,0,0.3)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: 'white',
-                fontSize: '14px',
-                marginBottom: '12px',
-                outline: 'none',
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') setShowStatusInput(false);
-                if (e.key === 'Escape') { setCustomStatus(''); setShowStatusInput(false); }
-              }}
-            />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button
-                className="btn"
-                onClick={() => { setCustomStatus(''); setShowStatusInput(false); }}
-                style={{ padding: '8px 16px' }}
-              >
-                Clear
-              </button>
-              <button
-                className="btn primary"
-                onClick={() => setShowStatusInput(false)}
-                style={{ padding: '8px 16px' }}
-              >
-                Save
-              </button>
+      {
+        showStatusInput && (
+          <div className="profile-modal-overlay" style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="profile-modal" style={{ padding: '20px', width: '300px' }}>
+              <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Set Custom Status</h3>
+              <input
+                type="text"
+                placeholder="What's on your mind?"
+                value={customStatus}
+                onChange={(e) => setCustomStatus(e.target.value)}
+                maxLength={50}
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: 'rgba(0,0,0,0.3)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: 'white',
+                  fontSize: '14px',
+                  marginBottom: '12px',
+                  outline: 'none',
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') setShowStatusInput(false);
+                  if (e.key === 'Escape') { setCustomStatus(''); setShowStatusInput(false); }
+                }}
+              />
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                <button
+                  className="btn"
+                  onClick={() => { setCustomStatus(''); setShowStatusInput(false); }}
+                  style={{ padding: '8px 16px' }}
+                >
+                  Clear
+                </button>
+                <button
+                  className="btn primary"
+                  onClick={() => setShowStatusInput(false)}
+                  style={{ padding: '8px 16px' }}
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
       <ProfileModal
         user={selectedProfileUser}
         isOpen={!!selectedProfileUser}
@@ -1080,17 +1052,19 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         onClose={() => setIsRoomSettingsOpen(false)}
       />
 
-      {showSettingsModal && (
-        <SettingsModal
-          isOpen={showSettingsModal}
-          onClose={() => setShowSettingsModal(false)}
-          user={user}
-          onSaveSuccess={(newData) => {
-            setUser(prev => ({ ...prev, ...newData }));
-          }}
-        />
-      )}
-    </div>
+      {
+        showSettingsModal && (
+          <SettingsModal
+            isOpen={showSettingsModal}
+            onClose={() => setShowSettingsModal(false)}
+            user={user}
+            onSaveSuccess={(newData) => {
+              setUser(prev => ({ ...prev, ...newData }));
+            }}
+          />
+        )
+      }
+    </div >
   );
 }
 

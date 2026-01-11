@@ -8,6 +8,7 @@ import { useSocket } from '@/lib/socket';
 import MessageContent from './MessageContent';
 import SystemMessage from './SystemMessage';
 import GifPicker from './GifPicker';
+import { Icon } from '@iconify/react';
 import MessageReactions from './MessageReactions';
 
 // Group messages from the same sender within 5 minutes
@@ -54,7 +55,12 @@ export default function ChatPanel({
     isLoading,
     typingUsers,
     handleTyping,
-    isTyping
+    isTyping,
+    // Mobile navigation props
+    isMobile = false,
+    activeTab = 'logs',
+    setActiveTab = () => { },
+    peers = new Map()
 }) {
     const { socket } = useSocket();
     const { emotes } = useEmotes(); // Load 7TV emotes
@@ -707,23 +713,21 @@ export default function ChatPanel({
                 )}
 
                 <div style={{
-                    // background: 'var(--bg-card)', // Removed per user request
-                    // borderRadius: '12px',
-                    // border: '1px solid rgba(255,255,255,0.08)',
-                    overflow: 'visible', // Allow toast to be seen if mixed? No, toast is global.
+                    overflow: 'visible',
                     position: 'relative',
-                    zIndex: 1 // Keep low to let globals override
+                    zIndex: 1,
+                    padding: isMobile ? '4px' : '0'
                 }}>
-                    {/* Top row: Avatar + Input + Send */}
+                    {/* Input Row: Textarea + Buttons (Icons on Mobile) */}
                     <div style={{
                         display: 'flex',
-                        alignItems: 'center', // Center vertically
-                        gap: '10px',
-                        padding: '8px 12px 6px'
+                        alignItems: 'center',
+                        gap: isMobile ? '6px' : '10px',
+                        padding: isMobile ? '4px 8px' : '8px 12px 6px',
+                        background: isMobile ? 'rgba(255,255,255,0.03)' : 'transparent',
+                        borderRadius: isMobile ? '16px' : '0',
+                        border: isMobile ? '1px solid rgba(255,255,255,0.08)' : 'none'
                     }}>
-
-
-                        {/* Multiline Input */}
                         <textarea
                             ref={inputRef}
                             className="chat-input"
@@ -740,13 +744,13 @@ export default function ChatPanel({
                                 border: 'none',
                                 outline: 'none',
                                 color: 'var(--text-primary)',
-                                fontSize: '15px',
+                                fontSize: isMobile ? '14px' : '15px',
                                 resize: 'none',
                                 maxHeight: '200px',
                                 height: 'auto',
                                 minHeight: '24px',
                                 lineHeight: '1.5',
-                                padding: '2px 0 2px 4px',
+                                padding: '4px 0',
                                 overflowY: 'auto',
                                 overflowX: 'hidden',
                                 whiteSpace: 'pre-wrap',
@@ -755,77 +759,146 @@ export default function ChatPanel({
                             }}
                         />
 
+                        {/* Action Buttons Group */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
+                            <button
+                                onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '4px',
+                                    cursor: 'pointer',
+                                    color: showGifPicker ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                <Icon icon="mdi:gif" width={isMobile ? "24" : "20"} />
+                            </button>
+                            <button
+                                onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '4px',
+                                    cursor: 'pointer',
+                                    color: showEmojiPicker ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                <Icon icon="mdi:emoticon-happy-outline" width={isMobile ? "22" : "20"} />
+                            </button>
+                            <button
+                                onClick={handleSend}
+                                disabled={!inputValue.trim()}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '4px',
+                                    cursor: inputValue.trim() ? 'pointer' : 'default',
+                                    color: inputValue.trim() ? 'var(--accent-primary)' : 'var(--text-muted)',
+                                    opacity: inputValue.trim() ? 1 : 0.4,
+                                    display: 'flex',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                <Icon icon="mdi:send" width={isMobile ? "24" : "20"} />
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Bottom row: Actions + Send */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '6px 14px 10px',
-                        // borderTop: '1px solid rgba(255,255,255,0.05)', // Removed
-                        position: 'relative'
-                    }}>
-                        <button
-                            onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }}
-                            style={{
-                                background: showGifPicker ? 'rgba(255,255,255,0.15)' : 'transparent',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 10px',
-                                cursor: 'pointer',
-                                color: showGifPicker ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                fontSize: '12px'
-                            }}
-                        >
-                            🎬 GIF
-                        </button>
-                        <button
-                            onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); }}
-                            style={{
-                                background: showEmojiPicker ? 'rgba(255,255,255,0.15)' : 'transparent',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 10px',
-                                cursor: 'pointer',
-                                color: showEmojiPicker ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                fontSize: '12px'
-                            }}
-                        >
-                            😊 Emoji
-                        </button>
+                    {/* Bottom Row: Mobile Tabs & Avatars */}
+                    {isMobile && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '8px 4px 4px',
+                            borderTop: '1px solid rgba(255,255,255,0.05)',
+                            marginTop: '4px'
+                        }}>
+                            {/* Chat Tab Icon */}
+                            <button
+                                onClick={() => setActiveTab('logs')}
+                                style={{
+                                    background: activeTab === 'logs' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    width: '32px',
+                                    height: '32px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: activeTab === 'logs' ? 'var(--text-primary)' : 'var(--text-muted)'
+                                }}
+                            >
+                                <Icon icon="mdi:chat" width="20" />
+                            </button>
 
-                        {/* Spacer */}
-                        <div style={{ flex: 1 }} />
+                            {/* Divider */}
+                            <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.05)' }} />
 
-                        {/* Send Button */}
-                        <button
-                            onClick={handleSend}
-                            disabled={!inputValue.trim()}
-                            style={{
-                                background: inputValue.trim() ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '6px 14px',
-                                cursor: inputValue.trim() ? 'pointer' : 'default',
-                                color: '#fff',
-                                fontSize: '12px',
-                                fontWeight: 500,
-                                opacity: inputValue.trim() ? 1 : 0.5
-                            }}
-                        >
-                            Send
-                        </button>
-                    </div>
+                            {/* Participant Avatars */}
+                            <div style={{
+                                display: 'flex',
+                                gap: '6px',
+                                overflowX: 'auto',
+                                flex: 1,
+                                paddingBottom: '2px',
+                                maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+                                WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)'
+                            }}>
+                                {(() => {
+                                    const uniqueMap = new Map();
+                                    if (currentUser && currentUser.name) uniqueMap.set(currentUser.name, currentUser);
+                                    peers.forEach(p => { if (p.user && p.user.name && !uniqueMap.has(p.user.name)) uniqueMap.set(p.user.name, p.user); });
+                                    ircUsers.forEach(u => { if (u && u.name && !uniqueMap.has(u.name)) uniqueMap.set(u.name, u); });
 
-                    {/* Emoji Picker Popup */}
+                                    return Array.from(uniqueMap.values())
+                                        .filter(u => !['camroomslogbot', 'chatlogbot'].includes(u.name.toLowerCase()))
+                                        .map((u, i) => (
+                                            <img
+                                                key={u.name + i}
+                                                src={u.avatar || `/api/avatar/${u.name}`}
+                                                alt={u.name}
+                                                onClick={(e) => {
+                                                    onUserClick(u, e);
+                                                    setActiveTab('services');
+                                                }}
+                                                style={{
+                                                    width: '28px',
+                                                    height: '28px',
+                                                    borderRadius: '50%',
+                                                    border: '1.5px solid rgba(255,255,255,0.1)',
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0
+                                                }}
+                                            />
+                                        ));
+                                })()}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Emoji Picker Popup (Desktop or Mobile fallback) */}
                     {showEmojiPicker && (
                         <div style={{
+                            position: 'absolute',
+                            bottom: '100%',
+                            right: 0,
                             padding: '10px 14px',
-                            borderTop: '1px solid rgba(255,255,255,0.05)',
-                            background: 'var(--bg-tertiary)'
+                            marginBottom: '8px',
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                            zIndex: 100
                         }}>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '120px', overflow: 'auto' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '240px', maxHeight: '160px', overflow: 'auto' }}>
                                 {['😀', '😂', '🥹', '😍', '🥰', '😘', '😎', '🤔', '😤', '😭', '🥺', '😱', '🤯', '🥳', '😈', '💀', '🔥', '❤️', '💜', '💙', '💚', '💛', '🧡', '🖤', '🤍', '👍', '👎', '👏', '🙌', '🤝', '✌️', '🤞', '🤙', '👋', '💪', '🎉', '🎊', '✨', '⭐', '🌟', '💫', '🚀', '🎮', '🎯', '🏆', '💎', '👀', '💬', '💭', '🗣️'].map(emoji => (
                                     <button
                                         key={emoji}
