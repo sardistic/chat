@@ -121,16 +121,9 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
     const zoomScale = zoomLevel > 0.01 ? 1 + zoomLevel * 0.2 : 1;
     const motionBlur = isZooming ? `blur(${zoomLevel * 2}px)` : 'none';
 
-    // Wave shadow overlay style
+    // Wave shadow overlay removed per user request
     const waveOverlayStyle = useMemo(() => ({
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1,
-        pointerEvents: 'none',
-        background: 'linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.4) 50%, transparent 100%)',
-        backgroundSize: '400% 400%',
-        animation: 'wavePass 12s ease-in-out infinite',
-        opacity: 0.6,
+        display: 'none'
     }), []);
 
     // Main wrapper with zoom effects
@@ -177,15 +170,6 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
 
     return (
         <>
-            <style jsx global>{`
-                @keyframes wavePass {
-                    0% { background-position: 0% 0%; }
-                    25% { background-position: 100% 50%; }
-                    50% { background-position: 100% 100%; }
-                    75% { background-position: 0% 50%; }
-                    100% { background-position: 0% 0%; }
-                }
-            `}</style>
             <div style={wrapperStyle}>
                 <Particles
                     id="tsparticles"
