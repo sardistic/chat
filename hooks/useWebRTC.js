@@ -21,10 +21,11 @@ export function useWebRTC(roomId, user, autoStart = true) {
     // Initialize local media stream
     const initializeMedia = useCallback(async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
+            // Mobile-friendly constraints - use max instead of ideal for better compatibility
+            const constraints = {
                 video: {
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
+                    width: { max: 1280, ideal: 640 },
+                    height: { max: 720, ideal: 480 },
                     facingMode: 'user',
                 },
                 audio: {
@@ -32,7 +33,16 @@ export function useWebRTC(roomId, user, autoStart = true) {
                     noiseSuppression: true,
                     autoGainControl: true,
                 },
-            });
+            };
+
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (videoErr) {
+                console.warn('Failed to get video, trying audio-only:', videoErr);
+                // Fallback: Try audio only
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            }
 
             // Enforce initial mute state
             stream.getAudioTracks().forEach(track => {
@@ -45,7 +55,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             return stream;
         } catch (err) {
             console.error('Error accessing media devices:', err);
-            setError('Failed to access camera/microphone. Please grant permissions.');
+            setError('Failed to access camera/microphone. Please grant permissions and ensure you are on HTTPS.');
             throw err;
         }
     }, []);
