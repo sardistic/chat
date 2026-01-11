@@ -120,9 +120,29 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         el.style.setProperty('bottom', '120px', 'important');
         el.style.setProperty('right', '20px', 'important');
 
-        // Force Shadow DOM Content
+        // Force Shadow DOM Content & Inject Styles
         try {
           if (el.shadowRoot) {
+            // Inject Animation Styles if missing
+            if (!el.shadowRoot.querySelector('#throb-style')) {
+              const s = document.createElement('style');
+              s.id = 'throb-style';
+              s.textContent = `
+                    @keyframes global-throb {
+                        0% { box-shadow: 0 0 5px #22c55e; }
+                        50% { box-shadow: 0 0 20px #22c55e, 0 0 30px rgba(34, 197, 94, 0.6); }
+                        100% { box-shadow: 0 0 5px #22c55e; }
+                    }
+                    [data-nextjs-toast], [data-nextjs-refresh] {
+                        animation: global-throb 1.5s ease-in-out infinite !important;
+                        border: 1px solid #22c55e !important;
+                        border-left: 4px solid #22c55e !important;
+                        background: #050505 !important;
+                    }
+                `;
+              el.shadowRoot.appendChild(s);
+            }
+
             const inner = el.shadowRoot.querySelector('[data-nextjs-toast], [data-nextjs-refresh]');
             if (inner) {
               inner.style.setProperty('position', 'fixed', 'important');
