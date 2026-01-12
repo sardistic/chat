@@ -1005,13 +1005,14 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               onMouseDown={handleMouseDown}
               style={{
                 position: 'absolute',
-                left: 0,
+                left: '-8px', // Overlap correctly
                 top: 0,
                 bottom: 0,
-                width: '4px',
+                width: '16px', // Much easier to grab
                 cursor: 'col-resize',
-                zIndex: 10,
-                touchAction: 'none'
+                zIndex: 100, // Ensure it's on top
+                touchAction: 'none',
+                background: 'transparent' // Invisible hit area
               }}
             />
           )}

@@ -267,9 +267,9 @@ body {
 .floating-sidebar {
   width: var(--dynamic-sidebar-w, 320px);
   /* Darker blurred background */
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(80px);
-  -webkit-backdrop-filter: blur(80px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(60px) saturate(180%);
+  -webkit-backdrop-filter: blur(60px) saturate(180%);
   /* min-width and max-width handled via Javascript or relaxed */
   min-width: 280px;
 
