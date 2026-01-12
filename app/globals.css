@@ -1480,8 +1480,8 @@ body {
     /* Don't collapse height */
     overflow: hidden !important;
     /* Clip content to prevent input from drifting off-screen */
-    max-height: calc(100dvh - 160px) !important;
-    /* Cap at viewport minus header(40) minus minVideo(100) minus dragBar(20) */
+    max-height: calc(100dvh - 80px) !important;
+    /* Cap at viewport minus header(40) minus dragBar(40) - input is fixed so no video reserve needed */
   }
 
   /* Move clipping to inner content to preserve rounded corners for tabs/chat */
