@@ -104,19 +104,27 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     const paddingY = isMobile ? 2 : 48;
     const gap = isMobile ? 2 : 12;
 
-    // On mobile: fill full width (like room cards), single column layout
+    // On mobile: fill space without strict aspect ratio, use flexible columns
     if (isMobile) {
-        const cols = 1;
-        const rows = videoCount;
-        const vGapTotal = Math.max(0, rows - 1) * gap;
-        const availableWidth = containerWidth - paddingX;
-        const availableHeight = containerHeight - vGapTotal - paddingY;
+        let mobileBest = { cols: 1, rows: 1, width: 100, height: 100 };
 
-        // Full width, height divided among tiles
-        const w = Math.floor(availableWidth);
-        const h = Math.floor(availableHeight / rows);
+        for (let cols = 1; cols <= Math.min(videoCount, 2); cols++) { // Max 2 columns on mobile
+            const rows = Math.ceil(videoCount / cols);
+            const hGapTotal = Math.max(0, cols - 1) * gap;
+            const vGapTotal = Math.max(0, rows - 1) * gap;
 
-        return { cols, rows, width: w, height: h };
+            const availableWidth = containerWidth - hGapTotal - paddingX;
+            const availableHeight = containerHeight - vGapTotal - paddingY;
+
+            const w = Math.floor(availableWidth / cols);
+            const h = Math.floor(availableHeight / rows);
+
+            // Pick layout that gives biggest tile area
+            if (w * h > mobileBest.width * mobileBest.height) {
+                mobileBest = { cols, rows, width: w, height: h };
+            }
+        }
+        return mobileBest;
     }
 
     // Desktop: use aspect ratio optimization
