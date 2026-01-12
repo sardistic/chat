@@ -1478,8 +1478,10 @@ body {
     border-left: none !important;
     flex-shrink: 0;
     /* Don't collapse height */
-    overflow: visible !important;
-    /* CRITICAL: Allow resizer hit area to stick out */
+    overflow: hidden !important;
+    /* Clip content to prevent input from drifting off-screen */
+    max-height: calc(100dvh - 40px - 20px) !important;
+    /* Cap at viewport minus header minus drag bar */
   }
 
   /* Move clipping to inner content to preserve rounded corners for tabs/chat */
