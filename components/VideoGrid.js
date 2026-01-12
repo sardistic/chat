@@ -6,8 +6,12 @@ import { useCameraEffects } from "@/hooks/useCameraEffects";
 import { useSocket } from "@/lib/socket";
 import { Icon } from '@iconify/react';
 import TubeTile from './TubeTile';
+import EmojiPicker from './EmojiPicker'; // [NEW]
+import { useEmotes } from '@/hooks/useEmotes'; // [NEW]
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Floating emoji animation component
+// Floating emoji/image animation component
 function FloatingReaction({ emoji, onComplete }) {
     useEffect(() => {
         const timer = setTimeout(onComplete, 2000);
@@ -20,9 +24,11 @@ function FloatingReaction({ emoji, onComplete }) {
         animationDuration: `${1.5 + Math.random()}s`,
     }));
 
+    const isImage = emoji && (emoji.startsWith('http') || emoji.startsWith('/'));
+
     return (
         <div className="floating-reaction" style={style}>
-            {emoji}
+            {isImage ? <img src={emoji} alt="reaction" /> : emoji}
         </div>
     );
 }
@@ -214,7 +220,8 @@ function VideoTile({
     width,
     height,
     isMusicPlaying = false,
-    isMobile = false
+    isMobile = false,
+    emotes // [NEW] Passed from parent
 }) {
     const tileVideoRef = useRef(null);
     const [showPicker, setShowPicker] = useState(false);
@@ -494,8 +501,6 @@ function VideoTile({
                     padding: '4px 8px',
                     gap: '2px'
                 }}
-                onClick={(e) => e.stopPropagation()}
-            >
                 <button
                     className="reaction-btn"
                     onClick={(e) => {
@@ -512,24 +517,45 @@ function VideoTile({
                     }}
                     title="React"
                 >
-                    {showPicker ? '✕' : '❤️'}
+                    <Icon icon={showPicker ? "mdi:close" : "mdi:heart-outline"} width="16" />
                 </button>
-                {showPicker && ['❤️', '🔥', '😂', '😮', '👏', '🎉'].map(emoji => (
-                    <button
-                        key={emoji}
-                        onClick={(e) => { e.stopPropagation(); onReaction(emoji); setShowPicker(false); }}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '16px',
-                            padding: '4px',
-                            lineHeight: 1
-                        }}
-                    >
-                        {emoji}
-                    </button>
-                ))}
+                
+                 {/* Picker Popup */}
+                 <AnimatePresence>
+                    {showPicker && (
+                        <div 
+                             onClick={(e) => e.stopPropagation()}
+                             style={{
+                                position: 'absolute',
+                                bottom: '100%',
+                                right: 0,
+                                marginBottom: '8px',
+                                zIndex: 100
+                             }}
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <EmojiPicker
+                                    emotes={emotes}
+                                    onSelect={(emoji) => {
+                                        onReaction(emoji);
+                                        // Optional: keep open or close? Usually close for quick reaction
+                                        setShowPicker(false); 
+                                    }}
+                                    onClose={() => setShowPicker(false)}
+                                    style={{
+                                        width: '280px',
+                                        height: '300px'
+                                    }}
+                                />
+                            </motion.div>
+                        </div>
+                    )}
+                 </AnimatePresence>
             </div>
 
             <div className="status-icons" style={{
@@ -549,7 +575,7 @@ function VideoTile({
                 {!isLocal && user?.isDeafened && <span><Icon icon="fontelico:headphones" width="14" /></span>}
                 {mentionCount > 0 && <span title={`Mentioned ${mentionCount}x`}><Icon icon="fa:comment" width="14" /></span>}
             </div>
-        </div>
+        </div >
 
     );
 }
@@ -586,6 +612,7 @@ export default function VideoGrid({
     chatBubbles = {}
 }) {
     const { socket } = useSocket();
+    const { emotes } = useEmotes(); // [NEW] Load global emotes 
     const [incomingReactions, setIncomingReactions] = useState(new Map());
 
     // Process chat-driven reactions
@@ -797,7 +824,10 @@ export default function VideoGrid({
                     isLocal={true}
                     isVideoEnabled={isVideoEnabled}
                     isAudioEnabled={isAudioEnabled}
+                    isVideoEnabled={isVideoEnabled}
+                    isAudioEnabled={isAudioEnabled}
                     isDeafened={true}
+                    emotes={emotes} // Pass emotes
                     isDiscordUser={!!localUser?.discordId}
                     onClick={(e) => handleTileClick(e, localUser)}
                     onReaction={(emoji) => sendReaction(localUser?.id || socket?.id, emoji)}

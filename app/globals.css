@@ -2467,3 +2467,25 @@ nextjs-portal {
   animation: global-drip 3s ease-in infinite;
   transform: translateX(-50%);
 }
+
+/* Mobile Optimizations for Embeds & Images */
+@media (max-width: 768px) {
+
+  .embed-image img,
+  .embed-video video,
+  .embed-youtube iframe {
+    max-height: 200px !important;
+    max-width: 100% !important;
+  }
+
+  /* Make inline chat emotes slightly smaller on mobile to prevent line-height issues */
+  .chat-emote {
+    height: 24px !important;
+  }
+
+  /* Ensure floating reactions don't cover everything */
+  .floating-reaction img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}

@@ -49,7 +49,7 @@ export default function TubeTile({
     onChangeVideo, // Callback to change video
     onReaction, // Callback for reactions
     onMuteChange, // callback for mute state (isListening)
-    onMuteChange, // callback for mute state (isListening)
+
     width,
     height,
     compact = false // [NEW] Compact mode for mobile
