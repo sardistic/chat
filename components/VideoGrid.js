@@ -99,10 +99,10 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     let bestLayout = { cols: 1, rows: 1, width: 320, height: 180 };
     if (videoCount === 0) return bestLayout;
 
-    // Zero padding/gap on mobile for maximum space, normal on desktop
-    const paddingX = isMobile ? 0 : 48;
-    const paddingY = isMobile ? 0 : 48;
-    const gap = isMobile ? 0 : 12;
+    // Deduct padding/gap (economical on mobile)
+    const paddingX = isMobile ? 8 : 48;
+    const paddingY = isMobile ? 8 : 48;
+    const gap = isMobile ? 4 : 12;
 
     for (let cols = 1; cols <= videoCount; cols++) {
         const rows = Math.ceil(videoCount / cols);
