@@ -424,7 +424,10 @@ function VideoTile({
                     style={{
                         transform: isLocal ? 'scaleX(-1)' : 'none',
                         zIndex: 2,
-                        position: 'relative'
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
                     }}
                 />
             ) : (
