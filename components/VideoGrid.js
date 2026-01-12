@@ -99,11 +99,27 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     let bestLayout = { cols: 1, rows: 1, width: 320, height: 180 };
     if (videoCount === 0) return bestLayout;
 
-    // Deduct padding/gap (economical on mobile)
-    const paddingX = isMobile ? 8 : 48;
-    const paddingY = isMobile ? 8 : 48;
-    const gap = isMobile ? 4 : 12;
+    // Deduct padding/gap (minimal on mobile for max space)
+    const paddingX = isMobile ? 2 : 48;
+    const paddingY = isMobile ? 2 : 48;
+    const gap = isMobile ? 2 : 12;
 
+    // On mobile: fill full width (like room cards), single column layout
+    if (isMobile) {
+        const cols = 1;
+        const rows = videoCount;
+        const vGapTotal = Math.max(0, rows - 1) * gap;
+        const availableWidth = containerWidth - paddingX;
+        const availableHeight = containerHeight - vGapTotal - paddingY;
+
+        // Full width, height divided among tiles
+        const w = Math.floor(availableWidth);
+        const h = Math.floor(availableHeight / rows);
+
+        return { cols, rows, width: w, height: h };
+    }
+
+    // Desktop: use aspect ratio optimization
     for (let cols = 1; cols <= videoCount; cols++) {
         const rows = Math.ceil(videoCount / cols);
 
