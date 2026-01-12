@@ -193,9 +193,12 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
 }
 
 // Add simple hover effect
-const style = document.createElement('style');
-style.innerHTML = `
-  .emoji-btn:hover { background: rgba(255,255,255,0.1) !important; transform: scale(1.2); }
-  .emoji-grid-cell button:hover { background: rgba(255,255,255,0.1) !important; transform: scale(1.1); }
-`;
-if (typeof document !== 'undefined') document.head.appendChild(style);
+// Add simple hover effect
+if (typeof document !== 'undefined') {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .emoji-btn:hover { background: rgba(255,255,255,0.1) !important; transform: scale(1.2); }
+      .emoji-grid-cell button:hover { background: rgba(255,255,255,0.1) !important; transform: scale(1.1); }
+    `;
+    document.head.appendChild(style);
+}
