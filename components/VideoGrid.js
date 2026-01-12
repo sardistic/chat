@@ -104,11 +104,12 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     const paddingY = isMobile ? 2 : 48;
     const gap = isMobile ? 2 : 12;
 
-    // On mobile: fill space without strict aspect ratio, use flexible columns
+    // On mobile: fill space, use columns as needed to fit all tiles
     if (isMobile) {
-        let mobileBest = { cols: 1, rows: 1, width: 100, height: 100 };
+        let mobileBest = { cols: 1, rows: videoCount, width: 100, height: 50 };
 
-        for (let cols = 1; cols <= Math.min(videoCount, 2); cols++) { // Max 2 columns on mobile
+        // Try up to 3 columns to find best fit
+        for (let cols = 1; cols <= Math.min(videoCount, 3); cols++) {
             const rows = Math.ceil(videoCount / cols);
             const hGapTotal = Math.max(0, cols - 1) * gap;
             const vGapTotal = Math.max(0, rows - 1) * gap;
@@ -119,9 +120,14 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
             const w = Math.floor(availableWidth / cols);
             const h = Math.floor(availableHeight / rows);
 
-            // Pick layout that gives biggest tile area
-            if (w * h > mobileBest.width * mobileBest.height) {
-                mobileBest = { cols, rows, width: w, height: h };
+            // Only accept if tiles have reasonable minimum size
+            if (h >= 80 && w >= 100) {
+                // Prefer layout with more tiles visible (smaller tiles but more fit)
+                const totalArea = w * h * videoCount;
+                const bestArea = mobileBest.width * mobileBest.height * videoCount;
+                if (totalArea > bestArea || mobileBest.height < 80) {
+                    mobileBest = { cols, rows, width: w, height: h };
+                }
             }
         }
         return mobileBest;
