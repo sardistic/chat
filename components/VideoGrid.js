@@ -99,44 +99,10 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     let bestLayout = { cols: 1, rows: 1, width: 320, height: 180 };
     if (videoCount === 0) return bestLayout;
 
-    // Deduct padding/gap (zero padding on mobile for tighter layout)
+    // Zero padding/gap on mobile for maximum space, normal on desktop
     const paddingX = isMobile ? 0 : 48;
     const paddingY = isMobile ? 0 : 48;
     const gap = isMobile ? 0 : 12;
-
-    // On mobile, use flexible layout with zero padding but still try multiple columns
-    if (isMobile) {
-        // Try different column counts and pick best one
-        for (let cols = 1; cols <= videoCount; cols++) {
-            const rows = Math.ceil(videoCount / cols);
-            const availableWidth = containerWidth;
-            const availableHeight = containerHeight;
-
-            const maxTileWidth = Math.floor(availableWidth / cols);
-            const maxTileHeight = Math.floor(availableHeight / rows);
-
-            // Use 4:3 aspect ratio on mobile for better space usage in portrait
-            const mobileAspect = 1.33;
-            let w = maxTileWidth;
-            let h = w / mobileAspect;
-
-            if (h > maxTileHeight) {
-                h = maxTileHeight;
-                w = h * mobileAspect;
-            }
-
-            w = Math.floor(w);
-            h = Math.floor(h);
-
-            // Pick layout that maximizes total visible area
-            const area = w * h * videoCount;
-            const bestArea = bestLayout.width * bestLayout.height * videoCount;
-            if (area > bestArea || cols === 1) {
-                bestLayout = { cols, rows, width: w, height: h };
-            }
-        }
-        return bestLayout;
-    }
 
     for (let cols = 1; cols <= videoCount; cols++) {
         const rows = Math.ceil(videoCount / cols);
@@ -166,7 +132,7 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
         w = Math.floor(w);
         h = Math.floor(h);
 
-        // Maximizing area (w * h) is equivalent to maximizing w since aspect ratio is fixed
+        // Maximizing area
         if (w > bestLayout.width || cols === 1) {
             bestLayout = { cols, rows, width: w, height: h };
         }
