@@ -369,6 +369,7 @@ export default function ChatPanel({
                 flex: 1,
                 overflowY: 'auto',
                 padding: '16px',
+                paddingBottom: isMobile ? '80px' : '16px', // Extra padding on mobile for fixed input
                 display: 'flex',
                 flexDirection: 'column',
                 scrollBehavior: 'smooth',
@@ -632,12 +633,16 @@ export default function ChatPanel({
                 }
             `}</style>
 
-            {/* Input Area */}
+            {/* Input Area - Fixed to bottom on mobile */}
             <div className="input-area" style={{
-                position: 'relative',
-                padding: '0 4px 8px',
+                position: isMobile ? 'fixed' : 'relative',
+                bottom: isMobile ? 0 : undefined,
+                left: isMobile ? 0 : undefined,
+                right: isMobile ? 0 : undefined,
+                padding: isMobile ? '8px 8px 12px' : '0 4px 8px',
                 flexShrink: 0,
-                background: 'rgba(10, 11, 14, 0.98)'
+                background: 'rgba(10, 11, 14, 0.98)',
+                zIndex: isMobile ? 100 : undefined
             }}>
                 {/* GIF Picker with search */}
                 {showGifPicker && (
