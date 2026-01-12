@@ -102,7 +102,7 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     // Deduct padding/gap (zero padding on mobile for tighter layout)
     const paddingX = isMobile ? 0 : 48;
     const paddingY = isMobile ? 0 : 48;
-    const gap = isMobile ? 4 : 12;
+    const gap = isMobile ? 2 : 12;
 
     for (let cols = 1; cols <= videoCount; cols++) {
         const rows = Math.ceil(videoCount / cols);
