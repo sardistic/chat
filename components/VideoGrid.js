@@ -28,7 +28,7 @@ function FloatingReaction({ emoji, onComplete }) {
 }
 
 // Collapsed user bar for semi-active users (mobile)
-function CollapsedUserBar({ user, lastMessage, onClick }) {
+function CollapsedUserBar({ user, lastMessage, onClick, style = {} }) {
     const userColor = user?.name ? getUserColor(user.name) : 'oklch(60% 0.15 250)';
 
     return (
@@ -38,6 +38,7 @@ function CollapsedUserBar({ user, lastMessage, onClick }) {
             style={{
                 display: 'flex',
                 alignItems: 'center',
+                ...style, // Merge custom styles
                 gap: '8px',
                 padding: '6px 10px',
                 background: 'rgba(0,0,0,0.6)',
@@ -791,17 +792,17 @@ export default function VideoGrid({
                     if (isMobile && username) {
                         const displayState = displayStates[username] || 'active';
 
-                        // Inactive users don't render in grid (they appear in header avatars)
-                        if (displayState === 'inactive') return null;
-
-                        // Semi-active users render as collapsed bars
-                        if (displayState === 'semi-active') {
+                        // Inactive and semi-active users render as collapsed bars
+                        if (displayState === 'inactive' || displayState === 'semi-active') {
                             return (
                                 <CollapsedUserBar
                                     key={peerId}
                                     user={peerData.user}
                                     lastMessage={chatBubbles[username]}
                                     onClick={(e) => handleTileClick(e, peerData.user)}
+                                    // Make inactive users slightly more transparent to distinguish if needed, 
+                                    // but user asked for "like the lines", so standard is fine.
+                                    style={{ opacity: displayState === 'inactive' ? 0.6 : 1 }}
                                 />
                             );
                         }
