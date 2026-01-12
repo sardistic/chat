@@ -1441,19 +1441,18 @@ body {
     /* Fixed to header height */
   }
 
-  /* Video stage takes remaining area, but allow sidebar to overlap via margin */
+  /* Video stage takes remaining area */
   .main-stage {
     width: 100% !important;
     flex: 1 !important;
-    /* Fill space above sidebar */
     min-height: 80px !important;
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    /* No extra padding - let VideoGrid handle spacing */
     z-index: 10;
     position: relative;
-    overflow: hidden;
+    overflow: clip !important;
+    /* Strictly clip content to bounds */
   }
 
   /* Sidebar as a bottom panel in flex flow */
@@ -1545,7 +1544,8 @@ body {
     padding: 0 !important;
     gap: 0 !important;
     align-content: flex-start !important;
-    /* Push tiles to top */
+    /* Keep tiles at top, not center */
+    justify-content: center !important;
   }
 
   /* Global resizing protection */
