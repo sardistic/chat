@@ -922,9 +922,10 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                 const currentY = moveEvent.touches[0].clientY;
                 const delta = startY - currentY;
                 const newHeight = startHeight + delta;
-                // Use visualViewport for accurate mobile height (handles address bar)
+                // Calculate available space: viewport - header(40) - minVideoArea(100) - dragBar(20)
                 const viewportHeight = window.visualViewport?.height || window.innerHeight;
-                const clamped = Math.max(160, Math.min(viewportHeight - 80, newHeight));
+                const maxSidebarHeight = viewportHeight - 40 - 100 - 20;
+                const clamped = Math.max(160, Math.min(maxSidebarHeight, newHeight));
                 setSidebarHeight(clamped);
               };
 
