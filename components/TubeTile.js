@@ -49,8 +49,10 @@ export default function TubeTile({
     onChangeVideo, // Callback to change video
     onReaction, // Callback for reactions
     onMuteChange, // callback for mute state (isListening)
+    onMuteChange, // callback for mute state (isListening)
     width,
-    height
+    height,
+    compact = false // [NEW] Compact mode for mobile
 }) {
     const { socket } = useSocket();
     const [isReady, setIsReady] = useState(false);
@@ -434,8 +436,11 @@ export default function TubeTile({
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        border: '2px solid rgba(255, 0, 0, 0.3)', // Red border for YouTube
+        border: compact // Minimal border for compact
+            ? (tubeState?.videoId && tubeState.isPlaying ? '1px solid #ff0000' : '1px solid rgba(255,255,255,0.1)')
+            : '2px solid rgba(255, 0, 0, 0.3)',
         boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+        transition: 'all 0.3s ease'
     };
 
     const renderInputModal = () => {
@@ -512,6 +517,106 @@ export default function TubeTile({
             </div>
         );
     };
+
+
+    // --- COMPACT RENDER (Line Mode) ---
+    if (compact) {
+        return (
+            <div className="tile video-tile" style={{ ...style, height: '60px', flexDirection: 'row', alignItems: 'center', padding: '0 12px', gap: '12px' }}>
+                {/* Hidden Player Container for Audio */}
+                <div style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden', top: 0, left: 0, pointerEvents: 'none' }}>
+                    {currentPlatform.platform === 'youtube' && (
+                        <div ref={playerContainerRef} id="yt-player-container"></div>
+                    )}
+                </div>
+
+                {/* Left: Status Icon / Play Button */}
+                <div
+                    onClick={() => {
+                        // Toggle Play/Pause
+                        if (ytPlayerRef.current) {
+                            if (tubeState.isPlaying) ytPlayerRef.current.pauseVideo();
+                            else ytPlayerRef.current.playVideo();
+                        } else {
+                            setShowInput(true);
+                        }
+                    }}
+                    style={{
+                        width: '36px', height: '36px', borderRadius: '50%',
+                        background: tubeState.isPlaying ? 'rgba(255,0,0,0.2)' : 'rgba(255,255,255,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: tubeState.isPlaying ? '#ff0000' : 'white',
+                        cursor: 'pointer'
+                    }}>
+                    <Icon icon={tubeState.isPlaying ? "fa:pause" : "fa:play"} width="14" />
+                </div>
+
+                {/* Center: Info */}
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {tubeState.videoId ? 'Playing Video' : 'No Video Loaded'}
+                    </div>
+                    {/* Progress Bar (Visual Only) */}
+                    <div style={{ width: '100%', height: '3px', background: 'rgba(255,255,255,0.1)', marginTop: '4px', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{
+                            width: '30%', // TODO: dynamic progress would require state update
+                            height: '100%',
+                            background: '#ff0000',
+                            animation: tubeState.isPlaying ? 'progress-indeterminate 2s infinite linear' : 'none'
+                        }} />
+                    </div>
+                </div>
+
+                {/* Right: Controls */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    {/* Mute Toggle */}
+                    <button
+                        onClick={() => {
+                            if (ytPlayerRef.current) {
+                                if (isMuted) {
+                                    ytPlayerRef.current.unMute();
+                                    ytPlayerRef.current.setVolume(settings.volume * 100);
+                                    setIsMuted(false);
+                                } else {
+                                    ytPlayerRef.current.mute();
+                                    setIsMuted(true);
+                                }
+                            }
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: isMuted ? '#ef4444' : 'white', padding: '4px' }}
+                    >
+                        <Icon icon={isMuted ? "fa:volume-off" : "fa:volume-up"} width="16" />
+                    </button>
+
+                    <button
+                        onClick={() => setShowInput(true)}
+                        style={{ background: 'transparent', border: 'none', color: 'white', padding: '4px' }}
+                    >
+                        <Icon icon="fa:search" width="16" />
+                    </button>
+                    {!tubeState.videoId && (
+                        <button
+                            onClick={() => setShowInput(true)}
+                            className="btn primary"
+                            style={{ fontSize: '10px', padding: '4px 8px', height: '24px' }}
+                        >
+                            Load
+                        </button>
+                    )}
+                </div>
+
+                {/* Init Helper for Compact Mode */}
+                {!isReady && !hasError && tubeState.videoId && (
+                    <div style={{ position: 'absolute', right: '12px', top: '4px', fontSize: '8px', color: '#666' }}>
+                        Loading...
+                    </div>
+                )}
+
+                {/* Modal needs to be portalled or absolute over everything */}
+                {renderInputModal()}
+            </div>
+        );
+    }
 
     return (
         <div className="tile video-tile" style={{ ...style, borderColor: (tubeState?.videoId && tubeState.isPlaying) ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
@@ -706,34 +811,7 @@ export default function TubeTile({
             )
             }
 
-            {/* Name Label - Platform Aware */}
-            <div className="tile-name" style={{
-                position: 'absolute', bottom: '50px', left: '8px',
-                background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px',
-                fontSize: '11px', fontWeight: '600', color: 'white',
-                display: 'flex', alignItems: 'center', gap: '6px',
-                pointerEvents: 'none',
-                zIndex: 10,
-                border: isOwner ? '1px solid #ff0000' : '1px solid rgba(255,255,255,0.2)'
-            }}>
-                <Icon
-                    icon={
-                        currentPlatform.platform === 'tiktok' ? 'simple-icons:tiktok' :
-                            currentPlatform.platform === 'instagram' ? 'mdi:instagram' :
-                                isOwner ? 'fa:user-circle' : 'fa:youtube-play'
-                    }
-                    color={
-                        currentPlatform.platform === 'tiktok' ? '#00f2ea' :
-                            currentPlatform.platform === 'instagram' ? '#e1306c' :
-                                isOwner ? '#ff0000' : '#ff0000'
-                    }
-                />
-                {isOwner ? 'YOU ARE DJ' :
-                    currentPlatform.platform === 'tiktok' ? 'TikTok' :
-                        currentPlatform.platform === 'instagram' ? 'Instagram' :
-                            'SYNCED TO HOST'
-                }
-            </div>
+            {/* Name Label Removed as per user request */}
 
             {/* Reaction Button - Bottom Right */}
             {

@@ -637,7 +637,10 @@ export default function VideoGrid({
     // Layout State
     const gridRef = useRef(null);
     const [layout, setLayout] = useState({ width: 320, height: 180 });
-    const totalTiles = 1 + (peers ? peers.size : 0) + (tubeState ? 1 : 0);
+
+    // Hide tube from grid count if on mobile (it will be rendered separately)
+    const renderTubeInGrid = tubeState && !isMobile;
+    const totalTiles = 1 + (peers ? peers.size : 0) + (renderTubeInGrid ? 1 : 0);
 
     // Resize Observer for Dynamic Layout
     useEffect(() => {
@@ -722,9 +725,38 @@ export default function VideoGrid({
 
     return (
         <>
+            {/* Mobile: Render Tube "Line" outside grid */}
+            {isMobile && tubeState && (
+                <div style={{ padding: '0 8px 8px 8px' }}>
+                    <TubeTile
+                        tubeState={tubeState}
+                        receivedAt={receivedAt}
+                        isOwner={isTubeOwner}
+                        settings={{ volume: 0.5, isLocallyMuted: true, isVideoHidden: false }}
+                        onSync={(update) => {
+                            if (update.type === 'play') onUpdateTubeState({ isPlaying: true, timestamp: update.playedSeconds });
+                            if (update.type === 'pause') onUpdateTubeState({ isPlaying: false, timestamp: update.playedSeconds });
+                            if (update.type === 'progress') onUpdateTubeState({ timestamp: update.playedSeconds });
+                            if (update.type === 'ended') onUpdateTubeState({ type: 'ended', isPlaying: false, timestamp: 0 });
+                        }}
+                        onMuteChange={onMuteChange}
+                        onChangeVideo={(url) => {
+                            if (!url) { onUpdateTubeState({ videoId: null, isPlaying: false, timestamp: 0 }); return; }
+                            let videoId = url;
+                            if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
+                            else if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1].split('?')[0];
+                            onUpdateTubeState({ videoId, isPlaying: true, timestamp: 0 });
+                        }}
+                        width="100%"
+                        height="auto"
+                        compact={true}
+                    />
+                </div>
+            )}
+
             <div className="grid" ref={gridRef} style={{ ...style, overflow: 'hidden' }}>
-                {/* Tube Tile */}
-                {tubeState && (
+                {/* Tube Tile (Desktop/Grid Mode) */}
+                {renderTubeInGrid && (
                     <TubeTile
                         tubeState={tubeState}
                         receivedAt={receivedAt}
