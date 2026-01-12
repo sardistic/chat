@@ -7,7 +7,8 @@ import { useEmotes } from '@/hooks/useEmotes';
 import { useSocket } from '@/lib/socket';
 import MessageContent from './MessageContent';
 import SystemMessage from './SystemMessage';
-import EmojiPicker from './EmojiPicker'; // [NEW]
+import EmojiPicker from './EmojiPicker';
+import GifPicker from './GifPicker';
 import { Icon } from '@iconify/react';
 import MessageReactions from './MessageReactions';
 
@@ -78,6 +79,7 @@ export default function ChatPanel({
     const [wipedMessageIds, setWipedMessageIds] = useState(new Set());
     const [shadowMutedUsers, setShadowMutedUsers] = useState(new Set());
 
+    const [showGifPicker, setShowGifPicker] = useState(false);
     const [gifQuery, setGifQuery] = useState('');
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
@@ -790,7 +792,7 @@ export default function ChatPanel({
                             {/* Action Buttons Group */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
                                 <button
-                                    onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); }}
+                                    onClick={() => { setShowGifPicker(!showGifPicker); setShowPicker(false); }}
                                     style={{
                                         background: 'transparent',
                                         border: 'none',
@@ -812,7 +814,7 @@ export default function ChatPanel({
                                         borderRadius: '6px',
                                         padding: '4px',
                                         cursor: 'pointer',
-                                        color: showEmojiPicker ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                        color: showPicker ? 'var(--accent-primary)' : 'var(--text-secondary)',
                                         display: 'flex',
                                         alignItems: 'center'
                                     }}
