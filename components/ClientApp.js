@@ -991,8 +991,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           className="floating-sidebar"
           style={{
             height: isMobile ? `${sidebarHeight}px` : '100%',
+            maxHeight: isMobile ? `calc(100dvh - 40px - 20px)` : undefined, // Cap at viewport minus header minus drag bar
             width: isMobile ? '100%' : `${sidebarWidth}px`,
-            // If strictly mobile, we want dynamic height. If desktop, dynamic width.
+            overflow: isMobile ? 'hidden' : undefined, // Ensure content clips on mobile
           }}
         >
           {/* Desktop Resize Handle */}
