@@ -2,8 +2,10 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { FixedSizeGrid as Grid } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import * as ReactWindow from 'react-window';
+import { AutoSizer } from 'react-virtualized-auto-sizer';
+
+const Grid = ReactWindow.FixedSizeGrid || ReactWindow.default?.FixedSizeGrid;
 
 // Standard Emoji Categories (Subset for simplicity)
 const STANDARD_EMOJIS = [
