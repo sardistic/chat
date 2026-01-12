@@ -39,6 +39,16 @@
   --status-busy: #F87171;
   --status-warning: #FBBF24;
 
+  /* Glassmorphism System */
+  --glass-bg: rgba(18, 18, 24, 0.45);
+  --glass-bg-hover: rgba(18, 18, 24, 0.6);
+  --glass-bg-heavy: rgba(18, 18, 24, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(25px);
+  --glass-blur-heavy: blur(50px);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --glass-backdrop: blur(25px) saturate(200%);
+
   /* Dimensions */
   --radius-lg: 16px;
   --radius-md: 10px;
@@ -211,15 +221,12 @@ body {
   padding: 0 24px;
   z-index: 100;
 
-  /* "Heavy Frost" - Obscures background details */
-  background: rgba(10, 11, 14, 0.75);
-  /* Mostly opaque */
-  backdrop-filter: blur(40px) saturate(160%);
-  /* Heavy smear */
-  -webkit-backdrop-filter: blur(40px) saturate(160%);
-
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  /* Glass Header */
+  background: var(--glass-bg-heavy);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .app-content {
@@ -266,15 +273,15 @@ body {
 /* Docked Right Panel (Chat/Deployments) */
 .floating-sidebar {
   width: var(--dynamic-sidebar-w, 320px);
-  /* Darker blurred background */
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(60px) saturate(180%);
-  -webkit-backdrop-filter: blur(60px) saturate(180%);
+  /* Docked Right Panel (Chat/Deployments) */
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
   /* min-width and max-width handled via Javascript or relaxed */
   min-width: 280px;
 
   /* Docked look - Flush edges */
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid var(--glass-border);
   border-radius: 0;
   margin: 0;
   flex-shrink: 0;
@@ -294,9 +301,11 @@ body {
   right: 0;
   margin-top: 8px;
   width: 220px;
-  background: rgba(19, 20, 22, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 220px;
+  background: var(--glass-bg-heavy);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
@@ -475,12 +484,13 @@ body {
 
 /* --- Components: Cards / Panels --- */
 .panel-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 /* --- Components: Buttons --- */
@@ -538,12 +548,14 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  flex-direction: column;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(8px);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .grid-header {
@@ -729,10 +741,12 @@ body {
 .input-area {
   margin-top: auto;
   padding: 16px;
-  background: rgba(10, 11, 14, 0.6);
+  margin-top: auto;
+  padding: 16px;
+  background: var(--glass-bg-heavy);
   /* Semi-solid background */
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--border-subtle);
+  backdrop-filter: var(--glass-blur-heavy);
+  border-top: 1px solid var(--glass-border);
   flex-shrink: 0;
   /* Prevent shrinking */
   position: relative;
