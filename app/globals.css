@@ -1446,11 +1446,11 @@ body {
     width: 100% !important;
     flex: 1 !important;
     /* Fill space above sidebar */
-    min-height: 120px !important;
+    min-height: 80px !important;
     height: auto !important;
     margin: 0 !important;
-    padding-bottom: 20px !important;
-    /* Tighter padding for overlap */
+    padding: 0 !important;
+    /* No extra padding - let VideoGrid handle spacing */
     z-index: 10;
     position: relative;
     overflow: hidden;
