@@ -501,6 +501,8 @@ function VideoTile({
                     padding: '4px 8px',
                     gap: '2px'
                 }}
+                onClick={(e) => e.stopPropagation()}
+            >
                 <button
                     className="reaction-btn"
                     onClick={(e) => {
@@ -519,19 +521,19 @@ function VideoTile({
                 >
                     <Icon icon={showPicker ? "mdi:close" : "mdi:heart-outline"} width="16" />
                 </button>
-                
-                 {/* Picker Popup */}
-                 <AnimatePresence>
+
+                {/* Picker Popup */}
+                <AnimatePresence>
                     {showPicker && (
-                        <div 
-                             onClick={(e) => e.stopPropagation()}
-                             style={{
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
                                 position: 'absolute',
                                 bottom: '100%',
                                 right: 0,
                                 marginBottom: '8px',
                                 zIndex: 100
-                             }}
+                            }}
                         >
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -544,7 +546,7 @@ function VideoTile({
                                     onSelect={(emoji) => {
                                         onReaction(emoji);
                                         // Optional: keep open or close? Usually close for quick reaction
-                                        setShowPicker(false); 
+                                        setShowPicker(false);
                                     }}
                                     onClose={() => setShowPicker(false)}
                                     style={{
@@ -555,7 +557,7 @@ function VideoTile({
                             </motion.div>
                         </div>
                     )}
-                 </AnimatePresence>
+                </AnimatePresence>
             </div>
 
             <div className="status-icons" style={{
@@ -824,8 +826,7 @@ export default function VideoGrid({
                     isLocal={true}
                     isVideoEnabled={isVideoEnabled}
                     isAudioEnabled={isAudioEnabled}
-                    isVideoEnabled={isVideoEnabled}
-                    isAudioEnabled={isAudioEnabled}
+
                     isDeafened={true}
                     emotes={emotes} // Pass emotes
                     isDiscordUser={!!localUser?.discordId}
