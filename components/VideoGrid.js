@@ -104,20 +104,38 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     const paddingY = isMobile ? 0 : 48;
     const gap = isMobile ? 0 : 12;
 
-    // On mobile, use full width and stack tiles vertically for maximum space usage
+    // On mobile, use flexible layout with zero padding but still try multiple columns
     if (isMobile) {
-        const cols = 1; // Single column on mobile for full width
-        const rows = videoCount;
-        const availableWidth = containerWidth;
-        const availableHeight = containerHeight - (rows - 1) * gap;
+        // Try different column counts and pick best one
+        for (let cols = 1; cols <= videoCount; cols++) {
+            const rows = Math.ceil(videoCount / cols);
+            const availableWidth = containerWidth;
+            const availableHeight = containerHeight;
 
-        // Fill full width, calculate height per tile
-        const w = Math.floor(availableWidth);
-        const maxH = Math.floor(availableHeight / rows);
-        // Use a more square aspect ratio on mobile (4:3) for better space usage
-        let h = Math.min(Math.floor(w / 1.33), maxH);
+            const maxTileWidth = Math.floor(availableWidth / cols);
+            const maxTileHeight = Math.floor(availableHeight / rows);
 
-        return { cols, rows, width: w, height: h };
+            // Use 4:3 aspect ratio on mobile for better space usage in portrait
+            const mobileAspect = 1.33;
+            let w = maxTileWidth;
+            let h = w / mobileAspect;
+
+            if (h > maxTileHeight) {
+                h = maxTileHeight;
+                w = h * mobileAspect;
+            }
+
+            w = Math.floor(w);
+            h = Math.floor(h);
+
+            // Pick layout that maximizes total visible area
+            const area = w * h * videoCount;
+            const bestArea = bestLayout.width * bestLayout.height * videoCount;
+            if (area > bestArea || cols === 1) {
+                bestLayout = { cols, rows, width: w, height: h };
+            }
+        }
+        return bestLayout;
     }
 
     for (let cols = 1; cols <= videoCount; cols++) {
