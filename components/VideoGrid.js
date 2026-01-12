@@ -102,7 +102,23 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     // Deduct padding/gap (zero padding on mobile for tighter layout)
     const paddingX = isMobile ? 0 : 48;
     const paddingY = isMobile ? 0 : 48;
-    const gap = isMobile ? 2 : 12;
+    const gap = isMobile ? 0 : 12;
+
+    // On mobile, use full width and stack tiles vertically for maximum space usage
+    if (isMobile) {
+        const cols = 1; // Single column on mobile for full width
+        const rows = videoCount;
+        const availableWidth = containerWidth;
+        const availableHeight = containerHeight - (rows - 1) * gap;
+
+        // Fill full width, calculate height per tile
+        const w = Math.floor(availableWidth);
+        const maxH = Math.floor(availableHeight / rows);
+        // Use a more square aspect ratio on mobile (4:3) for better space usage
+        let h = Math.min(Math.floor(w / 1.33), maxH);
+
+        return { cols, rows, width: w, height: h };
+    }
 
     for (let cols = 1; cols <= videoCount; cols++) {
         const rows = Math.ceil(videoCount / cols);
@@ -116,7 +132,7 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
 
         if (availableWidth <= 0 || availableHeight <= 0) continue;
 
-        const maxTileWidth = Math.floor(availableWidth / cols); // Use floor to avoid sub-pixel wrap
+        const maxTileWidth = Math.floor(availableWidth / cols);
         const maxTileHeight = Math.floor(availableHeight / rows);
 
         // Fit based on aspect ratio
@@ -133,7 +149,7 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
         h = Math.floor(h);
 
         // Maximizing area (w * h) is equivalent to maximizing w since aspect ratio is fixed
-        if (w > bestLayout.width || cols === 1) { // cols===1 check ensures we have at least a valid start
+        if (w > bestLayout.width || cols === 1) {
             bestLayout = { cols, rows, width: w, height: h };
         }
     }

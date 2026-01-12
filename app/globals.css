@@ -1540,12 +1540,12 @@ body {
     }
   }
 
-  /* Adjust video grid for mobile - align to top */
+  /* Adjust video grid for mobile - align to top, no gaps */
   .grid {
-    padding: 2px !important;
-    gap: 2px !important;
+    padding: 0 !important;
+    gap: 0 !important;
     align-content: flex-start !important;
-    /* Push tiles to top instead of centering */
+    /* Push tiles to top */
   }
 
   /* Global resizing protection */
