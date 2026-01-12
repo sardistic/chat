@@ -634,12 +634,10 @@ export default function ChatPanel({
 
             {/* Input Area */}
             <div className="input-area" style={{
-                position: 'sticky',
-                bottom: 0,
+                position: 'relative',
                 padding: '0 4px 8px',
                 flexShrink: 0,
-                background: 'inherit',
-                zIndex: 10
+                background: 'rgba(10, 11, 14, 0.98)'
             }}>
                 {/* GIF Picker with search */}
                 {showGifPicker && (
