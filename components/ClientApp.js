@@ -636,8 +636,8 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         {/* Right Header Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
-          {/* Avatar Aquarium - Show on mobile too per user request */}
-          {(
+          {/* Avatar Aquarium - Moved to header if room permits, otherwise displaced to video grid area */}
+          {!isMobile && (
 
             <div style={{
               display: 'flex',

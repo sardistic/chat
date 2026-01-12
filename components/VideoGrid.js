@@ -792,17 +792,17 @@ export default function VideoGrid({
                     if (isMobile && username) {
                         const displayState = displayStates[username] || 'active';
 
-                        // Inactive and semi-active users render as collapsed bars
-                        if (displayState === 'inactive' || displayState === 'semi-active') {
+                        // Inactive users don't render in grid (they appear in header avatars)
+                        if (displayState === 'inactive') return null;
+
+                        // Semi-active users render as collapsed bars
+                        if (displayState === 'semi-active') {
                             return (
                                 <CollapsedUserBar
                                     key={peerId}
                                     user={peerData.user}
                                     lastMessage={chatBubbles[username]}
                                     onClick={(e) => handleTileClick(e, peerData.user)}
-                                    // Make inactive users slightly more transparent to distinguish if needed, 
-                                    // but user asked for "like the lines", so standard is fine.
-                                    style={{ opacity: displayState === 'inactive' ? 0.6 : 1 }}
                                 />
                             );
                         }
