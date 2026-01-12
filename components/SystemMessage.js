@@ -40,10 +40,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 gap: '4px',
                 justifyContent: 'center',
                 opacity: 1,
-                background: 'rgba(255,255,255,0.03)', // Subtle bg
+                background: 'var(--glass-bg)', // Glass bg
                 borderRadius: '8px',
                 margin: '4px 0',
-                border: '1px solid rgba(255,255,255,0.05)'
+                border: '1px solid var(--glass-border)'
             }}>
                 {/* Avatar Stripe */}
                 {users.length > 0 && (
@@ -260,7 +260,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
         <div className={`system-message-card ${style.animation}`} style={{
             margin: '8px auto', // Center horizontally
             padding: '0',
-            background: '#0a0a0a',
+            background: 'var(--glass-bg-heavy)',
+            backdropFilter: 'var(--glass-blur)',
             border: `1px solid ${style.borderColor}`,
             borderRadius: '8px',
             overflow: 'hidden',

@@ -655,15 +655,17 @@ export default function ChatPanel({
                 right: isMobile ? 0 : undefined,
                 padding: isMobile ? '8px 8px 12px' : '0 4px 8px',
                 flexShrink: 0,
-                background: 'rgba(10, 11, 14, 0.98)',
+                background: 'var(--glass-bg-heavy)',
+                backdropFilter: 'var(--glass-blur-heavy)',
                 zIndex: isMobile ? 100 : undefined
             }}>
                 {/* GIF Picker with search */}
                 {showGifPicker && (
                     <div style={{
-                        background: 'var(--bg-tertiary)',
+                        background: 'var(--glass-bg)',
+                        backdropFilter: 'var(--glass-blur)',
                         borderRadius: '12px',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        border: '1px solid var(--glass-border)',
                         marginBottom: '8px',
                         overflow: 'hidden'
                     }}>
@@ -676,7 +678,7 @@ export default function ChatPanel({
                                 autoFocus
                                 style={{
                                     width: '100%',
-                                    background: 'rgba(0,0,0,0.3)',
+                                    background: 'var(--glass-bg-hover)',
                                     border: 'none',
                                     borderRadius: '8px',
                                     padding: '10px 12px',
@@ -701,9 +703,10 @@ export default function ChatPanel({
                         bottom: '100%',
                         left: '16px',
                         right: '16px',
-                        background: 'var(--bg-secondary)',
+                        background: 'var(--glass-bg-heavy)',
+                        backdropFilter: 'var(--glass-blur-heavy)',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        border: '1px solid var(--glass-border)',
                         maxHeight: '200px',
                         overflow: 'auto',
                         zIndex: 100,

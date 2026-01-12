@@ -85,13 +85,14 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
         <div className="emoji-picker glass-panel" style={{
             width: '320px',
             height: '400px',
-            background: 'rgba(20, 20, 25, 0.95)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'var(--glass-bg-heavy)',
+            backdropFilter: 'var(--glass-blur)',
+            border: '1px solid var(--glass-border)',
             borderRadius: '12px',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--glass-shadow)',
             ...style
         }} onClick={(e) => e.stopPropagation()}>
             {/* Header Tabs */}
@@ -127,7 +128,7 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
                     onChange={(e) => setSearch(e.target.value)}
                     style={{
                         width: '100%', padding: '8px 12px', borderRadius: '6px',
-                        background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'var(--glass-bg-hover)', border: '1px solid var(--glass-border)',
                         color: 'white', fontSize: '13px'
                     }}
                 />

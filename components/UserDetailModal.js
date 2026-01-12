@@ -29,22 +29,23 @@ export default function UserDetailModal({ userId, onClose }) {
         left: "50%",
         transform: "translate(-50%, -50%)",
         zIndex: 10000,
-        background: "#1a1b1e",
+        background: "var(--glass-bg-heavy)",
+        backdropFilter: "var(--glass-blur-heavy)",
         borderRadius: "12px",
-        boxShadow: "0 20px 50px rgba(0,0,0,0.8)",
+        boxShadow: "var(--glass-shadow)",
         width: "600px",
         maxWidth: "90vw",
         height: "500px",
         display: "flex",
         flexDirection: "column",
-        border: "1px solid rgba(255,255,255,0.1)"
+        border: "1px solid var(--glass-border)"
     };
 
     const overlayStyle = {
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.7)",
-        backdropFilter: "blur(5px)",
+        background: "var(--glass-bg-heavy)",
+        backdropFilter: "var(--glass-blur)",
         zIndex: 9999
     };
 
@@ -76,7 +77,7 @@ export default function UserDetailModal({ userId, onClose }) {
                 {/* Header */}
                 <div
                     onPointerDown={(e) => dragControls.start(e)}
-                    style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'grab' }}
+                    style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'grab' }}
                 >
                     <img
                         src={user.avatarUrl || user.image || `/api/avatar/${user.displayName || user.name || user.id}`}
@@ -153,7 +154,7 @@ export default function UserDetailModal({ userId, onClose }) {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {user.auditLogsTarget.map(log => (
-                                        <div key={log.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', fontSize: '13px' }}>
+                                        <div key={log.id} style={{ background: 'var(--glass-bg-hover)', padding: '12px', borderRadius: '8px', fontSize: '13px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                                                 <span style={{ fontWeight: '600', color: log.action.includes('BAN') ? '#ef4444' : '#fff' }}>{log.action}</span>
                                                 <span style={{ color: '#666', fontSize: '11px' }}>{new Date(log.createdAt).toLocaleDateString()}</span>

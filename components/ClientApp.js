@@ -733,10 +733,11 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               alignItems: 'center',
               gap: '6px',
               padding: '0 6px',
-              background: 'rgba(255,255,255,0.03)',
+              background: 'var(--glass-bg)',
+              backdropFilter: 'var(--glass-blur)',
               borderRadius: '20px',
               height: '32px',
-              border: '1px solid rgba(255,255,255,0.05)'
+              border: '1px solid var(--glass-border)'
             }}>
               {/* Chat Tab Icon */}
               <button

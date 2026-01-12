@@ -47,8 +47,8 @@ function CollapsedUserBar({ user, lastMessage, onClick, style = {} }) {
                 ...style, // Merge custom styles
                 gap: '8px',
                 padding: '6px 10px',
-                background: 'rgba(0,0,0,0.6)',
-                backdropFilter: 'blur(8px)',
+                background: 'var(--glass-bg)',
+                backdropFilter: 'var(--glass-blur)',
                 borderRadius: '8px',
                 borderLeft: `3px solid ${userColor}`,
                 cursor: 'pointer',
@@ -496,7 +496,8 @@ function VideoTile({
                     zIndex: 35,
                     display: 'flex',
                     alignItems: 'center',
-                    background: 'rgba(0,0,0,0.6)',
+                    background: 'var(--glass-bg-heavy)',
+                    backdropFilter: 'var(--glass-blur)',
                     borderRadius: '14px',
                     padding: '4px 8px',
                     gap: '2px'
@@ -567,8 +568,8 @@ function VideoTile({
                 display: 'flex',
                 gap: '8px',
                 zIndex: 40, // Top most
-                background: 'rgba(0,0,0,0.6)',
-                backdropFilter: 'blur(8px)',
+                background: 'var(--glass-bg-heavy)',
+                backdropFilter: 'var(--glass-blur)',
                 padding: '4px 10px',
                 borderRadius: '8px',
                 border: '1px solid rgba(255,255,255,0.1)'

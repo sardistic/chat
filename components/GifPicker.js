@@ -69,7 +69,8 @@ export default function GifPicker({ query, onSelect, onClose }) {
             ref={containerRef}
             style={{
                 position: 'relative',
-                background: 'var(--bg-secondary)',
+                background: 'var(--glass-bg)',
+                backdropFilter: 'var(--glass-blur)',
                 maxHeight: '300px',
                 overflow: 'hidden',
                 display: 'flex',
@@ -79,7 +80,7 @@ export default function GifPicker({ query, onSelect, onClose }) {
             {/* Header */}
             <div style={{
                 padding: '12px 16px',
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                borderBottom: '1px solid var(--glass-border)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -182,7 +183,7 @@ export default function GifPicker({ query, onSelect, onClose }) {
             {/* Footer */}
             <div style={{
                 padding: '8px 16px',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
+                borderTop: '1px solid var(--glass-border)',
                 fontSize: '11px',
                 color: 'var(--text-muted)',
                 textAlign: 'center',

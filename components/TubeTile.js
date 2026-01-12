@@ -430,7 +430,8 @@ export default function TubeTile({
     const style = {
         width: width || '100%',
         height: height || 'auto',
-        background: '#000',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'var(--glass-blur)',
         borderRadius: '12px',
         overflow: 'hidden',
         position: 'relative',
@@ -447,7 +448,9 @@ export default function TubeTile({
         if (!showInput) return null;
         return (
             <div style={{
-                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.95)',
+                position: 'absolute', inset: 0,
+                background: 'var(--glass-bg-heavy)',
+                backdropFilter: 'var(--glass-blur-heavy)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 padding: '24px', zIndex: 50, overflowY: 'auto'
             }}>
@@ -671,7 +674,8 @@ export default function TubeTile({
                             style={{
                                 position: 'absolute',
                                 inset: 0,
-                                background: 'rgba(0,0,0,0.7)',
+                                background: 'var(--glass-bg-heavy)',
+                                backdropFilter: 'var(--glass-blur)',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
@@ -786,7 +790,8 @@ export default function TubeTile({
                         <div style={{
                             position: 'absolute', inset: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.8)',
+                            background: 'var(--glass-bg-heavy)',
+                            backdropFilter: 'var(--glass-blur)',
                             flexDirection: 'column', gap: '12px', color: '#eab308',
                             zIndex: 5
                         }}>

@@ -178,11 +178,11 @@ export default function ProfileModal({
     const modalStyle = {
         position: "fixed",
         zIndex: 9999,
-        background: "rgba(15, 16, 19, 0.95)", // Solid dark background
-        backdropFilter: "blur(20px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "var(--glass-bg-heavy)",
+        backdropFilter: "var(--glass-blur-heavy)",
+        border: "1px solid var(--glass-border)",
         borderRadius: "12px",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+        boxShadow: "var(--glass-shadow)",
         width: "300px",
         overflow: "hidden",
         ...(position ? {
@@ -197,7 +197,7 @@ export default function ProfileModal({
     };
 
     const InfoChip = ({ label, value, icon, color }) => (
-        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '6px 8px', borderRadius: '6px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ background: 'var(--glass-bg)', padding: '6px 8px', borderRadius: '6px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', border: '1px solid var(--glass-border)' }}>
             <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Icon icon={icon} width="10" /> {label}
             </div>
@@ -274,7 +274,7 @@ export default function ProfileModal({
                                     title={userSettings.isLocallyMuted ? "Unmute" : "Mute"}
                                     style={{
                                         padding: '4px 8px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                                        background: userSettings.isLocallyMuted ? 'rgba(248, 113, 113, 0.2)' : 'rgba(255,255,255,0.1)',
+                                        background: userSettings.isLocallyMuted ? 'rgba(248, 113, 113, 0.2)' : 'var(--glass-bg-hover)',
                                         color: userSettings.isLocallyMuted ? '#f87171' : 'rgba(255,255,255,0.7)',
                                         display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px'
                                     }}
@@ -288,7 +288,7 @@ export default function ProfileModal({
                                     title={userSettings.isVideoHidden ? "Show Cam" : "Hide Cam"}
                                     style={{
                                         padding: '4px 8px', borderRadius: '4px', border: 'none', cursor: 'pointer',
-                                        background: userSettings.isVideoHidden ? 'rgba(248, 113, 113, 0.2)' : 'rgba(255,255,255,0.1)',
+                                        background: userSettings.isVideoHidden ? 'rgba(248, 113, 113, 0.2)' : 'var(--glass-bg-hover)',
                                         color: userSettings.isVideoHidden ? '#f87171' : 'rgba(255,255,255,0.7)',
                                         display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px'
                                     }}
@@ -313,7 +313,7 @@ export default function ProfileModal({
                 </div>
 
                 {/* Tabs */}
-                <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0 16px' }}>
+                <div style={{ display: 'flex', borderBottom: '1px solid var(--glass-border)', padding: '0 16px' }}>
                     {TABS.map(tab => (
                         <button
                             key={tab.id}
@@ -337,7 +337,7 @@ export default function ProfileModal({
                 <div style={{ padding: '16px', minHeight: '120px' }}>
                     {activeTab === 'info' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '6px', fontSize: '12px' }}>
+                            <div style={{ background: 'var(--glass-bg)', padding: '8px', borderRadius: '6px', fontSize: '12px' }}>
                                 <span style={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Status</span>
                                 {customStatus}
                             </div>
@@ -373,7 +373,7 @@ export default function ProfileModal({
                             {userSettings && (
                                 <>
                                     {/* Volume */}
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px' }}>
+                                    <div style={{ background: 'var(--glass-bg)', padding: '8px', borderRadius: '8px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
                                             <span>Volume</span>
                                             <span>{Math.round((userSettings.volume ?? 1) * 100)}%</span>
