@@ -398,6 +398,62 @@ export default function ChatPanel({
                 {/* Intro / Spacer at top */}
                 <div style={{ marginTop: 'auto' }}></div>
 
+                {/* --- MISSION CONTROL PIN (Sticky Bottom) --- */}
+                {(() => {
+                    // Find latest message from admin (sardistic)
+                    // We reverse a shallow copy to find the last one efficiently
+                    const pinnedMsg = [...messages].reverse().find(m => m.sender === 'sardistic');
+
+                    if (!pinnedMsg) return null;
+
+                    return (
+                        <div className="mission-control-pin" style={{
+                            position: 'sticky', // Sticky to bottom of scroll view
+                            bottom: '0px',
+                            zIndex: 50,
+                            margin: '8px 0 4px 0',
+                            backdropFilter: 'var(--glass-blur)', // Fallback
+                        }}>
+                            <div className="backdrop-blur-xl backdrop-saturate-150 backdrop-contrast-125 backdrop-brightness-110 bg-black/40 border border-white/10 shadow-lg" style={{
+                                borderRadius: '12px',
+                                padding: '10px 14px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}>
+                                {/* Header */}
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px',
+                                    color: '#4f46e5', fontWeight: '800'
+                                }}>
+                                    <Icon icon="mdi:access-point-network" width="14" />
+                                    <span>Mission Control</span>
+                                    <span style={{ marginLeft: 'auto', fontSize: '9px', opacity: 0.5, fontWeight: 'normal' }}>
+                                        {formatTime(pinnedMsg.timestamp)}
+                                    </span>
+                                </div>
+
+                                {/* Content */}
+                                <div style={{
+                                    fontSize: '13px', color: 'white', lineHeight: '1.4',
+                                    fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                                }}>
+                                    {pinnedMsg.text}
+                                </div>
+
+                                {/* Accent Line */}
+                                <div style={{
+                                    position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
+                                    background: '#4f46e5'
+                                }} />
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {/* DEBUG OVERLAY */}
                 <div style={{
                     position: 'absolute',
