@@ -39,15 +39,21 @@
   --status-busy: #F87171;
   --status-warning: #FBBF24;
 
-  /* Glassmorphism System */
-  --glass-bg: rgba(18, 18, 24, 0.45);
-  --glass-bg-hover: rgba(18, 18, 24, 0.6);
-  --glass-bg-heavy: rgba(18, 18, 24, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: blur(25px);
-  --glass-blur-heavy: blur(50px);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  --glass-backdrop: blur(25px) saturate(200%);
+  /* Glassmorphism System - Refined */
+  --glass-bg: rgba(18, 18, 24, 0.25);
+  /* Ultra transparent base */
+  --glass-bg-hover: rgba(18, 18, 24, 0.4);
+  --glass-bg-heavy: rgba(18, 18, 24, 0.55);
+  /* More transparent heavy */
+  --glass-border: rgba(255, 255, 255, 0.12);
+  /* Brighter rim */
+  --glass-blur: blur(35px);
+  /* Stronger blur */
+  --glass-blur-heavy: blur(70px);
+  /* Very heavy blur for overlays */
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glass-backdrop: blur(35px) saturate(220%);
+  /* High saturation glass */
 
   /* Dimensions */
   --radius-lg: 16px;
