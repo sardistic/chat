@@ -40,13 +40,13 @@
   --status-warning: #FBBF24;
 
   /* Glassmorphism System - Hyper iOS Style */
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  /* Higher opacity base for "physicality" */
-  --glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  /* Boosted visibility */
+  --glass-bg-hover: rgba(255, 255, 255, 0.14);
   --glass-bg-heavy: rgba(20, 20, 25, 0.65);
 
-  --glass-border: rgba(255, 255, 255, 0.15);
-  /* Crisper, brighter edges */
+  --glass-border: rgba(255, 255, 255, 0.18);
+  /* Sharper border */
 
   /* The "Pop" Factor */
   --glass-blur: blur(60px);
@@ -298,16 +298,17 @@ body {
 
 /* Docked Right Panel (Chat/Deployments) */
 .floating-sidebar {
-  width: var(--dynamic-sidebar-w, 320px);
-  /* Docked Right Panel (Chat/Deployments) */
-  background: var(--glass-bg);
+  background: var(--glass-bg-hover);
+  /* Slightly stronger bg than main stage */
   backdrop-filter: var(--glass-backdrop);
   -webkit-backdrop-filter: var(--glass-backdrop);
   /* min-width and max-width handled via Javascript or relaxed */
   min-width: 280px;
 
-  /* Docked look - Flush edges */
+  /* Docked look - Distinct Depth */
   border-left: 1px solid var(--glass-border);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+  /* Strong shadow to separate from video */
   border-radius: 0;
   margin: 0;
   flex-shrink: 0;
@@ -2019,6 +2020,7 @@ body,
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
