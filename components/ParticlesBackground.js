@@ -128,9 +128,9 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
 
     // Main wrapper with zoom effects
     const wrapperStyle = useMemo(() => ({
-        position: 'fixed',
+        position: 'absolute', // Changed from fixed to respect parent stacking
         inset: 0,
-        zIndex: -1,
+        zIndex: 0, // Reset to 0 since it's now first child of isolated .app
         pointerEvents: 'none',
         opacity: zoomOpacity,
         transform: `scale(${zoomScale})`,

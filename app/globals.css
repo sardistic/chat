@@ -294,34 +294,33 @@ body {
 
 /* Docked Right Panel (Chat/Deployments) */
 .floating-sidebar {
-  background: var(--glass-bg-hover);
-  /* Slightly stronger bg than main stage */
-  backdrop-filter: blur(25px) saturate(180%);
-  /* Hardcoded for certainty */
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
-
-  /* GPU Force for Blur */
-  transform: translateZ(0);
-  will-change: backdrop-filter;
-
-  /* min-width and max-width handled via Javascript or relaxed */
+  /* Layout & Size */
   min-width: 280px;
-
-  /* Docked look - Distinct Depth */
-  border-left: 1px solid rgba(255, 255, 255, 0.4);
-  /* Stronger border for visibility check */
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
-  /* Strong shadow to separate from video */
-  border-radius: 0;
-  margin: 0;
-  flex-shrink: 0;
-  /* Prevent flex expansion from content */
-
   display: flex;
   flex-direction: column;
   position: relative;
   z-index: 50;
   overflow: hidden;
+  margin: 0;
+  flex-shrink: 0;
+
+  /* No native background/filter on parent to avoid isolation issues */
+  background: transparent;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+}
+
+/* The Magic Blur Layer */
+.floating-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--glass-bg-hover);
+  backdrop-filter: var(--glass-blur);
+  /* Use variable again */
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 /* Profile Dropdown */
