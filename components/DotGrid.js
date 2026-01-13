@@ -34,10 +34,10 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             ease: 0.055,
 
             // SPARSE - nearly invisible base, mouse/waves reveal
-            baseOpacity: 0.003,   // Almost invisible
-            opacityVariation: 0.01,
-            maxOpacity: 0.75,
-            mouseOpacityBoost: 0.7, // Strong mouse reveal
+            baseOpacity: 0.15,   // Higher base so it survives blur
+            opacityVariation: 0.1,
+            maxOpacity: 0.9,
+            mouseOpacityBoost: 0.8, // Strong mouse reveal
 
             // Wave animations - reveal dots
             waveSpeed: 0.008,

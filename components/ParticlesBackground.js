@@ -85,7 +85,7 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
                 },
             },
             number: {
-                value: 500,
+                value: 400, // Slightly fewer for clarity
                 density: {
                     enable: true,
                     width: 1920,
@@ -94,8 +94,8 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             },
             opacity: {
                 value: {
-                    min: 0.06,
-                    max: 0.18,
+                    min: 0.3,
+                    max: 0.7,
                 },
             },
             shape: {
@@ -103,8 +103,8 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
             },
             size: {
                 value: {
-                    min: 0.6,
-                    max: 1.6,
+                    min: 1.5,
+                    max: 3.5,
                 },
             },
         },
