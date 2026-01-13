@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getCookie, setCookie } from 'cookies-next';
 import { Icon } from '@iconify/react';
 import { SocketProvider } from "@/lib/socket";
-import Background from './Background';
+import CssBackground from './CssBackground';
 import VideoGrid from "@/components/VideoGrid";
 import EntryScreen from "@/components/EntryScreen";
 import ChatPanel from "@/components/ChatPanel";
@@ -1353,7 +1353,7 @@ export default function ClientApp({ initialRoom }) {
 
   return (
     <SocketProvider user={user}>
-      <Background />
+      <CssBackground />
       {!isRegistered ? (
         <EntryScreen onJoin={handleJoin} initialRoom={initialRoom} />
       ) : (
