@@ -227,15 +227,14 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             if (!lastFrameTime) lastFrameTime = timestamp;
             const delta = timestamp - lastFrameTime;
 
-            if (delta < frameInterval) return;
+            // Update time tracking
+            lastFrameTime = timestamp;
 
-            // Cap delta to prevent huge jumps if tab was inactive
-            const safeDelta = Math.min(delta, 50);
-            // Lock to interval multiple for smooth motion
-            lastFrameTime = timestamp - (delta % frameInterval);
-
-            // Time scaling based on 60fps baseline
-            const dt = safeDelta / 16.67;
+            // Physics Scaling: Scale movement based on real time passed
+            // 16.67ms (60fps) = 1.0 scale
+            // 8.33ms (120fps) = 0.5 scale
+            // 33.3ms (30fps) = 2.0 scale
+            const dt = Math.min(delta, 100) / 16.67; // Cap delta at 100ms to prevent glitches on tab wake
             time += 1 * dt;
 
             // Smooth zoom easing
@@ -317,18 +316,14 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
     }, []);
 
     return (
-        <canvas
-            ref={canvasRef}
-            className={className}
-            style={{
-                position: 'fixed', // Force fixed to cover viewport
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                minHeight: '100vh', // Force-push trigger
-                zIndex: -1, // Ensure behind content
-                pointerEvents: 'none',
-                background: '#000000',
+        position: 'fixed', // Force fixed to cover viewport
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        minHeight: '100vh',
+        zIndex: 0, // Brought forward from -1 to 0 to avoid being hidden by body bg
+        pointerEvents: 'none',
+        background: '#000000', // Ensure base is black
             }}
         />
     );
