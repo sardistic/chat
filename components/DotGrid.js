@@ -306,9 +306,11 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             ref={canvasRef}
             className={className}
             style={{
-                position: 'absolute', // Changed from fixed
+                position: 'fixed', // Force fixed to cover viewport
                 inset: 0,
-                zIndex: 0, // Reset to 0
+                width: '100%',
+                height: '100%',
+                zIndex: -1, // Ensure behind content
                 pointerEvents: 'none',
                 background: '#000000',
             }}
