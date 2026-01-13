@@ -47,8 +47,9 @@ function CollapsedUserBar({ user, lastMessage, onClick, style = {} }) {
                 ...style, // Merge custom styles
                 gap: '8px',
                 padding: '6px 10px',
-                background: 'var(--glass-bg)',
-                backdropFilter: 'var(--glass-blur)',
+                background: 'rgba(0, 0, 0, 0.4)', // Dark Glass
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
                 borderRadius: '8px',
                 borderLeft: `3px solid ${userColor}`,
                 cursor: 'pointer',

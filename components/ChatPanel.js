@@ -383,10 +383,10 @@ export default function ChatPanel({
             height: '100%',
             minHeight: 0,
             overflow: 'hidden',
-            /* Inline Glass Overrides */
-            background: 'rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            /* Inline Glass Overrides - Reduced for Visibility */
+            background: 'rgba(0, 0, 0, 0.25)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             borderLeft: '1px solid rgba(255, 255, 255, 0.12)'
         }}>
             {/* Messages Area - Flex Grow */}
