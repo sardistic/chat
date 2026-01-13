@@ -307,8 +307,9 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         animate();
 
         return () => {
-            window.removeEventListener('resize', build);
+            window.removeEventListener('resize', handleResize);
             window.removeEventListener('mousemove', handleMouseMove);
+            clearTimeout(resizeTimeout);
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
