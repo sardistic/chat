@@ -349,12 +349,12 @@ function VideoTile({
 
     return (
         <div
-            className={`tile effect-${effectIntensity} ${borderStyle.animation}`}
+            className={`tile effect-${effectIntensity} ${borderStyle.animation} relative rounded-xl overflow-hidden backdrop-blur-xl border border-white/10 shadow-lg`}
             style={{
-                background,
+                background, // Keep the gradient, it has transparency
                 width: width || '100%',
                 height: height || 'auto',
-                flex: '0 0 auto' // Ensure it respects size in flex container
+                flex: '0 0 auto'
             }}
             onClick={onClick}
             onMouseLeave={() => { setShowPicker(false); }}
