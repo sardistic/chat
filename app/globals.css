@@ -186,6 +186,8 @@ body {
   width: 100vw;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+  /* Create explicit stacking context for children */
   /* z-index removed to prevent blur isolation */
 }
 
@@ -294,8 +296,14 @@ body {
 .floating-sidebar {
   background: var(--glass-bg-hover);
   /* Slightly stronger bg than main stage */
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: blur(25px) saturate(180%);
+  /* Hardcoded for certainty */
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+
+  /* GPU Force for Blur */
+  transform: translateZ(0);
+  will-change: backdrop-filter;
+
   /* min-width and max-width handled via Javascript or relaxed */
   min-width: 280px;
 
