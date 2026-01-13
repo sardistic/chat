@@ -197,7 +197,7 @@ function getFadedBackground(color) {
     const c1 = colorWithAlpha(darkColor, 0.4);
     const c2 = colorWithAlpha(darkSecondary, 0.2);
 
-    return `radial-gradient(ellipse at center, ${c1} 0%, ${c2} 40%, #050505 100%)`;
+    return `radial-gradient(ellipse at center, ${c1} 0%, ${c2} 40%, rgba(5, 5, 5, 0.4) 100%)`;
 }
 
 // Individual video tile with smart effects

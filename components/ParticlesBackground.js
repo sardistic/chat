@@ -160,7 +160,7 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
                     className={className}
                     style={{
                         ...wrapperStyle,
-                        background: '#000000',
+                        background: 'radial-gradient(circle at center, #1a1b26 0%, #000000 100%)',
                     }}
                 />
                 <div style={waveOverlayStyle} />
