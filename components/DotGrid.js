@@ -316,14 +316,18 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
     }, []);
 
     return (
-        position: 'fixed', // Force fixed to cover viewport
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        minHeight: '100vh',
-        zIndex: 0, // Brought forward from -1 to 0 to avoid being hidden by body bg
-        pointerEvents: 'none',
-        background: '#000000', // Ensure base is black
+        <canvas
+            ref={canvasRef}
+            className={className}
+            style={{
+                position: 'fixed', // Force fixed to cover viewport
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                minHeight: '100vh',
+                zIndex: 0, // Brought forward from -1 to 0 to avoid being hidden by body bg
+                pointerEvents: 'none',
+                background: '#000000', // Ensure base is black
             }}
         />
     );
