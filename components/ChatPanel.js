@@ -42,6 +42,9 @@ function groupMessages(messages) {
     return groups;
 }
 
+// System message types that should be sticky (pinned above input)
+const STICKY_SYSTEM_TYPES = ['deploy-start', 'deploy-success', 'deploy-fail', 'git-push', 'deploy-log'];
+
 export default function ChatPanel({
     roomId,
     user,
@@ -172,13 +175,27 @@ export default function ChatPanel({
         return ['ADMIN', 'MODERATOR', 'OWNER'].includes(role);
     }, [user?.role]);
 
+    // Sticky system messages (mission control / deploy / git push)
+    const stickyMessages = useMemo(() => {
+        return messages.filter(m =>
+            m.sender === 'System' &&
+            STICKY_SYSTEM_TYPES.includes(m.systemType)
+        ).slice(-3); // Keep only last 3
+    }, [messages]);
+
+    // Regular messages (exclude sticky system messages)
+    const regularMessages = useMemo(() => {
+        const stickyIds = new Set(stickyMessages.map(m => m.id));
+        return messages.filter(m => !stickyIds.has(m.id));
+    }, [messages, stickyMessages]);
+
     // Group messages for Discord-style display (filter wiped for non-mods)
     const messageGroups = useMemo(() => {
         const filteredMessages = isMod
-            ? messages
-            : messages.filter(m => !wipedMessageIds.has(m.id));
+            ? regularMessages
+            : regularMessages.filter(m => !wipedMessageIds.has(m.id));
         return groupMessages(filteredMessages);
-    }, [messages, isMod, wipedMessageIds]);
+    }, [regularMessages, isMod, wipedMessageIds]);
 
     // Combine web users and IRC users for mentions
     const allUsers = [
@@ -397,62 +414,6 @@ export default function ChatPanel({
             }}>
                 {/* Intro / Spacer at top */}
                 <div style={{ marginTop: 'auto' }}></div>
-
-                {/* --- MISSION CONTROL PIN (Sticky Bottom) --- */}
-                {(() => {
-                    // Find latest message from admin (sardistic)
-                    // We reverse a shallow copy to find the last one efficiently
-                    const pinnedMsg = [...messages].reverse().find(m => m.sender === 'sardistic');
-
-                    if (!pinnedMsg) return null;
-
-                    return (
-                        <div className="mission-control-pin" style={{
-                            position: 'sticky', // Sticky to bottom of scroll view
-                            bottom: '0px',
-                            zIndex: 50,
-                            margin: '8px 0 4px 0',
-                            backdropFilter: 'var(--glass-blur)', // Fallback
-                        }}>
-                            <div className="backdrop-blur-xl backdrop-saturate-150 backdrop-contrast-125 backdrop-brightness-110 bg-black/40 border border-white/10 shadow-lg" style={{
-                                borderRadius: '12px',
-                                padding: '10px 14px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '4px',
-                                position: 'relative',
-                                overflow: 'hidden'
-                            }}>
-                                {/* Header */}
-                                <div style={{
-                                    display: 'flex', alignItems: 'center', gap: '6px',
-                                    fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px',
-                                    color: '#4f46e5', fontWeight: '800'
-                                }}>
-                                    <Icon icon="mdi:access-point-network" width="14" />
-                                    <span>Mission Control</span>
-                                    <span style={{ marginLeft: 'auto', fontSize: '9px', opacity: 0.5, fontWeight: 'normal' }}>
-                                        {formatTime(pinnedMsg.timestamp)}
-                                    </span>
-                                </div>
-
-                                {/* Content */}
-                                <div style={{
-                                    fontSize: '13px', color: 'white', lineHeight: '1.4',
-                                    fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)'
-                                }}>
-                                    {pinnedMsg.text}
-                                </div>
-
-                                {/* Accent Line */}
-                                <div style={{
-                                    position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
-                                    background: '#4f46e5'
-                                }} />
-                            </div>
-                        </div>
-                    );
-                })()}
 
                 {/* DEBUG OVERLAY */}
                 <div style={{
@@ -708,6 +669,26 @@ export default function ChatPanel({
                     opacity: 0.2;
                 }
             `}</style>
+
+            {/* Sticky Mission Control Messages */}
+            {stickyMessages.length > 0 && (
+                <div className="sticky-system-messages" style={{
+                    padding: '8px 12px',
+                    background: 'rgba(0,0,0,0.4)',
+                    backdropFilter: 'blur(16px)',
+                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    flexShrink: 0
+                }}>
+                    {stickyMessages.map(msg => (
+                        <SystemMessage key={msg.id} message={msg} onUserClick={onUserClick} />
+                    ))}
+                </div>
+            )}
 
             {/* Input Area - Fixed to bottom on mobile */}
             <div className="input-area" style={{
