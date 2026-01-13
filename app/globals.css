@@ -39,14 +39,15 @@
   --status-busy: #F87171;
   --status-warning: #FBBF24;
 
-  /* Glassmorphism System - Hyper iOS Style */
-  --glass-bg: rgba(255, 255, 255, 0.08);
-  /* Boosted visibility */
-  --glass-bg-hover: rgba(255, 255, 255, 0.14);
-  --glass-bg-heavy: rgba(20, 20, 25, 0.65);
+  /* Glassmorphism System - Deep Dark Glass (Robust) */
+  --glass-bg: rgba(0, 0, 0, 0.4);
+  /* Dark tint, visible without blur */
+  --glass-bg-hover: rgba(30, 30, 35, 0.5);
+  --glass-bg-heavy: rgba(10, 10, 14, 0.75);
+  /* Solid readability layer */
 
-  --glass-border: rgba(255, 255, 255, 0.18);
-  /* Sharper border */
+  --glass-border: rgba(255, 255, 255, 0.12);
+  /* Subtle rim */
 
   /* The "Pop" Factor */
   --glass-blur: blur(20px);
@@ -55,9 +56,9 @@
   /* Pure blur to test engine */
 
   --glass-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 
   /* Dimensions */
   --radius-lg: 16px;
@@ -306,22 +307,22 @@ body {
 
   /* No native background/filter on parent to avoid isolation issues */
   background: transparent !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid var(--glass-border);
   border-radius: 0;
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+  /* Deeper shadow */
 }
 
-/* The Magic Blur Layer - PINK TEST */
+/* The Magic Blur Layer - DEEP GLASS (Robust) */
 .floating-sidebar::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  /* DEBUG PINK TINT - If you see this, layering is correct */
-  background: rgba(255, 0, 255, 0.15);
-  backdrop-filter: blur(20px);
-  /* Use variable again */
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--glass-bg-heavy);
+  /* Use Darker Base */
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 /* Profile Dropdown */
