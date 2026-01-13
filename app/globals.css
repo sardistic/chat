@@ -305,22 +305,23 @@ body {
   flex-shrink: 0;
 
   /* No native background/filter on parent to avoid isolation issues */
-  background: transparent;
+  background: transparent !important;
   border-left: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 0;
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
 }
 
-/* The Magic Blur Layer */
+/* The Magic Blur Layer - PINK TEST */
 .floating-sidebar::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--glass-bg-hover);
-  backdrop-filter: var(--glass-blur);
+  /* DEBUG PINK TINT - If you see this, layering is correct */
+  background: rgba(255, 0, 255, 0.15);
+  backdrop-filter: blur(20px);
   /* Use variable again */
-  -webkit-backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 /* Profile Dropdown */
