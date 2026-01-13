@@ -216,26 +216,40 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             mouseRef.current = { x: e.clientX, y: e.clientY };
         };
 
-        let time = 0;
-        const animate = () => {
-            time += 1;
+        let lastFrameTime = 0;
+        const targetFPS = 60;
+        const frameInterval = 1000 / targetFPS;
+
+        const animate = (timestamp) => {
+            animationRef.current = requestAnimationFrame(animate);
+
+            if (!lastFrameTime) lastFrameTime = timestamp;
+            const delta = timestamp - lastFrameTime;
+
+            if (delta < frameInterval) return;
+
+            // Cap delta to prevent huge jumps if tab was inactive
+            const safeDelta = Math.min(delta, 50);
+            // Lock to interval multiple for smooth motion
+            lastFrameTime = timestamp - (delta % frameInterval);
+
+            // Time scaling based on 60fps baseline
+            const dt = safeDelta / 16.67;
+            time += 1 * dt;
 
             // Smooth zoom easing
             const zoomState = zoomRef.current;
             const zoomDiff = zoomState.target - zoomState.current;
-            zoomState.velocity += zoomDiff * 0.02;
-            zoomState.velocity *= 0.85; // Damping
-            zoomState.current += zoomState.velocity;
+            zoomState.velocity += zoomDiff * 0.02 * dt;
+            zoomState.velocity *= Math.pow(0.85, dt); // Damping with dt
+            zoomState.current += zoomState.velocity * dt;
 
             const zoom = zoomState.current;
             const globalOpacity = zoom >= 1.8 ? Math.max(0, 1 - (zoom - 1.5) * 1.5) : 1;
 
             ctx.clearRect(0, 0, width, height);
 
-            if (globalOpacity <= 0) {
-                animationRef.current = requestAnimationFrame(animate);
-                return;
-            }
+            if (globalOpacity <= 0) return; // Skip draw but keep loop alive
 
             const mouse = mouseRef.current;
 
