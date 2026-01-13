@@ -377,7 +377,18 @@ export default function ChatPanel({
     // Already handled in the combined effect above.
 
     return (
-        <div className="chat-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}>
+        <div className="chat-panel" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            minHeight: 0,
+            overflow: 'hidden',
+            /* Inline Glass Overrides */
+            background: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderLeft: '1px solid rgba(255, 255, 255, 0.12)'
+        }}>
             {/* Messages Area - Flex Grow */}
             <div style={{
                 flex: 1,
