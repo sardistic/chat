@@ -310,6 +310,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 inset: 0,
                 width: '100%',
                 height: '100%',
+                minHeight: '100vh', // Force-push trigger
                 zIndex: -1, // Ensure behind content
                 pointerEvents: 'none',
                 background: '#000000',
