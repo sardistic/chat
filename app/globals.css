@@ -300,7 +300,8 @@ body {
   min-width: 280px;
 
   /* Docked look - Distinct Depth */
-  border-left: 1px solid var(--glass-border);
+  border-left: 1px solid rgba(255, 255, 255, 0.4);
+  /* Stronger border for visibility check */
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.3);
   /* Strong shadow to separate from video */
   border-radius: 0;
