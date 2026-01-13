@@ -217,6 +217,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         };
 
         let lastFrameTime = 0;
+        let time = 0; // Restore missing variable
         const targetFPS = 60;
         const frameInterval = 1000 / targetFPS;
 
