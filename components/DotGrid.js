@@ -216,40 +216,26 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             mouseRef.current = { x: e.clientX, y: e.clientY };
         };
 
-        let lastFrameTime = 0;
-        let time = 0; // Restore missing variable
-        const targetFPS = 60;
-        const frameInterval = 1000 / targetFPS;
-
-        const animate = (timestamp) => {
-            animationRef.current = requestAnimationFrame(animate);
-
-            if (!lastFrameTime) lastFrameTime = timestamp;
-            const delta = timestamp - lastFrameTime;
-
-            // Update time tracking
-            lastFrameTime = timestamp;
-
-            // Physics Scaling: Scale movement based on real time passed
-            // 16.67ms (60fps) = 1.0 scale
-            // 8.33ms (120fps) = 0.5 scale
-            // 33.3ms (30fps) = 2.0 scale
-            const dt = Math.min(delta, 100) / 16.67; // Cap delta at 100ms to prevent glitches on tab wake
-            time += 1 * dt;
+        let time = 0;
+        const animate = () => {
+            time += 1;
 
             // Smooth zoom easing
             const zoomState = zoomRef.current;
             const zoomDiff = zoomState.target - zoomState.current;
-            zoomState.velocity += zoomDiff * 0.02 * dt;
-            zoomState.velocity *= Math.pow(0.85, dt); // Damping with dt
-            zoomState.current += zoomState.velocity * dt;
+            zoomState.velocity += zoomDiff * 0.02;
+            zoomState.velocity *= 0.85; // Damping
+            zoomState.current += zoomState.velocity;
 
             const zoom = zoomState.current;
             const globalOpacity = zoom >= 1.8 ? Math.max(0, 1 - (zoom - 1.5) * 1.5) : 1;
 
             ctx.clearRect(0, 0, width, height);
 
-            if (globalOpacity <= 0) return; // Skip draw but keep loop alive
+            if (globalOpacity <= 0) {
+                animationRef.current = requestAnimationFrame(animate);
+                return;
+            }
 
             const mouse = mouseRef.current;
 
@@ -307,9 +293,8 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         animate();
 
         return () => {
-            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('resize', build);
             window.removeEventListener('mousemove', handleMouseMove);
-            clearTimeout(resizeTimeout);
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
@@ -325,10 +310,10 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 inset: 0,
                 width: '100%',
                 height: '100%',
-                minHeight: '100vh',
-                zIndex: 0, // Brought forward from -1 to 0 to avoid being hidden by body bg
+                minHeight: '100vh', // Force-push trigger
+                zIndex: -1, // Ensure behind content
                 pointerEvents: 'none',
-                background: '#000000', // Ensure base is black
+                background: '#000000',
             }}
         />
     );

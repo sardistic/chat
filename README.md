@@ -7,7 +7,7 @@ A modern, Discord-style video chat application with WebRTC peer-to-peer connecti
 - 🎥 **WebRTC Video/Audio** - Peer-to-peer video and audio streaming
 - 💬 **Real-time Chat** - Socket.IO powered messaging
 - 🌐 **IRC Bridge** - Connect to GameSurge IRC network
-- 🎨 **Modern UI** - Glassmorphism design with smooth animations
+- 🎨 **Modern UI** - Full Glassmorphism (Tailwind) with smooth animations
 - 🎛️ **Media Controls** - Mute/unmute, video toggle, leave room
 - 👥 **User Presence** - Online status and participant tracking
 - ⌨️ **IRC Commands** - KiwiIRC-style command support
@@ -183,7 +183,7 @@ Built with:
 - [irc-framework](https://github.com/kiwiirc/irc-framework)
 - [Next.js](https://nextjs.org/)
  
-- [Next.js](https://nextjs.org/)
+
 
 ## Deployment Status
 ![Railway](https://railway.app/badge/github/sardistic/chat)
