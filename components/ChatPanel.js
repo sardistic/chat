@@ -42,9 +42,6 @@ function groupMessages(messages) {
     return groups;
 }
 
-// System message types that should be sticky (only ACTIVE deployments)
-const STICKY_SYSTEM_TYPES = ['deploy-start'];
-
 export default function ChatPanel({
     roomId,
     user,
@@ -175,27 +172,13 @@ export default function ChatPanel({
         return ['ADMIN', 'MODERATOR', 'OWNER'].includes(role);
     }, [user?.role]);
 
-    // Sticky system messages (mission control / deploy / git push)
-    const stickyMessages = useMemo(() => {
-        return messages.filter(m =>
-            m.sender === 'System' &&
-            STICKY_SYSTEM_TYPES.includes(m.systemType)
-        ).slice(-3); // Keep only last 3
-    }, [messages]);
-
-    // Regular messages (exclude sticky system messages)
-    const regularMessages = useMemo(() => {
-        const stickyIds = new Set(stickyMessages.map(m => m.id));
-        return messages.filter(m => !stickyIds.has(m.id));
-    }, [messages, stickyMessages]);
-
     // Group messages for Discord-style display (filter wiped for non-mods)
     const messageGroups = useMemo(() => {
         const filteredMessages = isMod
-            ? regularMessages
-            : regularMessages.filter(m => !wipedMessageIds.has(m.id));
+            ? messages
+            : messages.filter(m => !wipedMessageIds.has(m.id));
         return groupMessages(filteredMessages);
-    }, [regularMessages, isMod, wipedMessageIds]);
+    }, [messages, isMod, wipedMessageIds]);
 
     // Combine web users and IRC users for mentions
     const allUsers = [
@@ -394,7 +377,7 @@ export default function ChatPanel({
     // Already handled in the combined effect above.
 
     return (
-        <div className="chat-panel backdrop-blur-2xl backdrop-saturate-150 backdrop-contrast-125 backdrop-brightness-110 bg-black/10 border-l border-white/10" style={{
+        <div className="chat-panel backdrop-blur-xl bg-white/5 border-l border-white/10" style={{
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
@@ -669,26 +652,6 @@ export default function ChatPanel({
                     opacity: 0.2;
                 }
             `}</style>
-
-            {/* Sticky Mission Control Messages */}
-            {stickyMessages.length > 0 && (
-                <div className="sticky-system-messages" style={{
-                    padding: '8px 12px',
-                    background: 'rgba(0,0,0,0.4)',
-                    backdropFilter: 'blur(16px)',
-                    borderTop: '1px solid rgba(255,255,255,0.1)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    maxHeight: '180px',
-                    overflowY: 'auto',
-                    flexShrink: 0
-                }}>
-                    {stickyMessages.map(msg => (
-                        <SystemMessage key={msg.id} message={msg} onUserClick={onUserClick} />
-                    ))}
-                </div>
-            )}
 
             {/* Input Area - Fixed to bottom on mobile */}
             <div className="input-area" style={{
