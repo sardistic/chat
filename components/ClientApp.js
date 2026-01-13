@@ -598,7 +598,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     >
 
       {/* Background Layer (Explicit) */}
-      <Background />
+
 
       {/* Fixed Header */}
       <header className="app-header">
