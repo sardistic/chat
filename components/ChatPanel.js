@@ -42,8 +42,8 @@ function groupMessages(messages) {
     return groups;
 }
 
-// System message types that should be sticky (pinned above input)
-const STICKY_SYSTEM_TYPES = ['deploy-start', 'deploy-success', 'deploy-fail', 'git-push', 'deploy-log'];
+// System message types that should be sticky (only ACTIVE deployments)
+const STICKY_SYSTEM_TYPES = ['deploy-start'];
 
 export default function ChatPanel({
     roomId,
