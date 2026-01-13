@@ -1353,6 +1353,7 @@ export default function ClientApp({ initialRoom }) {
 
   return (
     <SocketProvider user={user}>
+      <Background />
       {!isRegistered ? (
         <EntryScreen onJoin={handleJoin} initialRoom={initialRoom} />
       ) : (
