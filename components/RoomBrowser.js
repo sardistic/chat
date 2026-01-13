@@ -567,11 +567,11 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                                 onClick={() => onSelectRoom(room)}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px',
-                                    background: 'rgba(20, 20, 25, 0.4)', borderRadius: '8px', cursor: 'pointer',
-                                    border: '1px solid rgba(255, 255, 255, 0.05)', transition: 'all 0.2s'
+                                    background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)', borderRadius: '8px', cursor: 'pointer',
+                                    border: '1px solid var(--glass-border)', transition: 'all 0.2s'
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(20, 20, 25, 0.4)'}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-bg-hover)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'var(--glass-bg)'}
                             >
                                 <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#333', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                     {room.iconUrl ? <img src={room.iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Icon icon="fa:hashtag" color="#666" />}

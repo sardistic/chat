@@ -273,7 +273,15 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 2px;
+  padding: 0;
+  /* Removing padding to let internal grid handle it */
+
+  /* Glass Effect for Video Feed Background */
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  /* Optional: border-right? */
+  border-right: 1px solid var(--glass-border);
 }
 
 /* Docked Right Panel (Chat/Deployments) */
