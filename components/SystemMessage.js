@@ -25,6 +25,30 @@ function formatTime(timestamp) {
 export default function SystemMessage({ message, onUserClick = () => { } }) {
     const { systemType, text, metadata, timestamp } = message;
 
+    // Elapsed timer for active deployments
+    const [elapsed, setElapsed] = useState(0);
+
+    useEffect(() => {
+        if (systemType !== 'deploy-start') return;
+
+        // Calculate initial elapsed time
+        const startTime = new Date(timestamp).getTime();
+        const updateElapsed = () => {
+            setElapsed(Math.floor((Date.now() - startTime) / 1000));
+        };
+
+        updateElapsed(); // Initial
+        const interval = setInterval(updateElapsed, 1000);
+        return () => clearInterval(interval);
+    }, [systemType, timestamp]);
+
+    // Format elapsed time as MM:SS
+    const formatElapsed = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
     // Minimal style for join/leave events with optional Avatars
     if (systemType === 'join-leave') {
         const users = metadata?.users || [];
@@ -287,6 +311,19 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             }}>
                 <Icon icon={style.icon} width="14" className={systemType === 'deploy-start' ? 'spin' : ''} />
                 <span>{metadata?.phase || style.kicker}</span>
+                {systemType === 'deploy-start' && (
+                    <span style={{
+                        background: 'rgba(245, 158, 11, 0.3)',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontFamily: 'monospace',
+                        fontWeight: 'bold',
+                        marginLeft: '4px'
+                    }}>
+                        ⏱ {formatElapsed(elapsed)}
+                    </span>
+                )}
                 <span style={{ marginLeft: 'auto', opacity: 0.5, fontWeight: 'normal' }}>
                     {formatTime(timestamp)}
                 </span>
