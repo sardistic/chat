@@ -39,7 +39,7 @@ function CollapsedUserBar({ user, lastMessage, onClick, style = {} }) {
 
     return (
         <div
-            className="collapsed-user-bar"
+            className="collapsed-user-bar backdrop-blur-xl bg-black/40 border-l-[3px] rounded-lg"
             onClick={onClick}
             style={{
                 display: 'flex',
@@ -47,11 +47,7 @@ function CollapsedUserBar({ user, lastMessage, onClick, style = {} }) {
                 ...style, // Merge custom styles
                 gap: '8px',
                 padding: '6px 10px',
-                background: 'rgba(0, 0, 0, 0.4)', // Dark Glass
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                borderRadius: '8px',
-                borderLeft: `3px solid ${userColor}`,
+                borderColor: userColor, // Dynamic border color in style is fine
                 cursor: 'pointer',
                 marginBottom: '4px',
                 width: '100%',

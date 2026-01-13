@@ -1,4 +1,8 @@
 /* Railway-inspired Dark Theme (Soft / Hybrid) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   /* Mantine-inspired Dark Palette */
   --mantine-dark-9: #141414;

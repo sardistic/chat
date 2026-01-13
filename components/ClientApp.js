@@ -601,7 +601,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
 
       {/* Fixed Header */}
-      <header className="app-header">
+      <header className="app-header fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 backdrop-blur-xl bg-black/30 border-b border-white/10 shadow-lg">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Logo / Icon - Removed */}
           {/* Breadcrumbs */}
@@ -991,7 +991,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
         {/* Floating Right Sidebar (Chat) */}
         <aside
-          className="floating-sidebar"
+          className="floating-sidebar backdrop-blur-2xl bg-black/60 border-l border-white/10 shadow-2xl"
           style={{
             height: isMobile ? `${sidebarHeight}px` : '100%',
             maxHeight: isMobile ? `calc(100dvh - 40px - 20px)` : undefined, // Cap at viewport minus header minus drag bar
