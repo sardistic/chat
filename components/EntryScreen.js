@@ -5,7 +5,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { setCookie } from "cookies-next";
 import { Icon } from '@iconify/react';
 import RoomBrowser from './RoomBrowser';
-import Background, { useBackground, BACKGROUND_TYPES } from './Background';
+import CssBackground from './CssBackground';
 import SettingsModal from './SettingsModal';
 
 // Expanded name generator with gaming/internet culture
@@ -291,7 +291,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     if (isLoading || status === 'loading') {
         return (
             <div className="entry-screen">
-                <Background zoomLevel={0} />
+                <CssBackground />
                 <div className="entry-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '64px', marginBottom: '24px', animation: 'spin 3s linear infinite' }}>
@@ -334,7 +334,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 paddingBottom: '80px',
                 boxSizing: 'border-box'
             }}>
-                <Background zoomLevel={zoomLevel} />
+                <CssBackground />
 
                 <AppHeader {...headerProps} />
                 <RoomBrowser
@@ -351,7 +351,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     // Step 2: Identity Selection
     return (
         <div className="entry-screen">
-            <Background zoomLevel={zoomLevel} />
+            <CssBackground />
             <AppHeader {...headerProps} />
             <div className="entry-card">
                 {/* Room Badge */}
