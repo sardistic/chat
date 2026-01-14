@@ -207,8 +207,10 @@ body {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  /* Create explicit stacking context for children */
-  /* z-index removed to prevent blur isolation */
+  contain: layout style;
+  /* GPU acceleration for smoother rendering */
+  transform: translateZ(0);
+  will-change: contents;
 }
 
 /* Entry Screen (Login Page) */

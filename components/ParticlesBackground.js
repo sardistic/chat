@@ -29,7 +29,7 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 value: "#000000",
             },
         },
-        fpsLimit: 60,
+        fpsLimit: 30,
         interactivity: {
             detectsOn: "window",
             events: {
@@ -65,7 +65,7 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 value: "#ffffff",
             },
             links: {
-                enable: true,
+                enable: false, // Disabled for performance
                 distance: 80,
                 color: "#ffffff",
                 opacity: 0.04,
@@ -85,7 +85,7 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 },
             },
             number: {
-                value: 400, // Slightly fewer for clarity
+                value: 200, // Reduced for performance
                 density: {
                     enable: true,
                     width: 1920,
