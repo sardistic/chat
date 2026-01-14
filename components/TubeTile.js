@@ -525,7 +525,7 @@ export default function TubeTile({
     // --- COMPACT RENDER (Line Mode) ---
     if (compact) {
         return (
-            <div className="tile video-tile tube-compact relative rounded-xl overflow-hidden bg-black/30 border border-white/10 shadow-lg" style={{ ...style, height: '60px', flexDirection: 'row', alignItems: 'center', padding: '0 12px', gap: '12px' }}>
+            <div className="tile video-tile tube-compact relative rounded-xl overflow-hidden backdrop-blur-lg backdrop-brightness-125 bg-white/5 border border-white/10 shadow-lg" style={{ ...style, height: '60px', flexDirection: 'row', alignItems: 'center', padding: '0 12px', gap: '12px' }}>
                 {/* Hidden Player Container for Audio */}
                 <div style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden', top: 0, left: 0, pointerEvents: 'none' }}>
                     {currentPlatform.platform === 'youtube' && (
@@ -622,7 +622,7 @@ export default function TubeTile({
     }
 
     return (
-        <div className="tile video-tile relative rounded-xl overflow-hidden bg-black/30 border border-white/10 shadow-lg" style={{ ...style, borderColor: (tubeState?.videoId && tubeState.isPlaying) ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
+        <div className="tile video-tile relative rounded-xl overflow-hidden backdrop-blur-lg backdrop-brightness-125 bg-white/5 border border-white/10 shadow-lg" style={{ ...style, borderColor: (tubeState?.videoId && tubeState.isPlaying) ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
             {!tubeState?.videoId ? (
                 <div style={{
                     flex: 1,
