@@ -46,17 +46,17 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             },
             modes: {
                 grab: {
-                    distance: 200,
+                    distance: 300,
                     links: {
-                        opacity: 0.15,
+                        opacity: 0.25,
                         color: "#ffffff"
                     }
                 },
                 bubble: {
-                    distance: 200,
-                    size: 8,
-                    duration: 0.2,
-                    opacity: 0.9,
+                    distance: 300,
+                    size: 12,
+                    duration: 0.3,
+                    opacity: 1.0,
                 },
             },
         },
@@ -121,9 +121,15 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     const zoomScale = zoomLevel > 0.01 ? 1 + zoomLevel * 0.2 : 1;
     const motionBlur = isZooming ? `blur(${zoomLevel * 2}px)` : 'none';
 
-    // Wave shadow overlay removed per user request
+    // Wave shadow overlay - re-enabled with visible gradient
     const waveOverlayStyle = useMemo(() => ({
-        display: 'none'
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1,
+        pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 0%, transparent 40%, rgba(100, 100, 255, 0.03) 70%, rgba(150, 100, 255, 0.06) 100%)',
+        animation: 'wave-pulse 8s ease-in-out infinite',
+        opacity: 0.8,
     }), []);
 
     // Main wrapper with zoom effects
