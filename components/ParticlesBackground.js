@@ -62,7 +62,8 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
         },
         particles: {
             color: {
-                value: "#ffffff",
+                // 3D depth coloring - subtle chromatic tones
+                value: ["#ffffff", "#e8f4ff", "#fff8e8", "#ffe8f4", "#e8ffe8", "#f0e8ff"],
             },
             links: {
                 enable: false, // Disabled for performance
