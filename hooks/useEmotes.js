@@ -29,11 +29,17 @@ export function useEmotes(emoteSetId = DEFAULT_EMOTE_SET) {
 
                 const emoteMap = new Map();
 
-                // Process Global - API returns array directly
-                const globalEmotes = Array.isArray(globalData) ? globalData : (globalData.emotes || []);
+                // Process Global - API returns object with emotes array
+                // Each emote has: { id, name, data: { id: actualEmoteId, name, ... } }
+                const globalEmotes = globalData?.emotes || [];
                 globalEmotes.forEach(emote => {
-                    const url = `https://cdn.7tv.app/emote/${emote.id}/2x.webp`;
-                    emoteMap.set(emote.name, url);
+                    // The actual emote ID is in data.id, not the top-level id
+                    const emoteId = emote.data?.id || emote.id;
+                    const emoteName = emote.name || emote.data?.name;
+                    if (emoteId && emoteName) {
+                        const url = `https://cdn.7tv.app/emote/${emoteId}/2x.webp`;
+                        emoteMap.set(emoteName, url);
+                    }
                 });
 
                 // Process Custom (overrides global if same name)
