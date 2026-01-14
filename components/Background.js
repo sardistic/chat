@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, memo } from 'react';
 import DotGrid from './DotGrid';
 import ParticlesBackground from './ParticlesBackground';
 
@@ -65,7 +65,7 @@ function StaticGrid() {
 }
 
 // Background component that switches based on preference
-export default function Background({ zoomLevel = 0 }) {
+function BackgroundComponent({ zoomLevel = 0 }) {
     const { backgroundType } = useBackground();
     const [mounted, setMounted] = useState(false);
 
@@ -95,3 +95,7 @@ export default function Background({ zoomLevel = 0 }) {
 
     return <ParticlesBackground zoomLevel={zoomLevel} />;
 }
+
+// Memoize to prevent re-renders when parent updates
+const Background = memo(BackgroundComponent);
+export default Background;

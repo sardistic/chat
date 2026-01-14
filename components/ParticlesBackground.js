@@ -8,7 +8,7 @@ import { loadSlim } from "@tsparticles/slim";
  * ParticlesBackground - tsParticles with grid-like dots
  * Features: wave shadow overlay, zoom light trails, 3D hover
  */
-export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
+function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     const [init, setInit] = useState(false);
 
     useEffect(() => {
@@ -183,3 +183,8 @@ export default function ParticlesBackground({ className = '', zoomLevel = 0 }) {
         </>
     );
 }
+
+// Memoize to prevent particle reset on parent re-renders
+import { memo } from 'react';
+const ParticlesBackground = memo(ParticlesBackgroundComponent);
+export default ParticlesBackground;
