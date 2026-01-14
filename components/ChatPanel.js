@@ -89,13 +89,16 @@ export default function ChatPanel({
     const [isActive, setIsActive] = useState(false);
     const lastMessageCountRef = useRef(0);
 
-    // Trigger glow on new messages
+    // Trigger activity event on new messages
     useEffect(() => {
         if (messages && messages.length > lastMessageCountRef.current) {
-            setIsActive(true);
-            // Remove glow after animation
-            const timer = setTimeout(() => setIsActive(false), 1500);
-            return () => clearTimeout(timer);
+            // Dispatch event with chat panel center position (right side of screen)
+            const rect = panelRef.current?.getBoundingClientRect();
+            if (rect) {
+                window.dispatchEvent(new CustomEvent('chat-activity', {
+                    detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+                }));
+            }
         }
         lastMessageCountRef.current = messages?.length || 0;
     }, [messages]);
@@ -398,8 +401,6 @@ export default function ChatPanel({
             height: '100%',
             minHeight: 0,
             overflow: 'hidden',
-            transition: 'box-shadow 0.5s ease-out',
-            boxShadow: isActive ? '0 0 60px 20px rgba(100, 200, 255, 0.4), inset 0 0 30px rgba(100, 200, 255, 0.1)' : 'none',
         }}>
             {/* Messages Area - Flex Grow */}
             <div style={{

@@ -6,11 +6,12 @@ import { loadSlim } from "@tsparticles/slim";
 
 /**
  * ParticlesBackground - tsParticles with grid-like dots
- * Features: wave shadow overlay, zoom light trails, 3D hover
+ * Features: wave shadow overlay, zoom light trails, 3D hover, activity attraction
  */
 function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     const [init, setInit] = useState(false);
     const containerRef = useRef(null);
+    const [attractorPos, setAttractorPos] = useState(null);
 
     useEffect(() => {
         initParticlesEngine(async (engine) => {
@@ -19,6 +20,42 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             setInit(true);
         });
     }, []);
+
+    // Listen for activity events from chat/video
+    useEffect(() => {
+        const handleActivity = (event) => {
+            const { x, y } = event.detail;
+            setAttractorPos({ x, y });
+
+            // Clear attractor after 2 seconds
+            setTimeout(() => setAttractorPos(null), 2000);
+        };
+
+        window.addEventListener('chat-activity', handleActivity);
+        return () => window.removeEventListener('chat-activity', handleActivity);
+    }, []);
+
+    // Apply attraction force when attractor is active
+    useEffect(() => {
+        if (!attractorPos || !containerRef.current) return;
+
+        const container = containerRef.current;
+        const particles = container.particles?.array;
+        if (!particles?.length) return;
+
+        // Apply gentle force toward attractor
+        particles.forEach(particle => {
+            const dx = attractorPos.x - particle.position.x;
+            const dy = attractorPos.y - particle.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 600 && distance > 0) {
+                const force = 0.3 / (distance / 150);
+                particle.velocity.x += (dx / distance) * force;
+                particle.velocity.y += (dy / distance) * force;
+            }
+        });
+    }, [attractorPos]);
 
     const options = useMemo(() => ({
         fullScreen: {

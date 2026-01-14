@@ -19,6 +19,9 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
     const inputRef = useRef(null);
     const pickerRef = useRef(null);
 
+    // Debug: Log emotes received
+    console.log('[EmojiPicker] Emotes received:', emotes?.size || 0, 'emotes');
+
     // Auto-focus search
     useEffect(() => {
         if (inputRef.current) inputRef.current.focus();
