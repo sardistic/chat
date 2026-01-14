@@ -991,7 +991,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
 
         {/* Floating Right Sidebar (Chat) */}
         <aside
-          className="floating-sidebar backdrop-blur-lg backdrop-brightness-125 bg-white/5 border-l border-white/10 shadow-2xl"
+          className="floating-sidebar border-l border-white/10 shadow-2xl"
           style={{
             height: isMobile ? `${sidebarHeight}px` : '100%',
             maxHeight: isMobile ? `calc(100dvh - 40px - 20px)` : undefined, // Cap at viewport minus header minus drag bar
