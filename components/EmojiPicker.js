@@ -17,11 +17,31 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
     const [tab, setTab] = useState('emoji'); // 'emoji' | '7tv'
     const [search, setSearch] = useState('');
     const inputRef = useRef(null);
+    const pickerRef = useRef(null);
 
     // Auto-focus search
     useEffect(() => {
         if (inputRef.current) inputRef.current.focus();
     }, []);
+
+    // Click outside to close
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+                onClose?.();
+            }
+        };
+
+        // Add listener with a slight delay to prevent immediate close on open
+        const timeoutId = setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside);
+        }, 100);
+
+        return () => {
+            clearTimeout(timeoutId);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [onClose]);
 
     // Filter Standard Emojis
     const filteredEmojis = useMemo(() => {
@@ -82,7 +102,7 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
     };
 
     return (
-        <div className="emoji-picker glass-panel" style={{
+        <div ref={pickerRef} className="emoji-picker glass-panel" style={{
             width: '320px',
             height: '400px',
             background: 'var(--glass-bg-heavy)',

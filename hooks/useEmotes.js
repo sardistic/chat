@@ -14,8 +14,8 @@ export function useEmotes(emoteSetId = DEFAULT_EMOTE_SET) {
 
         const fetchEmotes = async () => {
             try {
-                // Fetch Global Emotes
-                const globalRes = await fetch(`https://7tv.io/v3/emote-sets/global`);
+                // Fetch Global Emotes from 7TV
+                const globalRes = await fetch(`https://7tv.io/v3/emote-sets/01FDMJ3JJK0000CFAEB0BSWQXR`);
                 const globalData = await globalRes.json();
 
                 // Fetch Specific Set (if different)
