@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useChat } from '@/hooks/useChat';
 import { useEmotes } from '@/hooks/useEmotes';
 import { useSocket } from '@/lib/socket';
+import { useActivity } from './ActivityProvider';
 import MessageContent from './MessageContent';
 import SystemMessage from './SystemMessage';
 import EmojiPicker from './EmojiPicker';
@@ -65,6 +66,7 @@ export default function ChatPanel({
 }) {
     const { socket } = useSocket();
     const { emotes } = useEmotes(); // Load 7TV emotes
+    const { addActivity, registerElement, unregisterElement } = useActivity();
     const [inputValue, setInputValue] = useState('');
     const [showPicker, setShowPicker] = useState(false); // Unified Picker State
     const [mentionQuery, setMentionQuery] = useState('');
@@ -83,7 +85,35 @@ export default function ChatPanel({
     const [gifQuery, setGifQuery] = useState('');
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+    const panelRef = useRef(null);
+    const lastMessageCountRef = useRef(0);
 
+    // Register chat panel position for activity attraction
+    useEffect(() => {
+        if (!panelRef.current) return;
+
+        const updatePosition = () => {
+            const rect = panelRef.current.getBoundingClientRect();
+            registerElement('chat-panel', rect, 'chat');
+        };
+
+        updatePosition();
+        window.addEventListener('resize', updatePosition);
+
+        return () => {
+            window.removeEventListener('resize', updatePosition);
+            unregisterElement('chat-panel');
+        };
+    }, [registerElement, unregisterElement]);
+
+    // Emit activity when new messages arrive
+    useEffect(() => {
+        if (messages && messages.length > lastMessageCountRef.current) {
+            // New message(s) arrived - emit activity
+            addActivity('chat-panel', 2);
+        }
+        lastMessageCountRef.current = messages?.length || 0;
+    }, [messages, addActivity]);
     // Listen for reaction updates from server
     useEffect(() => {
         if (!socket) return;
@@ -377,7 +407,7 @@ export default function ChatPanel({
     // Already handled in the combined effect above.
 
     return (
-        <div className="chat-panel backdrop-blur backdrop-saturate-200 backdrop-brightness-[3] backdrop-contrast-150 border-l border-white/20" style={{
+        <div ref={panelRef} className="chat-panel backdrop-blur backdrop-saturate-200 backdrop-brightness-[3] backdrop-contrast-150 border-l border-white/20" style={{
             display: 'flex',
             flexDirection: 'column',
             height: '100%',

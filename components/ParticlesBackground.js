@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
+import { useActivity } from './ActivityProvider';
 
 /**
  * ParticlesBackground - tsParticles with grid-like dots
- * Features: wave shadow overlay, zoom light trails, 3D hover
+ * Features: wave shadow overlay, zoom light trails, 3D hover, activity attraction
  */
 function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     const [init, setInit] = useState(false);
+    const containerRef = useRef(null);
+    const { attractors } = useActivity();
 
     useEffect(() => {
         initParticlesEngine(async (engine) => {
@@ -113,8 +116,33 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     }), []);
 
     const particlesLoaded = useCallback(async (container) => {
-        // Particles loaded
+        containerRef.current = container;
     }, []);
+
+    // Apply attractors - move particles toward activity sources
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container || attractors.length === 0) return;
+
+        // Get particles and apply force toward attractors
+        const particles = container.particles.array;
+
+        attractors.forEach(attractor => {
+            particles.forEach(particle => {
+                // Calculate distance to attractor
+                const dx = attractor.x - particle.position.x;
+                const dy = attractor.y - particle.position.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Apply force if within range (500px)
+                if (distance < 500 && distance > 0) {
+                    const force = (attractor.strength * 0.5) / (distance / 100);
+                    particle.velocity.x += (dx / distance) * force;
+                    particle.velocity.y += (dy / distance) * force;
+                }
+            });
+        });
+    }, [attractors]);
 
     // Zoom states
     const isZooming = zoomLevel > 0.1;
