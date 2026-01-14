@@ -295,9 +295,9 @@ export default function RoomBrowser({ onSelectRoom, isDiscordUser, showCreateMod
                 .room-card {
                     overflow: hidden;
                     transition: transform 0.2s, box-shadow 0.2s;
-                    background: rgba(20, 20, 25, 0.6);
-                    backdrop-filter: blur(8px);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    background: rgba(255, 255, 255, 0.05);
+                    backdrop-filter: blur(12px) brightness(1.25);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
                     border-radius: 12px;
                 }
                 .room-card:hover {

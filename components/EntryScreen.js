@@ -353,7 +353,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
         <div className="entry-screen">
             <Background zoomLevel={zoomLevel} />
             <AppHeader {...headerProps} />
-            <div className="entry-card">
+            <div className="entry-card backdrop-blur-lg backdrop-brightness-125 bg-white/5 border border-white/10">
                 {/* Room Badge */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--accent-surface)', borderRadius: 'var(--radius-sm)', marginBottom: '20px', fontSize: '13px', color: 'var(--accent-primary)' }}>
                     <Icon icon="fa:comments" width="14" />
