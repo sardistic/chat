@@ -14,8 +14,8 @@ export function useEmotes(emoteSetId = DEFAULT_EMOTE_SET) {
 
         const fetchEmotes = async () => {
             try {
-                // Fetch Global Emotes from 7TV
-                const globalRes = await fetch(`https://7tv.io/v3/emote-sets/01FDMJ3JJK0000CFAEB0BSWQXR`);
+                // Fetch Global Emotes from 7TV using the correct endpoint
+                const globalRes = await fetch(`https://7tv.io/v3/emotes/global`);
                 const globalData = await globalRes.json();
 
                 // Fetch Specific Set (if different)
@@ -29,13 +29,12 @@ export function useEmotes(emoteSetId = DEFAULT_EMOTE_SET) {
 
                 const emoteMap = new Map();
 
-                // Process Global
-                if (globalData.emotes) {
-                    globalData.emotes.forEach(emote => {
-                        const url = `https://cdn.7tv.app/emote/${emote.id}/2x.webp`;
-                        emoteMap.set(emote.name, url);
-                    });
-                }
+                // Process Global - API returns array directly
+                const globalEmotes = Array.isArray(globalData) ? globalData : (globalData.emotes || []);
+                globalEmotes.forEach(emote => {
+                    const url = `https://cdn.7tv.app/emote/${emote.id}/2x.webp`;
+                    emoteMap.set(emote.name, url);
+                });
 
                 // Process Custom (overrides global if same name)
                 if (customData.emotes) {
