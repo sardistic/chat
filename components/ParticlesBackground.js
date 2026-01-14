@@ -125,7 +125,8 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
         if (!container || attractors.length === 0) return;
 
         // Get particles and apply force toward attractors
-        const particles = container.particles.array;
+        const particles = container.particles?.array;
+        if (!particles || !particles.length) return;
 
         attractors.forEach(attractor => {
             particles.forEach(particle => {
