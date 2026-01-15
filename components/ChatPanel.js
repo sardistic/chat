@@ -64,7 +64,7 @@ export default function ChatPanel({
     peers = new Map()
 }) {
     const { socket } = useSocket();
-    const { emotes } = useEmotes(); // Load 7TV emotes
+    const { emotes, addEmote } = useEmotes(); // Load 7TV emotes
     const [inputValue, setInputValue] = useState('');
     const [showPicker, setShowPicker] = useState(false); // Unified Picker State
     const [mentionQuery, setMentionQuery] = useState('');
@@ -258,10 +258,15 @@ export default function ChatPanel({
     };
 
     // Callback when an item is selected from Picker
-    const handlePickerSelect = (item) => {
+    const handlePickerSelect = (item, url = null) => {
         // If it starts with http, it might be a gif from a future gif tab, but for now we assume Emote name
         // Check if it's a known emote to prevent confusion
         const code = emotes.has(item) ? item : item;
+
+        // Add to map if new
+        if (url && !emotes.has(item)) {
+            addEmote(item, url);
+        }
 
         // Insert into input
         setInputValue(prev => prev + (prev.endsWith(' ') ? '' : ' ') + code + ' ');

@@ -63,5 +63,13 @@ export function useEmotes(emoteSetId = DEFAULT_EMOTE_SET) {
         return () => { mounted = false; };
     }, [emoteSetId]);
 
-    return { emotes, isLoaded };
+    const addEmote = (name, url) => {
+        setEmotes(prev => {
+            const newMap = new Map(prev);
+            newMap.set(name, url);
+            return newMap;
+        });
+    };
+
+    return { emotes, isLoaded, addEmote };
 }

@@ -59,13 +59,71 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
         })).filter(cat => cat.emojis.length > 0);
     }, [tab, search]);
 
-    // Filter 7TV Emotes
-    const filtered7TV = useMemo(() => {
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+
+    // Filter 7TV Emotes (Global or Search)
+    useEffect(() => {
+        if (tab !== '7tv') return;
+
+        if (!search) {
+            setSearchResults([]);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                // Check if local filter has matches first?
+                // Actually, user wants "all available", so we should always search API if input > 2 chars
+                // But let's also keep local matches mixed in or prioritized?
+                // Simpler: If search query, hit API.
+
+                const query = `
+                    query SearchEmotes($query: String!) {
+                        emotes(query: $query, limit: 30) {
+                            items {
+                                id
+                                name
+                            }
+                        }
+                    }
+                `;
+
+                const res = await fetch('https://7tv.io/v3/gql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
+                        variables: { query: search }
+                    })
+                });
+
+                const data = await res.json();
+                const items = data.data?.emotes?.items || [];
+
+                const mapped = items.map(item => ({
+                    name: item.name,
+                    url: `https://cdn.7tv.app/emote/${item.id}/2x.webp`
+                }));
+
+                setSearchResults(mapped);
+            } catch (err) {
+                console.error("7TV Search Failed:", err);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500); // Debounce 500ms
+
+        return () => clearTimeout(timer);
+    }, [tab, search]);
+
+    const display7TV = useMemo(() => {
         if (tab !== '7tv') return [];
-        const allEmotes = Array.from(emotes.entries()).map(([name, url]) => ({ name, url }));
-        if (!search) return allEmotes;
-        return allEmotes.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
-    }, [tab, search, emotes]);
+        if (search) return searchResults;
+        // Default to global loaded emotes
+        return Array.from(emotes.entries()).map(([name, url]) => ({ name, url }));
+    }, [tab, search, emotes, searchResults]);
 
     return (
         <div ref={pickerRef} className="emoji-picker glass-panel" style={{
@@ -149,9 +207,13 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
                     </div>
                 ) : (
                     <div style={{ height: '100%', width: '100%' }}>
-                        {filtered7TV.length === 0 ? (
+                        {isSearching ? (
+                            <div style={{ padding: '20px', textAlign: 'center', color: '#888', fontStyle: 'italic' }}>
+                                Searching 7TV...
+                            </div>
+                        ) : display7TV.length === 0 ? (
                             <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
-                                {emotes?.size > 0 ? 'No matches found' : 'Loading or no emotes...'}
+                                {search ? 'No matches found' : (emotes?.size > 0 ? '' : 'Loading global emotes...')}
                             </div>
                         ) : (
                             <div style={{ height: '100%', overflowY: 'auto', padding: '8px' }}>
@@ -160,12 +222,12 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
                                     gridTemplateColumns: 'repeat(5, 1fr)',
                                     gap: '8px'
                                 }}>
-                                    {filtered7TV.map((item) => (
+                                    {display7TV.map((item, idx) => (
                                         <button
-                                            key={item.name}
+                                            key={`${item.name}-${idx}`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                onSelect(item.name);
+                                                onSelect(item.name, item.url);
                                             }}
                                             title={item.name}
                                             style={{
