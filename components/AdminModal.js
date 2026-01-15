@@ -217,7 +217,7 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                             {activeTab === 'users' && (
 
                                 {/* Stats */ }
-                                < div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
                             <StatCard label="Total Users" value={pagination.total} icon="fa:users" />
                             <StatCard label="Online" value={onlineCount || 0} icon="fa:circle" color="#10B981" />
                             <StatCard label="Reports" value="0" icon="fa:flag" color="#EF4444" />
