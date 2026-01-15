@@ -284,3 +284,34 @@ model AuditLog {
   @@index([action])
   @@index([targetId])
 }
+
+// ============================================
+// User Sessions (Join/Leave Tracking)
+// ============================================
+
+model UserSession {
+  id          String   @id @default(cuid())
+  
+  // User identification
+  userId      String?  // Null for guests without accounts
+  displayName String   // Display name at time of session
+  discordId   String?  // Discord ID if available
+  
+  // Session details  
+  roomId      String   // Room slug
+  action      String   // 'join' or 'leave'
+  ipAddress   String?  // Client IP address
+  userAgent   String?  // Browser user agent
+  
+  // Metadata
+  socketId    String?  // Socket.io socket ID
+  metadata    Json?    // Additional context (isGuest, role, etc.)
+  
+  timestamp   DateTime @default(now())
+
+  @@index([userId])
+  @@index([roomId])
+  @@index([ipAddress])
+  @@index([timestamp])
+  @@index([action])
+}

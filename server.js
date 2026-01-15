@@ -384,6 +384,38 @@ async function saveMessageToDB(message) {
   }
 }
 
+// Log user session (join/leave) to database for analytics
+async function logUserSession(socket, action, user, roomId) {
+  try {
+    // Extract IP from socket headers (Railway/Cloudflare)
+    const forwarded = socket.handshake?.headers?.['x-forwarded-for'];
+    const ipAddress = forwarded ? forwarded.split(',')[0].trim() : socket.handshake?.address;
+    const userAgent = socket.handshake?.headers?.['user-agent'];
+
+    await prisma.userSession.create({
+      data: {
+        userId: user?.id || null,
+        displayName: user?.name || 'Unknown',
+        discordId: user?.discordId || null,
+        roomId: roomId,
+        action: action, // 'join' or 'leave'
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        socketId: socket.id,
+        metadata: {
+          isGuest: user?.isGuest || false,
+          role: user?.role || 'USER',
+          avatarUrl: user?.avatarUrl || user?.image
+        }
+      }
+    });
+    console.log(`[Session] Logged ${action} for ${user?.name || 'Unknown'} in ${roomId} (IP: ${ipAddress?.substring(0, 16) || 'unknown'})`);
+  } catch (err) {
+    console.error('[Session] Failed to log:', err.message);
+  }
+}
+
+
 // Helper to store messages (in-memory + DB)
 const storeMessage = (roomId, message) => {
   if (!messageHistory[roomId]) {
@@ -1226,6 +1258,9 @@ app.prepare().then(async () => {
       // Add user to room map
       room.set(socket.id, user);
 
+      // Log session for analytics
+      logUserSession(socket, 'join', user, roomId);
+
       // Send initial data to joining user
       socket.emit("existing-users", { users: existingUsers });
 
@@ -1446,6 +1481,10 @@ app.prepare().then(async () => {
       if (room) {
         const u = room.get(socket.id);
         if (u?.name) userName = u.name;
+
+        // Log session for analytics (before deletion)
+        logUserSession(socket, 'leave', socket.data.user || { name: userName }, roomId);
+
         room.delete(socket.id);
 
         // Update room member count in database
