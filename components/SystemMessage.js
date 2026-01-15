@@ -49,11 +49,12 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Minimal style for join/leave events - REDESIGNED with split layout
+    // Minimal style for join/leave events - REDESIGNED with expandable details
     if (systemType === 'join-leave') {
         const users = metadata?.users || [];
         const joiners = users.filter(u => u.action === 'joined' || !u.action?.includes('left'));
         const leavers = users.filter(u => u.action === 'left' || u.action?.includes('left'));
+        const [isExpanded, setIsExpanded] = useState(false);
 
         // Get names list (max 3, then +N)
         const getNames = (arr, max = 3) => {
@@ -62,6 +63,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             if (arr.length > max) return `${names} +${arr.length - max}`;
             return names;
         };
+
+        // Avatar size based on expansion
+        const avatarSize = isExpanded ? 32 : 24;
+        const maxAvatarsCollapsed = 4;
 
         // Avatar renderer for a single user
         const renderAvatar = (u, i, isLeaver = false) => (
@@ -72,33 +77,56 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.03 }}
                 title={u.name}
-                style={{ position: 'relative', cursor: 'pointer' }}
+                style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
                 onClick={(e) => {
                     e.stopPropagation();
                     onUserClick({ name: u.name, avatar: u.avatar || u.image, color: u.color }, e);
                 }}
-                whileHover={{ scale: 1.15 }}
+                whileHover={{ scale: 1.1 }}
             >
                 <img
                     src={u.avatar || u.image || `/api/avatar/${u.name || 'guest'}`}
                     alt={u.name}
                     style={{
-                        width: '20px',
-                        height: '20px',
+                        width: `${avatarSize}px`,
+                        height: `${avatarSize}px`,
                         borderRadius: '50%',
-                        border: isLeaver ? '1.5px solid #555' : '1.5px solid #10b981',
-                        opacity: isLeaver ? 0.35 : 1,
+                        border: isLeaver ? '2px solid #555' : '2px solid #10b981',
+                        opacity: isLeaver ? 0.4 : 1,
                         filter: isLeaver ? 'grayscale(100%)' : 'none',
                         objectFit: 'cover',
                         background: '#222'
                     }}
                     onError={(e) => {
                         const initials = u.name?.charAt(0).toUpperCase() || '?';
-                        e.target.outerHTML = `<div style="width:20px;height:20px;border-radius:50%;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700;border:1.5px solid ${isLeaver ? '#555' : '#10b981'};opacity:${isLeaver ? 0.35 : 1}">${initials}</div>`;
+                        e.target.outerHTML = `<div style="width:${avatarSize}px;height:${avatarSize}px;border-radius:50%;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:${avatarSize * 0.4}px;color:white;font-weight:700;border:2px solid ${isLeaver ? '#555' : '#10b981'};opacity:${isLeaver ? 0.4 : 1}">${initials}</div>`;
                     }}
                 />
+                {/* Name tooltip on expanded view */}
+                {isExpanded && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '-16px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        fontSize: '9px',
+                        color: isLeaver ? '#666' : '#10b981',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '50px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        textAlign: 'center'
+                    }}>
+                        {u.name?.slice(0, 8)}
+                    </div>
+                )}
             </motion.div>
         );
+
+        // Count for overflow indicator
+        const joinerOverflow = Math.max(0, joiners.length - maxAvatarsCollapsed);
+        const leaverOverflow = Math.max(0, leavers.length - maxAvatarsCollapsed);
+        const hasMore = joinerOverflow > 0 || leaverOverflow > 0 || joiners.length + leavers.length > 3;
 
         return (
             <motion.div
@@ -106,51 +134,134 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 style={{
-                    padding: '6px 12px',
+                    padding: isExpanded ? '10px 12px' : '6px 10px',
                     fontSize: '11px',
                     color: '#9ca3af',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '8px',
                     background: 'rgba(255,255,255,0.02)',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     margin: '2px 0',
-                    border: '1px solid rgba(255,255,255,0.04)'
+                    border: '1px solid rgba(255,255,255,0.04)',
+                    cursor: hasMore ? 'pointer' : 'default',
+                    transition: 'all 0.2s ease'
                 }}
+                onClick={() => hasMore && setIsExpanded(!isExpanded)}
             >
-                {/* LEFT: Joiners */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
-                    {joiners.length > 0 && (
-                        <>
-                            <Icon icon="mdi:sparkles" width="13" style={{ color: '#10b981', flexShrink: 0 }} />
-                            <div style={{ display: 'flex', gap: '2px' }}>
-                                {joiners.slice(0, 5).map((u, i) => renderAvatar(u, i, false))}
+                {/* Collapsed View */}
+                {!isExpanded && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* Joiners */}
+                        {joiners.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Icon icon="mdi:sparkles" width="14" style={{ color: '#10b981', flexShrink: 0 }} />
+                                <div style={{ display: 'flex', gap: '-4px' }}>
+                                    {joiners.slice(0, maxAvatarsCollapsed).map((u, i) => renderAvatar(u, i, false))}
+                                    {joinerOverflow > 0 && (
+                                        <div style={{
+                                            width: `${avatarSize}px`,
+                                            height: `${avatarSize}px`,
+                                            borderRadius: '50%',
+                                            background: '#333',
+                                            border: '2px solid #10b981',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '10px',
+                                            color: '#10b981',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            +{joinerOverflow}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <span style={{ fontSize: '10px', color: '#10b981', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {getNames(joiners, 3)}
-                            </span>
-                        </>
-                    )}
-                </div>
+                        )}
 
-                {/* CENTER: Time */}
-                <span style={{ fontSize: '9px', color: '#555', flexShrink: 0 }}>{formatTime(timestamp)}</span>
+                        {/* Separator */}
+                        {joiners.length > 0 && leavers.length > 0 && (
+                            <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.1)' }} />
+                        )}
 
-                {/* RIGHT: Leavers */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-                    {leavers.length > 0 && (
-                        <>
-                            <span style={{ fontSize: '10px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>
-                                {getNames(leavers, 3)}
-                            </span>
-                            <div style={{ display: 'flex', gap: '2px' }}>
-                                {leavers.slice(0, 5).map((u, i) => renderAvatar(u, i, true))}
+                        {/* Leavers */}
+                        {leavers.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <div style={{ display: 'flex', gap: '-4px' }}>
+                                    {leavers.slice(0, maxAvatarsCollapsed).map((u, i) => renderAvatar(u, i, true))}
+                                    {leaverOverflow > 0 && (
+                                        <div style={{
+                                            width: `${avatarSize}px`,
+                                            height: `${avatarSize}px`,
+                                            borderRadius: '50%',
+                                            background: '#222',
+                                            border: '2px solid #555',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '10px',
+                                            color: '#666',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            +{leaverOverflow}
+                                        </div>
+                                    )}
+                                </div>
+                                <Icon icon="mdi:ghost-outline" width="14" style={{ color: '#555', flexShrink: 0 }} />
                             </div>
-                            <Icon icon="mdi:ghost-outline" width="13" style={{ color: '#555', flexShrink: 0 }} />
-                        </>
-                    )}
-                </div>
+                        )}
+
+                        {/* Time + Expand hint */}
+                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '9px', color: '#555' }}>{formatTime(timestamp)}</span>
+                            {hasMore && <Icon icon="mdi:chevron-down" width="14" style={{ color: '#555' }} />}
+                        </div>
+                    </div>
+                )}
+
+                {/* Expanded View */}
+                {isExpanded && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+                    >
+                        {/* Header with collapse */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '10px', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Activity • {formatTime(timestamp)}
+                            </span>
+                            <Icon icon="mdi:chevron-up" width="16" style={{ color: '#666' }} />
+                        </div>
+
+                        {/* Joiners Section */}
+                        {joiners.length > 0 && (
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                    <Icon icon="mdi:sparkles" width="14" style={{ color: '#10b981' }} />
+                                    <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '600' }}>
+                                        {joiners.length} Joined
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingBottom: '8px' }}>
+                                    {joiners.map((u, i) => renderAvatar(u, i, false))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Leavers Section */}
+                        {leavers.length > 0 && (
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                                    <Icon icon="mdi:ghost-outline" width="14" style={{ color: '#666' }} />
+                                    <span style={{ fontSize: '10px', color: '#666', fontWeight: '600' }}>
+                                        {leavers.length} Left
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingBottom: '8px' }}>
+                                    {leavers.map((u, i) => renderAvatar(u, i, true))}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
             </motion.div>
         );
     }
