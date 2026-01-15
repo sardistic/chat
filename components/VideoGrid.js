@@ -103,9 +103,9 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     let bestLayout = { cols: 1, rows: 1, width: 100, height: 56 };
     if (videoCount === 0) return bestLayout;
 
-    // Minimal padding (economical on mobile)
-    const paddingX = isMobile ? 8 : 16;
-    const paddingY = isMobile ? 8 : 16;
+    // Minimal padding (economical on mobile) - Must match or exceed CSS padding (12px = 24px total)
+    const paddingX = isMobile ? 12 : 32;
+    const paddingY = isMobile ? 12 : 32;
     const gap = isMobile ? 4 : 12;
 
     let maxArea = 0;
@@ -676,9 +676,31 @@ export default function VideoGrid({
     const gridRef = useRef(null);
     const [layout, setLayout] = useState({ width: 320, height: 180 });
 
-    // Hide tube from grid count if on mobile (it will be rendered separately)
+    // Deduplicate peers to prevent "lingering ghosts"
+    // We group by username, preferring the one with a stream or latest update
+    const uniquePeerArray = useMemo(() => {
+        if (!peers) return [];
+        return Array.from(peers.entries()).reduce((acc, [peerId, peerData]) => {
+            const username = peerData.user?.name;
+            if (!username) return acc;
+
+            const existingIndex = acc.findIndex(([_, p]) => p.user?.name === username);
+            if (existingIndex !== -1) {
+                const existing = acc[existingIndex];
+                // If new one has stream and old one doesn't, replace
+                if (peerData.stream && !existing[1].stream) {
+                    acc[existingIndex] = [peerId, peerData];
+                }
+            } else {
+                acc.push([peerId, peerData]);
+            }
+            return acc;
+        }, []);
+    }, [peers]);
+
+    // Use filtered count for layout
     const renderTubeInGrid = tubeState && !isMobile;
-    const totalTiles = 1 + (peers ? peers.size : 0) + (renderTubeInGrid ? 1 : 0);
+    const totalTiles = 1 + uniquePeerArray.length + (renderTubeInGrid ? 1 : 0);
 
     // Resize Observer for Dynamic Layout
     useEffect(() => {
@@ -753,7 +775,7 @@ export default function VideoGrid({
         }
     };
 
-    const peerArray = Array.from(peers.entries());
+    const peerArray = uniquePeerArray;
 
     // Handle tile click to show profile
     const handleTileClick = (e, user) => {
