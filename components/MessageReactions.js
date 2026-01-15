@@ -90,14 +90,10 @@ export default function MessageReactions({ messageId, reactions = {}, onReact, o
                         cursor: 'pointer',
                         padding: '4px',
                         borderRadius: '4px',
-                        display: 'flex', // Start hidden, parent hover handles display via CSS? 
-                        // We can't easily do parent hover from here without global CSS.
-                        // For now, let's make it always visible or rely on global .message-row:hover .reaction-add-btn opacity
-                        opacity: 0.2, // Dim by default
+                        display: 'flex',
+                        opacity: 0,
                         transition: 'opacity 0.2s',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.2'}
                     title="Add reaction"
                 >
                     <Icon icon="mdi:emoticon-plus-outline" width="16" />

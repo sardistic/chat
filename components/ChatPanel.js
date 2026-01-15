@@ -652,6 +652,10 @@ export default function ChatPanel({
                 .message-group:hover .line-timestamp {
                     opacity: 0.2;
                 }
+                /* Show reaction button on hover */
+                .message-row:hover :global(.reaction-add-btn) {
+                    opacity: 1 !important;
+                }
             `}</style>
 
             {/* Input Area - Fixed to bottom on mobile */}
