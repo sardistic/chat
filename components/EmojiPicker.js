@@ -67,43 +67,6 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
         return allEmotes.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
     }, [tab, search, emotes]);
 
-    // Grid Cell Renderer for 7TV
-    const cellRenderer = ({ columnIndex, rowIndex, style, data }) => {
-        const { columns, items } = data;
-        const index = rowIndex * columns + columnIndex;
-        const item = items[index];
-
-        if (!item) return null;
-
-        return (
-            <div style={style} className="emoji-grid-cell">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        // For 7TV, we usually want to insert the name ":EmoteName:" or just the name depending on chat handling
-                        // ChatPanel handles 'text' vs 'image' logic. 
-                        // Usually we insert the text code.
-                        onSelect(item.name);
-                    }}
-                    title={item.name}
-                    style={{
-                        width: '100%', height: '100%',
-                        background: 'transparent', border: 'none',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: '4px'
-                    }}
-                >
-                    <img
-                        src={item.url}
-                        alt={item.name}
-                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                        loading="lazy"
-                    />
-                </button>
-            </div>
-        );
-    };
-
     return (
         <div ref={pickerRef} className="emoji-picker glass-panel" style={{
             width: '320px',
@@ -191,29 +154,47 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
                                 {emotes?.size > 0 ? 'No matches found' : 'Loading or no emotes...'}
                             </div>
                         ) : (
-                            <AutoSizer>
-                                {({ height, width }) => {
-                                    const COLUMN_COUNT = 5;
-                                    const COLUMN_WIDTH = width / COLUMN_COUNT;
-                                    const ROW_HEIGHT = COLUMN_WIDTH; // Square cells
-                                    const ROW_COUNT = Math.ceil(filtered7TV.length / COLUMN_COUNT);
-
-                                    return (
-                                        <Grid
-                                            columnCount={COLUMN_COUNT}
-                                            columnWidth={COLUMN_WIDTH}
-                                            height={height}
-                                            rowCount={ROW_COUNT}
-                                            rowHeight={ROW_HEIGHT}
-                                            width={width}
-                                            itemData={{ columns: COLUMN_COUNT, items: filtered7TV }}
-                                            style={{ overflowX: 'hidden' }}
+                            <div style={{ height: '100%', overflowY: 'auto', padding: '8px' }}>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(5, 1fr)',
+                                    gap: '8px'
+                                }}>
+                                    {filtered7TV.map((item) => (
+                                        <button
+                                            key={item.name}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onSelect(item.name);
+                                            }}
+                                            title={item.name}
+                                            style={{
+                                                aspectRatio: '1',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '4px',
+                                                borderRadius: '6px'
+                                            }}
+                                            className="emoji-grid-cell"
                                         >
-                                            {cellRenderer}
-                                        </Grid>
-                                    );
-                                }}
-                            </AutoSizer>
+                                            <img
+                                                src={item.url}
+                                                alt={item.name}
+                                                style={{
+                                                    maxWidth: '100%',
+                                                    maxHeight: '100%',
+                                                    objectFit: 'contain'
+                                                }}
+                                                loading="lazy"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}
