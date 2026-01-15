@@ -85,23 +85,6 @@ export default function ChatPanel({
     const inputRef = useRef(null);
     const panelRef = useRef(null);
 
-    // Activity glow effect
-    const [isActive, setIsActive] = useState(false);
-    const lastMessageCountRef = useRef(0);
-
-    // Trigger activity event on new messages
-    useEffect(() => {
-        if (messages && messages.length > lastMessageCountRef.current) {
-            // Dispatch event with chat panel center position (right side of screen)
-            const rect = panelRef.current?.getBoundingClientRect();
-            if (rect) {
-                window.dispatchEvent(new CustomEvent('chat-activity', {
-                    detail: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-                }));
-            }
-        }
-        lastMessageCountRef.current = messages?.length || 0;
-    }, [messages]);
     // Listen for reaction updates from server
     useEffect(() => {
         if (!socket) return;
