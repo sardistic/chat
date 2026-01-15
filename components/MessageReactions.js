@@ -91,8 +91,6 @@ export default function MessageReactions({ messageId, reactions = {}, onReact, o
                         padding: '4px',
                         borderRadius: '4px',
                         display: 'flex',
-                        opacity: 0,
-                        transition: 'opacity 0.2s',
                     }}
                     title="Add reaction"
                 >
@@ -152,6 +150,11 @@ export default function MessageReactions({ messageId, reactions = {}, onReact, o
                 .add-reaction-btn:hover {
                     opacity: 1 !important;
                     background: rgba(255,255,255,0.1) !important;
+                }
+                /* Default state for the button */
+                :global(.reaction-add-btn) {
+                    opacity: 0;
+                    transition: opacity 0.2s;
                 }
             `}</style>
         </div>

@@ -339,7 +339,8 @@ function Badge({ role }) {
 }
 
 // Memoized Users Table to prevent lag during search typing
-const UsersTable = ({ users, loading, pagination, onPageChange, onAction, onSelect, actionLoading, socket }) => {
+// Memoized Users Table to prevent lag during search typing
+function UsersTable({ users, loading, pagination, onPageChange, onAction, onSelect, actionLoading, socket }) {
     return (
         <div style={{
             background: '#202226', borderRadius: '8px',
@@ -504,7 +505,8 @@ const UsersTable = ({ users, loading, pagination, onPageChange, onAction, onSele
 };
 
 // Memoized Sessions Table
-const SessionsTable = ({ sessions, loading, pagination, onPageChange, onRefresh }) => {
+// Memoized Sessions Table
+function SessionsTable({ sessions, loading, pagination, onPageChange, onRefresh }) {
     return (
         <div style={{ background: '#202226', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>
             <div style={{ padding: '16px', display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
