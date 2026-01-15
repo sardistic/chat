@@ -104,8 +104,8 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
     if (videoCount === 0) return bestLayout;
 
     // Deduct padding/gap (economical on mobile)
-    const paddingX = isMobile ? 8 : 48;
-    const paddingY = isMobile ? 8 : 48;
+    const paddingX = isMobile ? 8 : 16;
+    const paddingY = isMobile ? 8 : 16;
     const gap = isMobile ? 4 : 12;
 
     for (let cols = 1; cols <= videoCount; cols++) {
