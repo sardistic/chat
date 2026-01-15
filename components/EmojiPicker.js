@@ -137,7 +137,7 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                     }}
                 >
-                    <Icon icon="simple-icons:7tv" /> 7TV
+                    <Icon icon="simple-icons:7tv" /> 7TV ({emotes?.size || 0})
                 </button>
             </div>
 
@@ -186,29 +186,35 @@ export default function EmojiPicker({ onSelect, emotes = new Map(), onClose, sty
                     </div>
                 ) : (
                     <div style={{ height: '100%', width: '100%' }}>
-                        <AutoSizer>
-                            {({ height, width }) => {
-                                const COLUMN_COUNT = 5;
-                                const COLUMN_WIDTH = width / COLUMN_COUNT;
-                                const ROW_HEIGHT = COLUMN_WIDTH; // Square cells
-                                const ROW_COUNT = Math.ceil(filtered7TV.length / COLUMN_COUNT);
+                        {filtered7TV.length === 0 ? (
+                            <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                                {emotes?.size > 0 ? 'No matches found' : 'Loading or no emotes...'}
+                            </div>
+                        ) : (
+                            <AutoSizer>
+                                {({ height, width }) => {
+                                    const COLUMN_COUNT = 5;
+                                    const COLUMN_WIDTH = width / COLUMN_COUNT;
+                                    const ROW_HEIGHT = COLUMN_WIDTH; // Square cells
+                                    const ROW_COUNT = Math.ceil(filtered7TV.length / COLUMN_COUNT);
 
-                                return (
-                                    <Grid
-                                        columnCount={COLUMN_COUNT}
-                                        columnWidth={COLUMN_WIDTH}
-                                        height={height}
-                                        rowCount={ROW_COUNT}
-                                        rowHeight={ROW_HEIGHT}
-                                        width={width}
-                                        itemData={{ columns: COLUMN_COUNT, items: filtered7TV }}
-                                        style={{ overflowX: 'hidden' }}
-                                    >
-                                        {cellRenderer}
-                                    </Grid>
-                                );
-                            }}
-                        </AutoSizer>
+                                    return (
+                                        <Grid
+                                            columnCount={COLUMN_COUNT}
+                                            columnWidth={COLUMN_WIDTH}
+                                            height={height}
+                                            rowCount={ROW_COUNT}
+                                            rowHeight={ROW_HEIGHT}
+                                            width={width}
+                                            itemData={{ columns: COLUMN_COUNT, items: filtered7TV }}
+                                            style={{ overflowX: 'hidden' }}
+                                        >
+                                            {cellRenderer}
+                                        </Grid>
+                                    );
+                                }}
+                            </AutoSizer>
+                        )}
                     </div>
                 )}
             </div>

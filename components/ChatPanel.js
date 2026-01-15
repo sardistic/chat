@@ -617,6 +617,7 @@ export default function ChatPanel({
                                                 onUnreact={handleUnreact}
                                                 currentUserId={user?.id}
                                                 center={msg.type === 'system'}
+                                                emotes={emotes}
                                             />
                                         </div>
                                     ))}

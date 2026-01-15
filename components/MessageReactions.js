@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import EmojiPicker from './EmojiPicker';
 
 const EMOJI_OPTIONS = ['❤️', '🔥', '😂', '😮', '👏', '🎉', '👍', '👎'];
 
-export default function MessageReactions({ messageId, reactions = {}, onReact, onUnreact, currentUserId, center = false }) {
+export default function MessageReactions({ messageId, reactions = {}, onReact, onUnreact, currentUserId, center = false, emotes }) {
     const [showPicker, setShowPicker] = useState(false);
 
     const handleEmojiClick = (emoji) => {
@@ -57,7 +58,17 @@ export default function MessageReactions({ messageId, reactions = {}, onReact, o
                                     transition: 'all 0.2s ease'
                                 }}
                             >
-                                <span>{emoji}</span>
+                                <span>
+                                    {emotes?.has(emoji) ? (
+                                        <img
+                                            src={emotes.get(emoji)}
+                                            alt={emoji}
+                                            style={{ height: '16px', width: 'auto', verticalAlign: 'middle', display: 'inline-block' }}
+                                        />
+                                    ) : (
+                                        emoji
+                                    )}
+                                </span>
                                 <span style={{ opacity: 0.7, fontSize: '10px' }}>{data.count}</span>
                             </button>
                         );
@@ -108,36 +119,18 @@ export default function MessageReactions({ messageId, reactions = {}, onReact, o
                                 position: 'absolute',
                                 bottom: '100%',
                                 right: 0,
-                                background: '#1a1a1a',
-                                border: '1px solid #333',
-                                borderRadius: '8px',
-                                padding: '8px',
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(4, 1fr)',
-                                gap: '4px',
                                 zIndex: 50,
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                                 marginBottom: '8px'
                             }}
                         >
-                            {EMOJI_OPTIONS.map(emoji => (
-                                <button
-                                    key={emoji}
-                                    onClick={() => handleEmojiClick(emoji)}
-                                    style={{
-                                        background: 'transparent',
-                                        border: 'none',
-                                        fontSize: '18px',
-                                        padding: '4px',
-                                        cursor: 'pointer',
-                                        borderRadius: '4px',
-                                        hover: { background: 'rgba(255,255,255,0.1)' }
-                                    }}
-                                    className="emoji-option"
-                                >
-                                    {emoji}
-                                </button>
-                            ))}
+                            <EmojiPicker
+                                onSelect={(emoji) => {
+                                    handleEmojiClick(emoji);
+                                }}
+                                onClose={() => setShowPicker(false)}
+                                emotes={emotes}
+                                style={{ width: '280px', height: '350px' }}
+                            />
                         </motion.div>
                     )}
                 </AnimatePresence>
