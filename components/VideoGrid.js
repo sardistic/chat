@@ -100,13 +100,15 @@ function CollapsedUserBar({ user, lastMessage, onClick, style = {} }) {
 
 // Helper to calculate optimal layout
 function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, aspectRatio = 16 / 9) {
-    let bestLayout = { cols: 1, rows: 1, width: 320, height: 180 };
+    let bestLayout = { cols: 1, rows: 1, width: 100, height: 56 };
     if (videoCount === 0) return bestLayout;
 
-    // Deduct padding/gap (economical on mobile)
+    // Minimal padding (economical on mobile)
     const paddingX = isMobile ? 8 : 16;
     const paddingY = isMobile ? 8 : 16;
     const gap = isMobile ? 4 : 12;
+
+    let maxArea = 0;
 
     for (let cols = 1; cols <= videoCount; cols++) {
         const rows = Math.ceil(videoCount / cols);
@@ -123,21 +125,30 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
         const maxTileWidth = Math.floor(availableWidth / cols);
         const maxTileHeight = Math.floor(availableHeight / rows);
 
-        // Fit based on aspect ratio
-        let w = maxTileWidth;
-        let h = w / aspectRatio;
-
-        if (h > maxTileHeight) {
-            h = maxTileHeight;
-            w = h * aspectRatio;
+        // Try width-first fit
+        let w1 = maxTileWidth;
+        let h1 = Math.floor(w1 / aspectRatio);
+        if (h1 > maxTileHeight) {
+            h1 = maxTileHeight;
+            w1 = Math.floor(h1 * aspectRatio);
         }
 
-        // Ensure integer values
-        w = Math.floor(w);
-        h = Math.floor(h);
+        // Try height-first fit
+        let h2 = maxTileHeight;
+        let w2 = Math.floor(h2 * aspectRatio);
+        if (w2 > maxTileWidth) {
+            w2 = maxTileWidth;
+            h2 = Math.floor(w2 / aspectRatio);
+        }
 
-        // Maximizing area
-        if (w > bestLayout.width || cols === 1) {
+        // Pick the larger area
+        const area1 = w1 * h1;
+        const area2 = w2 * h2;
+        const [w, h] = area1 >= area2 ? [w1, h1] : [w2, h2];
+        const area = w * h;
+
+        if (area > maxArea) {
+            maxArea = area;
             bestLayout = { cols, rows, width: w, height: h };
         }
     }
