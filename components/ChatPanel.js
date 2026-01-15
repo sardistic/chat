@@ -653,7 +653,7 @@ export default function ChatPanel({
                     opacity: 0.2;
                 }
                 /* Show reaction button on hover */
-                .message-row:hover :global(.reaction-add-btn) {
+                .message-row-container:hover :global(.reaction-add-btn) {
                     opacity: 1 !important;
                 }
             `}</style>
