@@ -1019,7 +1019,7 @@ app.prepare().then(async () => {
     const bundle = roomBundles[type];
     if (bundle) {
       const now = Date.now();
-      if (now - bundle.timestamp < 60000) { // 60s window
+      if (now - bundle.timestamp < 900000) { // 15 minute window
         return bundle;
       }
       // Expired

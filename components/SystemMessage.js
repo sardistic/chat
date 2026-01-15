@@ -55,13 +55,12 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
         const joiners = users.filter(u => u.action === 'joined' || !u.action?.includes('left'));
         const leavers = users.filter(u => u.action === 'left' || u.action?.includes('left'));
 
-        // Time ago helper
-        const timeAgo = (ts) => {
-            if (!ts) return '';
-            const diff = Math.floor((Date.now() - ts) / 1000);
-            if (diff < 60) return 'just now';
-            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-            return `${Math.floor(diff / 3600)}h ago`;
+        // Get names list (max 3, then +N)
+        const getNames = (arr, max = 3) => {
+            if (arr.length === 0) return '';
+            const names = arr.slice(0, max).map(u => u.name || 'User').join(', ');
+            if (arr.length > max) return `${names} +${arr.length - max}`;
+            return names;
         };
 
         // Avatar renderer for a single user
@@ -71,8 +70,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 layout
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.05 }}
-                title={`${u.name}${isLeaver ? ' left' : ' joined'} ${timeAgo(u.timestamp)}`}
+                transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.03 }}
+                title={u.name}
                 style={{ position: 'relative', cursor: 'pointer' }}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -84,30 +83,22 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     src={u.avatar || u.image || `/api/avatar/${u.name || 'guest'}`}
                     alt={u.name}
                     style={{
-                        width: '22px',
-                        height: '22px',
+                        width: '20px',
+                        height: '20px',
                         borderRadius: '50%',
-                        border: isLeaver ? '1.5px solid #666' : '1.5px solid #10b981',
-                        opacity: isLeaver ? 0.4 : 1,
+                        border: isLeaver ? '1.5px solid #555' : '1.5px solid #10b981',
+                        opacity: isLeaver ? 0.35 : 1,
                         filter: isLeaver ? 'grayscale(100%)' : 'none',
                         objectFit: 'cover',
                         background: '#222'
                     }}
                     onError={(e) => {
                         const initials = u.name?.charAt(0).toUpperCase() || '?';
-                        e.target.outerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:10px;color:white;font-weight:700;border:1.5px solid ${isLeaver ? '#666' : '#10b981'};opacity:${isLeaver ? 0.4 : 1}">${initials}</div>`;
+                        e.target.outerHTML = `<div style="width:20px;height:20px;border-radius:50%;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700;border:1.5px solid ${isLeaver ? '#555' : '#10b981'};opacity:${isLeaver ? 0.35 : 1}">${initials}</div>`;
                     }}
                 />
             </motion.div>
         );
-
-        // Compact summary text
-        const getSummary = () => {
-            const parts = [];
-            if (joiners.length > 0) parts.push(`${joiners.length} joined`);
-            if (leavers.length > 0) parts.push(`${leavers.length} left`);
-            return parts.join(' · ') || 'Activity';
-        };
 
         return (
             <motion.div
@@ -115,52 +106,48 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 style={{
-                    padding: '8px 12px',
+                    padding: '6px 12px',
                     fontSize: '11px',
                     color: '#9ca3af',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: '12px',
+                    gap: '8px',
                     background: 'rgba(255,255,255,0.02)',
-                    borderRadius: '8px',
-                    margin: '3px 0',
-                    border: '1px solid rgba(255,255,255,0.05)'
+                    borderRadius: '6px',
+                    margin: '2px 0',
+                    border: '1px solid rgba(255,255,255,0.04)'
                 }}
             >
                 {/* LEFT: Joiners */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
                     {joiners.length > 0 && (
                         <>
-                            <Icon icon="mdi:arrow-up-circle" width="14" style={{ color: '#10b981', flexShrink: 0 }} />
-                            <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
-                                {joiners.slice(0, 4).map((u, i) => renderAvatar(u, i, false))}
-                                {joiners.length > 4 && (
-                                    <span style={{ fontSize: '10px', color: '#10b981', alignSelf: 'center' }}>+{joiners.length - 4}</span>
-                                )}
+                            <Icon icon="mdi:sparkles" width="13" style={{ color: '#10b981', flexShrink: 0 }} />
+                            <div style={{ display: 'flex', gap: '2px' }}>
+                                {joiners.slice(0, 5).map((u, i) => renderAvatar(u, i, false))}
                             </div>
+                            <span style={{ fontSize: '10px', color: '#10b981', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {getNames(joiners, 3)}
+                            </span>
                         </>
                     )}
                 </div>
 
-                {/* CENTER: Summary + Time */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6b7280', fontSize: '10px', flexShrink: 0 }}>
-                    <span>{getSummary()}</span>
-                    <span style={{ opacity: 0.5 }}>·</span>
-                    <span style={{ opacity: 0.5 }}>{formatTime(timestamp)}</span>
-                </div>
+                {/* CENTER: Time */}
+                <span style={{ fontSize: '9px', color: '#555', flexShrink: 0 }}>{formatTime(timestamp)}</span>
 
                 {/* RIGHT: Leavers */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
                     {leavers.length > 0 && (
                         <>
-                            <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                {leavers.slice(0, 4).map((u, i) => renderAvatar(u, i, true))}
-                                {leavers.length > 4 && (
-                                    <span style={{ fontSize: '10px', color: '#666', alignSelf: 'center' }}>+{leavers.length - 4}</span>
-                                )}
+                            <span style={{ fontSize: '10px', color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>
+                                {getNames(leavers, 3)}
+                            </span>
+                            <div style={{ display: 'flex', gap: '2px' }}>
+                                {leavers.slice(0, 5).map((u, i) => renderAvatar(u, i, true))}
                             </div>
-                            <Icon icon="mdi:arrow-down-circle" width="14" style={{ color: '#666', flexShrink: 0 }} />
+                            <Icon icon="mdi:ghost-outline" width="13" style={{ color: '#555', flexShrink: 0 }} />
                         </>
                     )}
                 </div>
