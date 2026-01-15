@@ -163,32 +163,25 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
 
     if (!init) {
         return (
-            <>
-                <div
-                    className={className}
-                    style={{
-                        ...wrapperStyle,
-                        background: 'linear-gradient(135deg, #4f46e5 0%, #0c0c16 50%, #db2777 100%)',
-                    }}
-                />
-                <div style={waveOverlayStyle} />
-            </>
+            <div
+                className={className}
+                style={{
+                    ...wrapperStyle,
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #0c0c16 50%, #db2777 100%)',
+                }}
+            />
         );
     }
 
     return (
-        <>
-            <div style={wrapperStyle}>
-                <Particles
-                    id="tsparticles"
-                    className={className}
-                    particlesLoaded={particlesLoaded}
-                    options={options}
-                />
-            </div>
-            <div style={waveOverlayStyle} />
-            {isZooming && <div style={lightTrailsStyle} />}
-        </>
+        <div style={wrapperStyle}>
+            <Particles
+                id="tsparticles"
+                className={className}
+                particlesLoaded={particlesLoaded}
+                options={options}
+            />
+        </div>
     );
 }
 
