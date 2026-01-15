@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 import { useCameraEffects } from "@/hooks/useCameraEffects";
 import { useSocket } from "@/lib/socket";
