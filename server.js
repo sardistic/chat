@@ -384,7 +384,7 @@ async function saveMessageToDB(message) {
   }
 }
 
-// Log user session (join/leave) to database for analytics
+// Log user session (join/leave) to database for analytics AND Umami
 async function logUserSession(socket, action, user, roomId) {
   try {
     // Extract IP from socket headers (Railway/Cloudflare)
@@ -392,6 +392,7 @@ async function logUserSession(socket, action, user, roomId) {
     const ipAddress = forwarded ? forwarded.split(',')[0].trim() : socket.handshake?.address;
     const userAgent = socket.handshake?.headers?.['user-agent'];
 
+    // 1. Log to DB
     await prisma.userSession.create({
       data: {
         userId: user?.id || null,
@@ -410,6 +411,34 @@ async function logUserSession(socket, action, user, roomId) {
       }
     });
     console.log(`[Session] Logged ${action} for ${user?.name || 'Unknown'} in ${roomId} (IP: ${ipAddress?.substring(0, 16) || 'unknown'})`);
+
+    // 2. Send to Umami (Server-side Event)
+    // We fire and forget this to not slow down the request
+    const UMAMI_HOST = 'https://umami-production-d60f.up.railway.app';
+    const UMAMI_ID = '6e459b3d-02a8-420e-baba-2c583cb7e2ab';
+
+    fetch(`${UMAMI_HOST}/api/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': userAgent || 'Node-Server-Side'
+      },
+      body: JSON.stringify({
+        type: 'event',
+        payload: {
+          website: UMAMI_ID,
+          hostname: 'chat.sardistic.com',
+          url: `/room/${roomId}`,
+          name: `user-${action}`, // 'user-join' or 'user-leave'
+          data: {
+            username: user?.name || 'Unknown',
+            role: user?.role || 'USER',
+            userId: user?.id
+          }
+        }
+      })
+    }).catch(e => console.error('[Umami] Failed to send event:', e.message));
+
   } catch (err) {
     console.error('[Session] Failed to log:', err.message);
   }
