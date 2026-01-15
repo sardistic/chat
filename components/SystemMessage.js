@@ -49,97 +49,122 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Minimal style for join/leave events with optional Avatars
+    // Minimal style for join/leave events - REDESIGNED with split layout
     if (systemType === 'join-leave') {
         const users = metadata?.users || [];
+        const joiners = users.filter(u => u.action === 'joined' || !u.action?.includes('left'));
+        const leavers = users.filter(u => u.action === 'left' || u.action?.includes('left'));
+
+        // Time ago helper
+        const timeAgo = (ts) => {
+            if (!ts) return '';
+            const diff = Math.floor((Date.now() - ts) / 1000);
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            return `${Math.floor(diff / 3600)}h ago`;
+        };
+
+        // Avatar renderer for a single user
+        const renderAvatar = (u, i, isLeaver = false) => (
+            <motion.div
+                key={u.name || i}
+                layout
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.05 }}
+                title={`${u.name}${isLeaver ? ' left' : ' joined'} ${timeAgo(u.timestamp)}`}
+                style={{ position: 'relative', cursor: 'pointer' }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onUserClick({ name: u.name, avatar: u.avatar || u.image, color: u.color }, e);
+                }}
+                whileHover={{ scale: 1.15 }}
+            >
+                <img
+                    src={u.avatar || u.image || `/api/avatar/${u.name || 'guest'}`}
+                    alt={u.name}
+                    style={{
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        border: isLeaver ? '1.5px solid #666' : '1.5px solid #10b981',
+                        opacity: isLeaver ? 0.4 : 1,
+                        filter: isLeaver ? 'grayscale(100%)' : 'none',
+                        objectFit: 'cover',
+                        background: '#222'
+                    }}
+                    onError={(e) => {
+                        const initials = u.name?.charAt(0).toUpperCase() || '?';
+                        e.target.outerHTML = `<div style="width:22px;height:22px;border-radius:50%;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:10px;color:white;font-weight:700;border:1.5px solid ${isLeaver ? '#666' : '#10b981'};opacity:${isLeaver ? 0.4 : 1}">${initials}</div>`;
+                    }}
+                />
+            </motion.div>
+        );
+
+        // Compact summary text
+        const getSummary = () => {
+            const parts = [];
+            if (joiners.length > 0) parts.push(`${joiners.length} joined`);
+            if (leavers.length > 0) parts.push(`${leavers.length} left`);
+            return parts.join(' · ') || 'Activity';
+        };
 
         return (
-            <div style={{
-                padding: '6px 12px',
-                fontSize: '12px',
-                color: '#9ca3af', // Gray-400 (Lighter)
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4px',
-                justifyContent: 'center',
-                opacity: 1,
-                background: 'var(--glass-bg)', // Glass bg
-                borderRadius: '8px',
-                margin: '4px 0',
-                border: '1px solid var(--glass-border)'
-            }}>
-                {/* Avatar Stripe */}
-                {users.length > 0 && (
-                    <div style={{ display: 'flex', gap: '4px', marginBottom: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                        {users.map((u, i) => (
-                            <motion.div
-                                key={u.name || i} // Name is unique per bundle usually
-                                layout // Allow sliding when new items added
-                                initial={{ scale: 0, opacity: 0, y: 10 }}
-                                animate={{ scale: 1, opacity: 1, y: 0 }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                                className="relative group"
-                                title={u.name}
-                                style={{ position: 'relative', cursor: 'pointer' }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onUserClick({ name: u.name, avatar: u.avatar || u.image, color: u.color }, e);
-                                }}
-                                whileHover={{ scale: 1.15 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <img
-                                    src={u.avatar || u.image || `/api/avatar/${u.name || 'guest'}`}
-                                    alt={u.name}
-                                    style={{
-                                        width: '24px',
-                                        height: '24px',
-                                        borderRadius: '50%',
-                                        border: u.action && u.action.includes('left') ? '1px solid #666' : '1px solid #10b981',
-                                        opacity: u.action && u.action.includes('left') ? 0.5 : 1,
-                                        filter: u.action && u.action.includes('left') ? 'grayscale(100%)' : 'none',
-                                        objectFit: 'cover',
-                                        background: '#333'
-                                    }}
-                                    onError={(e) => {
-                                        // Fallback to initial if image fails
-                                        const initials = u.name?.charAt(0).toUpperCase() || '?';
-                                        const parent = e.target.parentNode;
-                                        e.target.style.display = 'none';
-                                        parent.style.backgroundColor = '#4f46e5'; // Indigo-600
-                                        parent.style.display = 'flex';
-                                        parent.style.alignItems = 'center';
-                                        parent.style.justifyContent = 'center';
-                                        parent.innerText = initials;
-                                        parent.style.fontSize = '11px';
-                                        parent.style.color = 'white';
-                                        parent.style.fontWeight = '800';
-                                        parent.style.width = '24px';
-                                        parent.style.height = '24px';
-                                        parent.style.borderRadius = '50%';
-                                        parent.style.border = '1px solid rgba(255,255,255,0.2)';
-                                    }}
-                                />
-                                {/* Status Indicator Dot */}
-                                {u.action === 'cam-up' && (
-                                    <div style={{
-                                        position: 'absolute', bottom: -2, right: -2,
-                                        width: '8px', height: '8px',
-                                        background: '#f43f5e', borderRadius: '50%', border: '1px solid #000'
-                                    }} />
+            <motion.div
+                layout
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                    padding: '8px 12px',
+                    fontSize: '11px',
+                    color: '#9ca3af',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    background: 'rgba(255,255,255,0.02)',
+                    borderRadius: '8px',
+                    margin: '3px 0',
+                    border: '1px solid rgba(255,255,255,0.05)'
+                }}
+            >
+                {/* LEFT: Joiners */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                    {joiners.length > 0 && (
+                        <>
+                            <Icon icon="mdi:arrow-up-circle" width="14" style={{ color: '#10b981', flexShrink: 0 }} />
+                            <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+                                {joiners.slice(0, 4).map((u, i) => renderAvatar(u, i, false))}
+                                {joiners.length > 4 && (
+                                    <span style={{ fontSize: '10px', color: '#10b981', alignSelf: 'center' }}>+{joiners.length - 4}</span>
                                 )}
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', justifyContent: 'center' }}>
-                    <Icon icon="mdi:account-group-outline" width="14" />
-                    <span>{text}</span>
-                    <span style={{ opacity: 0.4, fontSize: '10px', marginLeft: '4px' }}>{formatTime(timestamp)}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
-            </div>
+
+                {/* CENTER: Summary + Time */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6b7280', fontSize: '10px', flexShrink: 0 }}>
+                    <span>{getSummary()}</span>
+                    <span style={{ opacity: 0.5 }}>·</span>
+                    <span style={{ opacity: 0.5 }}>{formatTime(timestamp)}</span>
+                </div>
+
+                {/* RIGHT: Leavers */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+                    {leavers.length > 0 && (
+                        <>
+                            <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                {leavers.slice(0, 4).map((u, i) => renderAvatar(u, i, true))}
+                                {leavers.length > 4 && (
+                                    <span style={{ fontSize: '10px', color: '#666', alignSelf: 'center' }}>+{leavers.length - 4}</span>
+                                )}
+                            </div>
+                            <Icon icon="mdi:arrow-down-circle" width="14" style={{ color: '#666', flexShrink: 0 }} />
+                        </>
+                    )}
+                </div>
+            </motion.div>
         );
     }
 
