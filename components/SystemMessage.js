@@ -76,7 +76,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.03 }}
-                title={u.name}
+                title={`${u.name || 'User'} • ${new Date(u.timestamp || timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                 style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -112,12 +112,15 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                         fontSize: '9px',
                         color: isLeaver ? '#666' : '#10b981',
                         whiteSpace: 'nowrap',
-                        maxWidth: '50px',
+                        maxWidth: '80px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         textAlign: 'center'
                     }}>
                         {u.name?.slice(0, 8)}
+                        <span style={{ opacity: 0.5, marginLeft: '2px' }}>
+                            {new Date(u.timestamp || timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                     </div>
                 )}
             </motion.div>

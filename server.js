@@ -1506,7 +1506,11 @@ app.prepare().then(async () => {
       const room = rooms.get(roomId);
       // Get username from room map first, then socket.data as fallback
       const fallback = lastKnownUsers.get(socket.id);
-      let userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
+      let userName = socket.data.user?.name || fallback?.user?.name;
+      if (!userName) {
+        const fid = socket.data.user?.id || fallback?.user?.id;
+        userName = fid ? `User ${fid.slice(0, 4)}` : `Anon ${socket.id.slice(0, 4)}`;
+      }
       if (room) {
         const u = room.get(socket.id);
         if (u?.name) userName = u.name;
@@ -2034,7 +2038,12 @@ app.prepare().then(async () => {
       }
 
       const fallback = lastKnownUsers.get(socket.id);
-      const userName = socket.data.user?.name || fallback?.user?.name || 'Someone';
+      let userName = socket.data.user?.name || fallback?.user?.name;
+
+      if (!userName) {
+        const fid = socket.data.user?.id || fallback?.user?.id;
+        userName = fid ? `User ${fid.slice(0, 4)}` : `Anon ${socket.id.slice(0, 4)}`;
+      }
       let systemMsg = null;
       let shouldUpdateExisting = false;
 
