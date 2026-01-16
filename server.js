@@ -88,6 +88,37 @@ let messageHistory = {}; // roomId -> Array
 
 // Bundling Storage
 const bundles = new Map(); // roomId -> { type: { id, users, timestamp } }
+const BUNDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minute window for bundling
+
+// Helper: Get active bundle for a room
+function getBundle(roomId, type) {
+  const roomBundles = bundles.get(roomId);
+  if (!roomBundles) return null;
+
+  const bundle = roomBundles[type];
+  if (!bundle) return null;
+
+  // Check if bundle is expired
+  if (Date.now() - bundle.timestamp > BUNDLE_TIMEOUT_MS) {
+    delete roomBundles[type];
+    return null;
+  }
+
+  return bundle;
+}
+
+// Helper: Set/create a bundle for a room
+function setBundle(roomId, type, id, users) {
+  if (!bundles.has(roomId)) {
+    bundles.set(roomId, {});
+  }
+
+  bundles.get(roomId)[type] = {
+    id,
+    users,
+    timestamp: Date.now()
+  };
+}
 
 // Identity Persistence Cache
 const lastKnownUsers = new Map(); // socket.id -> { user, roomId }
