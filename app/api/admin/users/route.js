@@ -26,6 +26,9 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get("page") || "1");
         const limit = parseInt(searchParams.get("limit") || "10");
+        const search = searchParams.get("search") || "";
+        const roleFilter = searchParams.get("role") || "";
+        const statusFilter = searchParams.get("status") || "";
         const sort = searchParams.get("sort") || "createdAt";
         const dir = searchParams.get("dir") === "asc" ? "asc" : "desc";
         const ipFilter = searchParams.get("ip") || "";
