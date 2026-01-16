@@ -23,17 +23,42 @@ export async function GET(req) {
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
         const page = parseInt(searchParams.get('page') || '0');
+        const sort = searchParams.get('sort') || 'timestamp';
+        const dir = searchParams.get('dir') === 'asc' ? 'asc' : 'desc';
+        // Filters
+        const action = searchParams.get('action') || "";
+        const userId = searchParams.get('userId') || "";
+        const roomId = searchParams.get('roomId') || "";
+
+        // Build Where
+        const where = {
+            AND: [
+                action ? { action: action } : {},
+                userId ? { OR: [{ userId: { contains: userId } }, { displayName: { contains: userId, mode: 'insensitive' } }] } : {},
+                roomId ? { roomId: { contains: roomId, mode: 'insensitive' } } : {},
+            ]
+        };
+
+        // Build Order
+        let orderBy = {};
+        if (sort === 'timestamp') orderBy = { timestamp: dir };
+        else if (sort === 'action') orderBy = { action: dir };
+        else if (sort === 'displayName') orderBy = { displayName: dir };
+        else if (sort === 'roomId') orderBy = { roomId: dir };
+        else if (sort === 'ipAddress') orderBy = { ipAddress: dir };
+        else orderBy = { timestamp: 'desc' };
 
         const sessions = await prisma.userSession.findMany({
+            where,
             take: limit,
             skip: page * limit,
-            orderBy: { timestamp: 'desc' },
+            orderBy,
             include: {
                 // Optional: Include relation if we added one (we didn't, but we store userId)
             }
         });
 
-        const count = await prisma.userSession.count();
+        const count = await prisma.userSession.count({ where });
 
         return NextResponse.json({
             success: true,

@@ -26,9 +26,9 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get("page") || "1");
         const limit = parseInt(searchParams.get("limit") || "10");
-        const search = searchParams.get("search") || "";
-        const roleFilter = searchParams.get("role") || "";
-        const statusFilter = searchParams.get("status") || ""; // banned, muted, online
+        const sort = searchParams.get("sort") || "createdAt";
+        const dir = searchParams.get("dir") === "asc" ? "asc" : "desc";
+        const ipFilter = searchParams.get("ip") || "";
 
         const skip = (page - 1) * limit;
 
@@ -48,8 +48,19 @@ export async function GET(request) {
                 roleFilter ? { role: roleFilter } : {},
                 // Status Filter
                 statusFilter === 'banned' ? { isBanned: true } : {},
+                // IP Filter
+                ipFilter ? { ipAddress: { contains: ipFilter } } : {},
             ]
         };
+
+        // Dynamic Sorting
+        let orderBy = {};
+        if (sort === 'createdAt') orderBy = { createdAt: dir };
+        else if (sort === 'lastSeen') orderBy = { lastSeen: dir };
+        else if (sort === 'name') orderBy = { name: dir };
+        else if (sort === 'role') orderBy = { role: dir };
+        else if (sort === 'ipAddress') orderBy = { ipAddress: dir };
+        else orderBy = { createdAt: 'desc' }; // Default
 
         // 4. Fetch Data
         const [users, total] = await Promise.all([
@@ -57,7 +68,7 @@ export async function GET(request) {
                 where,
                 skip,
                 take: limit,
-                orderBy: { createdAt: 'desc' }, // Newest first
+                orderBy,
                 select: {
                     id: true,
                     name: true,

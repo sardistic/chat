@@ -26,6 +26,32 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const [actionLoading, setActionLoading] = useState(null); // userId being acted upon
     const dragControls = useDragControls();
 
+    // Sort & Filter State
+    const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
+    const [filters, setFilters] = useState({ ip: '', status: '' });
+    const [sessionSort, setSessionSort] = useState({ key: 'timestamp', direction: 'desc' });
+    const [sessionFilters, setSessionFilters] = useState({ action: '', userId: '', roomId: '' });
+
+    // Debounce Logic
+    const [debouncedSearch, setDebouncedSearch] = useState(search);
+    const [debouncedFilters, setDebouncedFilters] = useState(filters);
+    const [debouncedSessionFilters, setDebouncedSessionFilters] = useState(sessionFilters);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(search);
+            setDebouncedFilters(filters);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [search, filters]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSessionFilters(sessionFilters);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [sessionFilters]);
+
     const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'MODERATOR' || session?.user?.role === 'OWNER';
 
     // Fetch on open or search/filter change
@@ -33,14 +59,15 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
         if (!isOpen || !isAdmin) return;
 
         if (activeTab === 'users') {
-            const timer = setTimeout(() => {
-                fetchUsers(1);
-            }, search ? 300 : 0);
-            return () => clearTimeout(timer);
-        } else if (activeTab === 'sessions') {
+            fetchUsers(1);
+        }
+    }, [isOpen, debouncedSearch, roleFilter, debouncedFilters, sortConfig, activeTab]);
+
+    useEffect(() => {
+        if (isOpen && activeTab === 'sessions') {
             fetchSessions(0);
         }
-    }, [isOpen, search, roleFilter, activeTab]);
+    }, [isOpen, activeTab, sessionSort, debouncedSessionFilters]);
 
     const fetchUsers = async (page = 1) => {
         setLoading(true);
@@ -48,8 +75,12 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
             const params = new URLSearchParams({
                 page: page.toString(),
                 limit: "10",
-                search,
-                role: roleFilter
+                search: debouncedSearch,
+                role: roleFilter,
+                sort: sortConfig.key,
+                dir: sortConfig.direction,
+                ip: debouncedFilters.ip,
+                status: debouncedFilters.status
             });
             const res = await fetch(`/api/admin/users?${params}`);
             const data = await res.json();
@@ -67,7 +98,16 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const fetchSessions = async (page = 0) => {
         setSessionLoading(true);
         try {
-            const res = await fetch(`/api/admin/sessions?page=${page}&limit=20`);
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: "20",
+                sort: sessionSort.key,
+                dir: sessionSort.direction,
+                action: debouncedSessionFilters.action,
+                userId: debouncedSessionFilters.userId,
+                roomId: debouncedSessionFilters.roomId
+            });
+            const res = await fetch(`/api/admin/sessions?${params}`);
             const data = await res.json();
             if (data.success) {
                 setSessions(data.data);
@@ -279,6 +319,13 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                         onSelect={(id) => setSelectedUserId(id)}
                                         actionLoading={actionLoading}
                                         socket={socket}
+                                        sortConfig={sortConfig}
+                                        onSort={(key) => setSortConfig(prev => ({
+                                            key,
+                                            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+                                        }))}
+                                        filters={filters}
+                                        onFilterChange={(key, val) => setFilters(prev => ({ ...prev, [key]: val }))}
                                     />
                                 </>
                             )}
@@ -290,6 +337,13 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                     pagination={sessionPagination}
                                     onPageChange={(p) => fetchSessions(p)}
                                     onRefresh={() => fetchSessions(0)}
+                                    sortConfig={sessionSort}
+                                    onSort={(key) => setSessionSort(prev => ({
+                                        key,
+                                        direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+                                    }))}
+                                    filters={sessionFilters}
+                                    onFilterChange={(key, val) => setSessionFilters(prev => ({ ...prev, [key]: val }))}
                                 />
                             )}
                         </div>
@@ -338,9 +392,56 @@ function Badge({ role }) {
     );
 }
 
+// Sortable Header Component
+function SortableHeader({ label, sortKey, currentSort, onSort, filter, onFilterChange }) {
+    const isActive = currentSort?.key === sortKey;
+
+    return (
+        <th style={{ padding: '8px 12px', verticalAlign: 'top' }}>
+            {/* Header Title & Sort */}
+            <div
+                onClick={() => onSort && onSort(sortKey)}
+                style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    cursor: onSort ? 'pointer' : 'default',
+                    color: isActive ? 'white' : '#888',
+                    fontWeight: '600', fontSize: '12px',
+                    userSelect: 'none', marginBottom: '8px'
+                }}
+            >
+                {label}
+                {isActive && (
+                    <Icon icon={currentSort.direction === 'asc' ? 'fa:sort-asc' : 'fa:sort-desc'} width="10" />
+                )}
+            </div>
+
+            {/* Filter Input */}
+            {onFilterChange && (
+                <input
+                    type="text"
+                    value={filter || ''}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => onFilterChange(e.target.value)}
+                    placeholder="Filter..."
+                    style={{
+                        width: '100%',
+                        background: 'rgba(0,0,0,0.2)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '4px',
+                        padding: '4px 6px',
+                        color: 'white',
+                        fontSize: '11px',
+                        outline: 'none'
+                    }}
+                />
+            )}
+        </th>
+    );
+}
+
 // Memoized Users Table to prevent lag during search typing
 // Memoized Users Table to prevent lag during search typing
-function UsersTable({ users, loading, pagination, onPageChange, onAction, onSelect, actionLoading, socket }) {
+function UsersTable({ users, loading, pagination, onPageChange, onAction, onSelect, actionLoading, socket, sortConfig, onSort, filters, onFilterChange }) {
     return (
         <div style={{
             background: '#202226', borderRadius: '8px',
@@ -349,12 +450,16 @@ function UsersTable({ users, loading, pagination, onPageChange, onAction, onSele
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                 <thead>
                     <tr style={{ background: 'rgba(0,0,0,0.2)', textAlign: 'left', color: '#888' }}>
-                        <th style={{ padding: '12px 16px', fontWeight: '500' }}>User</th>
-                        <th style={{ padding: '12px 16px', fontWeight: '500' }}>Type</th>
-                        <th style={{ padding: '12px 16px', fontWeight: '500' }}>Role</th>
-                        <th style={{ padding: '12px 16px', fontWeight: '500' }}>Last IP</th>
-                        <th style={{ padding: '12px 16px', fontWeight: '500' }}>Status</th>
-                        <th style={{ padding: '12px 16px', fontWeight: '500' }}>Activity</th>
+                        <SortableHeader label="User" sortKey="name" currentSort={sortConfig} onSort={onSort}
+                            filter={filters.name} onFilterChange={(val) => onFilterChange('name', val)} />
+                        <SortableHeader label="Type" sortKey="isGuest" currentSort={sortConfig} onSort={onSort} />
+                        <SortableHeader label="Role" sortKey="role" currentSort={sortConfig} onSort={onSort}
+                            filter={filters.role} onFilterChange={(val) => onFilterChange('role', val)} />
+                        <SortableHeader label="Last IP" sortKey="ipAddress" currentSort={sortConfig} onSort={onSort}
+                            filter={filters.ip} onFilterChange={(val) => onFilterChange('ip', val)} />
+                        <SortableHeader label="Status" sortKey="isBanned" currentSort={sortConfig} onSort={onSort}
+                            filter={filters.status} onFilterChange={(val) => onFilterChange('status', val)} />
+                        <SortableHeader label="Last Seen" sortKey="lastSeen" currentSort={sortConfig} onSort={onSort} />
                         <th style={{ padding: '12px 16px', fontWeight: '500', textAlign: 'right' }}>Actions</th>
                     </tr>
                 </thead>
@@ -506,7 +611,7 @@ function UsersTable({ users, loading, pagination, onPageChange, onAction, onSele
 
 // Memoized Sessions Table
 // Memoized Sessions Table
-function SessionsTable({ sessions, loading, pagination, onPageChange, onRefresh }) {
+function SessionsTable({ sessions, loading, pagination, onPageChange, onRefresh, sortConfig, onSort, filters, onFilterChange }) {
     return (
         <div style={{ background: '#202226', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>
             <div style={{ padding: '16px', display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
@@ -515,11 +620,14 @@ function SessionsTable({ sessions, loading, pagination, onPageChange, onRefresh 
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                     <tr style={{ background: 'rgba(0,0,0,0.2)', textAlign: 'left', color: '#888' }}>
-                        <th style={{ padding: '12px 16px' }}>Time</th>
-                        <th style={{ padding: '12px 16px' }}>Action</th>
-                        <th style={{ padding: '12px 16px' }}>User</th>
-                        <th style={{ padding: '12px 16px' }}>Room</th>
-                        <th style={{ padding: '12px 16px' }}>IP / Device</th>
+                        <SortableHeader label="Time" sortKey="timestamp" currentSort={sortConfig} onSort={onSort} />
+                        <SortableHeader label="Action" sortKey="action" currentSort={sortConfig} onSort={onSort}
+                            filter={filters.action} onFilterChange={(val) => onFilterChange('action', val)} />
+                        <SortableHeader label="User" sortKey="displayName" currentSort={sortConfig} onSort={onSort}
+                            filter={filters.userId} onFilterChange={(val) => onFilterChange('userId', val)} />
+                        <SortableHeader label="Room" sortKey="roomId" currentSort={sortConfig} onSort={onSort}
+                            filter={filters.roomId} onFilterChange={(val) => onFilterChange('roomId', val)} />
+                        <SortableHeader label="IP / Device" sortKey="ipAddress" currentSort={sortConfig} onSort={onSort} />
                         <th style={{ padding: '12px 16px' }}>Meta</th>
                     </tr>
                 </thead>
