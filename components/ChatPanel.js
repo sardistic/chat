@@ -23,6 +23,35 @@ function groupMessages(messages) {
         const isWithinTimeWindow = prevMsg &&
             (new Date(msg.timestamp) - new Date(prevMsg.timestamp)) < 5 * 60 * 1000; // 5 minutes
 
+        // Special handling for merging adjacent system join/leave messages
+        // This condenses "User Joined" spam into a single expandable block
+        if (msg.type === 'system' && msg.systemType === 'join-leave' &&
+            currentGroup && currentGroup.sender === 'System') {
+
+            const lastMsg = currentGroup.messages[currentGroup.messages.length - 1];
+
+            // Check if last message was also a join/leave event within the time window
+            if (lastMsg && lastMsg.systemType === 'join-leave' &&
+                (new Date(msg.timestamp) - new Date(lastMsg.timestamp)) < 5 * 60 * 1000) {
+
+                // Create a merged message object (avoid mutating the original prop)
+                const mergedMsg = {
+                    ...lastMsg,
+                    metadata: {
+                        ...lastMsg.metadata,
+                        users: [
+                            ...(lastMsg.metadata?.users || []),
+                            ...(msg.metadata?.users || [])
+                        ]
+                    }
+                };
+
+                // Replace the last message with the merged version
+                currentGroup.messages[currentGroup.messages.length - 1] = mergedMsg;
+                return; // Skip standard addition
+            }
+        }
+
         if (isSameSender && isWithinTimeWindow && currentGroup) {
             // Add to current group
             currentGroup.messages.push(msg);
