@@ -35,24 +35,49 @@ export async function GET(request) {
 
         const skip = (page - 1) * limit;
 
+        // Helper: Build filter condition (supports ! prefix for exclusion)
+        const buildFilter = (field, value) => {
+            if (!value) return {};
+            const isExclude = value.startsWith('!');
+            const cleanValue = isExclude ? value.slice(1) : value;
+            if (!cleanValue) return {};
+
+            const condition = { contains: cleanValue, mode: 'insensitive' };
+            return isExclude
+                ? { NOT: { [field]: condition } }
+                : { [field]: condition };
+        };
+
         // 3. Build Where Clause
         const where = {
             AND: [
                 // Search (Name, DisplayName, Email, ID)
-                search ? {
+                search ? (search.startsWith('!') ? {
+                    NOT: {
+                        OR: [
+                            { name: { contains: search.slice(1), mode: 'insensitive' } },
+                            { displayName: { contains: search.slice(1), mode: 'insensitive' } },
+                            { discordId: { contains: search.slice(1) } },
+                            { email: { contains: search.slice(1), mode: 'insensitive' } }
+                        ]
+                    }
+                } : {
                     OR: [
                         { name: { contains: search, mode: 'insensitive' } },
                         { displayName: { contains: search, mode: 'insensitive' } },
                         { discordId: { contains: search } },
                         { email: { contains: search, mode: 'insensitive' } }
                     ]
-                } : {},
+                }) : {},
                 // Role Filter
-                roleFilter ? { role: roleFilter } : {},
+                roleFilter ? (roleFilter.startsWith('!')
+                    ? { NOT: { role: roleFilter.slice(1).toUpperCase() } }
+                    : { role: roleFilter.toUpperCase() }) : {},
                 // Status Filter
-                statusFilter === 'banned' ? { isBanned: true } : {},
+                statusFilter === 'banned' ? { isBanned: true } :
+                    statusFilter === '!banned' ? { isBanned: false } : {},
                 // IP Filter
-                ipFilter ? { ipAddress: { contains: ipFilter } } : {},
+                buildFilter('ipAddress', ipFilter),
             ]
         };
 

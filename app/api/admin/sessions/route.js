@@ -30,12 +30,35 @@ export async function GET(req) {
         const userId = searchParams.get('userId') || "";
         const roomId = searchParams.get('roomId') || "";
 
+        // Helper: Build filter condition (supports ! prefix for exclusion)
+        const buildFilter = (field, value, options = {}) => {
+            if (!value) return {};
+            const isExclude = value.startsWith('!');
+            const cleanValue = isExclude ? value.slice(1) : value;
+            if (!cleanValue) return {};
+
+            const condition = options.exact
+                ? cleanValue
+                : { contains: cleanValue, mode: 'insensitive' };
+            return isExclude
+                ? { NOT: { [field]: condition } }
+                : { [field]: condition };
+        };
+
         // Build Where
         const where = {
             AND: [
-                action ? { action: action } : {},
-                userId ? { OR: [{ userId: { contains: userId } }, { displayName: { contains: userId, mode: 'insensitive' } }] } : {},
-                roomId ? { roomId: { contains: roomId, mode: 'insensitive' } } : {},
+                action ? (action.startsWith('!')
+                    ? { NOT: { action: action.slice(1) } }
+                    : { action: action }) : {},
+                userId ? (userId.startsWith('!') ? {
+                    NOT: {
+                        OR: [{ userId: { contains: userId.slice(1) } }, { displayName: { contains: userId.slice(1), mode: 'insensitive' } }]
+                    }
+                } : {
+                    OR: [{ userId: { contains: userId } }, { displayName: { contains: userId, mode: 'insensitive' } }]
+                }) : {},
+                buildFilter('roomId', roomId),
             ]
         };
 
