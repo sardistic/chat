@@ -88,6 +88,7 @@ let messageHistory = {}; // roomId -> Array
 
 // Bundling Storage
 const bundles = new Map(); // roomId -> { type: { id, users, timestamp } }
+const lastNonSystemMsgTime = new Map(); // roomId -> timestamp of last non-system message
 const BUNDLE_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 hour window for bundling
 
 // Helper: Get active bundle for a room
@@ -98,8 +99,16 @@ function getBundle(roomId, type) {
   const bundle = roomBundles[type];
   if (!bundle) return null;
 
-  // Check if bundle is expired
+  // Check if bundle is expired by TIME
   if (Date.now() - bundle.timestamp > BUNDLE_TIMEOUT_MS) {
+    delete roomBundles[type];
+    return null;
+  }
+
+  // Check if a non-system message was sent AFTER this bundle was created
+  // If so, we should start a new bundle
+  const lastChatTime = lastNonSystemMsgTime.get(roomId) || 0;
+  if (lastChatTime > bundle.timestamp) {
     delete roomBundles[type];
     return null;
   }
@@ -1844,6 +1853,9 @@ app.prepare().then(async () => {
         console.log(`[Mod] Shadow muted message from ${senderName} blocked`);
         return;
       }
+
+      // Track non-system message for bundle invalidation
+      lastNonSystemMsgTime.set(message.roomId, Date.now());
 
       storeMessage(message.roomId, message);
       io.to(message.roomId).emit('chat-message', message);
