@@ -88,7 +88,7 @@ let messageHistory = {}; // roomId -> Array
 
 // Bundling Storage
 const bundles = new Map(); // roomId -> { type: { id, users, timestamp } }
-const BUNDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minute window for bundling
+const BUNDLE_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 hour window for bundling
 
 // Helper: Get active bundle for a room
 function getBundle(roomId, type) {
