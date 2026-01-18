@@ -4,8 +4,9 @@ import { useEffect, useRef } from 'react';
 
 // Global event system for triggering ripples from anywhere
 const rippleCallbacks = new Set();
-export function triggerDotRipple(type = 'chat') {
-    rippleCallbacks.forEach(cb => cb(type));
+export function triggerDotRipple(type = 'chat', originY = null) {
+    // originY: if null, defaults to bottom of screen (chat area)
+    rippleCallbacks.forEach(cb => cb(type, originY));
 }
 
 /**
@@ -70,27 +71,39 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         let width, height;
         const ripples = ripplesRef.current;
 
-        // Ripple class - travels right to left
+        // Ripple class - travels diagonally left+up from bottom-right
         class Ripple {
-            constructor(type = 'chat') {
-                this.x = width + params.rippleWidth; // Start off screen right
+            constructor(type = 'chat', originY = null) {
+                // Start from bottom-right corner
+                this.originX = width;
+                this.originY = originY !== null ? originY : height * 0.85;
+                this.radius = 0; // Expanding circle from origin
                 this.type = type;
                 this.alive = true;
             }
 
             update() {
-                this.x -= params.rippleSpeed;
-                if (this.x < -params.rippleWidth) {
+                this.radius += params.rippleSpeed;
+                // Kill when radius exceeds screen diagonal
+                const maxDist = Math.sqrt(width * width + height * height);
+                if (this.radius > maxDist + params.rippleWidth) {
                     this.alive = false;
                 }
             }
 
-            getInfluence(dotX) {
-                const dist = Math.abs(dotX - this.x);
-                if (dist > params.rippleWidth) return 0;
-                // Smooth falloff - peaks at center of ripple
-                const t = 1 - (dist / params.rippleWidth);
-                return t * t * (3 - 2 * t); // smoothstep
+            getInfluence(dotX, dotY) {
+                // Distance from origin point
+                const dx = dotX - this.originX;
+                const dy = dotY - this.originY;
+                const dotDist = Math.sqrt(dx * dx + dy * dy);
+
+                // Ripple is a ring expanding outward
+                const distFromRing = Math.abs(dotDist - this.radius);
+                if (distFromRing > params.rippleWidth) return 0;
+
+                // Smooth falloff - peaks at ring edge
+                const t = 1 - (distFromRing / params.rippleWidth);
+                return t * t;
             }
         }
 
@@ -137,7 +150,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 let rippleGrowth = 0;
                 let rippleOpacity = 0;
                 for (const ripple of ripples) {
-                    const influence = ripple.getInfluence(this.x);
+                    const influence = ripple.getInfluence(this.x, this.y);
                     if (influence > 0) {
                         rippleGrowth += influence * params.rippleGrowth;
                         rippleOpacity += influence * params.rippleOpacity;
@@ -225,8 +238,8 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         };
 
         // Register ripple trigger callback
-        const onRippleTrigger = (type) => {
-            ripples.push(new Ripple(type));
+        const onRippleTrigger = (type, originY) => {
+            ripples.push(new Ripple(type, originY));
         };
         rippleCallbacks.add(onRippleTrigger);
 
