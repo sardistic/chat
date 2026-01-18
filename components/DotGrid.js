@@ -1,525 +1,372 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
-// Global event system for triggering ripples from anywhere
-const rippleCallbacks = new Set();
-
-// Tile position registry - maps username to { x, y } center coordinates
+// Global registry for tile positions
 const tilePositions = new Map();
 export function registerTilePosition(username, x, y) {
     tilePositions.set(username, { x, y });
-    console.log(`[TilePos] Registered ${username} at (${Math.round(x)}, ${Math.round(y)})`);
 }
 export function unregisterTilePosition(username) {
     tilePositions.delete(username);
 }
 export function getTilePosition(username) {
-    const pos = tilePositions.get(username);
-    console.log(`[TilePos] Lookup ${username}: ${pos ? `(${Math.round(pos.x)}, ${Math.round(pos.y)})` : 'not found'}`);
-    return pos || null;
+    return tilePositions.get(username) || null;
 }
 
-// Intensity presets - slowed down for smoother feel
-const RIPPLE_PRESETS = {
-    keystroke: { speed: 40, width: 200, growth: 1, opacity: 0.15 },
-    typing: { speed: 35, width: 300, growth: 1.5, opacity: 0.2 },
-    message: { speed: 25, width: 450, growth: 3, opacity: 0.4 }, // Much slower
-    system: { speed: 30, width: 350, growth: 2, opacity: 0.3 },
-};
-
-
+// Global ripple event bus
+const rippleCallbacks = new Set();
 export function triggerDotRipple(type = 'message', origin = null, color = '#ffffff', intensity = 1.0) {
-    // type: 'keystroke', 'typing', 'message', 'system'
-    // origin: { x, y } coordinates, or null for default (bottom-right)
-    // color: hex color for the ripple tint
-    // intensity: 0-1 multiplier for effect strength
-    console.log(`[Ripple] type=${type} origin=${JSON.stringify(origin)} color=${color}`);
     rippleCallbacks.forEach(cb => cb(type, origin, color, intensity));
 }
 
+// Ripple Presets
+const RIPPLE_PRESETS = {
+    keystroke: { speed: 40, width: 200, growth: 1, opacity: 0.15 },
+    typing: { speed: 35, width: 300, growth: 1.5, opacity: 0.2 },
+    message: { speed: 25, width: 450, growth: 3, opacity: 0.4 },
+    system: { speed: 30, width: 350, growth: 2, opacity: 0.3 },
+};
+
 /**
- * DotGrid - Animated dot grid with proximity growth + wave effects + event ripples
- * Features: Fast mouse response, event-triggered ripples (right→left)
+ * DotGrid - Three.js WebGL GPU Implementation
+ * High performance 5-layer ferrofluid simulation
  */
 export default function DotGrid({ className = '', zoomLevel = 0 }) {
-    const canvasRef = useRef(null);
-    const mouseRef = useRef({ x: -1000, y: -1000, targetX: -1000, targetY: -1000 });
-    const animationRef = useRef(null);
-    const zoomRef = useRef({ current: zoomLevel, target: zoomLevel, velocity: 0 });
-    const ripplesRef = useRef([]);
+    const containerRef = useRef(null);
+    const mouseRef = useRef({ x: -1000, y: -1000 });
+
+    // Shader Uniforms References
+    const uniformsRef = useRef({
+        uTime: { value: 0 },
+        uMouse: { value: new THREE.Vector2(-1000, -1000) },
+        uScreenSize: { value: new THREE.Vector2(1, 1) },
+        uZoom: { value: 0 },
+        uDragFactor: { value: 1.0 }, // Default, overridden per layer
+        uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+        // Ripples (Max 20 active)
+        uRipples: { value: new Array(20).fill(new THREE.Vector3(0, 0, -1)) }, // (x, y, currentRadius)  Z=-1 is dead
+        uRippleParams: { value: new Array(20).fill(new THREE.Vector3(0, 0, 0)) }, // (width, opacity, unused)
+        // Note: activeRipples manages the logic
+    });
+
+    const activeRipples = useRef([]);
 
     useEffect(() => {
-        zoomRef.current.target = zoomLevel;
-    }, [zoomLevel]);
+        const container = containerRef.current;
+        if (!container) return;
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        // --- SCENE SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(0, 1, 0, 1, 0.1, 1000); // 0..1 coordinate system for ease
+        camera.position.z = 10;
 
-        const ctx = canvas.getContext('2d');
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
 
-        // Parameters - PERFORMANCE OPTIMIZED
-        const params = {
-            // Grid
-            size: 48,
-            baseRadius: 0.2,         // TINY base dots
-            radiusVariation: 0.1,
-            proximity: 300,          // Tighter area
-            growth: 22,              // HUGE at cursor
-            ease: 0.22,              // Faster snap
+        // --- GEOMETRY ---
+        // Create grid points
+        const gridSize = 45; // Pixel spacing
+        const cols = Math.ceil(window.innerWidth / gridSize) + 2;
+        const rows = Math.ceil(window.innerHeight / gridSize) + 2;
+        const count = cols * rows;
 
-            // Opacity - BRIGHT WHITE
-            baseOpacity: 0.25,       // More visible base
-            opacityVariation: 0.1,
-            maxOpacity: 1.0,         // Pure white at max
-            mouseOpacityBoost: 0.75,
+        const positions = new Float32Array(count * 3);
+        const randoms = new Float32Array(count); // Phase variations
 
-            // Wave animations - simplified
-            waveSpeed: 0.015,
-            waveGrowth: 0.8,         // Very subtle
-            waveOpacityBoost: 0.08,
+        let i = 0;
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                positions[i * 3] = x * gridSize;
+                positions[i * 3 + 1] = y * gridSize;
+                positions[i * 3 + 2] = 0;
 
-            // Event ripples - INSTANT and SUBTLE
-            rippleSpeed: 40,         // Near-instant sweep
-            rippleWidth: 400,        // Wide band for smooth look
-            rippleGrowth: 2,         // Very subtle size boost
-            rippleOpacity: 0.2,      // Gentle opacity boost
-
-            // Floating particles - reduced
-            particleCount: 6,
-            particleRadius: 0.3,
-            particleOpacity: 0.08,
-            particleSpeed: 0.1,
-            lineDistance: 60,
-            lineOpacity: 0.02,
-        };
-
-        let gridDots = [];
-        let particles = [];
-        let width, height;
-        const ripples = ripplesRef.current;
-
-        // Ripple class - colored, expanding ring from origin
-        class Ripple {
-            constructor(type = 'message', origin = null, color = '#ffffff', intensity = 1.0) {
-                // Origin: use provided {x, y} or default to bottom-right corner
-                this.originX = origin?.x ?? width;
-                this.originY = origin?.y ?? height * 0.85;
-                this.radius = 0;
-                this.type = type;
-                this.color = color;
-                this.intensity = Math.min(1, Math.max(0, intensity));
-                this.alive = true;
-
-                // Get preset or default
-                const preset = RIPPLE_PRESETS[type] || RIPPLE_PRESETS.message;
-                this.speed = preset.speed * this.intensity;
-                this.width = preset.width;
-                this.growthMult = preset.growth * this.intensity;
-                this.opacityMult = preset.opacity * this.intensity;
-
-                // Random rotation for variety in broken waves
-                this.rotationOffset = Math.random() * Math.PI * 2;
-            }
-
-            update() {
-                this.radius += this.speed;
-                const maxDist = Math.sqrt(width * width + height * height);
-                if (this.radius > maxDist + this.width) {
-                    this.alive = false;
-                }
-            }
-
-            getInfluence(dotX, dotY) {
-                const dx = dotX - this.originX;
-                const dy = dotY - this.originY;
-                const dotDist = Math.sqrt(dx * dx + dy * dy);
-
-                const distFromRing = Math.abs(dotDist - this.radius);
-                if (distFromRing > this.width) return 0;
-
-                // Base influence from distance to ring
-                const t = 1 - (distFromRing / this.width);
-                let influence = t * t;
-
-                // Broken wave: use angle-based noise to create gaps
-                const angle = Math.atan2(dy, dx) + this.rotationOffset;
-                // Create 4-6 segments with gaps
-                const segments = 5;
-                const wavePattern = Math.sin(angle * segments + this.radius * 0.02);
-                // Only show ~60% of the wave (gaps when pattern < -0.2)
-                if (wavePattern < -0.2) {
-                    influence *= 0.1; // Dim but not invisible in gaps
-                } else {
-                    // Boost visible segments
-                    influence *= 0.8 + wavePattern * 0.4;
-                }
-
-                return Math.max(0, influence);
+                randoms[i] = Math.random();
+                i++;
             }
         }
 
-        // Grid dot class
-        class GridDot {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.phase = Math.random() * Math.PI * 2;
-                this.wavePhase = Math.random() * Math.PI * 2;
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
 
-                this._radius = params.baseRadius + (Math.random() * params.radiusVariation);
-                this.radius = this._radius;
-                this.baseOpacity = params.baseOpacity + (Math.random() * params.opacityVariation);
-                this.opacity = this.baseOpacity;
-                this.targetOpacity = this.baseOpacity;
-                this.targetRadius = this._radius;
-
-                // Track current vs target magnetic pull for smoothing
-                this.currentMagX = 0;
-                this.currentMagY = 0;
-            }
-
-            update(mouseX, mouseY, time, ripples) {
-                // Simple single wave for performance
-                const wave = Math.sin(this.x * 0.004 + this.y * 0.003 + time * params.waveSpeed + this.phase);
-                const normalizedWave = (wave + 1) / 2;
-
-                const waveGrowth = normalizedWave * params.waveGrowth;
-                const waveOpacity = normalizedWave * params.waveOpacityBoost;
-
-                // Mouse proximity - simple smooth falloff
-                const dx = this.x - mouseX;
-                const dy = this.y - mouseY;
-                const distSq = dx * dx + dy * dy;
-                const proxSq = params.proximity * params.proximity;
-                let mouseGrowth = 0;
-                let mouseOpacity = 0;
-
-                // FLUID MAGNETIC PULL
-                let targetMagX = 0;
-                let targetMagY = 0;
-
-                if (distSq < proxSq) {
-                    const dist = Math.sqrt(distSq);
-                    const t = 1 - dist / params.proximity;
-                    const falloff = t * t;
-                    mouseGrowth = falloff * params.growth;
-                    mouseOpacity = falloff * params.mouseOpacityBoost;
-
-                    // "Ferrofluid" Pull: Pull the outer rings towards the mouse (negative direction)
-                    // We want the rings to look like they are being sucked towards the cursor
-                    const pullStrength = 15 * falloff; // Max pixel offset
-                    // Normalize direction
-                    const dirX = dx / (dist || 1);
-                    const dirY = dy / (dist || 1);
-
-                    targetMagX = -dirX * pullStrength;
-                    targetMagY = -dirY * pullStrength;
+        // --- SHADER ---
+        const vertexShader = `
+            uniform float uTime;
+            uniform vec2 uMouse;
+            uniform vec2 uScreenSize;
+            uniform float uZoom;
+            uniform float uDragFactor; 
+            uniform float uPixelRatio; // Added for correct sizing on Retina
+            
+            // Ripples
+            uniform vec3 uRipples[20]; 
+            uniform vec3 uRippleParams[20]; 
+            
+            attribute float aRandom;
+            
+            varying float vOpacity;
+            varying vec3 vColor;
+            varying float vSize;
+            
+            void main() {
+                vec3 pos = position;
+                
+                // 1. Mouse Magnetic Pull
+                float mouseDist = distance(pos.xy, uMouse);
+                float hoverRadius = 350.0;
+                
+                float hoverT = 1.0 - clamp(mouseDist / hoverRadius, 0.0, 1.0);
+                float falloff = hoverT * hoverT;
+                
+                if (mouseDist < hoverRadius) {
+                    vec2 dir = normalize(pos.xy - uMouse);
+                    // Negative direction = pull TOWARDS mouse
+                    // Increase strength slightly
+                    float strength = -35.0 * uDragFactor * falloff; 
+                    pos.xy += dir * strength;
                 }
-
-                // Viscous smoothing for magnetic effect
-                this.currentMagX += (targetMagX - this.currentMagX) * params.ease;
-                this.currentMagY += (targetMagY - this.currentMagY) * params.ease;
-                const magX = this.currentMagX;
-                const magY = this.currentMagY;
-
-                // Event ripple influence - WAVE EFFECT (overrides, doesn't add)
-                let rippleInfluence = 0;
-                let rippleColorBlend = null;
-                for (const ripple of ripples) {
-                    const influence = ripple.getInfluence(this.x, this.y);
-                    if (influence > rippleInfluence) {
-                        rippleInfluence = influence;
-                        rippleColorBlend = ripple.color;
+                
+                // 2. Wave Animation
+                float wave = sin(pos.x * 0.003 + pos.y * 0.002 + uTime * 1.5 + aRandom * 6.28);
+                float waveNorm = (wave + 1.0) * 0.5;
+                
+                // 3. Ripple Influence
+                float totalRippleInf = 0.0;
+                
+                for(int i = 0; i < 20; i++) {
+                    if (uRipples[i].z < 0.0) continue; 
+                    
+                    vec2 ripPos = uRipples[i].xy;
+                    float radius = uRipples[i].z;
+                    float width = uRippleParams[i].x;
+                    
+                    // Use transformed position or original? 
+                    // Original is better for wave stability, but transformed interacts nicely.
+                    // Let's use current dragged position for interaction
+                    float d = distance(pos.xy, ripPos);
+                    float distFromRing = abs(d - radius);
+                    
+                    if (distFromRing < width) {
+                        float t = 1.0 - (distFromRing / width);
+                        totalRippleInf += t * t; 
                     }
                 }
-                this.rippleColor = rippleColorBlend;
-                this.rippleInfluence = rippleInfluence;
+                totalRippleInf = clamp(totalRippleInf, 0.0, 1.0);
 
-                // Wave effect: ripple OVERRIDES size, creating sharp wave front
-                let finalRadius, finalOpacity;
-                if (rippleInfluence > 0.1) {
-                    // In wave: enlarged dots
-                    const waveSize = this._radius + 3 * rippleInfluence;
-                    const waveOpacity = 0.8 * rippleInfluence;
-                    finalRadius = waveSize;
-                    finalOpacity = waveOpacity;
+                // --- SIZING ---
+                float baseSize = 4.0; // Slightly larger base
+                float growSize = baseSize * 5.0 * falloff; 
+                float waveSize = baseSize * 0.5 * waveNorm; 
+                float ripSize = baseSize * 15.0 * totalRippleInf; 
+                
+                vSize = baseSize + growSize + waveSize + ripSize;
+                
+                // Layer specific size adjustment
+                if (uDragFactor > 0.3) {
+                     vSize *= (0.8 + 0.5 * uDragFactor); 
                 } else {
-                    // Outside wave: normal size with mouse/wave effects
-                    finalRadius = this._radius + waveGrowth + mouseGrowth;
-                    finalOpacity = this.baseOpacity + waveOpacity + mouseOpacity;
+                     vSize *= 0.6; 
                 }
-
-                // Fast easing
-                this.targetRadius = finalRadius;
-                this.radius += (this.targetRadius - this.radius) * params.ease;
-
-                this.targetOpacity = finalOpacity;
-                this.opacity += (this.targetOpacity - this.opacity) * params.ease;
-
-                // Store calculated values for render
-                this.drawMagX = magX;
-                this.drawMagY = magY;
+                
+                // Apply Pixel Ratio Scaling
+                gl_PointSize = vSize * (1.0 + uZoom * 0.2) * uPixelRatio;
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                
+                // --- COLOR / OPACITY ---
+                float baseOp = 0.15; // Slightly reduced base opacity
+                float opacity = baseOp + (falloff * 0.6) + (waveNorm * 0.15) + (totalRippleInf * 0.6);
+                
+                opacity *= (1.2 - uDragFactor * 0.8); 
+                
+                vOpacity = clamp(opacity, 0.0, 1.0);
+                vColor = vec3(1.0); 
             }
-        }
+        `;
 
-        // Floating particle
-        class Particle {
-            constructor() {
-                this.reset(true);
-            }
+        const fragmentShader = `
+            varying float vOpacity;
+            varying vec3 vColor;
+            varying float vSize;
+            uniform float uDragFactor;
 
-            reset(initial = false) {
-                this.x = initial ? Math.random() * width : (Math.random() < 0.5 ? 0 : width);
-                this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * params.particleSpeed;
-                this.vy = (Math.random() - 0.5) * params.particleSpeed;
-                this.radius = params.particleRadius + Math.random() * 0.4;
-                this.opacity = params.particleOpacity + Math.random() * 0.08;
-            }
-
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                if (this.x < -10 || this.x > width + 10 || this.y < -10 || this.y > height + 10) {
-                    this.reset();
+            void main() {
+                // Draw circle in PointStore
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                float dist = length(coord);
+                
+                // Discard corners
+                if (dist > 0.5) discard;
+                
+                // Antialias edge
+                float delta = 0.05;
+                float alpha = 1.0 - smoothstep(0.45 - delta, 0.45, dist);
+                
+                // Hollow Rings for Outer Layers
+                if (uDragFactor > 0.3) {
+                     // Create ring effect using distance field
+                     // Inner hole
+                     float innerStroke = 1.0 - smoothstep(0.35, 0.35 + delta, dist);
+                     // Result = Circle - InnerHole
+                     alpha -= innerStroke;
+                     alpha = max(0.0, alpha);
                 }
+                
+                gl_FragColor = vec4(vColor, vOpacity * alpha);
             }
+        `;
 
-            draw(ctx, mouseX, mouseY) {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-                ctx.fill();
+        // Create 5 Layers (Points Systems)
+        const layersData = [
+            { drag: 1.0, z: 0 },   // Outer
+            { drag: 0.8, z: 1 },
+            { drag: 0.6, z: 2 },
+            { drag: 0.4, z: 3 },
+            { drag: 0.2, z: 4 }    // Core
+        ];
 
-                const dx = this.x - mouseX;
-                const dy = this.y - mouseY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+        const layersMeshes = [];
 
-                if (distance < params.lineDistance && mouseX > 0) {
-                    const lineOpacity = (1 - distance / params.lineDistance) * params.lineOpacity;
-                    ctx.beginPath();
-                    ctx.moveTo(this.x, this.y);
-                    ctx.lineTo(mouseX, mouseY);
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${lineOpacity})`;
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                }
-            }
-        }
+        layersData.forEach(layer => {
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    ...uniformsRef.current,
+                    uDragFactor: { value: layer.drag }
+                },
+                vertexShader,
+                fragmentShader,
+                transparent: true,
+                depthWrite: false, // Important for overlapping blending
+                blending: THREE.AdditiveBlending
+            });
 
-        const build = () => {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
+            const mesh = new THREE.Points(geometry, material);
+            // We don't really use Z depth for occlusion since it's additive/transparent
+            // But we can sort them if needed. Additive doesn't require sorting.
+            scene.add(mesh);
+            layersMeshes.push(mesh);
+        });
 
-            gridDots = [];
-            const columns = Math.ceil(width / params.size) + 1;
-            const rows = Math.ceil(height / params.size) + 1;
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < columns; col++) {
-                    gridDots.push(new GridDot(col * params.size, row * params.size));
-                }
-            }
+        // --- RESIZE ---
+        camera.left = 0;
+        camera.right = window.innerWidth;
+        camera.top = 0;
+        camera.bottom = window.innerHeight;
+        camera.updateProjectionMatrix();
 
-            particles = [];
-            for (let i = 0; i < params.particleCount; i++) {
-                particles.push(new Particle());
-            }
+        const handleResize = () => {
+            // Rebuild geometry if needed? Or just expand camera
+            // For simplicity, just update camera and renderer
+            camera.right = window.innerWidth;
+            camera.bottom = window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            uniformsRef.current.uScreenSize.value.set(window.innerWidth, window.innerHeight);
         };
+        window.addEventListener('resize', handleResize);
 
-        const handleMouseMove = (e) => {
-            mouseRef.current.targetX = e.clientX;
-            mouseRef.current.targetY = e.clientY;
-        };
-
-        // Register ripple trigger callback
-        const onRippleTrigger = (type, originY, color, intensity) => {
-            ripples.push(new Ripple(type, originY, color, intensity));
-        };
-        rippleCallbacks.add(onRippleTrigger);
-
+        // --- ANIMATION LOOP ---
         let time = 0;
+        let reqId;
         const animate = () => {
-            time += 1;
+            reqId = requestAnimationFrame(animate);
+            time += 0.01;
 
-            // Update ripples
+            // Update Uniforms
+            uniformsRef.current.uTime.value = time;
+
+            // Mouse Lerp (JS side)
+            // (Vertex shader uses passed uniform directly)
+            // But we update the uniformRef value
+            const targetX = mouseRef.current.targetX || -1000;
+            const targetY = mouseRef.current.targetY || -1000;
+
+            const curX = uniformsRef.current.uMouse.value.x;
+            const curY = uniformsRef.current.uMouse.value.y;
+
+            // Lerp
+            uniformsRef.current.uMouse.value.x += (targetX - curX) * 0.15;
+            uniformsRef.current.uMouse.value.y += (targetY - curY) * 0.15; // Inverted Y? No, pixel space is 0-Height.
+            // Note: Threejs Ortho camera usually 0,0 center? 
+            // We set it 0..Width, 0..Height if we configured right.
+            // Let's check Setup: left=0, right=Width, top=0, bottom=Height.
+            // Wait, Standard Threejs Top is +Y? Canvas is +Y down.
+            // OrthoCamera( left, right, top, bottom )
+            // If top=0, bottom=Height -> Y increases DOWN. Matches Canvas coords! 
+
+
+            // Ripple Logic
+            const ripples = activeRipples.current;
+            const uRipples = uniformsRef.current.uRipples.value;
+            const uRippleParams = uniformsRef.current.uRippleParams.value;
+
+            // Reset uniforms to dead
+            for (let i = 0; i < 20; i++) uRipples[i].z = -1;
+
             for (let i = ripples.length - 1; i >= 0; i--) {
-                ripples[i].update();
-                if (!ripples[i].alive) {
+                const r = ripples[i];
+                r.radius += r.speed;
+
+                // Map to uniform array index
+                if (i < 20) {
+                    uRipples[i].set(r.x, r.y, r.radius);
+                    uRippleParams[i].set(r.width, 1.0, 0); // Opacity not fully used in basic vers
+                }
+
+                if (r.radius > window.innerWidth * 1.5) {
                     ripples.splice(i, 1);
                 }
             }
 
-            // Smooth mouse interpolation for even more responsive feel
-            const mouseEase = 0.25;
-            mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * mouseEase;
-            mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * mouseEase;
-
-            // Smooth zoom easing
-            const zoomState = zoomRef.current;
-            const zoomDiff = zoomState.target - zoomState.current;
-            zoomState.velocity += zoomDiff * 0.02;
-            zoomState.velocity *= 0.85;
-            zoomState.current += zoomState.velocity;
-
-            const zoom = zoomState.current;
-            const globalOpacity = zoom >= 1.8 ? Math.max(0, 1 - (zoom - 1.5) * 1.5) : 1;
-
-            ctx.clearRect(0, 0, width, height);
-
-            if (globalOpacity <= 0) {
-                animationRef.current = requestAnimationFrame(animate);
-                return;
-            }
-
-            const mouse = mouseRef.current;
-
-            // Apply zoom transform
-            if (zoom > 0.01) {
-                const scale = 1 + zoom * 0.2;
-                const centerX = width / 2;
-                const centerY = height / 2;
-                ctx.save();
-                ctx.translate(centerX, centerY);
-                ctx.scale(scale, scale);
-                ctx.translate(-centerX, -centerY);
-                ctx.globalAlpha = globalOpacity;
-            }
-
-            // Update all dots
-            for (const dot of gridDots) {
-                dot.update(mouse.x, mouse.y, time, ripples);
-            }
-
-            // Draw dots
-            for (const dot of gridDots) {
-                if (dot.opacity > 0.05 || dot.radius > 1) {
-                    // Blend white with ripple color based on influence
-                    let r = 255, g = 255, b = 255;
-                    if (dot.rippleColor && dot.rippleInfluence > 0.1 && dot.rippleColor !== '#ffffff') {
-                        // Parse hex color
-                        const hex = dot.rippleColor.replace('#', '');
-                        const cr = parseInt(hex.substr(0, 2), 16) || 255;
-                        const cg = parseInt(hex.substr(2, 2), 16) || 255;
-                        const cb = parseInt(hex.substr(4, 2), 16) || 255;
-                        // Influence determines how much of the user color we blend in
-                        const mix = Math.min(1, dot.rippleInfluence * 0.9);
-                        r = Math.round(255 * (1 - mix) + cr * mix);
-                        g = Math.round(255 * (1 - mix) + cg * mix);
-                        b = Math.round(255 * (1 - mix) + cb * mix);
-                    }
-
-                    // FLUID RINGS EFFECT - Multi-Layered Ferrofluid (5 Layers)
-                    // Creates a deep, viscous liquid look by stacking offsets
-
-                    if (dot.opacity > 0.05) {
-                        // 1. Outer Ring (Max Drag, Faint)
-                        const pulse1 = Math.sin(time * 0.02 + dot.x * 0.01 + dot.y * 0.01) * 0.5 + 0.5;
-                        const r1 = Math.max(0.5, dot.radius * (1.8 + pulse1 * 0.4));
-                        ctx.beginPath();
-                        ctx.arc(dot.x + (dot.drawMagX || 0) * 1.0, dot.y + (dot.drawMagY || 0) * 1.0, r1, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.1})`;
-                        ctx.lineWidth = 0.8;
-                        ctx.shadowBlur = 0;
-                        ctx.stroke();
-
-                        // 2. Outer-Mid Ring (High Drag)
-                        const pulse2 = Math.sin(time * 0.025 + dot.x * 0.015 + dot.y * 0.015 + 1) * 0.5 + 0.5;
-                        const r2 = Math.max(0.5, dot.radius * (1.5 + pulse2 * 0.3));
-                        ctx.beginPath();
-                        ctx.arc(dot.x + (dot.drawMagX || 0) * 0.8, dot.y + (dot.drawMagY || 0) * 0.8, r2, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.15})`;
-                        ctx.lineWidth = 0.9;
-                        ctx.stroke();
-
-                        // 3. Mid Ring (Med Drag)
-                        const pulse3 = Math.sin(time * 0.03 + dot.x * 0.02 + dot.y * 0.02 + 2) * 0.5 + 0.5;
-                        const r3 = Math.max(0.5, dot.radius * (1.2 + pulse3 * 0.25));
-                        ctx.beginPath();
-                        ctx.arc(dot.x + (dot.drawMagX || 0) * 0.6, dot.y + (dot.drawMagY || 0) * 0.6, r3, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.2})`;
-                        ctx.lineWidth = 1.0;
-                        ctx.stroke();
-
-                        // 4. Inner-Mid Ring (Low Drag)
-                        const pulse4 = Math.sin(time * 0.035 + dot.x * 0.025 + dot.y * 0.025 + 3) * 0.5 + 0.5;
-                        const r4 = Math.max(0.5, dot.radius * (0.9 + pulse4 * 0.2));
-                        ctx.beginPath();
-                        ctx.arc(dot.x + (dot.drawMagX || 0) * 0.4, dot.y + (dot.drawMagY || 0) * 0.4, r4, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.25})`;
-                        ctx.lineWidth = 1.1;
-                        ctx.stroke();
-                    }
-
-                    // 5. Inner Core (Anchored/Slight Drag)
-                    ctx.beginPath();
-                    // 20% Magnetic Pull (Very subtle movement)
-                    const coreX = dot.x + (dot.drawMagX || 0) * 0.2;
-                    const coreY = dot.y + (dot.drawMagY || 0) * 0.2;
-                    ctx.arc(coreX, coreY, dot.radius * 0.45, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity})`;
-                    ctx.fill();
-
-                    // shiny highlight on core
-                    if (dot.radius > 2) {
-                        ctx.beginPath();
-                        // Highlight moves with core
-                        ctx.arc(coreX - dot.radius * 0.15, coreY - dot.radius * 0.15, dot.radius * 0.15, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, dot.opacity + 0.4)})`;
-                        ctx.fill();
-                    }
-                }
-            }
-
-            // Draw floating particles
-            for (const particle of particles) {
-                particle.update();
-                particle.draw(ctx, mouse.x, mouse.y);
-            }
-
-            if (zoom > 0.01) {
-                ctx.restore();
-            }
-
-            animationRef.current = requestAnimationFrame(animate);
+            renderer.render(scene, camera);
         };
-
-        build();
-        window.addEventListener('resize', build);
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('touchmove', (e) => {
-            mouseRef.current.targetX = e.touches[0].clientX;
-            mouseRef.current.targetY = e.touches[0].clientY;
-        });
         animate();
 
+        // --- INPUTS ---
+        const handleMouseMove = (e) => {
+            mouseRef.current.targetX = e.clientX;
+            // WebGL Y is usually flipped? 
+            // We set Camera top=0, bottom=Height. It should match.
+            mouseRef.current.targetY = e.clientY;
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+
+        // Ripple Listener
+        const rippleHandler = (type, origin, color, intensity) => {
+            const preset = RIPPLE_PRESETS[type] || RIPPLE_PRESETS.message;
+            // Use origin or default
+            const rx = origin?.x ?? window.innerWidth;
+            const ry = origin?.y ?? window.innerHeight * 0.8;
+
+            activeRipples.current.push({
+                x: rx,
+                y: ry,
+                radius: 0,
+                speed: preset.speed,
+                width: preset.width
+            });
+        };
+        rippleCallbacks.add(rippleHandler);
+
         return () => {
-            window.removeEventListener('resize', build);
+            cancelAnimationFrame(reqId);
+            renderer.dispose();
+            window.removeEventListener('resize', handleResize);
             window.removeEventListener('mousemove', handleMouseMove);
-            rippleCallbacks.delete(onRippleTrigger);
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
-            }
+            rippleCallbacks.delete(rippleHandler);
+            if (container) container.innerHTML = '';
         };
     }, []);
 
     return (
-        <canvas
-            ref={canvasRef}
-            className={className}
-            style={{
-                position: 'fixed',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                minHeight: '100vh',
-                zIndex: -1,
-                pointerEvents: 'none',
-                background: '#000000',
-            }}
+        <div
+            ref={containerRef}
+            className={`fixed inset-0 pointer-events-none -z-10 ${className}`}
+            style={{ background: '#111' }} // Fallback bg
         />
     );
 }
