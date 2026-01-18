@@ -394,13 +394,17 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
                         ctx.beginPath();
                         ctx.arc(dot.x, dot.y, outerRadius, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.3})`;
+                        // REDUCED OPACITY (0.3 -> 0.15) for better visibility
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.15})`;
                         ctx.lineWidth = 0.8;
-                        // Add blur to outer ring
-                        ctx.shadowBlur = 4;
-                        ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${dot.opacity})`;
+                        // REDUCED BLUR (4 -> 0) - Crisp is better for grid visibility
+                        // ctx.shadowBlur = 0; 
+                        // Actually, let's keep a TINY blur but mostly transparent
+                        // The user said "too intense to see some most of the grid". 
+                        // Removing blur is safer to "fix" visibility.
+                        ctx.shadowBlur = 0;
+                        ctx.shadowColor = `transparent`;
                         ctx.stroke();
-                        ctx.shadowBlur = 0; // Reset
                     }
 
                     // 2. Mid Ring (Fluid Outline)
@@ -410,7 +414,8 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
                         ctx.beginPath();
                         ctx.arc(dot.x, dot.y, midRadius, 0, Math.PI * 2);
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.5})`;
+                        // REDUCED OPACITY (0.5 -> 0.3)
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.3})`;
                         ctx.lineWidth = 1.0;
                         ctx.stroke();
                     }
