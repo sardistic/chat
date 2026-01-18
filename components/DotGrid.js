@@ -9,20 +9,23 @@ const rippleCallbacks = new Set();
 const tilePositions = new Map();
 export function registerTilePosition(username, x, y) {
     tilePositions.set(username, { x, y });
+    console.log(`[TilePos] Registered ${username} at (${Math.round(x)}, ${Math.round(y)})`);
 }
 export function unregisterTilePosition(username) {
     tilePositions.delete(username);
 }
 export function getTilePosition(username) {
-    return tilePositions.get(username) || null;
+    const pos = tilePositions.get(username);
+    console.log(`[TilePos] Lookup ${username}: ${pos ? `(${Math.round(pos.x)}, ${Math.round(pos.y)})` : 'not found'}`);
+    return pos || null;
 }
 
-// Intensity presets
+// Intensity presets - tuned for visible wave effect
 const RIPPLE_PRESETS = {
-    keystroke: { speed: 50, width: 300, growth: 1, opacity: 0.15 },
-    typing: { speed: 45, width: 350, growth: 1.5, opacity: 0.2 },
-    message: { speed: 35, width: 500, growth: 3, opacity: 0.35 },
-    system: { speed: 40, width: 400, growth: 2, opacity: 0.25 },
+    keystroke: { speed: 60, width: 200, growth: 1, opacity: 0.15 },
+    typing: { speed: 55, width: 300, growth: 1.5, opacity: 0.2 },
+    message: { speed: 45, width: 400, growth: 3, opacity: 0.4 },
+    system: { speed: 50, width: 350, growth: 2, opacity: 0.3 },
 };
 
 export function triggerDotRipple(type = 'message', origin = null, color = '#ffffff', intensity = 1.0) {
@@ -30,6 +33,7 @@ export function triggerDotRipple(type = 'message', origin = null, color = '#ffff
     // origin: { x, y } coordinates, or null for default (bottom-right)
     // color: hex color for the ripple tint
     // intensity: 0-1 multiplier for effect strength
+    console.log(`[Ripple] type=${type} origin=${JSON.stringify(origin)} color=${color}`);
     rippleCallbacks.forEach(cb => cb(type, origin, color, intensity));
 }
 
@@ -175,31 +179,38 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                     mouseOpacity = falloff * params.mouseOpacityBoost;
                 }
 
-                // Event ripple influence
-                let rippleGrowth = 0;
-                let rippleOpacity = 0;
+                // Event ripple influence - WAVE EFFECT (overrides, doesn't add)
+                let rippleInfluence = 0;
                 let rippleColorBlend = null;
-                let maxRippleInfluence = 0;
                 for (const ripple of ripples) {
                     const influence = ripple.getInfluence(this.x, this.y);
-                    if (influence > 0) {
-                        rippleGrowth += influence * ripple.growthMult;
-                        rippleOpacity += influence * ripple.opacityMult;
-                        // Track strongest ripple's color
-                        if (influence > maxRippleInfluence) {
-                            maxRippleInfluence = influence;
-                            rippleColorBlend = ripple.color;
-                        }
+                    if (influence > rippleInfluence) {
+                        rippleInfluence = influence;
+                        rippleColorBlend = ripple.color;
                     }
                 }
                 this.rippleColor = rippleColorBlend;
-                this.rippleInfluence = maxRippleInfluence;
+                this.rippleInfluence = rippleInfluence;
+
+                // Wave effect: ripple OVERRIDES size, creating sharp wave front
+                let finalRadius, finalOpacity;
+                if (rippleInfluence > 0.1) {
+                    // In wave: enlarged dots
+                    const waveSize = this._radius + 3 * rippleInfluence;
+                    const waveOpacity = 0.8 * rippleInfluence;
+                    finalRadius = waveSize;
+                    finalOpacity = waveOpacity;
+                } else {
+                    // Outside wave: normal size with mouse/wave effects
+                    finalRadius = this._radius + waveGrowth + mouseGrowth;
+                    finalOpacity = this.baseOpacity + waveOpacity + mouseOpacity;
+                }
 
                 // Fast easing
-                this.targetRadius = this._radius + waveGrowth + mouseGrowth + rippleGrowth;
+                this.targetRadius = finalRadius;
                 this.radius += (this.targetRadius - this.radius) * params.ease;
 
-                this.targetOpacity = this.baseOpacity + waveOpacity + mouseOpacity + rippleOpacity;
+                this.targetOpacity = finalOpacity;
                 this.opacity += (this.targetOpacity - this.opacity) * params.ease;
             }
         }
