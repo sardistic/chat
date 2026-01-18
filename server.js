@@ -817,40 +817,45 @@ app.prepare().then(async () => {
             const totalCommits = payload.commits?.length || 1;
 
             // Deduplicate: Check if we already processed this exact commit recently
-            const pushKey = `${shortHash}-${branch}`;
+            // Use commit hash only (not branch) to catch duplicates across webhook sources
+            const pushKey = shortHash;
             const recentPushes = global._recentPushes || new Map();
             const now = Date.now();
 
-            // Clean old entries (older than 2 minutes)
+            // Clean old entries (older than 5 minutes)
             for (const [key, time] of recentPushes) {
-              if (now - time > 120000) recentPushes.delete(key);
+              if (now - time > 300000) recentPushes.delete(key);
             }
 
             if (recentPushes.has(pushKey)) {
               console.log(`[Webhook] Duplicate git-push detected for ${pushKey}, ignoring.`);
-            } else {
-              recentPushes.set(pushKey, now);
-              global._recentPushes = recentPushes;
+              // Exit early - don't set systemMessage
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, deduplicated: true }));
+              return;
+            }
 
-              let text = `**${pusher}** pushed ${totalCommits > 1 ? `${totalCommits} commits` : ''} to \`${branch}\``;
-              text += `: "${commitMsg}" [\`${shortHash}\`](${commitUrl})`;
-              systemMessage = text;
-              systemType = 'git-push';
-              metadata = { pusher, commitMsg, branch, commitUrl, shortHash, totalCommits };
+            recentPushes.set(pushKey, now);
+            global._recentPushes = recentPushes;
 
-              // Cinematic Code Update: Fetch Diff
-              try {
-                const { stdout } = await exec(`git show ${shortHash} --no-color`);
-                if (stdout) {
-                  const lines = stdout.split('\n');
-                  // Limit to 150 lines for UX
-                  const diffLines = lines.slice(0, 150);
-                  if (lines.length > 150) diffLines.push(`... and ${lines.length - 150} more lines`);
-                  metadata.logs = diffLines;
-                }
-              } catch (e) {
-                console.log('[Git Diff] Failed to fetch:', e.message);
+            let text = `**${pusher}** pushed ${totalCommits > 1 ? `${totalCommits} commits` : ''} to \`${branch}\``;
+            text += `: "${commitMsg}" [\`${shortHash}\`](${commitUrl})`;
+            systemMessage = text;
+            systemType = 'git-push';
+            metadata = { pusher, commitMsg, branch, commitUrl, shortHash, totalCommits };
+
+            // Cinematic Code Update: Fetch Diff
+            try {
+              const { stdout } = await exec(`git show ${shortHash} --no-color`);
+              if (stdout) {
+                const lines = stdout.split('\n');
+                // Limit to 150 lines for UX
+                const diffLines = lines.slice(0, 150);
+                if (lines.length > 150) diffLines.push(`... and ${lines.length - 150} more lines`);
+                metadata.logs = diffLines;
               }
+            } catch (e) {
+              console.log('[Git Diff] Failed to fetch:', e.message);
             }
           }
           // --- Generic Text Fallback ---
