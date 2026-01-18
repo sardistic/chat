@@ -189,17 +189,17 @@ function colorWithAlpha(color, alpha) {
     return color;
 }
 
-// Create a faded gradient background from a color
+// Create a faded gradient background from a color (lightened for DotGrid visibility)
 function getFadedBackground(color) {
     const secondary = getSecondaryColor(color, 40);
-    // Darken significantly for background
-    const darkColor = color.replace(/oklch\(\d+%/, 'oklch(15%');
-    const darkSecondary = secondary.replace(/oklch\(\d+%/, 'oklch(10%');
+    // Lighter tint to let DotGrid show through
+    const darkColor = color.replace(/oklch\(\d+%/, 'oklch(25%');
+    const darkSecondary = secondary.replace(/oklch\(\d+%/, 'oklch(18%');
 
-    const c1 = colorWithAlpha(darkColor, 0.4);
-    const c2 = colorWithAlpha(darkSecondary, 0.2);
+    const c1 = colorWithAlpha(darkColor, 0.25);
+    const c2 = colorWithAlpha(darkSecondary, 0.15);
 
-    return `radial-gradient(ellipse at center, ${c1} 0%, ${c2} 40%, rgba(5, 5, 5, 0.4) 100%)`;
+    return `radial-gradient(ellipse at center, ${c1} 0%, ${c2} 40%, rgba(10, 10, 10, 0.2) 100%)`;
 }
 
 // Individual video tile with smart effects
