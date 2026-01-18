@@ -306,10 +306,8 @@ body {
   padding: 0;
   /* Removing padding to let internal grid handle it */
 
-  /* Glass Effect for Video Feed Background */
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  -webkit-backdrop-filter: var(--glass-backdrop);
+  /* Transparent - let background show through clearly */
+  background: transparent;
   /* Optional: border-right? */
   border-right: 1px solid var(--glass-border);
 }
