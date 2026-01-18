@@ -50,11 +50,11 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             waveGrowth: 0.8,         // Very subtle
             waveOpacityBoost: 0.08,
 
-            // Event ripples
-            rippleSpeed: 8,          // Pixels per frame
-            rippleWidth: 200,        // Width of ripple band
-            rippleGrowth: 4,         // Size boost in ripple
-            rippleOpacity: 0.4,      // Opacity boost in ripple
+            // Event ripples - MORE VISIBLE
+            rippleSpeed: 12,         // Faster travel
+            rippleWidth: 250,        // Wider band
+            rippleGrowth: 8,         // Bigger dots in ripple
+            rippleOpacity: 0.6,      // Strong opacity boost
 
             // Floating particles - reduced
             particleCount: 6,

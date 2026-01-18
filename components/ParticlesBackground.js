@@ -63,8 +63,8 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
         },
         particles: {
             color: {
-                // 3D depth coloring - subtle chromatic tones
-                value: ["#ffffff", "#e8f4ff", "#fff8e8", "#ffe8f4", "#e8ffe8", "#f0e8ff"],
+                // Pure white for consistency with DotGrid
+                value: "#ffffff",
             },
             links: {
                 enable: false, // Disabled for performance
@@ -96,8 +96,8 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             },
             opacity: {
                 value: {
-                    min: 0.3,
-                    max: 0.7,
+                    min: 0.5,
+                    max: 1.0,  // Brighter
                 },
             },
             shape: {

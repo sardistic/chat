@@ -23,7 +23,7 @@ export function useBackground() {
 
 // Provider component
 export function BackgroundProvider({ children }) {
-    const [backgroundType, setBackgroundType] = useState(BACKGROUND_TYPES.STARMAP);
+    const [backgroundType, setBackgroundType] = useState(BACKGROUND_TYPES.GRID);
     const [mounted, setMounted] = useState(false);
 
     // Load from localStorage on mount
