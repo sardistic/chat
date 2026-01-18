@@ -28,9 +28,9 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             size: 48,
             baseRadius: 0.8,         // Larger base for visibility
             radiusVariation: 0.3,
-            proximity: 300,          // Tighter radius for snappier response
-            growth: 4,
-            ease: 0.18,              // MUCH faster easing for responsiveness
+            proximity: 350,          // Larger area of influence
+            growth: 7,               // BIGGER dots near mouse
+            ease: 0.18,              // Fast easing for responsiveness
 
             // Opacity
             baseOpacity: 0.12,
@@ -57,11 +57,11 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             lineDistance: 80,
             lineOpacity: 0.04,
 
-            // Chromatic aberration (R/B 3D effect)
-            chromaticOffset: 2.5,    // Base offset in pixels
-            chromaticWaveAmp: 1.2,   // Animated wave amplitude
-            chromaticWaveSpeed: 0.015,
-            chromaticOpacity: 0.35,  // Opacity of R/B layers
+            // Chromatic aberration (R/B 3D effect) - SUBTLE
+            chromaticOffset: 1.2,    // Smaller offset
+            chromaticWaveAmp: 0.6,   // Gentler animation
+            chromaticWaveSpeed: 0.012,
+            chromaticOpacity: 0.15,  // Subtle R/B layers
         };
 
         let gridDots = [];
