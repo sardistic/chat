@@ -8,10 +8,6 @@ import { Icon } from '@iconify/react';
 import TubeTile from './TubeTile';
 import EmojiPicker from './EmojiPicker'; // [NEW]
 import { useEmotes } from '@/hooks/useEmotes'; // [NEW]
-import { Icon } from '@iconify/react';
-import TubeTile from './TubeTile';
-import EmojiPicker from './EmojiPicker'; // [NEW]
-import { useEmotes } from '@/hooks/useEmotes'; // [NEW]
 import { motion, AnimatePresence } from 'framer-motion';
 import { triggerDotRipple, registerTilePosition, unregisterTilePosition } from './DotGrid';
 import { getUserColor } from '@/lib/colors';
