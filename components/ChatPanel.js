@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useChat } from '@/hooks/useChat';
 import { useEmotes } from '@/hooks/useEmotes';
 import { useSocket } from '@/lib/socket';
+import { triggerDotRipple } from './DotGrid';
 import MessageContent from './MessageContent';
 import SystemMessage from './SystemMessage';
 import EmojiPicker from './EmojiPicker';
@@ -113,6 +114,7 @@ export default function ChatPanel({
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const panelRef = useRef(null);
+    const keystrokeThrottleRef = useRef(0); // Throttle keystrokes
 
     // Listen for reaction updates from server
     useEffect(() => {
@@ -377,6 +379,13 @@ export default function ChatPanel({
     };
 
     const handleKeyDown = (e) => {
+        // Trigger keystroke ripple with throttle (100ms)
+        const now = Date.now();
+        if (now - keystrokeThrottleRef.current > 100) {
+            keystrokeThrottleRef.current = now;
+            triggerDotRipple('keystroke', null, user?.color || '#ffffff', 0.5);
+        }
+
         if (e.key === 'Enter' && !e.shiftKey) {
             if (showMentions && filteredMentions.length > 0) {
                 e.preventDefault();

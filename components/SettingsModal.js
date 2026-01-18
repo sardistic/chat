@@ -12,7 +12,8 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
         autoDeafen: false,
         hideMuted: true,
         dmEnabled: true,
-        theme: 'dark'
+        theme: 'dark',
+        rippleColor: '#ffffff'
     });
     const [nickname, setNickname] = useState(user?.globalName || user?.name || '');
 
@@ -316,6 +317,39 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
                             />
                             <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
                                 This is how other users will see you
+                            </div>
+                        </div>
+
+                        {/* Ripple Color Picker */}
+                        <div style={{ marginTop: '16px' }}>
+                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Ripple Color</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <input
+                                    type="color"
+                                    value={settings.rippleColor || '#ffffff'}
+                                    onChange={e => setSettings({ ...settings, rippleColor: e.target.value })}
+                                    style={{
+                                        width: '48px', height: '48px', padding: 0, border: 'none',
+                                        borderRadius: '8px', cursor: 'pointer', background: 'transparent'
+                                    }}
+                                />
+                                {/* Preset colors */}
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    {['#ffffff', '#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#a855f7', '#3b82f6', '#22c55e'].map(c => (
+                                        <button
+                                            key={c}
+                                            onClick={() => setSettings({ ...settings, rippleColor: c })}
+                                            style={{
+                                                width: '28px', height: '28px', borderRadius: '6px',
+                                                background: c, border: settings.rippleColor === c ? '2px solid white' : '2px solid transparent',
+                                                cursor: 'pointer', transition: 'all 0.15s'
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                                Color of ripples when you type or send messages
                             </div>
                         </div>
                     </section>

@@ -411,8 +411,10 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     const handleMessage = (msg) => {
       // console.log("BUBBLE: Received", msg);
 
-      // Trigger dot grid ripple on ANY chat/system event
-      triggerDotRipple(msg.type === 'system' ? 'system' : 'chat');
+      // Trigger dot grid ripple on ANY chat/system event with sender color
+      const rippleType = msg.type === 'system' ? 'system' : 'message';
+      const senderColor = msg.senderColor || '#ffffff';
+      triggerDotRipple(rippleType, null, senderColor, 1.0);
 
       const author = msg.author || msg.sender;
       const content = msg.content || msg.text;

@@ -4,9 +4,20 @@ import { useEffect, useRef } from 'react';
 
 // Global event system for triggering ripples from anywhere
 const rippleCallbacks = new Set();
-export function triggerDotRipple(type = 'chat', originY = null) {
-    // originY: if null, defaults to bottom of screen (chat area)
-    rippleCallbacks.forEach(cb => cb(type, originY));
+
+// Intensity presets
+const RIPPLE_PRESETS = {
+    keystroke: { speed: 50, width: 300, growth: 1, opacity: 0.15 },
+    typing: { speed: 45, width: 350, growth: 1.5, opacity: 0.2 },
+    message: { speed: 35, width: 500, growth: 3, opacity: 0.35 },
+    system: { speed: 40, width: 400, growth: 2, opacity: 0.25 },
+};
+
+export function triggerDotRipple(type = 'message', originY = null, color = '#ffffff', intensity = 1.0) {
+    // type: 'keystroke', 'typing', 'message', 'system'
+    // color: hex color for the ripple tint
+    // intensity: 0-1 multiplier for effect strength
+    rippleCallbacks.forEach(cb => cb(type, originY, color, intensity));
 }
 
 /**
@@ -71,38 +82,43 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         let width, height;
         const ripples = ripplesRef.current;
 
-        // Ripple class - travels diagonally left+up from bottom-right
+        // Ripple class - colored, expanding ring from origin
         class Ripple {
-            constructor(type = 'chat', originY = null) {
+            constructor(type = 'message', originY = null, color = '#ffffff', intensity = 1.0) {
                 // Start from bottom-right corner
                 this.originX = width;
                 this.originY = originY !== null ? originY : height * 0.85;
-                this.radius = 0; // Expanding circle from origin
+                this.radius = 0;
                 this.type = type;
+                this.color = color;
+                this.intensity = Math.min(1, Math.max(0, intensity));
                 this.alive = true;
+
+                // Get preset or default
+                const preset = RIPPLE_PRESETS[type] || RIPPLE_PRESETS.message;
+                this.speed = preset.speed * this.intensity;
+                this.width = preset.width;
+                this.growthMult = preset.growth * this.intensity;
+                this.opacityMult = preset.opacity * this.intensity;
             }
 
             update() {
-                this.radius += params.rippleSpeed;
-                // Kill when radius exceeds screen diagonal
+                this.radius += this.speed;
                 const maxDist = Math.sqrt(width * width + height * height);
-                if (this.radius > maxDist + params.rippleWidth) {
+                if (this.radius > maxDist + this.width) {
                     this.alive = false;
                 }
             }
 
             getInfluence(dotX, dotY) {
-                // Distance from origin point
                 const dx = dotX - this.originX;
                 const dy = dotY - this.originY;
                 const dotDist = Math.sqrt(dx * dx + dy * dy);
 
-                // Ripple is a ring expanding outward
                 const distFromRing = Math.abs(dotDist - this.radius);
-                if (distFromRing > params.rippleWidth) return 0;
+                if (distFromRing > this.width) return 0;
 
-                // Smooth falloff - peaks at ring edge
-                const t = 1 - (distFromRing / params.rippleWidth);
+                const t = 1 - (distFromRing / this.width);
                 return t * t;
             }
         }
@@ -149,13 +165,22 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 // Event ripple influence
                 let rippleGrowth = 0;
                 let rippleOpacity = 0;
+                let rippleColorBlend = null;
+                let maxRippleInfluence = 0;
                 for (const ripple of ripples) {
                     const influence = ripple.getInfluence(this.x, this.y);
                     if (influence > 0) {
-                        rippleGrowth += influence * params.rippleGrowth;
-                        rippleOpacity += influence * params.rippleOpacity;
+                        rippleGrowth += influence * ripple.growthMult;
+                        rippleOpacity += influence * ripple.opacityMult;
+                        // Track strongest ripple's color
+                        if (influence > maxRippleInfluence) {
+                            maxRippleInfluence = influence;
+                            rippleColorBlend = ripple.color;
+                        }
                     }
                 }
+                this.rippleColor = rippleColorBlend;
+                this.rippleInfluence = maxRippleInfluence;
 
                 // Fast easing
                 this.targetRadius = this._radius + waveGrowth + mouseGrowth + rippleGrowth;
@@ -238,8 +263,8 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         };
 
         // Register ripple trigger callback
-        const onRippleTrigger = (type, originY) => {
-            ripples.push(new Ripple(type, originY));
+        const onRippleTrigger = (type, originY, color, intensity) => {
+            ripples.push(new Ripple(type, originY, color, intensity));
         };
         rippleCallbacks.add(onRippleTrigger);
 
@@ -301,7 +326,22 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 if (dot.opacity > 0.05 || dot.radius > 1) {
                     ctx.beginPath();
                     ctx.arc(dot.x, dot.y, Math.max(0.3, dot.radius), 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(params.maxOpacity, dot.opacity)})`;
+
+                    // Blend white with ripple color based on influence
+                    let r = 255, g = 255, b = 255;
+                    if (dot.rippleColor && dot.rippleInfluence > 0) {
+                        // Parse hex color
+                        const hex = dot.rippleColor.replace('#', '');
+                        const cr = parseInt(hex.substr(0, 2), 16);
+                        const cg = parseInt(hex.substr(2, 2), 16);
+                        const cb = parseInt(hex.substr(4, 2), 16);
+                        const blend = dot.rippleInfluence * 0.6; // Max 60% tint
+                        r = Math.round(255 * (1 - blend) + cr * blend);
+                        g = Math.round(255 * (1 - blend) + cg * blend);
+                        b = Math.round(255 * (1 - blend) + cb * blend);
+                    }
+
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${Math.min(params.maxOpacity, dot.opacity)})`;
                     ctx.fill();
                 }
             }
