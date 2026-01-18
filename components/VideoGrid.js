@@ -9,6 +9,7 @@ import TubeTile from './TubeTile';
 import EmojiPicker from './EmojiPicker'; // [NEW]
 import { useEmotes } from '@/hooks/useEmotes'; // [NEW]
 import { motion, AnimatePresence } from 'framer-motion';
+import { triggerDotRipple } from './DotGrid';
 
 // Floating emoji animation component
 // Floating emoji/image animation component
@@ -233,7 +234,9 @@ function VideoTile({
     customBackground = null // [NEW]
 }) {
     const tileVideoRef = useRef(null);
+    const tileRef = useRef(null); // For position tracking
     const [showPicker, setShowPicker] = useState(false);
+    const wasTypingRef = useRef(false); // Track typing state changes
 
     // Destructure settings
     const { volume, isLocallyMuted, isVideoHidden } = settings;
@@ -261,6 +264,19 @@ function VideoTile({
     const removeReaction = useCallback((id) => {
         setActiveReactions(prev => prev.filter(r => r.id !== id));
     }, []);
+
+    // Trigger ripple from tile center when typing starts
+    useEffect(() => {
+        if (isTyping && !wasTypingRef.current && tileRef.current) {
+            const rect = tileRef.current.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const userColor = user?.color || '#ffffff';
+            // Subtle typing ripple from tile
+            triggerDotRipple('typing', { x: centerX, y: centerY }, userColor, 0.4);
+        }
+        wasTypingRef.current = isTyping;
+    }, [isTyping, user?.color]);
 
     // Camera effects hook - only for vibrancy/color analysis
     const { brightness, dominantColor, effectIntensity } = useCameraEffects(
@@ -367,6 +383,7 @@ function VideoTile({
 
     return (
         <div
+            ref={tileRef}
             className={`tile effect-${effectIntensity} ${borderStyle.animation} relative rounded-xl overflow-hidden backdrop-blur-lg backdrop-brightness-125 bg-white/5 border border-white/10 shadow-lg`}
             style={{
                 background, // Keep the gradient, it has transparency

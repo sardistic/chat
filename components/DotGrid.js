@@ -13,11 +13,12 @@ const RIPPLE_PRESETS = {
     system: { speed: 40, width: 400, growth: 2, opacity: 0.25 },
 };
 
-export function triggerDotRipple(type = 'message', originY = null, color = '#ffffff', intensity = 1.0) {
+export function triggerDotRipple(type = 'message', origin = null, color = '#ffffff', intensity = 1.0) {
     // type: 'keystroke', 'typing', 'message', 'system'
+    // origin: { x, y } coordinates, or null for default (bottom-right)
     // color: hex color for the ripple tint
     // intensity: 0-1 multiplier for effect strength
-    rippleCallbacks.forEach(cb => cb(type, originY, color, intensity));
+    rippleCallbacks.forEach(cb => cb(type, origin, color, intensity));
 }
 
 /**
@@ -84,10 +85,10 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         // Ripple class - colored, expanding ring from origin
         class Ripple {
-            constructor(type = 'message', originY = null, color = '#ffffff', intensity = 1.0) {
-                // Start from bottom-right corner
-                this.originX = width;
-                this.originY = originY !== null ? originY : height * 0.85;
+            constructor(type = 'message', origin = null, color = '#ffffff', intensity = 1.0) {
+                // Origin: use provided {x, y} or default to bottom-right corner
+                this.originX = origin?.x ?? width;
+                this.originY = origin?.y ?? height * 0.85;
                 this.radius = 0;
                 this.type = type;
                 this.color = color;
