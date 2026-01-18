@@ -385,17 +385,45 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                         b = Math.round(255 * (1 - mix) + cb * mix);
                     }
 
-                    // Main Dot
+                    // FLUID RINGS EFFECT
+                    // 1. Outer Ring (Fluid Outline)
+                    // Varies size with time/position (distinct phase)
+                    if (dot.opacity > 0.05) {
+                        const outerPulse = Math.sin(time * 0.02 + dot.x * 0.01 + dot.y * 0.01) * 0.5 + 0.5;
+                        const outerRadius = Math.max(0.5, dot.radius * (1.5 + outerPulse * 0.3));
+
+                        ctx.beginPath();
+                        ctx.arc(dot.x, dot.y, outerRadius, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.3})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+
+                    // 2. Mid Ring (Fluid Outline) 
+                    // Different phase for organic feel
+                    if (dot.opacity > 0.1) {
+                        const midPulse = Math.sin(time * 0.03 + dot.x * 0.02 + dot.y * 0.02 + 1) * 0.5 + 0.5;
+                        const midRadius = Math.max(0.5, dot.radius * (0.8 + midPulse * 0.2));
+
+                        ctx.beginPath();
+                        ctx.arc(dot.x, dot.y, midRadius, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.5})`;
+                        ctx.lineWidth = 0.5 + midPulse * 0.5; // vary thickness slightly
+                        ctx.stroke();
+                    }
+
+                    // 3. Inner Core (Solid)
+                    // Anchors the visual
+                    ctx.beginPath();
+                    ctx.arc(dot.x, dot.y, dot.radius * 0.4, 0, Math.PI * 2);
                     ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity})`;
                     ctx.fill();
 
-                    // Inner Dot "Shadow" (Nested) - slight depth effect
-                    // Only draw if big enough to be visible
-                    if (dot.radius > 1.5) {
+                    // Optional: Inner "Pin" for sharpness
+                    if (dot.radius > 2) {
                         ctx.beginPath();
-                        ctx.arc(dot.x, dot.y, dot.radius * 0.35, 0, Math.PI * 2);
-                        // Darker/distinct inner core
-                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity + 0.3})`;
+                        ctx.arc(dot.x, dot.y, 0.5, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, dot.opacity + 0.2)})`;
                         ctx.fill();
                     }
                 }
