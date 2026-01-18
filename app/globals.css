@@ -43,11 +43,11 @@
   --status-busy: #F87171;
   --status-warning: #FBBF24;
 
-  /* Glassmorphism System - Deep Dark Glass (Robust) */
-  --glass-bg: rgba(0, 0, 0, 0.4);
+  /* Glassmorphism System - Deep Dark Glass (Lightened for background visibility) */
+  --glass-bg: rgba(0, 0, 0, 0.2);
   /* Dark tint, visible without blur */
-  --glass-bg-hover: rgba(30, 30, 35, 0.5);
-  --glass-bg-heavy: rgba(10, 10, 14, 0.75);
+  --glass-bg-hover: rgba(30, 30, 35, 0.35);
+  --glass-bg-heavy: rgba(10, 10, 14, 0.5);
   /* Solid readability layer */
 
   --glass-border: rgba(255, 255, 255, 0.12);
