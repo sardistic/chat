@@ -140,7 +140,7 @@ export function useChat(roomId, user) {
             if (msg.systemType === 'user-join' || msg.systemType === 'user-leave') {
                 const lastMsgIndex = messagesRef.current.length - 1;
                 const lastMsg = messagesRef.current[lastMsgIndex];
-                const isRecent = lastMsg && (new Date(msg.timestamp) - new Date(lastMsg.timestamp) < 60000); // 1 minute window
+                const isRecent = lastMsg && (new Date(msg.timestamp) - new Date(lastMsg.timestamp) < 30 * 60 * 1000); // 30 minute window for aggressive consolidation
 
                 // If last message allows grouping (either 'join-leave' or first 'user-join'/'user-leave' converting to 'join-leave')
                 if (isRecent && (lastMsg.systemType === 'join-leave' || lastMsg.systemType === 'user-join' || lastMsg.systemType === 'user-leave')) {
