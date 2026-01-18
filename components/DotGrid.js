@@ -353,13 +353,13 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
                     // Blend white with ripple color based on influence
                     let r = 255, g = 255, b = 255;
-                    if (dot.rippleColor && dot.rippleInfluence > 0) {
+                    if (dot.rippleColor && dot.rippleInfluence > 0.1 && dot.rippleColor !== '#ffffff') {
                         // Parse hex color
                         const hex = dot.rippleColor.replace('#', '');
-                        const cr = parseInt(hex.substr(0, 2), 16);
-                        const cg = parseInt(hex.substr(2, 2), 16);
-                        const cb = parseInt(hex.substr(4, 2), 16);
-                        const blend = dot.rippleInfluence * 0.6; // Max 60% tint
+                        const cr = parseInt(hex.substr(0, 2), 16) || 255;
+                        const cg = parseInt(hex.substr(2, 2), 16) || 255;
+                        const cb = parseInt(hex.substr(4, 2), 16) || 255;
+                        const blend = Math.min(1, dot.rippleInfluence * 0.9); // Strong 90% tint
                         r = Math.round(255 * (1 - blend) + cr * blend);
                         g = Math.round(255 * (1 - blend) + cg * blend);
                         b = Math.round(255 * (1 - blend) + cb * blend);
