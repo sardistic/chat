@@ -13,6 +13,55 @@ import GifPicker from './GifPicker';
 import { Icon } from '@iconify/react';
 import MessageReactions from './MessageReactions';
 
+// NEW: Aggressively consolidate system deployment messages so only the latest one is visible
+// This pulls older logs (even if separated by chat) into the most recent log's entry
+function consolidateMessages(messages) {
+    const processed = [];
+    const absorbedIds = new Set();
+    const DEPLOY_TYPES = ['deploy-start', 'deploy-success', 'deploy-fail', 'git-push'];
+    const TIME_WINDOW = 60 * 60 * 1000; // 60 mins
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        if (absorbedIds.has(msg.id)) continue;
+
+        if (msg.sender === 'System' && DEPLOY_TYPES.includes(msg.systemType)) {
+            // Found a deployment anchor (latest)
+            const items = [msg]; // Start with self
+
+            // Look back for previous related messages
+            for (let j = i - 1; j >= 0; j--) {
+                const prev = messages[j];
+                // Stop looking if too far back in time
+                if (new Date(msg.timestamp) - new Date(prev.timestamp) > TIME_WINDOW) break;
+
+                // If it's a deployment message, absorb it
+                if (prev.sender === 'System' && DEPLOY_TYPES.includes(prev.systemType) && !absorbedIds.has(prev.id)) {
+                    items.unshift(prev); // Add to start (oldest first)
+                    absorbedIds.add(prev.id);
+                }
+            }
+
+            if (items.length > 1) {
+                // Create grouped message
+                processed.unshift({
+                    id: `group-consolidated-${msg.id}`,
+                    type: 'system',
+                    systemType: 'deployment-group',
+                    sender: 'System',
+                    timestamp: msg.timestamp,
+                    metadata: { items } // items is [oldest, ..., newest]
+                });
+            } else {
+                processed.unshift(msg);
+            }
+        } else {
+            processed.unshift(msg);
+        }
+    }
+    return processed;
+}
+
 // Group messages from the same sender within 5 minutes
 function groupMessages(messages) {
     const groups = [];
@@ -30,47 +79,19 @@ function groupMessages(messages) {
         const isWithinTimeWindow = prevMsg &&
             (new Date(msg.timestamp) - new Date(prevMsg.timestamp)) < timeLimit;
 
-        // Special handling for merging adjacent system join/leave messages AND deployment messages
-        if (msg.type === 'system' && currentGroup && currentGroup.sender === 'System') {
+        // Special handling for merged deployment groups
+        // (consolidateMessages handles deploys)
+
+        // Restore Join/Leave condensation (removed in Refactoring)
+        if (msg.type === 'system' && msg.systemType === 'join-leave' &&
+            currentGroup && currentGroup.sender === 'System') {
+
             const lastMsg = currentGroup.messages[currentGroup.messages.length - 1];
 
-            // 1. Condense Deployment/Git messages
-            const DEPLOY_TYPES = ['deploy-start', 'deploy-success', 'deploy-fail', 'git-push'];
-            if (DEPLOY_TYPES.includes(msg.systemType)) {
-
-                // If previous was already a group, add to it
-                if (lastMsg.systemType === 'deployment-group') {
-                    // Avoid duplicates if using strict mode or weird re-renders
-                    if (!lastMsg.metadata.items.find(i => i.id === msg.id)) {
-                        lastMsg.metadata.items.push(msg);
-                        lastMsg.timestamp = msg.timestamp; // Update time
-                    }
-                    return;
-                }
-
-                // If previous was a single deploy message, merge them
-                if (DEPLOY_TYPES.includes(lastMsg.systemType)) {
-                    const groupedMsg = {
-                        id: `group-${lastMsg.id}`,
-                        type: 'system',
-                        systemType: 'deployment-group',
-                        sender: 'System',
-                        timestamp: msg.timestamp,
-                        metadata: {
-                            items: [lastMsg, msg] // Oldest first
-                        }
-                    };
-                    currentGroup.messages[currentGroup.messages.length - 1] = groupedMsg;
-                    return;
-                }
-            }
-
-            // 2. Condense Join/Leave messages (Existing Logic)
-            if (msg.systemType === 'join-leave' &&
-                lastMsg.systemType === 'join-leave' &&
+            if (lastMsg && lastMsg.systemType === 'join-leave' &&
                 (new Date(msg.timestamp) - new Date(lastMsg.timestamp)) < 5 * 60 * 1000) {
 
-                // Create a merged message object (avoid mutating the original prop)
+                // Create a merged message object
                 const mergedMsg = {
                     ...lastMsg,
                     metadata: {
@@ -81,13 +102,12 @@ function groupMessages(messages) {
                         ]
                     }
                 };
-
-                // Replace the last message with the merged version
                 currentGroup.messages[currentGroup.messages.length - 1] = mergedMsg;
-                return; // Skip standard addition
+                return; // Merged, so skip adding as new item
             }
         }
 
+        // If we just consolidated, we just need simple grouping
         if (isSameSender && isWithinTimeWindow && currentGroup) {
             // Add to current group
             currentGroup.messages.push(msg);
@@ -244,7 +264,12 @@ export default function ChatPanel({
         const filteredMessages = isMod
             ? messages
             : messages.filter(m => !wipedMessageIds.has(m.id));
-        return groupMessages(filteredMessages);
+
+        // Step 1: Aggressively consolidate system deployment messages
+        const consolidatedMessages = consolidateMessages(filteredMessages);
+
+        // Step 2: Standard grouping
+        return groupMessages(consolidatedMessages);
     }, [messages, isMod, wipedMessageIds]);
 
     // Combine web users and IRC users for mentions
