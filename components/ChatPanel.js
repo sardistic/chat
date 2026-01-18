@@ -21,8 +21,14 @@ function groupMessages(messages) {
     messages.forEach((msg, index) => {
         const prevMsg = index > 0 ? messages[index - 1] : null;
         const isSameSender = prevMsg && prevMsg.sender === msg.sender;
+
+        // Dynamic time window: Standard 5 mins, but System Deployment groups get 60 mins
+        // This ensures a long chain of CI/CD activity stays grouped even if slow
+        const isDeployType = (type) => ['deploy-start', 'deploy-success', 'deploy-fail', 'git-push', 'deployment-group'].includes(type);
+        const timeLimit = (msg.sender === 'System' && isDeployType(msg.systemType)) ? 60 * 60 * 1000 : 5 * 60 * 1000;
+
         const isWithinTimeWindow = prevMsg &&
-            (new Date(msg.timestamp) - new Date(prevMsg.timestamp)) < 5 * 60 * 1000; // 5 minutes
+            (new Date(msg.timestamp) - new Date(prevMsg.timestamp)) < timeLimit;
 
         // Special handling for merging adjacent system join/leave messages AND deployment messages
         if (msg.type === 'system' && currentGroup && currentGroup.sender === 'System') {
