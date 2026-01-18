@@ -117,6 +117,9 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 this.width = preset.width;
                 this.growthMult = preset.growth * this.intensity;
                 this.opacityMult = preset.opacity * this.intensity;
+
+                // Random rotation for variety in broken waves
+                this.rotationOffset = Math.random() * Math.PI * 2;
             }
 
             update() {
@@ -135,8 +138,24 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 const distFromRing = Math.abs(dotDist - this.radius);
                 if (distFromRing > this.width) return 0;
 
+                // Base influence from distance to ring
                 const t = 1 - (distFromRing / this.width);
-                return t * t;
+                let influence = t * t;
+
+                // Broken wave: use angle-based noise to create gaps
+                const angle = Math.atan2(dy, dx) + this.rotationOffset;
+                // Create 4-6 segments with gaps
+                const segments = 5;
+                const wavePattern = Math.sin(angle * segments + this.radius * 0.02);
+                // Only show ~60% of the wave (gaps when pattern < -0.2)
+                if (wavePattern < -0.2) {
+                    influence *= 0.1; // Dim but not invisible in gaps
+                } else {
+                    // Boost visible segments
+                    influence *= 0.8 + wavePattern * 0.4;
+                }
+
+                return Math.max(0, influence);
             }
         }
 

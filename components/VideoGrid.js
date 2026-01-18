@@ -8,8 +8,13 @@ import { Icon } from '@iconify/react';
 import TubeTile from './TubeTile';
 import EmojiPicker from './EmojiPicker'; // [NEW]
 import { useEmotes } from '@/hooks/useEmotes'; // [NEW]
+import { Icon } from '@iconify/react';
+import TubeTile from './TubeTile';
+import EmojiPicker from './EmojiPicker'; // [NEW]
+import { useEmotes } from '@/hooks/useEmotes'; // [NEW]
 import { motion, AnimatePresence } from 'framer-motion';
 import { triggerDotRipple, registerTilePosition, unregisterTilePosition } from './DotGrid';
+import { getUserColor } from '@/lib/colors';
 
 // Floating emoji animation component
 // Floating emoji/image animation component
@@ -157,30 +162,22 @@ function calculateLayout(containerWidth, containerHeight, videoCount, isMobile, 
 }
 
 
-// Generate a deterministic color from a username using OKLCH for uniform brightness
-function getUserColor(name) {
-    if (!name) return 'oklch(60% 0.15 250)';
 
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
-    // Curated spectrum using OKLCH (Lightness 68%, Chroma 0.16)
-    const hues = [25, 65, 125, 185, 245, 305, 10, 150, 210, 280];
-    const hue = hues[Math.abs(hash) % hues.length];
-    const fineHue = (hue + (Math.abs(hash) % 20) - 10 + 360) % 360;
-
-    return `oklch(68% 0.16 ${fineHue})`;
-}
 
 // Get complementary/analogous color for gradients
-function getSecondaryColor(oklchColor, shift = 40) {
-    const match = oklchColor.match(/oklch\((\d+%) ([\d.]+) ([\d.]+)\)/);
-    if (!match) return oklchColor;
-    const [_, l, c, h] = match;
-    const newHue = (parseFloat(h) + shift + 360) % 360;
-    return `oklch(${l} ${c} ${newHue})`;
+function getSecondaryColor(color, shift = 40) {
+    // If hex, just return a slightly transparent version for now (simple fallback)
+    if (color && color.startsWith('#')) {
+        return color + '80'; // 50% opacity
+    }
+
+    // Legacy OKLCH handling if needed
+    const match = color.match(/oklch\((\d+%) ([\d.]+) ([\d.]+)\)/);
+    if (!match) return color;
+
+    // ... logic for OKLCH shifting if we kept it ...
+    // But for now, returning transparent version is safest for hex
+    return color;
 }
 
 // Helper to inject alpha into OKLCH or hex
@@ -271,7 +268,8 @@ function VideoTile({
             const rect = tileRef.current.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
-            const userColor = user?.color || '#ffffff';
+            // Use user preference OR fallback to deterministic color
+            const userColor = (user?.color && user.color !== '#ffffff') ? user.color : getUserColor(user?.name);
             // Subtle typing ripple from tile
             triggerDotRipple('typing', { x: centerX, y: centerY }, userColor, 0.6);
         }

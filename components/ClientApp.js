@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import { SocketProvider } from "@/lib/socket";
 import Background from './Background';
 import { triggerDotRipple, getTilePosition } from './DotGrid';
+import { getUserColor } from '@/lib/colors';
 import VideoGrid from "@/components/VideoGrid";
 import EntryScreen from "@/components/EntryScreen";
 import ChatPanel from "@/components/ChatPanel";
@@ -411,10 +412,13 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     const handleMessage = (msg) => {
       // console.log("BUBBLE: Received", msg);
 
-      // Trigger dot grid ripple from sender's video tile (or default position)
       const author = msg.author || msg.sender;
       const rippleType = msg.type === 'system' ? 'system' : 'message';
-      const senderColor = msg.senderColor || '#ffffff';
+      // Use provided color OR user color preference OR deterministic fallback
+      let senderColor = msg.senderColor || '#ffffff';
+      if (senderColor === '#ffffff' && author) {
+        senderColor = getUserColor(author);
+      }
       const tilePos = author ? getTilePosition(author) : null;
       triggerDotRipple(rippleType, tilePos, senderColor, 1.0);
 
