@@ -2,15 +2,22 @@
 
 import { useEffect, useRef } from 'react';
 
+// Global event system for triggering ripples from anywhere
+const rippleCallbacks = new Set();
+export function triggerDotRipple(type = 'chat') {
+    rippleCallbacks.forEach(cb => cb(type));
+}
+
 /**
- * DotGrid - Animated dot grid with proximity growth + wave effects + floating particles
- * Features: Fast mouse response, prominent waves
+ * DotGrid - Animated dot grid with proximity growth + wave effects + event ripples
+ * Features: Fast mouse response, event-triggered ripples (right→left)
  */
 export default function DotGrid({ className = '', zoomLevel = 0 }) {
     const canvasRef = useRef(null);
     const mouseRef = useRef({ x: -1000, y: -1000, targetX: -1000, targetY: -1000 });
     const animationRef = useRef(null);
     const zoomRef = useRef({ current: zoomLevel, target: zoomLevel, velocity: 0 });
+    const ripplesRef = useRef([]);
 
     useEffect(() => {
         zoomRef.current.target = zoomLevel;
@@ -43,11 +50,11 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             waveGrowth: 0.8,         // Very subtle
             waveOpacityBoost: 0.08,
 
-            // RNG Energy bursts - disabled for perf
-            burstChance: 0,
-            burstDuration: 0,
-            burstGrowth: 0,
-            burstOpacity: 0,
+            // Event ripples
+            rippleSpeed: 8,          // Pixels per frame
+            rippleWidth: 200,        // Width of ripple band
+            rippleGrowth: 4,         // Size boost in ripple
+            rippleOpacity: 0.4,      // Opacity boost in ripple
 
             // Floating particles - reduced
             particleCount: 6,
@@ -61,6 +68,31 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         let gridDots = [];
         let particles = [];
         let width, height;
+        const ripples = ripplesRef.current;
+
+        // Ripple class - travels right to left
+        class Ripple {
+            constructor(type = 'chat') {
+                this.x = width + params.rippleWidth; // Start off screen right
+                this.type = type;
+                this.alive = true;
+            }
+
+            update() {
+                this.x -= params.rippleSpeed;
+                if (this.x < -params.rippleWidth) {
+                    this.alive = false;
+                }
+            }
+
+            getInfluence(dotX) {
+                const dist = Math.abs(dotX - this.x);
+                if (dist > params.rippleWidth) return 0;
+                // Smooth falloff - peaks at center of ripple
+                const t = 1 - (dist / params.rippleWidth);
+                return t * t * (3 - 2 * t); // smoothstep
+            }
+        }
 
         // Grid dot class
         class GridDot {
@@ -76,12 +108,9 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 this.opacity = this.baseOpacity;
                 this.targetOpacity = this.baseOpacity;
                 this.targetRadius = this._radius;
-
-                this.burstTimer = 0;
-                this.burstIntensity = 0;
             }
 
-            update(mouseX, mouseY, time) {
+            update(mouseX, mouseY, time, ripples) {
                 // Simple single wave for performance
                 const wave = Math.sin(this.x * 0.004 + this.y * 0.003 + time * params.waveSpeed + this.phase);
                 const normalizedWave = (wave + 1) / 2;
@@ -104,11 +133,22 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                     mouseOpacity = falloff * params.mouseOpacityBoost;
                 }
 
+                // Event ripple influence
+                let rippleGrowth = 0;
+                let rippleOpacity = 0;
+                for (const ripple of ripples) {
+                    const influence = ripple.getInfluence(this.x);
+                    if (influence > 0) {
+                        rippleGrowth += influence * params.rippleGrowth;
+                        rippleOpacity += influence * params.rippleOpacity;
+                    }
+                }
+
                 // Fast easing
-                this.targetRadius = this._radius + waveGrowth + mouseGrowth;
+                this.targetRadius = this._radius + waveGrowth + mouseGrowth + rippleGrowth;
                 this.radius += (this.targetRadius - this.radius) * params.ease;
 
-                this.targetOpacity = this.baseOpacity + waveOpacity + mouseOpacity;
+                this.targetOpacity = this.baseOpacity + waveOpacity + mouseOpacity + rippleOpacity;
                 this.opacity += (this.targetOpacity - this.opacity) * params.ease;
             }
         }
@@ -184,9 +224,23 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             mouseRef.current.targetY = e.clientY;
         };
 
+        // Register ripple trigger callback
+        const onRippleTrigger = (type) => {
+            ripples.push(new Ripple(type));
+        };
+        rippleCallbacks.add(onRippleTrigger);
+
         let time = 0;
         const animate = () => {
             time += 1;
+
+            // Update ripples
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                ripples[i].update();
+                if (!ripples[i].alive) {
+                    ripples.splice(i, 1);
+                }
+            }
 
             // Smooth mouse interpolation for even more responsive feel
             const mouseEase = 0.25;
@@ -226,7 +280,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
             // Update all dots
             for (const dot of gridDots) {
-                dot.update(mouse.x, mouse.y, time);
+                dot.update(mouse.x, mouse.y, time, ripples);
             }
 
             // Draw dots
@@ -264,6 +318,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         return () => {
             window.removeEventListener('resize', build);
             window.removeEventListener('mousemove', handleMouseMove);
+            rippleCallbacks.delete(onRippleTrigger);
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }

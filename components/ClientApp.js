@@ -5,6 +5,7 @@ import { getCookie, setCookie } from 'cookies-next';
 import { Icon } from '@iconify/react';
 import { SocketProvider } from "@/lib/socket";
 import Background from './Background';
+import { triggerDotRipple } from './DotGrid';
 import VideoGrid from "@/components/VideoGrid";
 import EntryScreen from "@/components/EntryScreen";
 import ChatPanel from "@/components/ChatPanel";
@@ -426,6 +427,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         ...prev,
         [author]: Date.now()
       }));
+
+      // Trigger dot grid ripple on chat event
+      triggerDotRipple('chat');
 
       // 1. Detect Mentions for Camera Glow (Target gets glow)
       const mentionedUsers = [];
