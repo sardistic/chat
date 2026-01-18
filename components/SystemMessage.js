@@ -1,7 +1,7 @@
 import { Icon } from '@iconify/react';
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Convert from 'ansi-to-html';
 
 const convert = new Convert({
@@ -48,6 +48,77 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
+
+    // Grouped Deployment/Git Messages
+    if (systemType === 'deployment-group') {
+        const items = metadata?.items || [];
+        const latest = items[items.length - 1];
+        const previous = items.slice(0, -1);
+        const [isExpanded, setIsExpanded] = useState(false);
+
+        // Safety check to prevent empty groups
+        if (!latest) return null;
+
+        return (
+            <div style={{ margin: '8px auto', maxWidth: '480px', width: '100%' }}>
+                {/* Expandable Header for Previous Items */}
+                {previous.length > 0 && (
+                    <motion.div
+                        layout
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        style={{
+                            padding: '6px 12px',
+                            background: 'var(--glass-bg)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            marginBottom: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            fontSize: '11px',
+                            color: '#888',
+                            transition: 'all 0.2s'
+                        }}
+                        whileHover={{ background: 'rgba(255,255,255,0.05)', color: '#ccc' }}
+                    >
+                        <Icon icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"} />
+                        <span>{previous.length} Previous Update{previous.length !== 1 ? 's' : ''}</span>
+                        {!isExpanded && (
+                            <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto', opacity: 0.5 }}>
+                                {previous.slice(-3).map((item, i) => (
+                                    <div key={i} style={{
+                                        width: '6px', height: '6px', borderRadius: '50%',
+                                        background: item.systemType === 'deploy-fail' ? '#ef4444' :
+                                            item.systemType === 'deploy-success' ? '#10b981' : '#8b5cf6'
+                                    }} />
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+
+                {/* Previous Items List */}
+                <AnimatePresence>
+                    {isExpanded && previous.map((msg, i) => (
+                        <motion.div
+                            key={msg.id || i}
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            style={{ overflow: 'hidden' }}
+                        >
+                            <SystemMessage message={msg} onUserClick={onUserClick} />
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+
+                {/* Latest Item (Always Visible) */}
+                <SystemMessage message={latest} onUserClick={onUserClick} />
+            </div>
+        );
+    }
 
     // Minimal style for join/leave events - REDESIGNED with expandable details
     if (systemType === 'join-leave') {

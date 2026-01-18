@@ -24,15 +24,44 @@ function groupMessages(messages) {
         const isWithinTimeWindow = prevMsg &&
             (new Date(msg.timestamp) - new Date(prevMsg.timestamp)) < 5 * 60 * 1000; // 5 minutes
 
-        // Special handling for merging adjacent system join/leave messages
-        // This condenses "User Joined" spam into a single expandable block
-        if (msg.type === 'system' && msg.systemType === 'join-leave' &&
-            currentGroup && currentGroup.sender === 'System') {
-
+        // Special handling for merging adjacent system join/leave messages AND deployment messages
+        if (msg.type === 'system' && currentGroup && currentGroup.sender === 'System') {
             const lastMsg = currentGroup.messages[currentGroup.messages.length - 1];
 
-            // Check if last message was also a join/leave event within the time window
-            if (lastMsg && lastMsg.systemType === 'join-leave' &&
+            // 1. Condense Deployment/Git messages
+            const DEPLOY_TYPES = ['deploy-start', 'deploy-success', 'deploy-fail', 'git-push'];
+            if (DEPLOY_TYPES.includes(msg.systemType)) {
+
+                // If previous was already a group, add to it
+                if (lastMsg.systemType === 'deployment-group') {
+                    // Avoid duplicates if using strict mode or weird re-renders
+                    if (!lastMsg.metadata.items.find(i => i.id === msg.id)) {
+                        lastMsg.metadata.items.push(msg);
+                        lastMsg.timestamp = msg.timestamp; // Update time
+                    }
+                    return;
+                }
+
+                // If previous was a single deploy message, merge them
+                if (DEPLOY_TYPES.includes(lastMsg.systemType)) {
+                    const groupedMsg = {
+                        id: `group-${lastMsg.id}`,
+                        type: 'system',
+                        systemType: 'deployment-group',
+                        sender: 'System',
+                        timestamp: msg.timestamp,
+                        metadata: {
+                            items: [lastMsg, msg] // Oldest first
+                        }
+                    };
+                    currentGroup.messages[currentGroup.messages.length - 1] = groupedMsg;
+                    return;
+                }
+            }
+
+            // 2. Condense Join/Leave messages (Existing Logic)
+            if (msg.systemType === 'join-leave' &&
+                lastMsg.systemType === 'join-leave' &&
                 (new Date(msg.timestamp) - new Date(lastMsg.timestamp)) < 5 * 60 * 1000) {
 
                 // Create a merged message object (avoid mutating the original prop)
