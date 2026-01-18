@@ -295,7 +295,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <div style={{ display: 'flex', gap: '-4px' }}>
                                     {leavers.slice(0, maxAvatarsCollapsed).map((u, i) => renderAvatar(u, i, true))}
-                                    {leaverOverflow > 0 && (
+                                    {leaversOverflow > 0 && (
                                         <div style={{
                                             width: `${avatarSize}px`,
                                             height: `${avatarSize}px`,
