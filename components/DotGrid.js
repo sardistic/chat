@@ -4,16 +4,15 @@ import { useEffect, useRef } from 'react';
 
 /**
  * DotGrid - Animated dot grid with proximity growth + wave effects + floating particles
- * Parameters tuned closer to CodePen reference with RNG energy bursts
+ * Features: Fast mouse response, prominent waves, chromatic aberration 3D effect
  */
 export default function DotGrid({ className = '', zoomLevel = 0 }) {
     const canvasRef = useRef(null);
-    const mouseRef = useRef({ x: -1000, y: -1000 });
+    const mouseRef = useRef({ x: -1000, y: -1000, targetX: -1000, targetY: -1000 });
     const animationRef = useRef(null);
     const zoomRef = useRef({ current: zoomLevel, target: zoomLevel, velocity: 0 });
 
     useEffect(() => {
-        // Smooth zoom transition with easing
         zoomRef.current.target = zoomLevel;
     }, [zoomLevel]);
 
@@ -23,102 +22,96 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         const ctx = canvas.getContext('2d');
 
-        // Parameters - sparse dots, revealed by mouse/waves
+        // Parameters - tuned for responsiveness and visibility
         const params = {
-            // Grid - more sparse, smaller dots
-            size: 48,             // More sparse
-            baseRadius: 0.1,      // Tiny base
-            radiusVariation: 0.06,
-            proximity: 380,
-            growth: 5,            // Smaller hover dots
-            ease: 0.055,
+            // Grid
+            size: 48,
+            baseRadius: 0.8,         // Larger base for visibility
+            radiusVariation: 0.3,
+            proximity: 300,          // Tighter radius for snappier response
+            growth: 4,
+            ease: 0.18,              // MUCH faster easing for responsiveness
 
-            // SPARSE - nearly invisible base, mouse/waves reveal
-            baseOpacity: 0.15,   // Higher base so it survives blur
-            opacityVariation: 0.1,
-            maxOpacity: 0.9,
-            mouseOpacityBoost: 0.8, // Strong mouse reveal
+            // Opacity
+            baseOpacity: 0.12,
+            opacityVariation: 0.08,
+            maxOpacity: 0.85,
+            mouseOpacityBoost: 0.7,
 
-            // Wave animations - reveal dots
-            waveSpeed: 0.008,
-            waveGrowth: 3.5,
-            waveOpacityBoost: 0.35, // Waves also reveal dots
+            // Wave animations - MORE PROMINENT
+            waveSpeed: 0.025,        // Faster waves
+            waveGrowth: 2.5,         // Strong wave size effect
+            waveOpacityBoost: 0.25,
 
-            // RNG Energy bursts - MINIMAL
-            burstChance: 0.00001, // Very rare
-            burstDuration: 60,
-            burstGrowth: 2,
-            burstOpacity: 0.15,
+            // RNG Energy bursts
+            burstChance: 0.00003,
+            burstDuration: 80,
+            burstGrowth: 2.5,
+            burstOpacity: 0.2,
 
             // Floating particles
-            particleCount: 10,
-            particleRadius: 0.4,
-            particleOpacity: 0.1,
-            particleSpeed: 0.12,
-            lineDistance: 70,
-            lineOpacity: 0.03,
+            particleCount: 12,
+            particleRadius: 0.5,
+            particleOpacity: 0.12,
+            particleSpeed: 0.15,
+            lineDistance: 80,
+            lineOpacity: 0.04,
+
+            // Chromatic aberration (R/B 3D effect)
+            chromaticOffset: 2.5,    // Base offset in pixels
+            chromaticWaveAmp: 1.2,   // Animated wave amplitude
+            chromaticWaveSpeed: 0.015,
+            chromaticOpacity: 0.35,  // Opacity of R/B layers
         };
 
         let gridDots = [];
         let particles = [];
         let width, height;
 
-        // Utility: map function from CodePen
-        const map = (value, min1, max1, min2, max2) => {
-            const normalized = (value - min1) / (max1 - min1);
-            return min2 + (max2 - min2) * normalized;
-        };
-
-        // Grid dot class (CodePen-inspired structure)
+        // Grid dot class
         class GridDot {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this._radius = params.baseRadius;
-                this.radius = params.baseRadius;
-                this.growthValue = 0;
-
                 this.phase = Math.random() * Math.PI * 2;
                 this.wavePhase = Math.random() * Math.PI * 2;
 
-                // Random variation per dot
                 this._radius = params.baseRadius + (Math.random() * params.radiusVariation);
                 this.radius = this._radius;
                 this.baseOpacity = params.baseOpacity + (Math.random() * params.opacityVariation);
                 this.opacity = this.baseOpacity;
                 this.targetOpacity = this.baseOpacity;
+                this.targetRadius = this._radius;
 
-                // Energy burst state
                 this.burstTimer = 0;
                 this.burstIntensity = 0;
             }
 
-            addRadius(value) {
-                this.growthValue = value;
-            }
-
             update(mouseX, mouseY, time) {
-                // Wave contribution
-                const wave1 = Math.sin(this.x * 0.004 + this.y * 0.003 + time * params.waveSpeed);
-                const wave2 = Math.sin(this.x * 0.003 - this.y * 0.002 + time * params.waveSpeed * 1.4 + this.phase);
-                const wave3 = Math.sin((this.x + this.y) * 0.002 + time * params.waveSpeed * 0.6 + this.wavePhase);
-                const waveValue = (wave1 * 0.5 + wave2 * 0.3 + wave3 * 0.2);
+                // Wave contribution - multiple overlapping waves for organic motion
+                const wave1 = Math.sin(this.x * 0.005 + this.y * 0.004 + time * params.waveSpeed);
+                const wave2 = Math.sin(this.x * 0.003 - this.y * 0.005 + time * params.waveSpeed * 1.3 + this.phase);
+                const wave3 = Math.sin((this.x + this.y) * 0.003 + time * params.waveSpeed * 0.7 + this.wavePhase);
+                const wave4 = Math.sin(this.y * 0.006 + time * params.waveSpeed * 0.9);
+                const waveValue = (wave1 * 0.35 + wave2 * 0.25 + wave3 * 0.25 + wave4 * 0.15);
                 const normalizedWave = (waveValue + 1) / 2;
 
                 const waveGrowth = normalizedWave * params.waveGrowth;
                 const waveOpacity = normalizedWave * params.waveOpacityBoost;
 
-                // Mouse proximity - GAUSSIAN-LIKE gradient, peaks in middle
-                const distance = Math.sqrt(Math.pow(this.x - mouseX, 2) + Math.pow(this.y - mouseY, 2));
+                // Mouse proximity - simple smooth falloff for speed
+                const dx = this.x - mouseX;
+                const dy = this.y - mouseY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
                 let mouseGrowth = 0;
                 let mouseOpacity = 0;
 
                 if (distance < params.proximity) {
-                    // Gaussian-like falloff: peaks at ~30% distance from center
-                    const normalizedDist = distance / params.proximity;
-                    const gaussianFalloff = Math.exp(-Math.pow((normalizedDist - 0.15) * 2.5, 2));
-                    mouseGrowth = gaussianFalloff * params.growth;
-                    mouseOpacity = gaussianFalloff * params.mouseOpacityBoost;
+                    // Smooth quadratic falloff - fast to compute
+                    const t = 1 - (distance / params.proximity);
+                    const falloff = t * t * (3 - 2 * t); // smoothstep
+                    mouseGrowth = falloff * params.growth;
+                    mouseOpacity = falloff * params.mouseOpacityBoost;
                 }
 
                 // RNG Energy burst
@@ -130,19 +123,13 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                     this.burstIntensity = params.burstGrowth;
                 }
 
-                // Apply growth with easing (CodePen formula)
-                const targetRadius = this._radius + waveGrowth + mouseGrowth + this.burstIntensity;
-                this.radius += (targetRadius - this.radius) * params.ease;
+                // Fast easing
+                this.targetRadius = this._radius + waveGrowth + mouseGrowth + this.burstIntensity;
+                this.radius += (this.targetRadius - this.radius) * params.ease;
 
-                this.targetOpacity = this.baseOpacity + waveOpacity +
-                    Math.max(0, mouseOpacity) +
+                this.targetOpacity = this.baseOpacity + waveOpacity + mouseOpacity +
                     (this.burstIntensity / params.burstGrowth) * params.burstOpacity;
                 this.opacity += (this.targetOpacity - this.opacity) * params.ease;
-            }
-
-            draw(ctx) {
-                ctx.moveTo(this.x, this.y);
-                ctx.arc(this.x, this.y, Math.max(0.3, this.radius), 0, Math.PI * 2);
             }
         }
 
@@ -213,18 +200,38 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         };
 
         const handleMouseMove = (e) => {
-            mouseRef.current = { x: e.clientX, y: e.clientY };
+            mouseRef.current.targetX = e.clientX;
+            mouseRef.current.targetY = e.clientY;
+        };
+
+        // Draw dots with chromatic offset
+        const drawDotsWithOffset = (offsetX, offsetY, color, opacity) => {
+            ctx.beginPath();
+            for (const dot of gridDots) {
+                const r = Math.max(0.3, dot.radius);
+                const x = dot.x + offsetX;
+                const y = dot.y + offsetY;
+                ctx.moveTo(x + r, y);
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+            }
+            ctx.fillStyle = `rgba(${color}, ${opacity})`;
+            ctx.fill();
         };
 
         let time = 0;
         const animate = () => {
             time += 1;
 
+            // Smooth mouse interpolation for even more responsive feel
+            const mouseEase = 0.25;
+            mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * mouseEase;
+            mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * mouseEase;
+
             // Smooth zoom easing
             const zoomState = zoomRef.current;
             const zoomDiff = zoomState.target - zoomState.current;
             zoomState.velocity += zoomDiff * 0.02;
-            zoomState.velocity *= 0.85; // Damping
+            zoomState.velocity *= 0.85;
             zoomState.current += zoomState.velocity;
 
             const zoom = zoomState.current;
@@ -239,7 +246,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
             const mouse = mouseRef.current;
 
-            // Apply smooth zoom transform
+            // Apply zoom transform
             if (zoom > 0.01) {
                 const scale = 1 + zoom * 0.2;
                 const centerX = width / 2;
@@ -251,19 +258,27 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 ctx.globalAlpha = globalOpacity;
             }
 
-            // Draw grid dots (batched for performance)
-            ctx.beginPath();
+            // Update all dots
             for (const dot of gridDots) {
                 dot.update(mouse.x, mouse.y, time);
-                dot.draw(ctx);
             }
-            // Use average opacity for batch fill (simplified)
-            ctx.fillStyle = `rgba(255, 255, 255, 0.35)`;
-            ctx.fill();
 
-            // Draw individual opacities for visible dots
+            // Chromatic aberration offset - animated wave
+            const chromaticWave = Math.sin(time * params.chromaticWaveSpeed) * params.chromaticWaveAmp;
+            const chromaticX = params.chromaticOffset + chromaticWave;
+            const chromaticY = (params.chromaticOffset * 0.5) + chromaticWave * 0.3;
+
+            // Draw RED layer (offset left-up)
+            ctx.globalCompositeOperation = 'lighter';
+            drawDotsWithOffset(-chromaticX, -chromaticY * 0.5, '255, 80, 80', params.chromaticOpacity * 0.7);
+
+            // Draw BLUE layer (offset right-down)
+            drawDotsWithOffset(chromaticX, chromaticY * 0.5, '80, 120, 255', params.chromaticOpacity * 0.7);
+
+            // Draw main WHITE layer
+            ctx.globalCompositeOperation = 'source-over';
             for (const dot of gridDots) {
-                if (dot.opacity > 0.1 || dot.radius > 1.5) {
+                if (dot.opacity > 0.05 || dot.radius > 1) {
                     ctx.beginPath();
                     ctx.arc(dot.x, dot.y, Math.max(0.3, dot.radius), 0, Math.PI * 2);
                     ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(params.maxOpacity, dot.opacity)})`;
@@ -288,7 +303,8 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         window.addEventListener('resize', build);
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('touchmove', (e) => {
-            mouseRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            mouseRef.current.targetX = e.touches[0].clientX;
+            mouseRef.current.targetY = e.touches[0].clientY;
         });
         animate();
 
@@ -306,12 +322,12 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             ref={canvasRef}
             className={className}
             style={{
-                position: 'fixed', // Force fixed to cover viewport
+                position: 'fixed',
                 inset: 0,
                 width: '100%',
                 height: '100%',
-                minHeight: '100vh', // Force-push trigger
-                zIndex: -1, // Ensure behind content
+                minHeight: '100vh',
+                zIndex: -1,
                 pointerEvents: 'none',
                 background: '#000000',
             }}
