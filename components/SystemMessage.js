@@ -145,8 +145,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             return Array.from(map.values());
         };
 
-        const joiners = aggregateUsers(users.filter(u => u.type === 'join'));
-        const leavers = aggregateUsers(users.filter(u => u.type === 'leave'));
+        const joiners = aggregateUsers(users.filter(u => u.action === 'joined' || u.type === 'join'));
+        const leavers = aggregateUsers(users.filter(u => u.action === 'left' || (!u.action && u.type === 'leave')));
 
         const [isExpanded, setIsExpanded] = useState(false);
         const avatarSize = isExpanded ? 24 : 18;
