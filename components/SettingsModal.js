@@ -116,7 +116,10 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
 
     // Background toggle component
     const BackgroundToggle = () => {
-        const { backgroundType, setBackgroundType } = useBackground();
+        const {
+            backgroundType, setBackgroundType,
+            dotGridVersion, setDotGridVersion
+        } = useBackground();
         return (
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button
@@ -159,254 +162,284 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
                     <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>No Animation</div>
                 </button>
             </div>
-        );
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="settings-modal-overlay" style={{
-            position: 'fixed', inset: 0, zIndex: 2147483647,
-            width: '100vw', height: '100vh',
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }} onClick={onClose}>
-            <div className="settings-modal" style={{
-                background: '#1a1b1e', width: '500px', maxWidth: '90vw',
-                maxHeight: '90vh', overflowY: 'auto',
-                borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)',
-                overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-            }} onClick={e => e.stopPropagation()}>
-
-                {/* Header */}
-                <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>Settings</h2>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
-                        <Icon icon="fa:times" />
-                    </button>
+            
+            {/* Dot Grid Version Selection (Only if Grid is active) */ }
+        {
+            backgroundType === BACKGROUND_TYPES.GRID && (
+                <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#ccc' }}>
+                        Dot Grid Engine
+                    </label>
+                    <select
+                        value={dotGridVersion || 'v3'}
+                        onChange={(e) => setDotGridVersion(e.target.value)}
+                        style={{
+                            width: '100%',
+                            background: 'rgba(0,0,0,0.5)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            color: 'white',
+                            padding: '8px',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            outline: 'none'
+                        }}
+                    >
+                        <option value="v3">v3.0 - GPU Fluid (Best Performance)</option>
+                        <option value="v2">v2.0 - Canvas Fluid (Original)</option>
+                        <option value="v1">v1.0 - Simple (Low Power)</option>
+                    </select>
                 </div>
+            )
+        }
+        </>
+        );
+};
 
-                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+if (!isOpen) return null;
 
-                    {/* Profile Section */}
-                    <section>
-                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Profile</h3>
+return (
+    <div className="settings-modal-overlay" style={{
+        position: 'fixed', inset: 0, zIndex: 2147483647,
+        width: '100vw', height: '100vh',
+        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }} onClick={onClose}>
+        <div className="settings-modal" style={{
+            background: '#1a1b1e', width: '500px', maxWidth: '90vw',
+            maxHeight: '90vh', overflowY: 'auto',
+            borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)',
+            overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        }} onClick={e => e.stopPropagation()}>
 
-                        {/* Mode Switcher */}
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px' }}>
-                            {session?.user?.image && (
-                                <button
-                                    onClick={() => setAvatarMode('discord')}
-                                    style={{
-                                        flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                                        background: avatarMode === 'discord' ? '#5865F2' : 'transparent',
-                                        color: avatarMode === 'discord' ? 'white' : 'rgba(255,255,255,0.5)',
-                                        cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
-                                    }}
-                                >
-                                    Discord
-                                </button>
+            {/* Header */}
+            <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>Settings</h2>
+                <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
+                    <Icon icon="fa:times" />
+                </button>
+            </div>
+
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                {/* Profile Section */}
+                <section>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Profile</h3>
+
+                    {/* Mode Switcher */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px' }}>
+                        {session?.user?.image && (
+                            <button
+                                onClick={() => setAvatarMode('discord')}
+                                style={{
+                                    flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
+                                    background: avatarMode === 'discord' ? '#5865F2' : 'transparent',
+                                    color: avatarMode === 'discord' ? 'white' : 'rgba(255,255,255,0.5)',
+                                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
+                                }}
+                            >
+                                Discord
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setAvatarMode('generated')}
+                            style={{
+                                flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
+                                background: avatarMode === 'generated' ? 'var(--accent-primary, #6366f1)' : 'transparent',
+                                color: avatarMode === 'generated' ? 'white' : 'rgba(255,255,255,0.5)',
+                                cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
+                            }}
+                        >
+                            Random
+                        </button>
+                        <button
+                            onClick={() => setAvatarMode('custom')}
+                            style={{
+                                flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
+                                background: avatarMode === 'custom' ? 'var(--accent-primary, #6366f1)' : 'transparent',
+                                color: avatarMode === 'custom' ? 'white' : 'rgba(255,255,255,0.5)',
+                                cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
+                            }}
+                        >
+                            Custom
+                        </button>
+                    </div>
+
+                    {/* Avatar Preview & Controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px' }}>
+                        <div style={{ position: 'relative' }}>
+                            <img
+                                src={displayAvatar}
+                                alt="Avatar"
+                                style={{
+                                    width: '80px', height: '80px', borderRadius: '50%',
+                                    border: '3px solid rgba(255,255,255,0.1)',
+                                    objectFit: 'cover'
+                                }}
+                                onError={(e) => { e.target.src = `/api/avatar/${avatarSeed}`; }}
+                            />
+                            {avatarMode === 'custom' && (
+                                <div style={{ position: 'absolute', bottom: -5, right: -5, background: '#10b981', padding: '4px', borderRadius: '50%' }}>
+                                    <Icon icon="fa:link" width="12" style={{ color: 'white' }} />
+                                </div>
                             )}
-                            <button
-                                onClick={() => setAvatarMode('generated')}
-                                style={{
-                                    flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                                    background: avatarMode === 'generated' ? 'var(--accent-primary, #6366f1)' : 'transparent',
-                                    color: avatarMode === 'generated' ? 'white' : 'rgba(255,255,255,0.5)',
-                                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
-                                }}
-                            >
-                                Random
-                            </button>
-                            <button
-                                onClick={() => setAvatarMode('custom')}
-                                style={{
-                                    flex: 1, padding: '8px', borderRadius: '8px', border: 'none',
-                                    background: avatarMode === 'custom' ? 'var(--accent-primary, #6366f1)' : 'transparent',
-                                    color: avatarMode === 'custom' ? 'white' : 'rgba(255,255,255,0.5)',
-                                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: '500'
-                                }}
-                            >
-                                Custom
-                            </button>
                         </div>
 
-                        {/* Avatar Preview & Controls */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px' }}>
-                            <div style={{ position: 'relative' }}>
-                                <img
-                                    src={displayAvatar}
-                                    alt="Avatar"
-                                    style={{
-                                        width: '80px', height: '80px', borderRadius: '50%',
-                                        border: '3px solid rgba(255,255,255,0.1)',
-                                        objectFit: 'cover'
-                                    }}
-                                    onError={(e) => { e.target.src = `/api/avatar/${avatarSeed}`; }}
-                                />
-                                {avatarMode === 'custom' && (
-                                    <div style={{ position: 'absolute', bottom: -5, right: -5, background: '#10b981', padding: '4px', borderRadius: '50%' }}>
-                                        <Icon icon="fa:link" width="12" style={{ color: 'white' }} />
-                                    </div>
-                                )}
-                            </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {avatarMode === 'generated' && (
+                                <>
+                                    <button
+                                        onClick={rollRandomAvatar}
+                                        style={{
+                                            padding: '10px 16px', borderRadius: '8px',
+                                            border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                                            color: 'white', fontWeight: '500', cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: '8px',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
+                                        onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                                    >
+                                        <Icon icon="fa:dice" width="14" />
+                                        Roll Random
+                                    </button>
+                                    <div style={{ fontSize: '11px', color: '#666' }}>Seed: {avatarSeed}</div>
+                                </>
+                            )}
 
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {avatarMode === 'generated' && (
-                                    <>
-                                        <button
-                                            onClick={rollRandomAvatar}
-                                            style={{
-                                                padding: '10px 16px', borderRadius: '8px',
-                                                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
-                                                color: 'white', fontWeight: '500', cursor: 'pointer',
-                                                display: 'flex', alignItems: 'center', gap: '8px',
-                                                transition: 'all 0.2s'
-                                            }}
-                                            onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
-                                            onMouseLeave={e => e.target.style.background = 'rgba(255,255,255,0.05)'}
-                                        >
-                                            <Icon icon="fa:dice" width="14" />
-                                            Roll Random
-                                        </button>
-                                        <div style={{ fontSize: '11px', color: '#666' }}>Seed: {avatarSeed}</div>
-                                    </>
-                                )}
+                            {avatarMode === 'custom' && (
+                                <>
+                                    <label style={{ fontSize: '12px', color: '#888' }}>Image URL</label>
+                                    <input
+                                        type="text"
+                                        placeholder="https://..."
+                                        value={customAvatarUrl}
+                                        onChange={e => setCustomAvatarUrl(e.target.value)}
+                                        style={{
+                                            width: '100%', padding: '10px',
+                                            background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+                                            borderRadius: '6px', color: 'white', fontSize: '14px'
+                                        }}
+                                    />
+                                </>
+                            )}
 
-                                {avatarMode === 'custom' && (
-                                    <>
-                                        <label style={{ fontSize: '12px', color: '#888' }}>Image URL</label>
-                                        <input
-                                            type="text"
-                                            placeholder="https://..."
-                                            value={customAvatarUrl}
-                                            onChange={e => setCustomAvatarUrl(e.target.value)}
-                                            style={{
-                                                width: '100%', padding: '10px',
-                                                background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
-                                                borderRadius: '6px', color: 'white', fontSize: '14px'
-                                            }}
-                                        />
-                                    </>
-                                )}
-
-                                {avatarMode === 'discord' && (
-                                    <div style={{ fontSize: '13px', color: '#aaa', fontStyle: 'italic' }}>
-                                        Using your Discord profile picture. <br />
-                                        Switch tabs to change.
-                                    </div>
-                                )}
-                            </div>
+                            {avatarMode === 'discord' && (
+                                <div style={{ fontSize: '13px', color: '#aaa', fontStyle: 'italic' }}>
+                                    Using your Discord profile picture. <br />
+                                    Switch tabs to change.
+                                </div>
+                            )}
                         </div>
+                    </div>
 
-                        {/* Nickname */}
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Nickname</label>
+                    {/* Nickname */}
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Nickname</label>
+                        <input
+                            type="text"
+                            value={nickname}
+                            onChange={e => setNickname(e.target.value)}
+                            placeholder="Enter your nickname"
+                            maxLength={32}
+                            style={{
+                                width: '100%', padding: '10px 12px', borderRadius: '6px',
+                                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)',
+                                color: 'white', fontSize: '14px', outline: 'none',
+                                boxSizing: 'border-box'
+                            }}
+                        />
+                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                            This is how other users will see you
+                        </div>
+                    </div>
+
+                    {/* Ripple Color Picker */}
+                    <div style={{ marginTop: '16px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Ripple Color</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <input
-                                type="text"
-                                value={nickname}
-                                onChange={e => setNickname(e.target.value)}
-                                placeholder="Enter your nickname"
-                                maxLength={32}
+                                type="color"
+                                value={settings.rippleColor || '#ffffff'}
+                                onChange={e => setSettings({ ...settings, rippleColor: e.target.value })}
                                 style={{
-                                    width: '100%', padding: '10px 12px', borderRadius: '6px',
-                                    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)',
-                                    color: 'white', fontSize: '14px', outline: 'none',
-                                    boxSizing: 'border-box'
+                                    width: '48px', height: '48px', padding: 0, border: 'none',
+                                    borderRadius: '8px', cursor: 'pointer', background: 'transparent'
                                 }}
                             />
-                            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-                                This is how other users will see you
+                            {/* Preset colors */}
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                {['#ffffff', '#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#a855f7', '#3b82f6', '#22c55e'].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => setSettings({ ...settings, rippleColor: c })}
+                                        style={{
+                                            width: '28px', height: '28px', borderRadius: '6px',
+                                            background: c, border: settings.rippleColor === c ? '2px solid white' : '2px solid transparent',
+                                            cursor: 'pointer', transition: 'all 0.15s'
+                                        }}
+                                    />
+                                ))}
                             </div>
                         </div>
-
-                        {/* Ripple Color Picker */}
-                        <div style={{ marginTop: '16px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Ripple Color</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <input
-                                    type="color"
-                                    value={settings.rippleColor || '#ffffff'}
-                                    onChange={e => setSettings({ ...settings, rippleColor: e.target.value })}
-                                    style={{
-                                        width: '48px', height: '48px', padding: 0, border: 'none',
-                                        borderRadius: '8px', cursor: 'pointer', background: 'transparent'
-                                    }}
-                                />
-                                {/* Preset colors */}
-                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                    {['#ffffff', '#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#a855f7', '#3b82f6', '#22c55e'].map(c => (
-                                        <button
-                                            key={c}
-                                            onClick={() => setSettings({ ...settings, rippleColor: c })}
-                                            style={{
-                                                width: '28px', height: '28px', borderRadius: '6px',
-                                                background: c, border: settings.rippleColor === c ? '2px solid white' : '2px solid transparent',
-                                                cursor: 'pointer', transition: 'all 0.15s'
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-                                Color of ripples when you type or send messages
-                            </div>
+                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                            Color of ripples when you type or send messages
                         </div>
-                    </section>
+                    </div>
+                </section>
 
-                    {/* Background Style */}
-                    <section>
-                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Background Style</h3>
-                        <BackgroundToggle />
-                    </section>
+                {/* Background Style */}
+                <section>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Background Style</h3>
+                    <BackgroundToggle />
+                </section>
 
-                    {/* Audio Settings */}
-                    <section>
-                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Audio & Video</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ fontWeight: '500' }}>Master Volume</div>
-                                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Global volume for all users</div>
-                                </div>
-                                <input
-                                    type="range" min="0" max="1" step="0.1"
-                                    value={settings.volume}
-                                    onChange={e => setSettings({ ...settings, volume: parseFloat(e.target.value) })}
-                                    style={{ width: '120px' }}
-                                />
+                {/* Audio Settings */}
+                <section>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Audio & Video</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ fontWeight: '500' }}>Master Volume</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Global volume for all users</div>
                             </div>
+                            <input
+                                type="range" min="0" max="1" step="0.1"
+                                value={settings.volume}
+                                onChange={e => setSettings({ ...settings, volume: parseFloat(e.target.value) })}
+                                style={{ width: '120px' }}
+                            />
                         </div>
-                    </section>
+                    </div>
+                </section>
 
-                    {/* Privacy Settings */}
-                    <section>
-                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Privacy</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                                <div>
-                                    <div style={{ fontWeight: '500' }}>Hide Muted Users</div>
-                                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Don't show video/chat from muted users</div>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={settings.hideMuted}
-                                    onChange={e => setSettings({ ...settings, hideMuted: e.target.checked })}
-                                />
-                            </label>
-                        </div>
-                    </section>
-                </div>
-
-                {/* Footer */}
-                <div style={{ padding: '20px', background: 'rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                    <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>Cancel</button>
-                    <button onClick={handleSave} disabled={saving} style={{ padding: '8px 24px', borderRadius: '6px', border: 'none', background: 'var(--accent-primary)', color: 'white', fontWeight: '600', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
-                        {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
-                </div>
-
+                {/* Privacy Settings */}
+                <section>
+                    <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Privacy</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                            <div>
+                                <div style={{ fontWeight: '500' }}>Hide Muted Users</div>
+                                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>Don't show video/chat from muted users</div>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={settings.hideMuted}
+                                onChange={e => setSettings({ ...settings, hideMuted: e.target.checked })}
+                            />
+                        </label>
+                    </div>
+                </section>
             </div>
+
+            {/* Footer */}
+            <div style={{ padding: '20px', background: 'rgba(0,0,0,0.2)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.7)', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} style={{ padding: '8px 24px', borderRadius: '6px', border: 'none', background: 'var(--accent-primary)', color: 'white', fontWeight: '600', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                </button>
+            </div>
+
         </div>
-    );
+    </div>
+);
 }

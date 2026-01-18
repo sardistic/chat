@@ -15,6 +15,8 @@ export const BACKGROUND_TYPES = {
 const BackgroundContext = createContext({
     backgroundType: BACKGROUND_TYPES.STARMAP,
     setBackgroundType: () => { },
+    dotGridVersion: 'v3',
+    setDotGridVersion: () => { },
 });
 
 export function useBackground() {
@@ -24,6 +26,7 @@ export function useBackground() {
 // Provider component
 export function BackgroundProvider({ children }) {
     const [backgroundType, setBackgroundType] = useState(BACKGROUND_TYPES.GRID);
+    const [dotGridVersion, setDotGridVersion] = useState('v3');
     const [mounted, setMounted] = useState(false);
 
     // Load from localStorage on mount
@@ -32,6 +35,9 @@ export function BackgroundProvider({ children }) {
         if (saved && Object.values(BACKGROUND_TYPES).includes(saved)) {
             setBackgroundType(saved);
         }
+        const savedVersion = localStorage.getItem('dotGridVersion');
+        if (savedVersion) setDotGridVersion(savedVersion);
+
         setMounted(true);
     }, []);
 
@@ -39,11 +45,12 @@ export function BackgroundProvider({ children }) {
     useEffect(() => {
         if (mounted) {
             localStorage.setItem('backgroundPreference', backgroundType);
+            localStorage.setItem('dotGridVersion', dotGridVersion);
         }
-    }, [backgroundType, mounted]);
+    }, [backgroundType, dotGridVersion, mounted]);
 
     return (
-        <BackgroundContext.Provider value={{ backgroundType, setBackgroundType }}>
+        <BackgroundContext.Provider value={{ backgroundType, setBackgroundType, dotGridVersion, setDotGridVersion }}>
             {children}
         </BackgroundContext.Provider>
     );
