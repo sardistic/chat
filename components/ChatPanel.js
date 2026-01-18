@@ -456,7 +456,7 @@ export default function ChatPanel({
     // Already handled in the combined effect above.
 
     return (
-        <div ref={panelRef} className="chat-panel backdrop-blur backdrop-saturate-200 backdrop-brightness-[1.1] backdrop-contrast-150 border-l border-white/20" style={{
+        <div ref={panelRef} className="chat-panel backdrop-blur-sm backdrop-saturate-200 backdrop-brightness-[1.1] backdrop-contrast-150 border-l border-white/20" style={{
             display: 'flex',
             flexDirection: 'column',
             height: '100%',

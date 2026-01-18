@@ -41,7 +41,7 @@ function CollapsedUserBar({ user, lastMessage, onClick, style = {} }) {
 
     return (
         <div
-            className="collapsed-user-bar backdrop-blur-xl bg-black/40 border-l-[3px] rounded-lg"
+            className="collapsed-user-bar backdrop-blur-sm bg-black/40 border-l-[3px] rounded-lg"
             onClick={onClick}
             style={{
                 display: 'flex',
@@ -401,7 +401,7 @@ function VideoTile({
     return (
         <div
             ref={tileRef}
-            className={`tile effect-${effectIntensity} ${borderStyle.animation} relative rounded-xl overflow-hidden backdrop-blur-lg backdrop-brightness-125 bg-white/5 border border-white/10 shadow-lg`}
+            className={`tile effect-${effectIntensity} ${borderStyle.animation} relative rounded-xl overflow-hidden backdrop-blur-sm backdrop-brightness-125 bg-white/5 border border-white/10 shadow-lg`}
             style={{
                 background, // Keep the gradient, it has transparency
                 width: width || '100%',
