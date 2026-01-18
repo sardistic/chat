@@ -411,6 +411,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
     const handleMessage = (msg) => {
       // console.log("BUBBLE: Received", msg);
 
+      // Trigger dot grid ripple on ANY chat/system event
+      triggerDotRipple(msg.type === 'system' ? 'system' : 'chat');
+
       const author = msg.author || msg.sender;
       const content = msg.content || msg.text;
 
@@ -427,9 +430,6 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         ...prev,
         [author]: Date.now()
       }));
-
-      // Trigger dot grid ripple on chat event
-      triggerDotRipple('chat');
 
       // 1. Detect Mentions for Camera Glow (Target gets glow)
       const mentionedUsers = [];
