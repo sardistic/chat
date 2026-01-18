@@ -77,14 +77,21 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            fontSize: '11px',
+                            fontSize: '10px',
                             color: '#888',
                             transition: 'all 0.2s'
                         }}
                         whileHover={{ background: 'rgba(255,255,255,0.05)', color: '#ccc' }}
                     >
                         <Icon icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"} />
-                        <span>{previous.length} Previous Update{previous.length !== 1 ? 's' : ''}</span>
+                        <span>
+                            {previous.length} previous updates
+                            {previous.length > 0 && (
+                                <span style={{ opacity: 0.6, marginLeft: '4px' }}>
+                                    ({formatElapsed(Math.floor((new Date(latest.timestamp).getTime() - new Date(previous[0].timestamp).getTime()) / 1000))})
+                                </span>
+                            )}
+                        </span>
                         {!isExpanded && (
                             <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto', opacity: 0.5 }}>
                                 {previous.slice(-3).map((item, i) => (
@@ -122,32 +129,36 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
     // Minimal style for join/leave events - REDESIGNED with expandable details
     if (systemType === 'join-leave') {
-        const users = metadata?.users || [];
-        const joiners = users.filter(u => u.action === 'joined' || !u.action?.includes('left'));
-        const leavers = users.filter(u => u.action === 'left' || u.action?.includes('left'));
-        const [isExpanded, setIsExpanded] = useState(false);
+        const users = metadata?.users || [{ name: 'Unknown User' }];
 
-        // Get names list (max 3, then +N)
-        const getNames = (arr, max = 3) => {
-            if (arr.length === 0) return '';
-            const names = arr.slice(0, max).map(u => u.name || 'User').join(', ');
-            if (arr.length > max) return `${names} +${arr.length - max}`;
-            return names;
+        // Helper to aggregate duplicate users (e.g. joined/left multiple times)
+        const aggregateUsers = (list) => {
+            const map = new Map();
+            list.forEach(u => {
+                const key = u.name;
+                if (!map.has(key)) {
+                    map.set(key, { ...u, count: 1 });
+                } else {
+                    map.get(key).count++;
+                }
+            });
+            return Array.from(map.values());
         };
 
-        // Avatar size based on expansion
-        const avatarSize = isExpanded ? 32 : 24;
-        const maxAvatarsCollapsed = 4;
+        const joiners = aggregateUsers(users.filter(u => u.type === 'join'));
+        const leavers = aggregateUsers(users.filter(u => u.type === 'leave'));
 
-        // Avatar renderer for a single user
-        const renderAvatar = (u, i, isLeaver = false) => (
+        const [isExpanded, setIsExpanded] = useState(false);
+        const avatarSize = isExpanded ? 24 : 18;
+        const maxAvatarsCollapsed = 5;
+
+        const renderAvatar = (u, i, isLeaver) => (
             <motion.div
-                key={u.name || i}
+                key={`${u.name}-${i}-${isLeaver ? 'leave' : 'join'}`}
                 layout
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 20, delay: i * 0.03 }}
-                title={`${u.name || 'User'} • ${new Date(u.timestamp || timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                title={`${u.name || 'User'} ${u.count > 1 ? `(x${u.count})` : ''} • ${new Date(u.timestamp || timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                 style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -155,24 +166,48 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 }}
                 whileHover={{ scale: 1.1 }}
             >
-                <img
-                    src={u.avatar || u.image || `/api/avatar/${u.name || 'guest'}`}
-                    alt={u.name}
-                    style={{
-                        width: `${avatarSize}px`,
-                        height: `${avatarSize}px`,
-                        borderRadius: '50%',
-                        border: isLeaver ? '2px solid #555' : '2px solid #10b981',
-                        opacity: isLeaver ? 0.4 : 1,
-                        filter: isLeaver ? 'grayscale(100%)' : 'none',
-                        objectFit: 'cover',
-                        background: '#222'
-                    }}
-                    onError={(e) => {
-                        const initials = u.name?.charAt(0).toUpperCase() || '?';
-                        e.target.outerHTML = `<div style="width:${avatarSize}px;height:${avatarSize}px;border-radius:50%;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:${avatarSize * 0.4}px;color:white;font-weight:700;border:2px solid ${isLeaver ? '#555' : '#10b981'};opacity:${isLeaver ? 0.4 : 1}">${initials}</div>`;
-                    }}
-                />
+                <div style={{ position: 'relative' }}>
+                    <img
+                        src={u.avatar || u.image || `/api/avatar/${u.name || 'guest'}`}
+                        alt={u.name}
+                        style={{
+                            width: `${avatarSize}px`,
+                            height: `${avatarSize}px`,
+                            borderRadius: '50%',
+                            border: isLeaver ? '2px solid #555' : '2px solid #10b981',
+                            opacity: isLeaver ? 0.4 : 1,
+                            filter: isLeaver ? 'grayscale(100%)' : 'none',
+                            objectFit: 'cover',
+                            background: '#222',
+                            display: 'block'
+                        }}
+                        onError={(e) => {
+                            const initials = u.name?.charAt(0).toUpperCase() || '?';
+                            e.target.parentElement.innerHTML = `<div style="width:${avatarSize}px;height:${avatarSize}px;border-radius:50%;background:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:${avatarSize * 0.4}px;color:white;font-weight:700;border:2px solid ${isLeaver ? '#555' : '#10b981'};opacity:${isLeaver ? 0.4 : 1}">${initials}</div>`;
+                        }}
+                    />
+                    {/* Multiplier Badge */}
+                    {u.count > 1 && (
+                        <div style={{
+                            position: 'absolute',
+                            bottom: -4,
+                            right: -4,
+                            background: isLeaver ? '#555' : '#10b981',
+                            color: '#fff',
+                            fontSize: '8px',
+                            fontWeight: 'bold',
+                            padding: '0 3px',
+                            borderRadius: '6px',
+                            lineHeight: '12px',
+                            minWidth: '12px',
+                            textAlign: 'center',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                        }}>
+                            x{u.count}
+                        </div>
+                    )}
+                </div>
+
                 {/* Name tooltip on expanded view */}
                 {isExpanded && (
                     <div style={{
@@ -197,10 +232,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             </motion.div>
         );
 
-        // Count for overflow indicator
+        // Count for overflow indicator using AGGREGATED lengths
         const joinerOverflow = Math.max(0, joiners.length - maxAvatarsCollapsed);
-        const leaverOverflow = Math.max(0, leavers.length - maxAvatarsCollapsed);
-        const hasMore = joinerOverflow > 0 || leaverOverflow > 0 || joiners.length + leavers.length > 3;
+        const leaversOverflow = Math.max(0, leavers.length - maxAvatarsCollapsed);
+        const hasMore = joinerOverflow > 0 || leaversOverflow > 0 || joiners.length + leavers.length > 3;
 
         return (
             <motion.div
