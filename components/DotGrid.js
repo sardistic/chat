@@ -5,6 +5,18 @@ import { useEffect, useRef } from 'react';
 // Global event system for triggering ripples from anywhere
 const rippleCallbacks = new Set();
 
+// Tile position registry - maps username to { x, y } center coordinates
+const tilePositions = new Map();
+export function registerTilePosition(username, x, y) {
+    tilePositions.set(username, { x, y });
+}
+export function unregisterTilePosition(username) {
+    tilePositions.delete(username);
+}
+export function getTilePosition(username) {
+    return tilePositions.get(username) || null;
+}
+
 // Intensity presets
 const RIPPLE_PRESETS = {
     keystroke: { speed: 50, width: 300, growth: 1, opacity: 0.15 },

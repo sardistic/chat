@@ -9,7 +9,7 @@ import TubeTile from './TubeTile';
 import EmojiPicker from './EmojiPicker'; // [NEW]
 import { useEmotes } from '@/hooks/useEmotes'; // [NEW]
 import { motion, AnimatePresence } from 'framer-motion';
-import { triggerDotRipple } from './DotGrid';
+import { triggerDotRipple, registerTilePosition, unregisterTilePosition } from './DotGrid';
 
 // Floating emoji animation component
 // Floating emoji/image animation component
@@ -273,10 +273,33 @@ function VideoTile({
             const centerY = rect.top + rect.height / 2;
             const userColor = user?.color || '#ffffff';
             // Subtle typing ripple from tile
-            triggerDotRipple('typing', { x: centerX, y: centerY }, userColor, 0.4);
+            triggerDotRipple('typing', { x: centerX, y: centerY }, userColor, 0.6);
         }
         wasTypingRef.current = isTyping;
     }, [isTyping, user?.color]);
+
+    // Register tile position for message ripples
+    useEffect(() => {
+        const username = user?.name;
+        if (!username || !tileRef.current) return;
+
+        const updatePosition = () => {
+            if (tileRef.current) {
+                const rect = tileRef.current.getBoundingClientRect();
+                registerTilePosition(username, rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }
+        };
+
+        updatePosition();
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition);
+
+        return () => {
+            unregisterTilePosition(username);
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition);
+        };
+    }, [user?.name]);
 
     // Camera effects hook - only for vibrancy/color analysis
     const { brightness, dominantColor, effectIntensity } = useCameraEffects(
