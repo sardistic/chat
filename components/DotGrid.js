@@ -39,22 +39,22 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             growth: 22,              // HUGE at cursor
             ease: 0.22,              // Faster snap
 
-            // Opacity - PURE WHITE
-            baseOpacity: 0.12,
-            opacityVariation: 0.05,
-            maxOpacity: 1.0,         // Pure white
-            mouseOpacityBoost: 0.85,
+            // Opacity - BRIGHT WHITE
+            baseOpacity: 0.25,       // More visible base
+            opacityVariation: 0.1,
+            maxOpacity: 1.0,         // Pure white at max
+            mouseOpacityBoost: 0.75,
 
             // Wave animations - simplified
             waveSpeed: 0.015,
             waveGrowth: 0.8,         // Very subtle
             waveOpacityBoost: 0.08,
 
-            // Event ripples - MORE VISIBLE
-            rippleSpeed: 12,         // Faster travel
-            rippleWidth: 250,        // Wider band
-            rippleGrowth: 8,         // Bigger dots in ripple
-            rippleOpacity: 0.6,      // Strong opacity boost
+            // Event ripples - FAST and SUBTLE
+            rippleSpeed: 25,         // Very fast sweep
+            rippleWidth: 300,        // Wide band
+            rippleGrowth: 3,         // Subtle size boost
+            rippleOpacity: 0.25,     // Gentle opacity boost
 
             // Floating particles - reduced
             particleCount: 6,
