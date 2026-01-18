@@ -26,22 +26,22 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
         const params = {
             // Grid
             size: 48,
-            baseRadius: 0.8,         // Larger base for visibility
-            radiusVariation: 0.3,
-            proximity: 350,          // Larger area of influence
-            growth: 20,              // BIG dots near mouse - almost touching
-            ease: 0.18,              // Fast easing for responsiveness
+            baseRadius: 0.4,         // SMALLER base for sparse look
+            radiusVariation: 0.2,
+            proximity: 350,          // Area of influence
+            growth: 22,              // HUGE dots near mouse - almost touching
+            ease: 0.18,              // Fast easing
 
             // Opacity
-            baseOpacity: 0.12,
-            opacityVariation: 0.08,
-            maxOpacity: 0.85,
-            mouseOpacityBoost: 0.7,
+            baseOpacity: 0.08,       // Fainter base
+            opacityVariation: 0.06,
+            maxOpacity: 0.9,
+            mouseOpacityBoost: 0.8,
 
-            // Wave animations - MORE PROMINENT
-            waveSpeed: 0.025,        // Faster waves
-            waveGrowth: 2.5,         // Strong wave size effect
-            waveOpacityBoost: 0.25,
+            // Wave animations
+            waveSpeed: 0.02,
+            waveGrowth: 1.5,         // Subtler waves
+            waveOpacityBoost: 0.15,
 
             // RNG Energy bursts
             burstChance: 0.00003,

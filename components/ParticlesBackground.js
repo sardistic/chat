@@ -54,10 +54,10 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                     }
                 },
                 bubble: {
-                    distance: 300,
-                    size: 12,
-                    duration: 0.3,
-                    opacity: 1.0,
+                    distance: 350,
+                    size: 22,        // Match DotGrid growth
+                    duration: 0.2,
+                    opacity: 0.9,
                 },
             },
         },
@@ -105,8 +105,8 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             },
             size: {
                 value: {
-                    min: 1.5,
-                    max: 3.5,
+                    min: 0.5,   // Smaller base
+                    max: 1.5,
                 },
             },
         },
