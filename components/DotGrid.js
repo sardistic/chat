@@ -22,40 +22,40 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
         const ctx = canvas.getContext('2d');
 
-        // Parameters - tuned for responsiveness and visibility
+        // Parameters - PERFORMANCE OPTIMIZED
         const params = {
             // Grid
             size: 48,
-            baseRadius: 0.4,         // SMALLER base for sparse look
-            radiusVariation: 0.2,
-            proximity: 350,          // Area of influence
-            growth: 22,              // HUGE dots near mouse - almost touching
-            ease: 0.18,              // Fast easing
+            baseRadius: 0.2,         // TINY base dots
+            radiusVariation: 0.1,
+            proximity: 300,          // Tighter area
+            growth: 22,              // HUGE at cursor
+            ease: 0.22,              // Faster snap
 
-            // Opacity
-            baseOpacity: 0.08,       // Fainter base
-            opacityVariation: 0.06,
-            maxOpacity: 0.9,
-            mouseOpacityBoost: 0.8,
+            // Opacity - PURE WHITE
+            baseOpacity: 0.12,
+            opacityVariation: 0.05,
+            maxOpacity: 1.0,         // Pure white
+            mouseOpacityBoost: 0.85,
 
-            // Wave animations
-            waveSpeed: 0.02,
-            waveGrowth: 1.5,         // Subtler waves
-            waveOpacityBoost: 0.15,
+            // Wave animations - simplified
+            waveSpeed: 0.015,
+            waveGrowth: 0.8,         // Very subtle
+            waveOpacityBoost: 0.08,
 
-            // RNG Energy bursts
-            burstChance: 0.00003,
-            burstDuration: 80,
-            burstGrowth: 2.5,
-            burstOpacity: 0.2,
+            // RNG Energy bursts - disabled for perf
+            burstChance: 0,
+            burstDuration: 0,
+            burstGrowth: 0,
+            burstOpacity: 0,
 
-            // Floating particles
-            particleCount: 12,
-            particleRadius: 0.5,
-            particleOpacity: 0.12,
-            particleSpeed: 0.15,
-            lineDistance: 80,
-            lineOpacity: 0.04,
+            // Floating particles - reduced
+            particleCount: 6,
+            particleRadius: 0.3,
+            particleOpacity: 0.08,
+            particleSpeed: 0.1,
+            lineDistance: 60,
+            lineOpacity: 0.02,
         };
 
         let gridDots = [];
@@ -82,47 +82,33 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             }
 
             update(mouseX, mouseY, time) {
-                // Wave contribution - multiple overlapping waves for organic motion
-                const wave1 = Math.sin(this.x * 0.005 + this.y * 0.004 + time * params.waveSpeed);
-                const wave2 = Math.sin(this.x * 0.003 - this.y * 0.005 + time * params.waveSpeed * 1.3 + this.phase);
-                const wave3 = Math.sin((this.x + this.y) * 0.003 + time * params.waveSpeed * 0.7 + this.wavePhase);
-                const wave4 = Math.sin(this.y * 0.006 + time * params.waveSpeed * 0.9);
-                const waveValue = (wave1 * 0.35 + wave2 * 0.25 + wave3 * 0.25 + wave4 * 0.15);
-                const normalizedWave = (waveValue + 1) / 2;
+                // Simple single wave for performance
+                const wave = Math.sin(this.x * 0.004 + this.y * 0.003 + time * params.waveSpeed + this.phase);
+                const normalizedWave = (wave + 1) / 2;
 
                 const waveGrowth = normalizedWave * params.waveGrowth;
                 const waveOpacity = normalizedWave * params.waveOpacityBoost;
 
-                // Mouse proximity - simple smooth falloff for speed
+                // Mouse proximity - simple smooth falloff
                 const dx = this.x - mouseX;
                 const dy = this.y - mouseY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                const distSq = dx * dx + dy * dy;
+                const proxSq = params.proximity * params.proximity;
                 let mouseGrowth = 0;
                 let mouseOpacity = 0;
 
-                if (distance < params.proximity) {
-                    // Smooth quadratic falloff - fast to compute
-                    const t = 1 - (distance / params.proximity);
-                    const falloff = t * t * (3 - 2 * t); // smoothstep
+                if (distSq < proxSq) {
+                    const t = 1 - Math.sqrt(distSq) / params.proximity;
+                    const falloff = t * t;
                     mouseGrowth = falloff * params.growth;
                     mouseOpacity = falloff * params.mouseOpacityBoost;
                 }
 
-                // RNG Energy burst
-                if (this.burstTimer > 0) {
-                    this.burstTimer--;
-                    this.burstIntensity = (this.burstTimer / params.burstDuration) * params.burstGrowth;
-                } else if (Math.random() < params.burstChance) {
-                    this.burstTimer = params.burstDuration;
-                    this.burstIntensity = params.burstGrowth;
-                }
-
                 // Fast easing
-                this.targetRadius = this._radius + waveGrowth + mouseGrowth + this.burstIntensity;
+                this.targetRadius = this._radius + waveGrowth + mouseGrowth;
                 this.radius += (this.targetRadius - this.radius) * params.ease;
 
-                this.targetOpacity = this.baseOpacity + waveOpacity + mouseOpacity +
-                    (this.burstIntensity / params.burstGrowth) * params.burstOpacity;
+                this.targetOpacity = this.baseOpacity + waveOpacity + mouseOpacity;
                 this.opacity += (this.targetOpacity - this.opacity) * params.ease;
             }
         }

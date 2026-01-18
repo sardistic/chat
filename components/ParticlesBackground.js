@@ -123,16 +123,16 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     const zoomScale = zoomLevel > 0.01 ? 1 + zoomLevel * 0.2 : 1;
     const motionBlur = isZooming ? `blur(${zoomLevel * 2}px)` : 'none';
 
-    // Wave shadow overlay - re-enabled with visible gradient
-    const waveOverlayStyle = useMemo(() => ({
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1,
-        pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at 50% 50%, transparent 0%, transparent 40%, rgba(100, 100, 255, 0.03) 70%, rgba(150, 100, 255, 0.06) 100%)',
-        animation: 'wave-pulse 8s ease-in-out infinite',
-        opacity: 0.8,
-    }), []);
+    // Wave shadow overlay - DISABLED for cleaner look
+    // const waveOverlayStyle = useMemo(() => ({
+    //     position: 'fixed',
+    //     inset: 0,
+    //     zIndex: 1,
+    //     pointerEvents: 'none',
+    //     background: 'radial-gradient(ellipse at 50% 50%, transparent 0%, transparent 40%, rgba(100, 100, 255, 0.03) 70%, rgba(150, 100, 255, 0.06) 100%)',
+    //     animation: 'wave-pulse 8s ease-in-out infinite',
+    //     opacity: 0.8,
+    // }), []);
 
     // Main wrapper with zoom effects
     const wrapperStyle = useMemo(() => ({
