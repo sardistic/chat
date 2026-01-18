@@ -192,11 +192,26 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 let mouseGrowth = 0;
                 let mouseOpacity = 0;
 
+                // FLUID MAGNETIC PULL
+                this.magX = 0;
+                this.magY = 0;
+
                 if (distSq < proxSq) {
-                    const t = 1 - Math.sqrt(distSq) / params.proximity;
+                    const dist = Math.sqrt(distSq);
+                    const t = 1 - dist / params.proximity;
                     const falloff = t * t;
                     mouseGrowth = falloff * params.growth;
                     mouseOpacity = falloff * params.mouseOpacityBoost;
+
+                    // "Ferrofluid" Pull: Pull the outer rings towards the mouse (negative direction)
+                    // We want the rings to look like they are being sucked towards the cursor
+                    const pullStrength = 15 * falloff; // Max pixel offset
+                    // Normalize direction
+                    const dirX = dx / (dist || 1);
+                    const dirY = dy / (dist || 1);
+
+                    this.magX = -dirX * pullStrength;
+                    this.magY = -dirY * pullStrength;
                 }
 
                 // Event ripple influence - WAVE EFFECT (overrides, doesn't add)
@@ -368,9 +383,6 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             // Draw dots
             for (const dot of gridDots) {
                 if (dot.opacity > 0.05 || dot.radius > 1) {
-                    ctx.beginPath();
-                    ctx.arc(dot.x, dot.y, Math.max(0.3, dot.radius), 0, Math.PI * 2);
-
                     // Blend white with ripple color based on influence
                     let r = 255, g = 255, b = 255;
                     if (dot.rippleColor && dot.rippleInfluence > 0.1 && dot.rippleColor !== '#ffffff') {
@@ -379,48 +391,46 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                         const cr = parseInt(hex.substr(0, 2), 16) || 255;
                         const cg = parseInt(hex.substr(2, 2), 16) || 255;
                         const cb = parseInt(hex.substr(4, 2), 16) || 255;
-                        // Influence determines how much of the user color we blend in (0.9 = 90% user color)
+                        // Influence determines how much of the user color we blend in
                         const mix = Math.min(1, dot.rippleInfluence * 0.9);
                         r = Math.round(255 * (1 - mix) + cr * mix);
                         g = Math.round(255 * (1 - mix) + cg * mix);
                         b = Math.round(255 * (1 - mix) + cb * mix);
                     }
 
-                    // FLUID RINGS EFFECT - Clean (Non-Wobbly)
-                    // 1. Outer Ring (Fluid Outline)
+                    // FLUID RINGS EFFECT - With Ferrofluid Magnetic Pull
+                    // 1. Outer Ring (Max Drag)
                     if (dot.opacity > 0.05) {
                         const outerPulse = Math.sin(time * 0.02 + dot.x * 0.01 + dot.y * 0.01) * 0.5 + 0.5;
                         const outerRadius = Math.max(0.5, dot.radius * (1.5 + outerPulse * 0.3));
 
                         ctx.beginPath();
-                        ctx.arc(dot.x, dot.y, outerRadius, 0, Math.PI * 2);
+                        // Apply explicit MAgnetic Offset to center
+                        ctx.arc(dot.x + (dot.magX || 0), dot.y + (dot.magY || 0), outerRadius, 0, Math.PI * 2);
                         // REDUCED OPACITY (0.3 -> 0.15) for better visibility
                         ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.15})`;
                         ctx.lineWidth = 0.8;
                         // REDUCED BLUR (4 -> 0) - Crisp is better for grid visibility
-                        // ctx.shadowBlur = 0; 
-                        // Actually, let's keep a TINY blur but mostly transparent
-                        // The user said "too intense to see some most of the grid". 
-                        // Removing blur is safer to "fix" visibility.
                         ctx.shadowBlur = 0;
                         ctx.shadowColor = `transparent`;
                         ctx.stroke();
                     }
 
-                    // 2. Mid Ring (Fluid Outline)
+                    // 2. Mid Ring (Half Drag)
                     if (dot.opacity > 0.1) {
                         const midPulse = Math.sin(time * 0.03 + dot.x * 0.02 + dot.y * 0.02 + 1) * 0.5 + 0.5;
                         const midRadius = Math.max(0.5, dot.radius * (0.8 + midPulse * 0.2));
 
                         ctx.beginPath();
-                        ctx.arc(dot.x, dot.y, midRadius, 0, Math.PI * 2);
+                        // Apply HALF MAgnetic Offset
+                        ctx.arc(dot.x + (dot.magX || 0) * 0.5, dot.y + (dot.magY || 0) * 0.5, midRadius, 0, Math.PI * 2);
                         // REDUCED OPACITY (0.5 -> 0.3)
                         ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.3})`;
                         ctx.lineWidth = 1.0;
                         ctx.stroke();
                     }
 
-                    // 3. Inner Core (Solid)
+                    // 3. Inner Core (No Drag - Anchored)
                     ctx.beginPath();
                     ctx.arc(dot.x, dot.y, dot.radius * 0.45, 0, Math.PI * 2);
                     ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity})`;
