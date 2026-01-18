@@ -330,5 +330,5 @@ export default function DotGridCanvas({ className = '', zoomLevel = 0 }) {
         };
     }, []);
 
-    return <canvas ref={canvasRef} className={`fixed inset - 0 pointer - events - none - z - 10 ${className} `} style={{ background: '#111' }} />;
+    return <canvas ref={canvasRef} className={`fixed inset-0 pointer-events-none -z-10 ${className}`} style={{ background: '#080808' }} />;
 }

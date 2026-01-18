@@ -296,7 +296,7 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
         <div
             ref={containerRef}
             className={`fixed inset-0 pointer-events-none -z-10 ${className}`}
-            style={{ background: '#111' }}
+            style={{ background: '#080808' }}
         />
     );
 }
