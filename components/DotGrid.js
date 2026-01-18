@@ -20,13 +20,14 @@ export function getTilePosition(username) {
     return pos || null;
 }
 
-// Intensity presets - tuned for visible wave effect
+// Intensity presets - slowed down for smoother feel
 const RIPPLE_PRESETS = {
-    keystroke: { speed: 60, width: 200, growth: 1, opacity: 0.15 },
-    typing: { speed: 55, width: 300, growth: 1.5, opacity: 0.2 },
-    message: { speed: 45, width: 400, growth: 3, opacity: 0.4 },
-    system: { speed: 50, width: 350, growth: 2, opacity: 0.3 },
+    keystroke: { speed: 40, width: 200, growth: 1, opacity: 0.15 },
+    typing: { speed: 35, width: 300, growth: 1.5, opacity: 0.2 },
+    message: { speed: 25, width: 450, growth: 3, opacity: 0.4 }, // Much slower
+    system: { speed: 30, width: 350, growth: 2, opacity: 0.3 },
 };
+
 
 export function triggerDotRipple(type = 'message', origin = null, color = '#ffffff', intensity = 1.0) {
     // type: 'keystroke', 'typing', 'message', 'system'
@@ -385,57 +386,40 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                         b = Math.round(255 * (1 - mix) + cb * mix);
                     }
 
-                    // FLUID MERCURY EFFECT
-                    // Helper to draw organic wobbly blob
-                    const drawOrganicBlob = (ctx, x, y, radius, time, phase, color, style = 'fill') => {
-                        ctx.beginPath();
-                        const points = 12; // Resolution of blob
-                        const noiseFreq = 3;
-                        const distortion = radius * 0.2; // How much it wobbles
-
-                        for (let i = 0; i <= points; i++) {
-                            const angle = (i / points) * Math.PI * 2;
-                            // Blob noise: combine time, angle, and position
-                            const noise = Math.sin(angle * noiseFreq + time * 0.05 + phase);
-                            const r = radius + noise * distortion;
-
-                            const px = x + Math.cos(angle) * r;
-                            const py = y + Math.sin(angle) * r;
-
-                            if (i === 0) ctx.moveTo(px, py);
-                            else ctx.lineTo(px, py);
-                        }
-                        ctx.closePath();
-
-                        if (style === 'stroke') {
-                            ctx.strokeStyle = color;
-                            ctx.stroke();
-                        } else {
-                            ctx.fillStyle = color;
-                            ctx.fill();
-                        }
-                    };
-
-                    // 1. Outer Fluid Ring
+                    // FLUID RINGS EFFECT - Clean (Non-Wobbly)
+                    // 1. Outer Ring (Fluid Outline)
                     if (dot.opacity > 0.05) {
                         const outerPulse = Math.sin(time * 0.02 + dot.x * 0.01 + dot.y * 0.01) * 0.5 + 0.5;
                         const outerRadius = Math.max(0.5, dot.radius * (1.5 + outerPulse * 0.3));
 
+                        ctx.beginPath();
+                        ctx.arc(dot.x, dot.y, outerRadius, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.3})`;
                         ctx.lineWidth = 0.8;
-                        drawOrganicBlob(ctx, dot.x, dot.y, outerRadius, time, dot.phase, `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.3})`, 'stroke');
+                        // Add blur to outer ring
+                        ctx.shadowBlur = 4;
+                        ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${dot.opacity})`;
+                        ctx.stroke();
+                        ctx.shadowBlur = 0; // Reset
                     }
 
-                    // 2. Mid Fluid Ring
+                    // 2. Mid Ring (Fluid Outline)
                     if (dot.opacity > 0.1) {
                         const midPulse = Math.sin(time * 0.03 + dot.x * 0.02 + dot.y * 0.02 + 1) * 0.5 + 0.5;
                         const midRadius = Math.max(0.5, dot.radius * (0.8 + midPulse * 0.2));
 
+                        ctx.beginPath();
+                        ctx.arc(dot.x, dot.y, midRadius, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.5})`;
                         ctx.lineWidth = 1.0;
-                        drawOrganicBlob(ctx, dot.x, dot.y, midRadius, time * 1.5, dot.phase + 2, `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.5})`, 'stroke');
+                        ctx.stroke();
                     }
 
-                    // 3. Inner Mercury Core (Solid Blob)
-                    drawOrganicBlob(ctx, dot.x, dot.y, dot.radius * 0.45, time * 2, dot.phase + 4, `rgba(${r}, ${g}, ${b}, ${dot.opacity})`, 'fill');
+                    // 3. Inner Core (Solid)
+                    ctx.beginPath();
+                    ctx.arc(dot.x, dot.y, dot.radius * 0.45, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity})`;
+                    ctx.fill();
 
                     // shiny highlight on core
                     if (dot.radius > 2) {
