@@ -174,6 +174,10 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 this.opacity = this.baseOpacity;
                 this.targetOpacity = this.baseOpacity;
                 this.targetRadius = this._radius;
+
+                // Track current vs target magnetic pull for smoothing
+                this.currentMagX = 0;
+                this.currentMagY = 0;
             }
 
             update(mouseX, mouseY, time, ripples) {
@@ -193,8 +197,8 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 let mouseOpacity = 0;
 
                 // FLUID MAGNETIC PULL
-                this.magX = 0;
-                this.magY = 0;
+                let targetMagX = 0;
+                let targetMagY = 0;
 
                 if (distSq < proxSq) {
                     const dist = Math.sqrt(distSq);
@@ -210,9 +214,15 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                     const dirX = dx / (dist || 1);
                     const dirY = dy / (dist || 1);
 
-                    this.magX = -dirX * pullStrength;
-                    this.magY = -dirY * pullStrength;
+                    targetMagX = -dirX * pullStrength;
+                    targetMagY = -dirY * pullStrength;
                 }
+
+                // Viscous smoothing for magnetic effect
+                this.currentMagX += (targetMagX - this.currentMagX) * params.ease;
+                this.currentMagY += (targetMagY - this.currentMagY) * params.ease;
+                const magX = this.currentMagX;
+                const magY = this.currentMagY;
 
                 // Event ripple influence - WAVE EFFECT (overrides, doesn't add)
                 let rippleInfluence = 0;
@@ -247,6 +257,10 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
 
                 this.targetOpacity = finalOpacity;
                 this.opacity += (this.targetOpacity - this.opacity) * params.ease;
+
+                // Store calculated values for render
+                this.drawMagX = magX;
+                this.drawMagY = magY;
             }
         }
 
@@ -398,48 +412,62 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                         b = Math.round(255 * (1 - mix) + cb * mix);
                     }
 
-                    // FLUID RINGS EFFECT - With Ferrofluid Magnetic Pull
-                    // 1. Outer Ring (Max Drag)
+                    // FLUID RINGS EFFECT - Multi-Layered Ferrofluid (5 Layers)
+                    // Creates a deep, viscous liquid look by stacking offsets
+
                     if (dot.opacity > 0.05) {
-                        const outerPulse = Math.sin(time * 0.02 + dot.x * 0.01 + dot.y * 0.01) * 0.5 + 0.5;
-                        const outerRadius = Math.max(0.5, dot.radius * (1.5 + outerPulse * 0.3));
-
+                        // 1. Outer Ring (Max Drag, Faint)
+                        const pulse1 = Math.sin(time * 0.02 + dot.x * 0.01 + dot.y * 0.01) * 0.5 + 0.5;
+                        const r1 = Math.max(0.5, dot.radius * (1.8 + pulse1 * 0.4));
                         ctx.beginPath();
-                        // Apply explicit MAgnetic Offset to center
-                        ctx.arc(dot.x + (dot.magX || 0), dot.y + (dot.magY || 0), outerRadius, 0, Math.PI * 2);
-                        // REDUCED OPACITY (0.3 -> 0.15) for better visibility
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.15})`;
+                        ctx.arc(dot.x + (dot.drawMagX || 0) * 1.0, dot.y + (dot.drawMagY || 0) * 1.0, r1, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.1})`;
                         ctx.lineWidth = 0.8;
-                        // REDUCED BLUR (4 -> 0) - Crisp is better for grid visibility
                         ctx.shadowBlur = 0;
-                        ctx.shadowColor = `transparent`;
                         ctx.stroke();
-                    }
 
-                    // 2. Mid Ring (Half Drag)
-                    if (dot.opacity > 0.1) {
-                        const midPulse = Math.sin(time * 0.03 + dot.x * 0.02 + dot.y * 0.02 + 1) * 0.5 + 0.5;
-                        const midRadius = Math.max(0.5, dot.radius * (0.8 + midPulse * 0.2));
-
+                        // 2. Outer-Mid Ring (High Drag)
+                        const pulse2 = Math.sin(time * 0.025 + dot.x * 0.015 + dot.y * 0.015 + 1) * 0.5 + 0.5;
+                        const r2 = Math.max(0.5, dot.radius * (1.5 + pulse2 * 0.3));
                         ctx.beginPath();
-                        // Apply HALF MAgnetic Offset
-                        ctx.arc(dot.x + (dot.magX || 0) * 0.5, dot.y + (dot.magY || 0) * 0.5, midRadius, 0, Math.PI * 2);
-                        // REDUCED OPACITY (0.5 -> 0.3)
-                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.3})`;
+                        ctx.arc(dot.x + (dot.drawMagX || 0) * 0.8, dot.y + (dot.drawMagY || 0) * 0.8, r2, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.15})`;
+                        ctx.lineWidth = 0.9;
+                        ctx.stroke();
+
+                        // 3. Mid Ring (Med Drag)
+                        const pulse3 = Math.sin(time * 0.03 + dot.x * 0.02 + dot.y * 0.02 + 2) * 0.5 + 0.5;
+                        const r3 = Math.max(0.5, dot.radius * (1.2 + pulse3 * 0.25));
+                        ctx.beginPath();
+                        ctx.arc(dot.x + (dot.drawMagX || 0) * 0.6, dot.y + (dot.drawMagY || 0) * 0.6, r3, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.2})`;
                         ctx.lineWidth = 1.0;
                         ctx.stroke();
+
+                        // 4. Inner-Mid Ring (Low Drag)
+                        const pulse4 = Math.sin(time * 0.035 + dot.x * 0.025 + dot.y * 0.025 + 3) * 0.5 + 0.5;
+                        const r4 = Math.max(0.5, dot.radius * (0.9 + pulse4 * 0.2));
+                        ctx.beginPath();
+                        ctx.arc(dot.x + (dot.drawMagX || 0) * 0.4, dot.y + (dot.drawMagY || 0) * 0.4, r4, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity * 0.25})`;
+                        ctx.lineWidth = 1.1;
+                        ctx.stroke();
                     }
 
-                    // 3. Inner Core (No Drag - Anchored)
+                    // 5. Inner Core (Anchored/Slight Drag)
                     ctx.beginPath();
-                    ctx.arc(dot.x, dot.y, dot.radius * 0.45, 0, Math.PI * 2);
+                    // 20% Magnetic Pull (Very subtle movement)
+                    const coreX = dot.x + (dot.drawMagX || 0) * 0.2;
+                    const coreY = dot.y + (dot.drawMagY || 0) * 0.2;
+                    ctx.arc(coreX, coreY, dot.radius * 0.45, 0, Math.PI * 2);
                     ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity})`;
                     ctx.fill();
 
                     // shiny highlight on core
                     if (dot.radius > 2) {
                         ctx.beginPath();
-                        ctx.arc(dot.x - dot.radius * 0.15, dot.y - dot.radius * 0.15, dot.radius * 0.15, 0, Math.PI * 2);
+                        // Highlight moves with core
+                        ctx.arc(coreX - dot.radius * 0.15, coreY - dot.radius * 0.15, dot.radius * 0.15, 0, Math.PI * 2);
                         ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, dot.opacity + 0.4)})`;
                         ctx.fill();
                     }
