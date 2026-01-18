@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 /**
  * DotGrid - Animated dot grid with proximity growth + wave effects + floating particles
- * Features: Fast mouse response, prominent waves, chromatic aberration 3D effect
+ * Features: Fast mouse response, prominent waves
  */
 export default function DotGrid({ className = '', zoomLevel = 0 }) {
     const canvasRef = useRef(null);
@@ -29,7 +29,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             baseRadius: 0.8,         // Larger base for visibility
             radiusVariation: 0.3,
             proximity: 350,          // Larger area of influence
-            growth: 7,               // BIGGER dots near mouse
+            growth: 20,              // BIG dots near mouse - almost touching
             ease: 0.18,              // Fast easing for responsiveness
 
             // Opacity
@@ -56,12 +56,6 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             particleSpeed: 0.15,
             lineDistance: 80,
             lineOpacity: 0.04,
-
-            // Chromatic aberration (R/B 3D effect) - SUBTLE
-            chromaticOffset: 1.2,    // Smaller offset
-            chromaticWaveAmp: 0.6,   // Gentler animation
-            chromaticWaveSpeed: 0.012,
-            chromaticOpacity: 0.15,  // Subtle R/B layers
         };
 
         let gridDots = [];
@@ -204,20 +198,6 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
             mouseRef.current.targetY = e.clientY;
         };
 
-        // Draw dots with chromatic offset
-        const drawDotsWithOffset = (offsetX, offsetY, color, opacity) => {
-            ctx.beginPath();
-            for (const dot of gridDots) {
-                const r = Math.max(0.3, dot.radius);
-                const x = dot.x + offsetX;
-                const y = dot.y + offsetY;
-                ctx.moveTo(x + r, y);
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-            }
-            ctx.fillStyle = `rgba(${color}, ${opacity})`;
-            ctx.fill();
-        };
-
         let time = 0;
         const animate = () => {
             time += 1;
@@ -263,20 +243,7 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                 dot.update(mouse.x, mouse.y, time);
             }
 
-            // Chromatic aberration offset - animated wave
-            const chromaticWave = Math.sin(time * params.chromaticWaveSpeed) * params.chromaticWaveAmp;
-            const chromaticX = params.chromaticOffset + chromaticWave;
-            const chromaticY = (params.chromaticOffset * 0.5) + chromaticWave * 0.3;
-
-            // Draw RED layer (offset left-up)
-            ctx.globalCompositeOperation = 'lighter';
-            drawDotsWithOffset(-chromaticX, -chromaticY * 0.5, '255, 80, 80', params.chromaticOpacity * 0.7);
-
-            // Draw BLUE layer (offset right-down)
-            drawDotsWithOffset(chromaticX, chromaticY * 0.5, '80, 120, 255', params.chromaticOpacity * 0.7);
-
-            // Draw main WHITE layer
-            ctx.globalCompositeOperation = 'source-over';
+            // Draw dots
             for (const dot of gridDots) {
                 if (dot.opacity > 0.05 || dot.radius > 1) {
                     ctx.beginPath();
