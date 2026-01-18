@@ -378,14 +378,26 @@ export default function DotGrid({ className = '', zoomLevel = 0 }) {
                         const cr = parseInt(hex.substr(0, 2), 16) || 255;
                         const cg = parseInt(hex.substr(2, 2), 16) || 255;
                         const cb = parseInt(hex.substr(4, 2), 16) || 255;
-                        const blend = Math.min(1, dot.rippleInfluence * 0.9); // Strong 90% tint
-                        r = Math.round(255 * (1 - blend) + cr * blend);
-                        g = Math.round(255 * (1 - blend) + cg * blend);
-                        b = Math.round(255 * (1 - blend) + cb * blend);
+                        // Influence determines how much of the user color we blend in (0.9 = 90% user color)
+                        const mix = Math.min(1, dot.rippleInfluence * 0.9);
+                        r = Math.round(255 * (1 - mix) + cr * mix);
+                        g = Math.round(255 * (1 - mix) + cg * mix);
+                        b = Math.round(255 * (1 - mix) + cb * mix);
                     }
 
-                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${Math.min(params.maxOpacity, dot.opacity)})`;
+                    // Main Dot
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity})`;
                     ctx.fill();
+
+                    // Inner Dot "Shadow" (Nested) - slight depth effect
+                    // Only draw if big enough to be visible
+                    if (dot.radius > 1.5) {
+                        ctx.beginPath();
+                        ctx.arc(dot.x, dot.y, dot.radius * 0.35, 0, Math.PI * 2);
+                        // Darker/distinct inner core
+                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${dot.opacity + 0.3})`;
+                        ctx.fill();
+                    }
                 }
             }
 
