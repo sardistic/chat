@@ -309,7 +309,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                                             color: '#666',
                                             fontWeight: 'bold'
                                         }}>
-                                            +{leaverOverflow}
+                                            +{leaversOverflow}
                                         </div>
                                     )}
                                 </div>
@@ -349,7 +349,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                                         {joiners.length} Joined
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingBottom: '8px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', paddingBottom: '20px' }}>
                                     {joiners.map((u, i) => renderAvatar(u, i, false))}
                                 </div>
                             </div>
@@ -364,7 +364,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                                         {leavers.length} Left
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingBottom: '8px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', paddingBottom: '20px' }}>
                                     {leavers.map((u, i) => renderAvatar(u, i, true))}
                                 </div>
                             </div>
