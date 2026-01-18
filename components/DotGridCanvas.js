@@ -271,17 +271,40 @@ export default function DotGridCanvas({ className = '', zoomLevel = 0 }) {
 
                     // FLUID RINGS (5 Layers - copied from previous implementation logic)
                     if (dot.opacity > 0.05) {
-                        // 1. Outer
+                        const mx = dot.drawMagX || 0;
+                        const my = dot.drawMagY || 0;
+
+                        // 1. Outer Ring (Max Drag, Faint)
                         const r1 = Math.max(0.5, dot.radius * 1.8);
                         ctx.beginPath();
-                        ctx.arc(dot.x + (dot.drawMagX || 0), dot.y + (dot.drawMagY || 0), r1, 0, Math.PI * 2);
+                        ctx.arc(dot.x + mx, dot.y + my, r1, 0, Math.PI * 2);
                         ctx.strokeStyle = `rgba(${r},${g},${b}, ${dot.opacity * 0.1})`;
                         ctx.stroke();
 
-                        // ... (Simplified for brevity, but full version would have 5 loops)
-                        // 5. Core
+                        // 2. Mid - Outer (80% Drag)
+                        const r2 = Math.max(0.5, dot.radius * 1.5);
                         ctx.beginPath();
-                        ctx.arc(dot.x + (dot.drawMagX || 0) * 0.2, dot.y + (dot.drawMagY || 0) * 0.2, dot.radius * 0.45, 0, Math.PI * 2);
+                        ctx.arc(dot.x + mx * 0.8, dot.y + my * 0.8, r2, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r},${g},${b}, ${dot.opacity * 0.15})`;
+                        ctx.stroke();
+
+                        // 3. Mid (60% Drag)
+                        const r3 = Math.max(0.5, dot.radius * 1.2);
+                        ctx.beginPath();
+                        ctx.arc(dot.x + mx * 0.6, dot.y + my * 0.6, r3, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r},${g},${b}, ${dot.opacity * 0.2})`;
+                        ctx.stroke();
+
+                        // 4. Mid - Inner (40% Drag)
+                        const r4 = Math.max(0.5, dot.radius * 0.9);
+                        ctx.beginPath();
+                        ctx.arc(dot.x + mx * 0.4, dot.y + my * 0.4, r4, 0, Math.PI * 2);
+                        ctx.strokeStyle = `rgba(${r},${g},${b}, ${dot.opacity * 0.3})`;
+                        ctx.stroke();
+
+                        // 5. Core (20% Drag, Solid)
+                        ctx.beginPath();
+                        ctx.arc(dot.x + mx * 0.2, dot.y + my * 0.2, dot.radius * 0.45, 0, Math.PI * 2);
                         ctx.fillStyle = `rgba(${r},${g},${b}, ${dot.opacity})`;
                         ctx.fill();
                     }
