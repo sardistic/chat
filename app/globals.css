@@ -638,8 +638,10 @@ body {
 
 .tile {
   position: relative;
-  background: transparent;
-  /* Transparent to show DotGrid */
+  background: rgba(0, 0, 0, 0.3);
+  /* Semi-transparent to show blurred background */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   overflow: visible;
