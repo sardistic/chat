@@ -3,10 +3,12 @@
 import { useState, useEffect, createContext, useContext, memo } from 'react';
 import DotGrid from './DotGrid';
 import ParticlesBackground from './ParticlesBackground';
+import StarMapBackground from './StarMapBackground';
 
 // Background types
 export const BACKGROUND_TYPES = {
     STARMAP: 'starmap',
+    STARGRID: 'stargrid',
     GRID: 'grid',
     STATIC: 'static',
 };
@@ -100,7 +102,12 @@ function BackgroundComponent({ zoomLevel = 0 }) {
         return <DotGrid zoomLevel={zoomLevel} />;
     }
 
-    return <ParticlesBackground zoomLevel={zoomLevel} />;
+    if (backgroundType === BACKGROUND_TYPES.STARGRID) {
+        return <ParticlesBackground zoomLevel={zoomLevel} />;
+    }
+
+    // STARMAP - tsparticles version
+    return <StarMapBackground zoomLevel={zoomLevel} />;
 }
 
 // Memoize to prevent re-renders when parent updates

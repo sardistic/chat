@@ -126,7 +126,7 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
                     <button
                         onClick={() => setBackgroundType(BACKGROUND_TYPES.STARMAP)}
                         style={{
-                            flex: '1 1 30%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                            flex: '1 1 22%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
                             background: backgroundType === BACKGROUND_TYPES.STARMAP ? 'rgba(88, 101, 242, 0.2)' : 'rgba(255,255,255,0.03)',
                             border: backgroundType === BACKGROUND_TYPES.STARMAP ? '2px solid #5865F2' : '2px solid transparent',
                             textAlign: 'center', transition: 'all 0.2s',
@@ -134,12 +134,25 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
                     >
                         <Icon icon="fa:star" width="18" style={{ color: backgroundType === BACKGROUND_TYPES.STARMAP ? '#5865F2' : '#666', marginBottom: '4px' }} />
                         <div style={{ fontSize: '12px', fontWeight: '500', color: backgroundType === BACKGROUND_TYPES.STARMAP ? 'white' : '#aaa' }}>Star Map</div>
-                        <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>Particles</div>
+                        <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>Floating</div>
+                    </button>
+                    <button
+                        onClick={() => setBackgroundType(BACKGROUND_TYPES.STARGRID)}
+                        style={{
+                            flex: '1 1 22%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                            background: backgroundType === BACKGROUND_TYPES.STARGRID ? 'rgba(88, 101, 242, 0.2)' : 'rgba(255,255,255,0.03)',
+                            border: backgroundType === BACKGROUND_TYPES.STARGRID ? '2px solid #5865F2' : '2px solid transparent',
+                            textAlign: 'center', transition: 'all 0.2s',
+                        }}
+                    >
+                        <Icon icon="fa:star-o" width="18" style={{ color: backgroundType === BACKGROUND_TYPES.STARGRID ? '#5865F2' : '#666', marginBottom: '4px' }} />
+                        <div style={{ fontSize: '12px', fontWeight: '500', color: backgroundType === BACKGROUND_TYPES.STARGRID ? 'white' : '#aaa' }}>Star Grid</div>
+                        <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>Reactive</div>
                     </button>
                     <button
                         onClick={() => setBackgroundType(BACKGROUND_TYPES.GRID)}
                         style={{
-                            flex: '1 1 30%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                            flex: '1 1 22%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
                             background: backgroundType === BACKGROUND_TYPES.GRID ? 'rgba(88, 101, 242, 0.2)' : 'rgba(255,255,255,0.03)',
                             border: backgroundType === BACKGROUND_TYPES.GRID ? '2px solid #5865F2' : '2px solid transparent',
                             textAlign: 'center', transition: 'all 0.2s',
@@ -152,7 +165,7 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
                     <button
                         onClick={() => setBackgroundType(BACKGROUND_TYPES.STATIC)}
                         style={{
-                            flex: '1 1 30%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
+                            flex: '1 1 22%', padding: '12px', borderRadius: '10px', cursor: 'pointer',
                             background: backgroundType === BACKGROUND_TYPES.STATIC ? 'rgba(88, 101, 242, 0.2)' : 'rgba(255,255,255,0.03)',
                             border: backgroundType === BACKGROUND_TYPES.STATIC ? '2px solid #5865F2' : '2px solid transparent',
                             textAlign: 'center', transition: 'all 0.2s',
