@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef, memo } from "react";
+import { useEffect, useMemo, useRef, memo } from "react";
 import { RIPPLE_PRESETS, rippleCallbacks } from './DotGridRegistry';
 
 /**
@@ -12,6 +12,7 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     const animationRef = useRef(null);
     const particlesRef = useRef([]);
     const ripplesRef = useRef([]);
+    const mousePosRef = useRef({ x: -1000, y: -1000 });
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -23,23 +24,24 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
 
         // Initialize particles (stars)
         const initParticles = () => {
-            const count = 1200; // Many more particles
+            const count = 1200;
             particlesRef.current = [];
             for (let i = 0; i < count; i++) {
                 particlesRef.current.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    baseX: 0, // Will be set after
+                    baseX: 0,
                     baseY: 0,
                     vx: 0,
                     vy: 0,
                     size: 0.3 + Math.random() * 1.2,
+                    baseSize: 0.3 + Math.random() * 1.2,
                     opacity: 0.3 + Math.random() * 0.5,
                     twinklePhase: Math.random() * Math.PI * 2,
                     twinkleSpeed: 0.01 + Math.random() * 0.02,
+                    glow: 0, // Light effect when hit by ripple
                 });
             }
-            // Store base positions for drift
             particlesRef.current.forEach(p => {
                 p.baseX = p.x;
                 p.baseY = p.y;
@@ -55,6 +57,13 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
         };
         resize();
         window.addEventListener('resize', resize);
+
+        // Mouse tracking
+        const handleMouseMove = (e) => {
+            mousePosRef.current.x = e.clientX;
+            mousePosRef.current.y = e.clientY;
+        };
+        window.addEventListener('mousemove', handleMouseMove);
 
         // Subscribe to ripple events
         const rippleHandler = (type, origin, color, intensity) => {
@@ -72,20 +81,21 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
         };
         rippleCallbacks.add(rippleHandler);
 
-        let time = 0;
         const animate = () => {
-            time += 1;
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, width, height);
 
             const particles = particlesRef.current;
             const ripples = ripplesRef.current;
+            const mouse = mousePosRef.current;
 
-            // Update and draw particles
             for (const p of particles) {
                 // Twinkle effect
                 p.twinklePhase += p.twinkleSpeed;
                 const twinkle = 0.7 + 0.3 * Math.sin(p.twinklePhase);
+
+                // Decay glow
+                p.glow *= 0.92;
 
                 // Apply ripple forces
                 for (const r of ripples) {
@@ -93,25 +103,26 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                     const dy = p.y - r.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    // Check if particle is at the ripple wavefront
                     const innerEdge = r.radius - r.width;
                     const outerEdge = r.radius + r.width;
 
                     if (dist > innerEdge && dist < outerEdge && dist > 0) {
-                        // How close to ring center
                         const distFromRing = Math.abs(dist - r.radius);
                         const influence = Math.max(0, 1 - distFromRing / r.width);
-                        const force = influence * 2.5; // Push strength
+                        const force = influence * 2.5;
 
                         p.vx += (dx / dist) * force;
                         p.vy += (dy / dist) * force;
+
+                        // Light up particle when hit
+                        p.glow = Math.min(1, p.glow + influence * 0.8);
                     }
                 }
 
                 // Apply velocity with damping
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vx *= 0.95; // Damping
+                p.vx *= 0.95;
                 p.vy *= 0.95;
 
                 // Gentle drift back to base position
@@ -124,39 +135,55 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 if (p.y < 0) p.y = height;
                 if (p.y > height) p.y = 0;
 
-                // Draw particle
+                // Mouse hover effect - grow particles near cursor
+                const mouseDx = p.x - mouse.x;
+                const mouseDy = p.y - mouse.y;
+                const mouseDist = Math.sqrt(mouseDx * mouseDx + mouseDy * mouseDy);
+                const hoverRadius = 150;
+                let hoverScale = 1;
+                let hoverGlow = 0;
+                if (mouseDist < hoverRadius) {
+                    const t = 1 - mouseDist / hoverRadius;
+                    hoverScale = 1 + t * 2; // Grow up to 3x
+                    hoverGlow = t * 0.5;
+                }
+
+                // Calculate final size and brightness
+                const finalSize = p.baseSize * hoverScale * (1 + p.glow * 0.5);
+                const glowBrightness = Math.min(1, p.opacity * twinkle + p.glow * 0.6 + hoverGlow);
+
+                // Draw particle with glow effect
+                if (p.glow > 0.1 || hoverGlow > 0.1) {
+                    // Outer glow
+                    const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, finalSize * 3);
+                    gradient.addColorStop(0, `rgba(255, 255, 255, ${glowBrightness * 0.5})`);
+                    gradient.addColorStop(0.4, `rgba(200, 220, 255, ${glowBrightness * 0.2})`);
+                    gradient.addColorStop(1, 'rgba(200, 220, 255, 0)');
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, finalSize * 3, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+
+                // Core particle
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity * twinkle})`;
+                ctx.arc(p.x, p.y, finalSize, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${glowBrightness})`;
                 ctx.fill();
             }
 
-            // Update ripples (no visible ring, just particle interaction)
+            // Update ripples (invisible, just for particle interaction)
             for (let i = ripples.length - 1; i >= 0; i--) {
                 const r = ripples[i];
                 r.radius += r.speed;
-
-                // Remove finished ripples
                 if (r.radius > r.maxRadius) {
                     ripples.splice(i, 1);
                 }
             }
 
-            // Mouse hover effect
             animationRef.current = requestAnimationFrame(animate);
         };
         animate();
-
-        // Mouse interaction - particles grow near cursor
-        const mousePos = { x: -1000, y: -1000 };
-        const handleMouseMove = (e) => {
-            mousePos.x = e.clientX;
-            mousePos.y = e.clientY;
-        };
-        window.addEventListener('mousemove', handleMouseMove);
-
-        // Enhance draw loop to include hover effect
-        const originalAnimate = animate;
 
         return () => {
             cancelAnimationFrame(animationRef.current);
