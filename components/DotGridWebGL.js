@@ -130,7 +130,7 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                 float baseSize = 4.0; 
                 float growSize = baseSize * 5.0 * falloff; 
                 float waveSize = baseSize * 0.5 * waveNorm; 
-                float ripSize = baseSize * 3.0 * totalRippleInf; // Reduced from 15x to 3x
+                float ripSize = baseSize * 1.2 * totalRippleInf; // Subtle ripple size
                 
                 vSize = baseSize + growSize + waveSize + ripSize;
                 
@@ -145,7 +145,7 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                 
                 // --- COLOR / OPACITY ---
                 float baseOp = 0.15; 
-                float opacity = baseOp + (falloff * 0.6) + (waveNorm * 0.15) + (totalRippleInf * 0.25); // Reduced ripple opacity
+                float opacity = baseOp + (falloff * 0.6) + (waveNorm * 0.15) + (totalRippleInf * 0.1); // Subtle ripple opacity
                 
                 opacity *= (1.2 - uDragFactor * 0.8); 
                 
