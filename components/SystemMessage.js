@@ -163,9 +163,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     const x = window.innerWidth - 120;
                     const y = window.innerHeight - 80;
 
-                    // Color based on joiners vs leavers
+                    // Subtle color based on joiners vs leavers
                     const color = joiners.length > 0 ? '#10b981' : '#6b7280';
-                    const intensity = Math.min(1, (joiners.length + leavers.length) * 0.3);
+                    // Very subtle intensity for join/leave
+                    const intensity = 0.15;
 
                     triggerDotRipple('join', { x, y }, color, intensity);
                 }
@@ -499,6 +500,34 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
     };
 
     const style = config[systemType] || config['info'];
+
+    // Ripple effect configuration for different event types
+    const rippleConfig = {
+        'deploy-start': { color: '#f59e0b', intensity: 0.4 },      // Amber - moderate
+        'deploy-success': { color: '#10b981', intensity: 0.7 },    // Green - prominent!
+        'deploy-fail': { color: '#ef4444', intensity: 0.5 },       // Red - noticeable
+        'git-push': { color: '#8b5cf6', intensity: 0.35 },         // Violet - moderate
+        'tube-video': { color: '#ff0000', intensity: 0.25 },       // YouTube red - subtle
+        'tube-now-playing': { color: '#22c55e', intensity: 0.3 },  // Green - moderate
+        'tube-stopped': { color: '#6b7280', intensity: 0.15 },     // Gray - subtle
+        'tube-queue': { color: '#f97316', intensity: 0.2 },        // Orange - subtle
+        'info': { color: '#3b82f6', intensity: 0.2 }               // Blue - subtle
+    };
+
+    // Trigger ripple on mount for system events
+    useEffect(() => {
+        const ripple = rippleConfig[systemType];
+        if (!ripple || style.compact) return; // Skip compact log lines
+
+        const timer = setTimeout(() => {
+            if (typeof window !== 'undefined') {
+                const x = window.innerWidth - 120;
+                const y = window.innerHeight - 80;
+                triggerDotRipple('system', { x, y }, ripple.color, ripple.intensity);
+            }
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [systemType]);
 
     // Compact rendering for build log lines
     if (style.compact) {
