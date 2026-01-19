@@ -1101,13 +1101,13 @@ body {
 .tile {
   cursor: pointer;
   position: relative;
-  background: #050505;
+  background: transparent;
   border-radius: 12px;
   overflow: hidden;
 }
 
 .tile .overlay {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, transparent 100%);
   padding: 12px;
   justify-content: flex-end;
   height: 60px;
