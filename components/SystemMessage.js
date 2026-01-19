@@ -165,14 +165,14 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
                     // Subtle color based on joiners vs leavers
                     const color = joiners.length > 0 ? '#10b981' : '#6b7280';
-                    // Very subtle intensity for join/leave
-                    const intensity = 0.15;
+                    // Moderate intensity using the new 'join' preset
+                    const intensity = 0.8;
 
                     triggerDotRipple('join', { x, y }, color, intensity);
                 }
             }, 100);
             return () => clearTimeout(timer);
-        }, []); // Only on mount
+        }, [joiners.length, leavers.length, timestamp]); // Trigger on updates too
 
         const renderAvatar = (u, i, isLeaver) => (
             <motion.div
