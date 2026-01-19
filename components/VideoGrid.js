@@ -273,6 +273,7 @@ function VideoTile({
     }, [isTyping, user?.color]);
 
     // Register tile position for message ripples
+    // Re-runs when layout changes (width/height props change on reflow)
     useEffect(() => {
         const username = user?.name;
         if (!username || !tileRef.current) return;
@@ -288,12 +289,16 @@ function VideoTile({
         window.addEventListener('resize', updatePosition);
         window.addEventListener('scroll', updatePosition);
 
+        // Periodically refresh position to catch layout reflows
+        const interval = setInterval(updatePosition, 500);
+
         return () => {
             unregisterTilePosition(username);
             window.removeEventListener('resize', updatePosition);
             window.removeEventListener('scroll', updatePosition);
+            clearInterval(interval);
         };
-    }, [user?.name]);
+    }, [user?.name, width, height]);
 
     // Camera effects hook - only for vibrancy/color analysis
     const { brightness, dominantColor, effectIntensity } = useCameraEffects(
