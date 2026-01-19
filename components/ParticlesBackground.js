@@ -107,7 +107,7 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
 
                 // Motion glow - particles in motion emit light
                 const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-                const motionGlow = Math.min(0.6, speed * 0.15);
+                const motionGlow = Math.min(1.0, speed * 0.2);
 
                 // Apply ripple forces
                 for (const r of ripples) {
@@ -165,14 +165,15 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 const glowBrightness = Math.min(1, p.opacity * twinkle + p.glow * 0.6 + hoverGlow + motionGlow);
 
                 // Draw particle with glow effect
-                if (p.glow > 0.1 || hoverGlow > 0.1 || motionGlow > 0.1) {
-                    // Outer glow
-                    const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, finalSize * 3);
-                    gradient.addColorStop(0, `rgba(255, 255, 255, ${glowBrightness * 0.5})`);
-                    gradient.addColorStop(0.4, `rgba(200, 220, 255, ${glowBrightness * 0.2})`);
-                    gradient.addColorStop(1, 'rgba(200, 220, 255, 0)');
+                if (p.glow > 0.05 || hoverGlow > 0.05 || motionGlow > 0.05) {
+                    // Outer glow - larger and brighter
+                    const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, finalSize * 5);
+                    gradient.addColorStop(0, `rgba(255, 255, 255, ${glowBrightness * 0.7})`);
+                    gradient.addColorStop(0.3, `rgba(200, 220, 255, ${glowBrightness * 0.4})`);
+                    gradient.addColorStop(0.6, `rgba(150, 180, 255, ${glowBrightness * 0.15})`);
+                    gradient.addColorStop(1, 'rgba(150, 180, 255, 0)');
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, finalSize * 3, 0, Math.PI * 2);
+                    ctx.arc(p.x, p.y, finalSize * 5, 0, Math.PI * 2);
                     ctx.fillStyle = gradient;
                     ctx.fill();
                 }
