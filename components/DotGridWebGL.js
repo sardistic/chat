@@ -233,8 +233,8 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
             const curX = uniformsRef.current.uMouse.value.x;
             const curY = uniformsRef.current.uMouse.value.y;
 
-            uniformsRef.current.uMouse.value.x += (targetX - curX) * 0.15;
-            uniformsRef.current.uMouse.value.y += (targetY - curY) * 0.15;
+            uniformsRef.current.uMouse.value.x += (targetX - curX) * 0.4;
+            uniformsRef.current.uMouse.value.y += (targetY - curY) * 0.4;
 
             // Ripple Logic
             const ripples = activeRipples.current;
