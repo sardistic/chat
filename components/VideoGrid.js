@@ -219,6 +219,7 @@ function VideoTile({
     isDiscordUser = false,
     settings = { volume: 1, isLocallyMuted: false, isVideoHidden: false },
     onUpdateSettings = () => { },
+    onHide = null, // [NEW] Callback to hide this tile
     width,
     height,
     isMusicPlaying = false,
@@ -426,6 +427,38 @@ function VideoTile({
                     />
                 ))}
             </div>
+
+            {/* Hide Button - hover reveal */}
+            {onHide && (
+                <button
+                    className="tile-close-btn"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onHide(user?.name || user?.id);
+                    }}
+                    title="Hide this camera"
+                    style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.6)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0,
+                        transition: 'opacity 0.2s',
+                        zIndex: 20,
+                    }}
+                >
+                    <Icon icon="fa:times" width="12" />
+                </button>
+            )}
 
             {isVideoEnabled && (
                 <div
@@ -672,6 +705,35 @@ export default function VideoGrid({
     const { emotes } = useEmotes(); // [NEW] Load global emotes 
     const [incomingReactions, setIncomingReactions] = useState(new Map());
 
+    // Hidden tiles state - persisted to localStorage
+    const [hiddenTiles, setHiddenTiles] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('hiddenCameras');
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        }
+        return new Set();
+    });
+
+    // Persist hidden tiles to localStorage
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('hiddenCameras', JSON.stringify([...hiddenTiles]));
+        }
+    }, [hiddenTiles]);
+
+    // Hide/show tile handlers
+    const handleHideTile = useCallback((identifier) => {
+        setHiddenTiles(prev => new Set([...prev, identifier]));
+    }, []);
+
+    const handleShowTile = useCallback((identifier) => {
+        setHiddenTiles(prev => {
+            const next = new Set(prev);
+            next.delete(identifier);
+            return next;
+        });
+    }, []);
+
     // Background Selection State
     const [activeBackground, setActiveBackground] = useState('none');
 
@@ -872,7 +934,7 @@ export default function VideoGrid({
 
             <div className="grid" ref={gridRef} style={{ ...style, overflow: 'hidden' }}>
                 {/* Tube Tile (Desktop/Grid Mode) */}
-                {renderTubeInGrid && (
+                {renderTubeInGrid && !hiddenTiles.has('Tube') && (
                     <TubeTile
                         tubeState={tubeState}
                         receivedAt={receivedAt}
@@ -885,6 +947,7 @@ export default function VideoGrid({
                             if (update.type === 'ended') onUpdateTubeState({ type: 'ended', isPlaying: false, timestamp: 0 });
                         }}
                         onMuteChange={onMuteChange}
+                        onHide={handleHideTile}
                         onChangeVideo={(url) => {
                             if (!url) {
                                 // Eject / Stop
@@ -1010,6 +1073,11 @@ export default function VideoGrid({
                         }
                     }
 
+                    // Filter hidden tiles
+                    if (hiddenTiles.has(peerData.user?.name) || hiddenTiles.has(userId)) {
+                        return null;
+                    }
+
                     const isRemoteVideoActive = peerData.stream && peerData.user?.isVideoEnabled;
                     const isRemoteMuted = peerData.user?.isAudioEnabled === false;
 
@@ -1036,6 +1104,7 @@ export default function VideoGrid({
                             width={layout.width}
                             height={layout.height}
                             isMusicPlaying={tubeState?.isPlaying}
+                            onHide={handleHideTile}
                             isMobile={isMobile}
                         />
                     );

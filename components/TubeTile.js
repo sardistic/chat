@@ -49,6 +49,7 @@ export default function TubeTile({
     onChangeVideo, // Callback to change video
     onReaction, // Callback for reactions
     onMuteChange, // callback for mute state (isListening)
+    onHide = null, // [NEW] Callback to hide this tile
 
     width,
     height,
@@ -623,6 +624,37 @@ export default function TubeTile({
 
     return (
         <div className="tile video-tile relative rounded-xl overflow-hidden backdrop-blur-lg backdrop-brightness-125 bg-white/5 border border-white/10 shadow-lg" style={{ ...style, borderColor: (tubeState?.videoId && tubeState.isPlaying) ? '#ff0000' : 'rgba(255,0,0,0.3)' }}>
+            {/* Hide Button - hover reveal */}
+            {onHide && (
+                <button
+                    className="tile-close-btn"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onHide('Tube');
+                    }}
+                    title="Hide Tube"
+                    style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.6)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: 0,
+                        transition: 'opacity 0.2s',
+                        zIndex: 30,
+                    }}
+                >
+                    <Icon icon="fa:times" width="12" />
+                </button>
+            )}
             {!tubeState?.videoId ? (
                 <div style={{
                     flex: 1,

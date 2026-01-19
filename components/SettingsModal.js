@@ -426,6 +426,93 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
                         </div>
                     </section>
 
+                    {/* Hidden Cameras Manager */}
+                    <section>
+                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Hidden Cameras</h3>
+                        {(() => {
+                            // Read hidden cameras from localStorage
+                            const hiddenCameras = typeof window !== 'undefined'
+                                ? JSON.parse(localStorage.getItem('hiddenCameras') || '[]')
+                                : [];
+
+                            if (hiddenCameras.length === 0) {
+                                return (
+                                    <div style={{ fontSize: '13px', color: '#666', fontStyle: 'italic' }}>
+                                        No hidden cameras. Hover over a video tile and click × to hide it.
+                                    </div>
+                                );
+                            }
+
+                            const restoreCamera = (id) => {
+                                const updated = hiddenCameras.filter(c => c !== id);
+                                localStorage.setItem('hiddenCameras', JSON.stringify(updated));
+                                // Force re-render
+                                window.location.reload();
+                            };
+
+                            const restoreAll = () => {
+                                localStorage.setItem('hiddenCameras', JSON.stringify([]));
+                                window.location.reload();
+                            };
+
+                            return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {hiddenCameras.map((camId) => (
+                                        <div key={camId} style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            padding: '8px 12px',
+                                            background: 'rgba(0,0,0,0.3)',
+                                            borderRadius: '8px',
+                                            border: '1px solid rgba(255,255,255,0.1)'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <img
+                                                    src={camId === 'Tube' ? '/tube-avatar.png' : `/api/avatar/${camId}`}
+                                                    alt={camId}
+                                                    style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
+                                                />
+                                                <span style={{ fontSize: '13px', color: 'white' }}>{camId}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => restoreCamera(camId)}
+                                                style={{
+                                                    background: 'rgba(52, 211, 153, 0.2)',
+                                                    border: '1px solid rgba(52, 211, 153, 0.3)',
+                                                    color: '#34D399',
+                                                    padding: '4px 10px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '11px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Restore
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {hiddenCameras.length > 1 && (
+                                        <button
+                                            onClick={restoreAll}
+                                            style={{
+                                                marginTop: '8px',
+                                                background: 'rgba(239, 68, 68, 0.15)',
+                                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                color: '#EF4444',
+                                                padding: '8px 12px',
+                                                borderRadius: '8px',
+                                                fontSize: '12px',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            Restore All Cameras
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                    </section>
+
                     {/* Privacy Settings */}
                     <section>
                         <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Privacy</h3>

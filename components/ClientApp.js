@@ -690,6 +690,36 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                     )
                   });
               })()}
+              {/* Tube Avatar - appears when tube is active */}
+              {tubeState?.videoId && (
+                <div
+                  className="aquarium-avatar"
+                  style={{
+                    cursor: 'pointer',
+                    position: 'relative',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Toggle tube visibility or show context menu
+                    handleProfileClick({ name: 'Tube', isTube: true }, e);
+                  }}
+                  title="Tube - Click to manage"
+                >
+                  <img
+                    src="/tube-avatar.png"
+                    alt="Tube"
+                    className={tubeState?.isPlaying ? 'dancing' : ''}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: tubeState?.isPlaying ? '2px solid #ff0000' : '2px solid transparent',
+                      boxShadow: tubeState?.isPlaying ? '0 0 8px rgba(255,0,0,0.5)' : 'none',
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
