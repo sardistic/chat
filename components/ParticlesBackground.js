@@ -164,8 +164,8 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 const finalSize = p.baseSize * hoverScale * (1 + p.glow * 0.5 + motionGlow * 0.3);
                 const glowBrightness = Math.min(1, p.opacity * twinkle + p.glow * 0.6 + hoverGlow + motionGlow);
 
-                // Draw particle with glow effect
-                if (p.glow > 0.05 || hoverGlow > 0.05 || motionGlow > 0.05) {
+                // Draw particle with glow effect (only for significantly active particles)
+                if (p.glow > 0.15 || hoverGlow > 0.15 || motionGlow > 0.15) {
                     // Outer glow - larger and brighter
                     const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, finalSize * 5);
                     gradient.addColorStop(0, `rgba(255, 255, 255, ${glowBrightness * 0.7})`);
