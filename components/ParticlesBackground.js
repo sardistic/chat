@@ -81,10 +81,35 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const ripples = ripplesRef.current;
+            const container = containerRef.current;
+            const particles = container?.particles?.array || [];
 
             for (let i = ripples.length - 1; i >= 0; i--) {
                 const r = ripples[i];
+                const prevRadius = r.radius;
                 r.radius += r.speed;
+
+                // Push particles at the wavefront (between prev and current radius)
+                for (const particle of particles) {
+                    const dx = particle.position.x - r.x;
+                    const dy = particle.position.y - r.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // Check if particle is at the wavefront ring
+                    const innerEdge = prevRadius - r.width * 0.5;
+                    const outerEdge = r.radius + r.width * 0.5;
+
+                    if (dist > innerEdge && dist < outerEdge && dist > 0) {
+                        // Stronger push for particles closer to ring center
+                        const ringCenter = (prevRadius + r.radius) / 2;
+                        const distFromRing = Math.abs(dist - ringCenter);
+                        const ringInfluence = 1 - (distFromRing / r.width);
+                        const force = ringInfluence * 0.6;
+
+                        particle.velocity.x += (dx / dist) * force;
+                        particle.velocity.y += (dy / dist) * force;
+                    }
+                }
 
                 // Calculate fade: starts at 60% of max radius
                 const fadeStartRatio = 0.6;
