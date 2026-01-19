@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import Convert from 'ansi-to-html';
+import { triggerDotRipple } from './DotGrid';
 
 const convert = new Convert({
     fg: '#c9d1d9',
@@ -151,6 +152,26 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
         const [isExpanded, setIsExpanded] = useState(false);
         const avatarSize = isExpanded ? 24 : 18;
         const maxAvatarsCollapsed = 5;
+        const messageRef = useRef(null);
+
+        // Trigger ripple effect when this join/leave event appears
+        useEffect(() => {
+            // Small delay to ensure element is mounted
+            const timer = setTimeout(() => {
+                if (typeof window !== 'undefined') {
+                    // Get position from bottom-right of viewport (chat area)
+                    const x = window.innerWidth - 120;
+                    const y = window.innerHeight - 80;
+
+                    // Color based on joiners vs leavers
+                    const color = joiners.length > 0 ? '#10b981' : '#6b7280';
+                    const intensity = Math.min(1, (joiners.length + leavers.length) * 0.3);
+
+                    triggerDotRipple('join', { x, y }, color, intensity);
+                }
+            }, 100);
+            return () => clearTimeout(timer);
+        }, []); // Only on mount
 
         const renderAvatar = (u, i, isLeaver) => (
             <motion.div
