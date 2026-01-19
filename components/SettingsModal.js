@@ -446,13 +446,16 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
                             const restoreCamera = (id) => {
                                 const updated = hiddenCameras.filter(c => c !== id);
                                 localStorage.setItem('hiddenCameras', JSON.stringify(updated));
-                                // Force re-render
-                                window.location.reload();
+                                // Dispatch event to VideoGrid
+                                window.dispatchEvent(new CustomEvent('restoreHiddenCamera', { detail: { camId: id } }));
+                                // Force local re-render by closing and reopening would be ideal, but let's just close
+                                onClose();
                             };
 
                             const restoreAll = () => {
                                 localStorage.setItem('hiddenCameras', JSON.stringify([]));
-                                window.location.reload();
+                                window.dispatchEvent(new CustomEvent('restoreHiddenCamera', { detail: { restoreAll: true } }));
+                                onClose();
                             };
 
                             return (

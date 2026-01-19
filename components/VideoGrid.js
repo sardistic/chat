@@ -734,6 +734,20 @@ export default function VideoGrid({
         });
     }, []);
 
+    // Listen for restore events from settings modal
+    useEffect(() => {
+        const handleRestore = (e) => {
+            const { camId, restoreAll } = e.detail || {};
+            if (restoreAll) {
+                setHiddenTiles(new Set());
+            } else if (camId) {
+                handleShowTile(camId);
+            }
+        };
+        window.addEventListener('restoreHiddenCamera', handleRestore);
+        return () => window.removeEventListener('restoreHiddenCamera', handleRestore);
+    }, [handleShowTile]);
+
     // Background Selection State
     const [activeBackground, setActiveBackground] = useState('none');
 
