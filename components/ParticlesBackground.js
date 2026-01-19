@@ -22,30 +22,38 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
         let width = window.innerWidth;
         let height = window.innerHeight;
 
-        // Initialize particles (stars)
+        // Initialize particles (stars) in a subtle grid pattern
         const initParticles = () => {
-            const count = 1200;
+            const gridSpacing = 40; // Grid cell size
+            const jitter = 8; // Random offset for subtlety
+            const cols = Math.ceil(width / gridSpacing) + 1;
+            const rows = Math.ceil(height / gridSpacing) + 1;
+
             particlesRef.current = [];
-            for (let i = 0; i < count; i++) {
-                particlesRef.current.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    baseX: 0,
-                    baseY: 0,
-                    vx: 0,
-                    vy: 0,
-                    size: 0.3 + Math.random() * 1.2,
-                    baseSize: 0.3 + Math.random() * 1.2,
-                    opacity: 0.3 + Math.random() * 0.5,
-                    twinklePhase: Math.random() * Math.PI * 2,
-                    twinkleSpeed: 0.01 + Math.random() * 0.02,
-                    glow: 0, // Light effect when hit by ripple
-                });
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    // Grid position with slight random offset
+                    const gridX = col * gridSpacing;
+                    const gridY = row * gridSpacing;
+                    const offsetX = (Math.random() - 0.5) * jitter;
+                    const offsetY = (Math.random() - 0.5) * jitter;
+
+                    particlesRef.current.push({
+                        x: gridX + offsetX,
+                        y: gridY + offsetY,
+                        baseX: gridX, // Base is the grid position
+                        baseY: gridY,
+                        vx: 0,
+                        vy: 0,
+                        size: 0.3 + Math.random() * 1.0,
+                        baseSize: 0.3 + Math.random() * 1.0,
+                        opacity: 0.2 + Math.random() * 0.4,
+                        twinklePhase: Math.random() * Math.PI * 2,
+                        twinkleSpeed: 0.01 + Math.random() * 0.02,
+                        glow: 0,
+                    });
+                }
             }
-            particlesRef.current.forEach(p => {
-                p.baseX = p.x;
-                p.baseY = p.y;
-            });
         };
 
         const resize = () => {
