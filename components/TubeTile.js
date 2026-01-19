@@ -256,6 +256,7 @@ export default function TubeTile({
                                 'controls': 1,
                                 'modestbranding': 1,
                                 'rel': 0,
+                                'loop': 0, // Prevent auto-replay
                                 'origin': typeof window !== 'undefined' ? window.location.origin : '',
                                 'autoplay': 1, // Autoplay allowed when muted
                                 'mute': 1, // ALWAYS start muted - user must click overlay to unmute
