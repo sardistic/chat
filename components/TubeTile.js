@@ -908,7 +908,7 @@ export default function TubeTile({
 
             {/* DJ Controls Overlay (Top Right) */}
             <div style={{
-                position: 'absolute', top: '8px', right: '8px',
+                position: 'absolute', top: '8px', right: '40px',
                 display: 'flex', gap: '4px', zIndex: 10
             }}>
                 <button
