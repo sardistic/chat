@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSocket } from '@/lib/socket';
 import { useSession } from 'next-auth/react';
-import { triggerDotRipple } from '@/components/DotGrid';
+import { triggerDotRipple, getTilePosition } from '@/components/DotGrid';
 
 export function useChat(roomId, user) {
     const { socket, isConnected } = useSocket();
@@ -234,8 +234,9 @@ export function useChat(roomId, user) {
         const handleUserTyping = ({ user: typingUser }) => {
             if (typingUser !== userRef.current?.name) {
                 setTypingUsers(prev => new Set(prev).add(typingUser));
-                // Trigger subtle ripple on typing
-                triggerDotRipple('typing');
+                // Trigger subtle ripple from user's tile position
+                const tilePos = getTilePosition(typingUser);
+                triggerDotRipple('typing', tilePos);
             }
         };
 

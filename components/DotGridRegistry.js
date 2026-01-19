@@ -23,10 +23,10 @@ export function triggerDotRipple(type = 'message', origin = null, color = '#ffff
     rippleCallbacks.forEach(cb => cb(type, origin, color, intensity));
 }
 
-// Ripple Presets
+// Ripple Presets - typing subtle, events more prominent
 export const RIPPLE_PRESETS = {
-    keystroke: { speed: 40, width: 200, growth: 1, opacity: 0.15 },
-    typing: { speed: 35, width: 300, growth: 1.5, opacity: 0.2 },
-    message: { speed: 25, width: 450, growth: 3, opacity: 0.4 },
-    system: { speed: 30, width: 350, growth: 2, opacity: 0.3 },
+    keystroke: { speed: 8, width: 80, growth: 0.3, opacity: 0.05 },  // Very subtle
+    typing: { speed: 10, width: 120, growth: 0.5, opacity: 0.08 },   // Subtle breathing
+    message: { speed: 6, width: 300, growth: 2.0, opacity: 0.25 },   // Visible but gentle
+    system: { speed: 5, width: 400, growth: 2.5, opacity: 0.3 },     // Larger for system events
 };
