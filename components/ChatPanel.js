@@ -577,7 +577,9 @@ export default function ChatPanel({
                                 }}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        const foundUser = users.find(u => u.name === group.sender) ||
+                                        // Fix: Handle nested peer structure for click handler too
+                                        const foundPeer = users.find(u => (u.user?.name || u.name) === group.sender);
+                                        const foundUser = foundPeer?.user || foundPeer ||
                                             ircUsers.find(u => u.name === group.sender) ||
                                             // Fallback minimal object if not found (e.g. offline user)
                                             { name: group.sender, avatar: group.senderAvatar, color: group.senderColor };
@@ -587,12 +589,16 @@ export default function ChatPanel({
                                         src={(() => {
                                             // Prioritize: 1. Self 2. active Peer 3. IRC User 4. Message Avatar
                                             const isSelf = currentUser && currentUser.name === group.sender;
-                                            const liveUser = users.find(u => u.name === group.sender);
+                                            // Fix: Handle nested peer structure { user: ... } passed from ClientApp
+                                            const livePeer = users.find(u => (u.user?.name || u.name) === group.sender);
+                                            const liveUser = livePeer?.user || livePeer;
+
                                             const ircUser = ircUsers.find(u => u.name === group.sender);
 
                                             // IRC users often don't have avatars, but check anyway
-                                            const effectiveAvatar = (isSelf ? currentUser.avatar : null) ||
-                                                liveUser?.avatar ||
+                                            // Prioritize avatarUrl (from WebRTC/Discord) over avatar (local/DB)
+                                            const effectiveAvatar = (isSelf ? (currentUser.avatarUrl || currentUser.avatar) : null) ||
+                                                (liveUser?.avatarUrl || liveUser?.avatar) ||
                                                 ircUser?.avatar ||
                                                 group.senderAvatar ||
                                                 `/api/avatar/${group.sender}`;
