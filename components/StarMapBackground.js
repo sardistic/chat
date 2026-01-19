@@ -126,12 +126,13 @@ function StarMapBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 // Apply velocity with damping
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vx *= 0.95;
-                p.vy *= 0.95;
+                p.vx *= 0.85; // Stronger damping
+                p.vy *= 0.85;
 
                 // Gentle drift back to base position
-                p.x += (p.baseX - p.x) * 0.002;
-                p.y += (p.baseY - p.y) * 0.002;
+                // Strong snap back to base position
+                p.x += (p.baseX - p.x) * 0.15;
+                p.y += (p.baseY - p.y) * 0.15;
 
                 // Wrap around edges
                 if (p.x < 0) p.x = width;
