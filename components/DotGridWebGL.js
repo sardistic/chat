@@ -115,13 +115,14 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                     vec2 ripPos = uRipples[i].xy;
                     float radius = uRipples[i].z;
                     float width = uRippleParams[i].x;
+                    float fade = uRippleParams[i].y; // 1.0 at start, 0.0 at end
                     
                     float d = distance(pos.xy, ripPos);
                     float distFromRing = abs(d - radius);
                     
                     if (distFromRing < width) {
                         float t = 1.0 - (distFromRing / width);
-                        totalRippleInf += t * t; 
+                        totalRippleInf += t * t * fade; // Apply fade factor
                     }
                 }
                 totalRippleInf = clamp(totalRippleInf, 0.0, 1.0);
@@ -246,12 +247,20 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                 const r = ripples[i];
                 r.radius += r.speed;
 
+                // Calculate fade: 1.0 at start, smoothly goes to 0 as it approaches maxRadius
+                // Start fading at 60% of max radius
+                const fadeStartRatio = 0.6;
+                const progress = r.radius / r.maxRadius;
+                const fade = progress < fadeStartRatio
+                    ? 1.0
+                    : 1.0 - ((progress - fadeStartRatio) / (1.0 - fadeStartRatio));
+
                 if (i < 20) {
                     uRipples[i].set(r.x, r.y, r.radius);
-                    uRippleParams[i].set(r.width, 1.0, 0);
+                    uRippleParams[i].set(r.width, Math.max(0, fade), 0);
                 }
 
-                // Remove ripple when it exceeds its max radius
+                // Remove ripple when fully faded
                 if (r.radius > r.maxRadius) {
                     ripples.splice(i, 1);
                 }

@@ -23,10 +23,10 @@ export function triggerDotRipple(type = 'message', origin = null, color = '#ffff
     rippleCallbacks.forEach(cb => cb(type, origin, color, intensity));
 }
 
-// Ripple Presets - fast and dynamic
+// Ripple Presets - thin and fast
 export const RIPPLE_PRESETS = {
-    keystroke: { speed: 15, width: 40, maxRadius: 120, opacity: 0.08 },  // Quick tiny pulse
-    typing: { speed: 18, width: 60, maxRadius: 200, opacity: 0.12 },    // Fast visible breathing
-    message: { speed: 12, width: 150, maxRadius: 600, opacity: 0.15 },  // Snappy medium ripple
-    system: { speed: 10, width: 200, maxRadius: 800, opacity: 0.18 },   // Quick system events
+    keystroke: { speed: 18, width: 25, maxRadius: 150, opacity: 0.18 },  // Quick thin pulse
+    typing: { speed: 22, width: 35, maxRadius: 280, opacity: 0.28 },    // Fast visible breathing
+    message: { speed: 16, width: 40, maxRadius: 350, opacity: 0.15 },   // Thin fast message ripple
+    system: { speed: 14, width: 50, maxRadius: 450, opacity: 0.16 },    // Thin fast system events
 };
