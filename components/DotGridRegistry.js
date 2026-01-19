@@ -25,8 +25,8 @@ export function triggerDotRipple(type = 'message', origin = null, color = '#ffff
 
 // Ripple Presets - typing subtle, events more prominent
 export const RIPPLE_PRESETS = {
-    keystroke: { speed: 8, width: 80, growth: 0.3, opacity: 0.05 },  // Very subtle
-    typing: { speed: 10, width: 120, growth: 0.5, opacity: 0.08 },   // Subtle breathing
-    message: { speed: 6, width: 300, growth: 2.0, opacity: 0.25 },   // Visible but gentle
-    system: { speed: 5, width: 400, growth: 2.5, opacity: 0.3 },     // Larger for system events
+    keystroke: { speed: 8, width: 60, maxRadius: 150, opacity: 0.04 },   // Very short range
+    typing: { speed: 10, width: 100, maxRadius: 250, opacity: 0.06 },    // Short breathing wave
+    message: { speed: 6, width: 300, maxRadius: 1500, opacity: 0.2 },    // Full screen ripple
+    system: { speed: 5, width: 400, maxRadius: 2000, opacity: 0.25 },    // Large system events
 };

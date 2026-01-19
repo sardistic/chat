@@ -251,7 +251,8 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                     uRippleParams[i].set(r.width, 1.0, 0);
                 }
 
-                if (r.radius > window.innerWidth * 1.5) {
+                // Remove ripple when it exceeds its max radius
+                if (r.radius > r.maxRadius) {
                     ripples.splice(i, 1);
                 }
             }
@@ -277,7 +278,8 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                 y: ry,
                 radius: 0,
                 speed: preset.speed,
-                width: preset.width
+                width: preset.width,
+                maxRadius: preset.maxRadius || window.innerWidth * 1.5
             });
         };
         rippleCallbacks.add(rippleHandler);
