@@ -32,8 +32,8 @@ export default function DotGridCanvas({ className = '', zoomLevel = 0 }) {
             opacityVariation: 0.1,
             waveSpeed: 0.002,
             growth: 40, // Mouse proximity growth
-            proximity: 350, // Mouse proximity radius
-            ease: 0.85, // Near instant return
+            proximity: 250, // Mouse proximity radius
+            ease: 1.0, // Instant return
             particleCount: 15,
             particleSpeed: 0.2,
             particleRadius: 1,

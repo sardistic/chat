@@ -91,7 +91,7 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                 
                 // 1. Mouse Magnetic Pull
                 float mouseDist = distance(pos.xy, uMouse);
-                float hoverRadius = 350.0;
+                float hoverRadius = 250.0;
                 
                 float hoverT = 1.0 - clamp(mouseDist / hoverRadius, 0.0, 1.0);
                 float falloff = hoverT * hoverT;
@@ -233,8 +233,8 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
             const curX = uniformsRef.current.uMouse.value.x;
             const curY = uniformsRef.current.uMouse.value.y;
 
-            uniformsRef.current.uMouse.value.x += (targetX - curX) * 0.85;
-            uniformsRef.current.uMouse.value.y += (targetY - curY) * 0.85;
+            uniformsRef.current.uMouse.value.x += (targetX - curX) * 1.0;
+            uniformsRef.current.uMouse.value.y += (targetY - curY) * 1.0;
 
             // Ripple Logic
             const ripples = activeRipples.current;
