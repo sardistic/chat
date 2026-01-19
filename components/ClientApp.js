@@ -690,36 +690,35 @@ function MainApp({ user, setUser, onLeaveRoom }) {
                     )
                   });
               })()}
-              {/* Tube Avatar - appears when tube is active */}
-              {tubeState?.videoId && (
-                <div
-                  className="aquarium-avatar"
+              {/* Tube Avatar - always appears */}
+              <div
+                className="aquarium-avatar"
+                style={{
+                  cursor: 'pointer',
+                  position: 'relative',
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Toggle tube visibility or show context menu
+                  handleProfileClick({ name: 'Tube', isTube: true }, e);
+                }}
+                title="Tube - Click to manage"
+              >
+                <img
+                  src="/tube-avatar.png"
+                  alt="Tube"
+                  className={tubeState?.isPlaying ? 'dancing' : ''}
                   style={{
-                    cursor: 'pointer',
-                    position: 'relative',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: tubeState?.videoId ? '2px solid #ff0000' : '2px solid rgba(255,255,255,0.2)',
+                    boxShadow: tubeState?.isPlaying ? '0 0 8px rgba(255,0,0,0.5)' : 'none',
+                    opacity: tubeState?.videoId ? 1 : 0.6,
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Toggle tube visibility or show context menu
-                    handleProfileClick({ name: 'Tube', isTube: true }, e);
-                  }}
-                  title="Tube - Click to manage"
-                >
-                  <img
-                    src="/tube-avatar.png"
-                    alt="Tube"
-                    className={tubeState?.isPlaying ? 'dancing' : ''}
-                    style={{
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: tubeState?.isPlaying ? '2px solid #ff0000' : '2px solid transparent',
-                      boxShadow: tubeState?.isPlaying ? '0 0 8px rgba(255,0,0,0.5)' : 'none',
-                    }}
-                  />
-                </div>
-              )}
+                />
+              </div>
             </div>
           )}
 
