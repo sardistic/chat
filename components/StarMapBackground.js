@@ -97,6 +97,10 @@ function StarMapBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 // Decay glow
                 p.glow *= 0.92;
 
+                // Motion glow - particles in motion emit light
+                const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                const motionGlow = Math.min(0.6, speed * 0.15);
+
                 // Apply ripple forces
                 for (const r of ripples) {
                     const dx = p.x - r.x;
@@ -149,11 +153,11 @@ function StarMapBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 }
 
                 // Calculate final size and brightness
-                const finalSize = p.baseSize * hoverScale * (1 + p.glow * 0.5);
-                const glowBrightness = Math.min(1, p.opacity * twinkle + p.glow * 0.6 + hoverGlow);
+                const finalSize = p.baseSize * hoverScale * (1 + p.glow * 0.5 + motionGlow * 0.3);
+                const glowBrightness = Math.min(1, p.opacity * twinkle + p.glow * 0.6 + hoverGlow + motionGlow);
 
                 // Draw particle with glow effect
-                if (p.glow > 0.1 || hoverGlow > 0.1) {
+                if (p.glow > 0.1 || hoverGlow > 0.1 || motionGlow > 0.1) {
                     // Outer glow
                     const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, finalSize * 3);
                     gradient.addColorStop(0, `rgba(255, 255, 255, ${glowBrightness * 0.5})`);
