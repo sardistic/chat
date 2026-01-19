@@ -157,10 +157,10 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                     }
                 },
                 bubble: {
-                    distance: 200,
-                    size: 4,        // Smaller on hover
-                    duration: 0.2,
-                    opacity: 0.7,
+                    distance: 250,
+                    size: 12,        // Larger hover size
+                    duration: 0.3,
+                    opacity: 0.9,    // Brighter at center
                 },
             },
         },
