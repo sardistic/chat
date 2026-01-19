@@ -42,9 +42,12 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
         // Subscribe to ripple events
         const rippleHandler = (type, origin, color, intensity) => {
             const preset = RIPPLE_PRESETS[type] || RIPPLE_PRESETS.message;
+            const ox = origin?.x ?? window.innerWidth / 2;
+            const oy = origin?.y ?? window.innerHeight / 2;
+
             ripplesRef.current.push({
-                x: origin?.x ?? window.innerWidth / 2,
-                y: origin?.y ?? window.innerHeight / 2,
+                x: ox,
+                y: oy,
                 radius: 0,
                 speed: preset.speed,
                 width: preset.width,
@@ -52,6 +55,22 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 opacity: preset.opacity * (intensity || 1),
                 color: color || '#ffffff'
             });
+
+            // Push nearby particles outward from ripple origin
+            const container = containerRef.current;
+            if (container?.particles) {
+                const particles = container.particles.array || [];
+                for (const particle of particles) {
+                    const dx = particle.position.x - ox;
+                    const dy = particle.position.y - oy;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150 && dist > 0) {
+                        const force = (1 - dist / 150) * 1.5;
+                        particle.velocity.x += (dx / dist) * force;
+                        particle.velocity.y += (dy / dist) * force;
+                    }
+                }
+            }
         };
         rippleCallbacks.add(rippleHandler);
 
@@ -114,7 +133,7 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 value: "#000000",
             },
         },
-        fpsLimit: 30,
+        fpsLimit: 60, // Higher FPS for smoother ripple interaction
         interactivity: {
             detectsOn: "window",
             events: {
@@ -131,17 +150,17 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             },
             modes: {
                 grab: {
-                    distance: 300,
+                    distance: 180,
                     links: {
-                        opacity: 0.25,
+                        opacity: 0.15,
                         color: "#ffffff"
                     }
                 },
                 bubble: {
-                    distance: 350,
-                    size: 22,        // Match DotGrid growth
+                    distance: 200,
+                    size: 4,        // Smaller on hover
                     duration: 0.2,
-                    opacity: 0.9,
+                    opacity: 0.7,
                 },
             },
         },
@@ -159,19 +178,20 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             },
             move: {
                 enable: true,
-                speed: 0.15,
+                speed: 0.2,
                 direction: "none",
                 random: true,
                 straight: false,
                 outModes: {
                     default: "bounce",
                 },
+                decay: 0.015, // Velocity decay so pushed particles slow down
                 trail: {
                     enable: false,
                 },
             },
             number: {
-                value: 200, // Reduced for performance
+                value: 400, // More particles for denser field
                 density: {
                     enable: true,
                     width: 1920,
@@ -180,8 +200,8 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             },
             opacity: {
                 value: {
-                    min: 0.5,
-                    max: 1.0,  // Brighter
+                    min: 0.3,
+                    max: 0.8,
                 },
             },
             shape: {
@@ -189,8 +209,8 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             },
             size: {
                 value: {
-                    min: 0.5,   // Smaller base
-                    max: 1.5,
+                    min: 0.2,   // Smaller particles
+                    max: 1.0,
                 },
             },
         },
