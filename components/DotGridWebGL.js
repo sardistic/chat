@@ -127,9 +127,9 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                 totalRippleInf = clamp(totalRippleInf, 0.0, 1.0);
 
                 // --- SIZING ---
-                float baseSize = 4.0; 
-                float growSize = baseSize * 5.0 * falloff; 
-                float waveSize = baseSize * 0.5 * waveNorm; 
+                float baseSize = 2.5; // Smaller base dots
+                float growSize = baseSize * 3.0 * falloff; // Less hover growth
+                float waveSize = baseSize * 0.3 * waveNorm; // Subtle wave 
                 float ripSize = baseSize * 1.2 * totalRippleInf; // Subtle ripple size
                 
                 vSize = baseSize + growSize + waveSize + ripSize;
