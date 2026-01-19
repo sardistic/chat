@@ -3,14 +3,18 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
+import { RIPPLE_PRESETS, rippleCallbacks } from './DotGridRegistry';
 
 /**
- * ParticlesBackground - tsParticles with grid-like dots
- * Features: wave shadow overlay, zoom light trails, 3D hover, activity attraction
+ * ParticlesBackground - tsParticles with grid-like dots + ripple rings overlay
+ * Features: wave shadow overlay, zoom light trails, 3D hover, activity attraction, ripple effects
  */
 function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     const [init, setInit] = useState(false);
     const containerRef = useRef(null);
+    const canvasRef = useRef(null);
+    const ripplesRef = useRef([]);
+    const animationRef = useRef(null);
 
     useEffect(() => {
         initParticlesEngine(async (engine) => {
@@ -19,6 +23,86 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
             setInit(true);
         });
     }, []);
+
+    // Ripple overlay animation
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        let animating = true;
+
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Subscribe to ripple events
+        const rippleHandler = (type, origin, color, intensity) => {
+            const preset = RIPPLE_PRESETS[type] || RIPPLE_PRESETS.message;
+            ripplesRef.current.push({
+                x: origin?.x ?? window.innerWidth / 2,
+                y: origin?.y ?? window.innerHeight / 2,
+                radius: 0,
+                speed: preset.speed,
+                width: preset.width,
+                maxRadius: preset.maxRadius,
+                opacity: preset.opacity * (intensity || 1),
+                color: color || '#ffffff'
+            });
+        };
+        rippleCallbacks.add(rippleHandler);
+
+        // Animation loop
+        const animate = () => {
+            if (!animating) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const ripples = ripplesRef.current;
+
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.radius += r.speed;
+
+                // Calculate fade: starts at 60% of max radius
+                const fadeStartRatio = 0.6;
+                const progress = r.radius / r.maxRadius;
+                const fade = progress < fadeStartRatio
+                    ? 1.0
+                    : 1.0 - ((progress - fadeStartRatio) / (1.0 - fadeStartRatio));
+
+                // Draw ring
+                const alpha = r.opacity * Math.max(0, fade);
+                if (alpha > 0.01) {
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = r.color;
+                    ctx.globalAlpha = alpha;
+                    ctx.lineWidth = r.width * fade; // Thinner as it fades
+                    ctx.stroke();
+                }
+
+                // Remove when done
+                if (r.radius > r.maxRadius) {
+                    ripples.splice(i, 1);
+                }
+            }
+
+            ctx.globalAlpha = 1;
+            animationRef.current = requestAnimationFrame(animate);
+        };
+        animate();
+
+        return () => {
+            animating = false;
+            cancelAnimationFrame(animationRef.current);
+            window.removeEventListener('resize', resize);
+            rippleCallbacks.delete(rippleHandler);
+        };
+    }, [init]); // Re-run when particles init
 
     const options = useMemo(() => ({
         fullScreen: {
@@ -123,17 +207,6 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
     const zoomScale = zoomLevel > 0.01 ? 1 + zoomLevel * 0.2 : 1;
     const motionBlur = isZooming ? `blur(${zoomLevel * 2}px)` : 'none';
 
-    // Wave shadow overlay - DISABLED for cleaner look
-    // const waveOverlayStyle = useMemo(() => ({
-    //     position: 'fixed',
-    //     inset: 0,
-    //     zIndex: 1,
-    //     pointerEvents: 'none',
-    //     background: 'radial-gradient(ellipse at 50% 50%, transparent 0%, transparent 40%, rgba(100, 100, 255, 0.03) 70%, rgba(150, 100, 255, 0.06) 100%)',
-    //     animation: 'wave-pulse 8s ease-in-out infinite',
-    //     opacity: 0.8,
-    // }), []);
-
     // Main wrapper with zoom effects
     const wrapperStyle = useMemo(() => ({
         position: 'absolute', // Changed from fixed to respect parent stacking
@@ -181,6 +254,16 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 particlesLoaded={particlesLoaded}
                 options={options}
             />
+            {/* Ripple canvas overlay */}
+            <canvas
+                ref={canvasRef}
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                }}
+            />
         </div>
     );
 }
@@ -189,3 +272,4 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
 import { memo } from 'react';
 const ParticlesBackground = memo(ParticlesBackgroundComponent);
 export default ParticlesBackground;
+
