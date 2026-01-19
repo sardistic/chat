@@ -141,59 +141,58 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                     ripples.splice(i, 1);
                 }
             }
-        }
 
-        // Mouse hover effect
-        animationRef.current = requestAnimationFrame(animate);
-    };
-    animate();
+            // Mouse hover effect
+            animationRef.current = requestAnimationFrame(animate);
+        };
+        animate();
 
-    // Mouse interaction - particles grow near cursor
-    const mousePos = { x: -1000, y: -1000 };
-    const handleMouseMove = (e) => {
-        mousePos.x = e.clientX;
-        mousePos.y = e.clientY;
-    };
-    window.addEventListener('mousemove', handleMouseMove);
+        // Mouse interaction - particles grow near cursor
+        const mousePos = { x: -1000, y: -1000 };
+        const handleMouseMove = (e) => {
+            mousePos.x = e.clientX;
+            mousePos.y = e.clientY;
+        };
+        window.addEventListener('mousemove', handleMouseMove);
 
-    // Enhance draw loop to include hover effect
-    const originalAnimate = animate;
+        // Enhance draw loop to include hover effect
+        const originalAnimate = animate;
 
-    return () => {
-        cancelAnimationFrame(animationRef.current);
-        window.removeEventListener('resize', resize);
-        window.removeEventListener('mousemove', handleMouseMove);
-        rippleCallbacks.delete(rippleHandler);
-    };
-}, []);
+        return () => {
+            cancelAnimationFrame(animationRef.current);
+            window.removeEventListener('resize', resize);
+            window.removeEventListener('mousemove', handleMouseMove);
+            rippleCallbacks.delete(rippleHandler);
+        };
+    }, []);
 
-// Zoom effects
-const isZooming = zoomLevel > 0.1;
-const zoomOpacity = zoomLevel >= 1.8 ? Math.max(0, 1 - (zoomLevel - 1.5) * 1.5) : 1;
-const zoomScale = zoomLevel > 0.01 ? 1 + zoomLevel * 0.2 : 1;
-const motionBlur = isZooming ? `blur(${zoomLevel * 2}px)` : 'none';
+    // Zoom effects
+    const isZooming = zoomLevel > 0.1;
+    const zoomOpacity = zoomLevel >= 1.8 ? Math.max(0, 1 - (zoomLevel - 1.5) * 1.5) : 1;
+    const zoomScale = zoomLevel > 0.01 ? 1 + zoomLevel * 0.2 : 1;
+    const motionBlur = isZooming ? `blur(${zoomLevel * 2}px)` : 'none';
 
-const wrapperStyle = useMemo(() => ({
-    position: 'absolute',
-    inset: 0,
-    zIndex: 0,
-    pointerEvents: 'none',
-    opacity: zoomOpacity,
-    transform: `scale(${zoomScale})`,
-    filter: motionBlur,
-    transition: isZooming
-        ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease-out'
-        : 'transform 0.4s ease-out, opacity 0.4s ease-out',
-    transformOrigin: 'center center',
-}), [zoomOpacity, zoomScale, motionBlur, isZooming]);
+    const wrapperStyle = useMemo(() => ({
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        opacity: zoomOpacity,
+        transform: `scale(${zoomScale})`,
+        filter: motionBlur,
+        transition: isZooming
+            ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease-out'
+            : 'transform 0.4s ease-out, opacity 0.4s ease-out',
+        transformOrigin: 'center center',
+    }), [zoomOpacity, zoomScale, motionBlur, isZooming]);
 
-return (
-    <canvas
-        ref={canvasRef}
-        className={className}
-        style={wrapperStyle}
-    />
-);
+    return (
+        <canvas
+            ref={canvasRef}
+            className={className}
+            style={wrapperStyle}
+        />
+    );
 }
 
 const ParticlesBackground = memo(ParticlesBackgroundComponent);
