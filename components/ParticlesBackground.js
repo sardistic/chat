@@ -89,25 +89,26 @@ function ParticlesBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 const prevRadius = r.radius;
                 r.radius += r.speed;
 
-                // Push particles at the wavefront (between prev and current radius)
+                // Push particles at the wavefront - directly modify position for visible effect
                 for (const particle of particles) {
                     const dx = particle.position.x - r.x;
                     const dy = particle.position.y - r.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
                     // Check if particle is at the wavefront ring
-                    const innerEdge = prevRadius - r.width * 0.5;
-                    const outerEdge = r.radius + r.width * 0.5;
+                    const innerEdge = prevRadius - r.width;
+                    const outerEdge = r.radius + r.width;
 
                     if (dist > innerEdge && dist < outerEdge && dist > 0) {
-                        // Stronger push for particles closer to ring center
+                        // Strong push - directly displace position
                         const ringCenter = (prevRadius + r.radius) / 2;
                         const distFromRing = Math.abs(dist - ringCenter);
-                        const ringInfluence = 1 - (distFromRing / r.width);
-                        const force = ringInfluence * 0.6;
+                        const ringInfluence = Math.max(0, 1 - (distFromRing / r.width));
+                        const force = ringInfluence * 3; // Strong force!
 
-                        particle.velocity.x += (dx / dist) * force;
-                        particle.velocity.y += (dy / dist) * force;
+                        // Directly move particle position
+                        particle.position.x += (dx / dist) * force;
+                        particle.position.y += (dy / dist) * force;
                     }
                 }
 
