@@ -139,12 +139,12 @@ function StarMapBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 const mouseDx = p.x - mouse.x;
                 const mouseDy = p.y - mouse.y;
                 const mouseDist = Math.sqrt(mouseDx * mouseDx + mouseDy * mouseDy);
-                const hoverRadius = 150;
+                const hoverRadius = 180;
                 let hoverScale = 1;
                 let hoverGlow = 0;
                 if (mouseDist < hoverRadius) {
                     const t = 1 - mouseDist / hoverRadius;
-                    hoverScale = 1 + t * 2; // Grow up to 3x
+                    hoverScale = 1 + t * 4; // Grow up to 5x
                     hoverGlow = t * 0.5;
                 }
 
