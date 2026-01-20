@@ -138,26 +138,42 @@ export function useChat(roomId, user) {
             // 2.5. Join/Leave Consolidation
             // Consolidates rapid join/leave events into a single "join-leave" summary message
             if (msg.systemType === 'user-join' || msg.systemType === 'user-leave') {
-                const lastMsgIndex = messagesRef.current.length - 1;
-                const lastMsg = messagesRef.current[lastMsgIndex];
-                const isRecent = lastMsg && (new Date(msg.timestamp) - new Date(lastMsg.timestamp) < 4 * 60 * 60 * 1000); // 4 hour window for aggressive consolidation
+                // Search backwards through recent messages to find the last join/leave event
+                // This allows consolidation even if other messages (chat, deploy, etc.) appear between join/leave events
+                const TIME_WINDOW = 4 * 60 * 60 * 1000; // 4 hour window for aggressive consolidation
+                let targetMsgIndex = -1;
 
-                // If last message allows grouping (either 'join-leave' or first 'user-join'/'user-leave' converting to 'join-leave')
-                if (isRecent && (lastMsg.systemType === 'join-leave' || lastMsg.systemType === 'user-join' || lastMsg.systemType === 'user-leave')) {
+                for (let i = messagesRef.current.length - 1; i >= 0; i--) {
+                    const existingMsg = messagesRef.current[i];
+                    const timeDiff = new Date(msg.timestamp) - new Date(existingMsg.timestamp);
+
+                    // Stop searching if we're beyond the time window
+                    if (timeDiff > TIME_WINDOW) break;
+
+                    // Found a join/leave message within the time window
+                    if (existingMsg.systemType === 'join-leave' ||
+                        existingMsg.systemType === 'user-join' ||
+                        existingMsg.systemType === 'user-leave') {
+                        targetMsgIndex = i;
+                        break;
+                    }
+                }
+
+                // If we found a recent join/leave message, consolidate with it
+                if (targetMsgIndex !== -1) {
+                    const targetMsg = messagesRef.current[targetMsgIndex];
 
                     // Normalize existing users list
                     let existingUsers = [];
-                    if (lastMsg.metadata?.users) {
-                        existingUsers = lastMsg.metadata.users;
-                    } else if (lastMsg.systemType !== 'join-leave') {
+                    if (targetMsg.metadata?.users) {
+                        existingUsers = targetMsg.metadata.users;
+                    } else if (targetMsg.systemType !== 'join-leave') {
                         // Convert the previous single message into a user object
-                        // We have to extract name/avatar effectively from the previous message
-                        // Assuming previous message matches the structure
                         existingUsers.push({
-                            name: lastMsg.sender || 'User',
-                            avatar: lastMsg.senderAvatar,
-                            action: lastMsg.systemType === 'user-join' ? 'joined' : 'left',
-                            timestamp: lastMsg.timestamp
+                            name: targetMsg.sender || 'User',
+                            avatar: targetMsg.senderAvatar,
+                            action: targetMsg.systemType === 'user-join' ? 'joined' : 'left',
+                            timestamp: targetMsg.timestamp
                         });
                     }
 
@@ -186,19 +202,19 @@ export function useChat(roomId, user) {
                     const summaryText = parts.join(' • ');
 
                     const updatedMsg = {
-                        ...lastMsg,
-                        id: lastMsg.id, // Keep ID to maintain reaction thread if any (unlikely for system)
+                        ...targetMsg,
+                        id: targetMsg.id, // Keep ID to maintain reaction thread if any (unlikely for system)
                         systemType: 'join-leave', // Force type to aggregate
                         text: summaryText,
-                        metadata: { ...lastMsg.metadata, users: newUsers },
+                        metadata: { ...targetMsg.metadata, users: newUsers },
                         timestamp: msg.timestamp,
                         updatedAt: Date.now() // Force re-render key
                     };
 
-                    messagesRef.current[lastMsgIndex] = updatedMsg;
+                    messagesRef.current[targetMsgIndex] = updatedMsg;
                     setMessages(prev => {
                         const copy = [...prev];
-                        copy[copy.length - 1] = updatedMsg;
+                        copy[targetMsgIndex] = updatedMsg;
                         return copy;
                     });
 
@@ -206,6 +222,7 @@ export function useChat(roomId, user) {
                     return; // SENTINEL: Stop processing this message
                 }
             }
+
 
             // 3. Fuzzy Deduplication (Sender + Text + Time Window)
             // Prevents "same message, different ID" (e.g. Web ID vs IRC ID race)
