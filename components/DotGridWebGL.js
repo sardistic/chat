@@ -129,9 +129,9 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
 
                 // --- SIZING ---
                 float baseSize = 2.5; // Small base dots
-                float growSize = baseSize * 12.0 * falloff; // SUPER hover growth
+                float growSize = baseSize * 18.0 * falloff; // MEGA hover growth - dots get even larger!
                 float waveSize = baseSize * 0.3 * waveNorm; // Subtle wave 
-                float ripSize = baseSize * 1.2 * totalRippleInf; // Subtle ripple size
+                float ripSize = baseSize * 0.8 * totalRippleInf; // Reduced ripple size influence
                 
                 vSize = baseSize + growSize + waveSize + ripSize;
                 
@@ -146,7 +146,7 @@ export default function DotGridWebGL({ className = '', zoomLevel = 0 }) {
                 
                 // --- COLOR / OPACITY ---
                 float baseOp = 0.15; 
-                float opacity = baseOp + (falloff * 0.6) + (waveNorm * 0.15) + (totalRippleInf * 0.1); // Subtle ripple opacity
+                float opacity = baseOp + (falloff * 0.6) + (waveNorm * 0.15) + (totalRippleInf * 0.06); // Reduced ripple opacity
                 
                 opacity *= (1.2 - uDragFactor * 0.8); 
                 

@@ -31,7 +31,7 @@ export default function DotGridCanvas({ className = '', zoomLevel = 0 }) {
             baseOpacity: 0.15,
             opacityVariation: 0.1,
             waveSpeed: 0.002,
-            growth: 40, // Mouse proximity growth
+            growth: 60, // Mouse proximity growth - increased for larger dots
             proximity: 250, // Mouse proximity radius
             ease: 1.0, // Instant return
             particleCount: 15,
@@ -162,8 +162,8 @@ export default function DotGridCanvas({ className = '', zoomLevel = 0 }) {
                 // Sizing
                 let finalRadius, finalOpacity;
                 if (rippleInfluence > 0.1) {
-                    const waveSize = this._radius + 3 * rippleInfluence;
-                    const waveOpacity = 0.8 * rippleInfluence;
+                    const waveSize = this._radius + 2 * rippleInfluence; // Reduced ripple size
+                    const waveOpacity = 0.6 * rippleInfluence; // Reduced ripple opacity
                     finalRadius = waveSize;
                     finalOpacity = waveOpacity;
                 } else {

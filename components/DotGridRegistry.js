@@ -23,11 +23,11 @@ export function triggerDotRipple(type = 'message', origin = null, color = '#ffff
     rippleCallbacks.forEach(cb => cb(type, origin, color, intensity));
 }
 
-// Ripple Presets - increased visibility and speed
+// Ripple Presets - reduced intensity for subtler effects
 export const RIPPLE_PRESETS = {
-    keystroke: { speed: 22, width: 30, growth: 1.5, maxRadius: 180, opacity: 0.25 },  // Quick thin pulse
-    typing: { speed: 26, width: 40, growth: 2.0, maxRadius: 320, opacity: 0.35 },    // Fast visible breathing
-    message: { speed: 20, width: 45, growth: 2.5, maxRadius: 400, opacity: 0.25 },   // Message ripple
-    system: { speed: 18, width: 55, growth: 3.0, maxRadius: 500, opacity: 0.3 },     // System events
-    join: { speed: 24, width: 60, growth: 3.5, maxRadius: 550, opacity: 0.4 },       // Join/leave - more visible!
+    keystroke: { speed: 22, width: 30, growth: 1.5, maxRadius: 180, opacity: 0.15 },  // Quick thin pulse
+    typing: { speed: 26, width: 40, growth: 2.0, maxRadius: 320, opacity: 0.2 },     // Fast visible breathing
+    message: { speed: 20, width: 45, growth: 2.5, maxRadius: 400, opacity: 0.18 },   // Message ripple
+    system: { speed: 18, width: 55, growth: 3.0, maxRadius: 500, opacity: 0.2 },     // System events
+    join: { speed: 24, width: 60, growth: 3.5, maxRadius: 550, opacity: 0.28 },      // Join/leave
 };

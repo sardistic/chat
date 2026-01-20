@@ -113,13 +113,13 @@ function StarMapBackgroundComponent({ className = '', zoomLevel = 0 }) {
                     if (dist > innerEdge && dist < outerEdge && dist > 0) {
                         const distFromRing = Math.abs(dist - r.radius);
                         const influence = Math.max(0, 1 - distFromRing / r.width);
-                        const force = influence * 2.5;
+                        const force = influence * 1.5; // Reduced from 2.5 for subtler ripples
 
                         p.vx += (dx / dist) * force;
                         p.vy += (dy / dist) * force;
 
-                        // Light up particle when hit
-                        p.glow = Math.min(1, p.glow + influence * 0.8);
+                        // Light up particle when hit (reduced intensity)
+                        p.glow = Math.min(1, p.glow + influence * 0.5); // Reduced from 0.8
                     }
                 }
 
