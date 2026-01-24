@@ -432,6 +432,31 @@ async function logUserSession(socket, action, user, roomId) {
     const ipAddress = forwarded ? forwarded.split(',')[0].trim() : socket.handshake?.address;
     const userAgent = socket.handshake?.headers?.['user-agent'];
 
+    // 0. Debounce: Prevent duplicate JOIN logs if user/IP already joined < 10 mins ago
+    if (action === 'join') {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const whereClause = {
+        roomId,
+        action: 'join',
+        createdAt: { gt: tenMinutesAgo }
+      };
+
+      if (user?.id) {
+        whereClause.userId = user.id;
+      } else {
+        whereClause.ipAddress = ipAddress;
+      }
+
+      const recentSession = await prisma.userSession.findFirst({
+        where: whereClause
+      });
+
+      if (recentSession) {
+        console.log(`[Session] Debouncing Duplicate JOIN for ${user?.name || 'Unknown'} (IP: ${ipAddress}) in ${roomId}`);
+        return;
+      }
+    }
+
     // 1. Log to DB
     await prisma.userSession.create({
       data: {
