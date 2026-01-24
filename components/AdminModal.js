@@ -441,7 +441,14 @@ function SortableHeader({ label, sortKey, currentSort, onSort, filter, onFilterC
 
 // Memoized Users Table to prevent lag during search typing
 // Memoized Users Table to prevent lag during search typing
+// Memoized Users Table to prevent lag during search typing
 function UsersTable({ users, loading, pagination, onPageChange, onAction, onSelect, actionLoading, socket, sortConfig, onSort, filters, onFilterChange }) {
+    // Calculate IP frequencies
+    const ipCounts = users.reduce((acc, user) => {
+        if (user.ipAddress) acc[user.ipAddress] = (acc[user.ipAddress] || 0) + 1;
+        return acc;
+    }, {});
+
     return (
         <div style={{
             background: '#202226', borderRadius: '8px',
@@ -500,8 +507,8 @@ function UsersTable({ users, loading, pagination, onPageChange, onAction, onSele
                                 <td style={{ padding: '12px 16px' }}>
                                     <Badge role={user.role} />
                                 </td>
-                                <td style={{ padding: '12px 16px', color: '#888', fontFamily: 'monospace', fontSize: '11px' }}>
-                                    {user.ipAddress || 'Unknown'}
+                                <td style={{ padding: '12px 16px', fontSize: '11px' }}>
+                                    <IPCell ip={user.ipAddress} count={ipCounts[user.ipAddress] || 0} />
                                 </td>
                                 <td style={{ padding: '12px 16px' }}>
                                     {user.isBanned ? (
@@ -511,7 +518,7 @@ function UsersTable({ users, loading, pagination, onPageChange, onAction, onSele
                                     )}
                                 </td>
                                 <td style={{ padding: '12px 16px', color: '#888', fontSize: '12px' }}>
-                                    {user.lastSeen ? new Date(user.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
+                                    {user.lastSeen ? new Date(user.lastSeen).toLocaleString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Never'}
                                 </td>
                                 <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                                     {/* Mod Actions */}
@@ -675,6 +682,86 @@ function SessionsTable({ sessions, loading, pagination, onPageChange, onRefresh,
                 <span style={{ padding: '6px', fontSize: '12px', color: '#888' }}>Page {pagination.page + 1} of {pagination.pages}</span>
                 <button disabled={pagination.page >= pagination.pages - 1} onClick={() => onPageChange(pagination.page + 1)} className="btn secondary" style={{ padding: '4px 12px', fontSize: '12px' }}>Next</button>
             </div>
+        </div>
+    );
+}
+
+function IPCell({ ip, count }) {
+    const [details, setDetails] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [hovered, setHovered] = useState(false);
+
+    const fetchIP = async () => {
+        if (details || loading || !ip || ip === 'Unknown') return;
+        setLoading(true);
+        try {
+            const res = await fetch(`https://ipapi.co/${ip}/json/`);
+            if (!res.ok) throw new Error('Failed');
+            const data = await res.json();
+            setDetails(data);
+        } catch (e) {
+            setDetails({ error: true });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div
+            style={{ position: 'relative', cursor: ip && ip !== 'Unknown' ? 'help' : 'default', width: 'fit-content' }}
+            onMouseEnter={() => { setHovered(true); fetchIP(); }}
+            onMouseLeave={() => setHovered(false)}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontFamily: 'monospace', color: '#888' }}>
+                    {ip || 'Unknown'}
+                </span>
+                {count > 1 && (
+                    <div title={`${count} users share this IP`} style={{
+                        background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B',
+                        padding: '1px 5px', borderRadius: '4px', fontSize: '10px',
+                        display: 'flex', alignItems: 'center', gap: '3px'
+                    }}>
+                        <Icon icon="fa:users" width="10" />
+                        <span style={{ fontWeight: 700 }}>{count}</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Popover */}
+            <AnimatePresence>
+                {hovered && details && !details.error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        style={{
+                            position: 'absolute', top: '100%', left: 0, zIndex: 100,
+                            padding: '12px', background: '#1A1B1E',
+                            border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.5)', width: '220px',
+                            marginTop: '8px', pointerEvents: 'none'
+                        }}
+                    >
+                        <div style={{ fontWeight: 600, color: 'white', fontSize: '12px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {details.country_code && (
+                                <img
+                                    src={`https://flagcdn.com/20x15/${details.country_code.toLowerCase()}.png`}
+                                    alt={details.country_code}
+                                    style={{ borderRadius: '2px' }}
+                                />
+                            )}
+                            {details.org || details.isp || 'Unknown ISP'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#888', lineHeight: '1.4' }}>
+                            {details.city && <span>{details.city}, </span>}
+                            {details.region && <span>{details.region}</span>}
+                            <br />
+                            {details.country_name}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
