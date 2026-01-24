@@ -15,6 +15,7 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 1 });
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
+    const [limit, setLimit] = useState(10);
 
     // Sessions Tab State
     const [activeTab, setActiveTab] = useState('users'); // 'users', 'sessions'
@@ -61,20 +62,20 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
         if (activeTab === 'users') {
             fetchUsers(1);
         }
-    }, [isOpen, debouncedSearch, roleFilter, debouncedFilters, sortConfig, activeTab]);
+    }, [isOpen, debouncedSearch, roleFilter, debouncedFilters, sortConfig, limit, activeTab]);
 
     useEffect(() => {
         if (isOpen && activeTab === 'sessions') {
             fetchSessions(0);
         }
-    }, [isOpen, activeTab, sessionSort, debouncedSessionFilters]);
+    }, [isOpen, activeTab, sessionSort, debouncedSessionFilters, limit]);
 
     const fetchUsers = async (page = 1) => {
         setLoading(true);
         try {
             const params = new URLSearchParams({
                 page: page.toString(),
-                limit: "10",
+                limit: limit.toString(),
                 search: debouncedSearch,
                 role: roleFilter,
                 sort: sortConfig.key,
@@ -100,7 +101,7 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
         try {
             const params = new URLSearchParams({
                 page: page.toString(),
-                limit: "20",
+                limit: limit.toString(),
                 sort: sessionSort.key,
                 dir: sessionSort.direction,
                 action: debouncedSessionFilters.action,
@@ -247,74 +248,81 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                         </div>
 
                         {/* Content Area */}
-                        <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
-                            {/* Tabs */}
-                            <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px', width: 'fit-content' }}>
-                                <button onClick={() => setActiveTab('users')} style={{ padding: '8px 24px', borderRadius: '8px', background: activeTab === 'users' ? '#6366F1' : 'transparent', color: activeTab === 'users' ? 'white' : '#888', border: 'none', fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }}>Users</button>
-                                <button onClick={() => setActiveTab('sessions')} style={{ padding: '8px 24px', borderRadius: '8px', background: activeTab === 'sessions' ? '#6366F1' : 'transparent', color: activeTab === 'sessions' ? 'white' : '#888', border: 'none', fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }}>Sessions</button>
-                            </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                            <div style={{ padding: '24px 24px 0 24px' }}>
+                                {/* Tabs */}
+                                <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px', width: 'fit-content' }}>
+                                    <button onClick={() => setActiveTab('users')} style={{ padding: '8px 24px', borderRadius: '8px', background: activeTab === 'users' ? '#6366F1' : 'transparent', color: activeTab === 'users' ? 'white' : '#888', border: 'none', fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }}>Users</button>
+                                    <button onClick={() => setActiveTab('sessions')} style={{ padding: '8px 24px', borderRadius: '8px', background: activeTab === 'sessions' ? '#6366F1' : 'transparent', color: activeTab === 'sessions' ? 'white' : '#888', border: 'none', fontWeight: '600', fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s' }}>Sessions</button>
+                                </div>
 
-                            {activeTab === 'users' && (
-                                <>
-                                    {/* Stats */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
-                                        <StatCard label="Total Users" value={pagination.total} icon="fa:users" />
-                                        <StatCard label="Online" value={onlineCount || 0} icon="fa:circle" color="#10B981" />
-                                        <StatCard label="Reports" value="0" icon="fa:flag" color="#EF4444" />
-                                        <StatCard label="Status" value="OK" icon="fa:server" color="#3B82F6" />
-                                    </div>
-
-                                    {/* Toolbar */}
-                                    <div style={{
-                                        marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center',
-                                        background: '#202226', padding: '12px', borderRadius: '8px',
-                                        border: '1px solid rgba(255,255,255,0.03)'
-                                    }}>
-                                        <div style={{ position: 'relative', flex: 1 }}>
-                                            <Icon icon="fa:search" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
-                                            <input
-                                                type="text"
-                                                placeholder="Search users..."
-                                                value={search}
-                                                onChange={(e) => setSearch(e.target.value)}
-                                                style={{
-                                                    width: '100%', padding: '8px 12px 8px 36px',
-                                                    background: '#151619', border: '1px solid rgba(255,255,255,0.1)',
-                                                    borderRadius: '6px', color: 'white', outline: 'none', fontSize: '14px'
-                                                }}
-                                            />
+                                {activeTab === 'users' && (
+                                    <>
+                                        {/* Stats */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                                            <StatCard label="Total Users" value={pagination.total} icon="fa:users" />
+                                            <StatCard label="Online" value={onlineCount || 0} icon="fa:circle" color="#10B981" />
+                                            <StatCard label="Reports" value="0" icon="fa:flag" color="#EF4444" />
+                                            <StatCard label="Status" value="OK" icon="fa:server" color="#3B82F6" />
                                         </div>
 
-                                        <select
-                                            value={roleFilter}
-                                            onChange={(e) => setRoleFilter(e.target.value)}
-                                            style={{
-                                                padding: '8px 12px', background: '#151619',
-                                                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px',
-                                                color: 'white', outline: 'none', fontSize: '14px'
-                                            }}
-                                        >
-                                            <option value="">All Roles</option>
-                                            <option value="USER">User</option>
-                                            <option value="MODERATOR">Moderator</option>
-                                            <option value="ADMIN">Admin</option>
-                                        </select>
+                                        {/* Toolbar */}
+                                        <div style={{
+                                            marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center',
+                                            background: '#202226', padding: '12px', borderRadius: '8px',
+                                            border: '1px solid rgba(255,255,255,0.03)'
+                                        }}>
+                                            <div style={{ position: 'relative', flex: 1 }}>
+                                                <Icon icon="fa:search" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search users..."
+                                                    value={search}
+                                                    onChange={(e) => setSearch(e.target.value)}
+                                                    style={{
+                                                        width: '100%', padding: '8px 12px 8px 36px',
+                                                        background: '#151619', border: '1px solid rgba(255,255,255,0.1)',
+                                                        borderRadius: '6px', color: 'white', outline: 'none', fontSize: '14px'
+                                                    }}
+                                                />
+                                            </div>
 
-                                        <button
-                                            className="btn primary"
-                                            onClick={() => fetchUsers(pagination.page)}
-                                            style={{ padding: '8px 16px', height: '35px' }}
-                                        >
-                                            Refresh
-                                        </button>
-                                    </div>
+                                            <select
+                                                value={roleFilter}
+                                                onChange={(e) => setRoleFilter(e.target.value)}
+                                                style={{
+                                                    padding: '8px 12px', background: '#151619',
+                                                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px',
+                                                    color: 'white', outline: 'none', fontSize: '14px'
+                                                }}
+                                            >
+                                                <option value="">All Roles</option>
+                                                <option value="USER">User</option>
+                                                <option value="MODERATOR">Moderator</option>
+                                                <option value="ADMIN">Admin</option>
+                                            </select>
 
-                                    {/* Table (Memoized) */}
+                                            <button
+                                                className="btn primary"
+                                                onClick={() => fetchUsers(pagination.page)}
+                                                style={{ padding: '8px 16px', height: '35px' }}
+                                            >
+                                                Refresh
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px' }}>
+                                {activeTab === 'users' && (
                                     <UsersTable
                                         users={users}
                                         loading={loading}
                                         pagination={pagination}
+                                        limit={limit}
                                         onPageChange={(p) => fetchUsers(p)}
+                                        onLimitChange={setLimit}
                                         onAction={handleAction}
                                         onSelect={(id) => setSelectedUserId(id)}
                                         actionLoading={actionLoading}
@@ -327,25 +335,27 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                         filters={filters}
                                         onFilterChange={(key, val) => setFilters(prev => ({ ...prev, [key]: val }))}
                                     />
-                                </>
-                            )}
+                                )}
 
-                            {activeTab === 'sessions' && (
-                                <SessionsTable
-                                    sessions={sessions}
-                                    loading={sessionLoading}
-                                    pagination={sessionPagination}
-                                    onPageChange={(p) => fetchSessions(p)}
-                                    onRefresh={() => fetchSessions(0)}
-                                    sortConfig={sessionSort}
-                                    onSort={(key) => setSessionSort(prev => ({
-                                        key,
-                                        direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
-                                    }))}
-                                    filters={sessionFilters}
-                                    onFilterChange={(key, val) => setSessionFilters(prev => ({ ...prev, [key]: val }))}
-                                />
-                            )}
+                                {activeTab === 'sessions' && (
+                                    <SessionsTable
+                                        sessions={sessions}
+                                        loading={sessionLoading}
+                                        pagination={sessionPagination}
+                                        limit={limit}
+                                        onPageChange={(p) => fetchSessions(p)}
+                                        onLimitChange={setLimit}
+                                        onRefresh={() => fetchSessions(0)}
+                                        sortConfig={sessionSort}
+                                        onSort={(key) => setSessionSort(prev => ({
+                                            key,
+                                            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+                                        }))}
+                                        filters={sessionFilters}
+                                        onFilterChange={(key, val) => setSessionFilters(prev => ({ ...prev, [key]: val }))}
+                                    />
+                                )}
+                            </div>
                         </div>
                     </motion.div>
 
@@ -397,7 +407,7 @@ function SortableHeader({ label, sortKey, currentSort, onSort, filter, onFilterC
     const isActive = currentSort?.key === sortKey;
 
     return (
-        <th style={{ padding: '8px 12px', verticalAlign: 'top' }}>
+        <th style={{ padding: '8px 12px', verticalAlign: 'top', position: 'sticky', top: 0, zIndex: 10, background: '#202226', boxShadow: '0 1px 0 rgba(255,255,255,0.1)' }}>
             {/* Header Title & Sort */}
             <div
                 onClick={() => onSort && onSort(sortKey)}
@@ -442,7 +452,8 @@ function SortableHeader({ label, sortKey, currentSort, onSort, filter, onFilterC
 // Memoized Users Table to prevent lag during search typing
 // Memoized Users Table to prevent lag during search typing
 // Memoized Users Table to prevent lag during search typing
-function UsersTable({ users, loading, pagination, onPageChange, onAction, onSelect, actionLoading, socket, sortConfig, onSort, filters, onFilterChange }) {
+// Memoized Users Table to prevent lag during search typing
+function UsersTable({ users, loading, pagination, limit, onPageChange, onLimitChange, onAction, onSelect, actionLoading, socket, sortConfig, onSort, filters, onFilterChange }) {
     // Calculate IP frequencies
     const ipCounts = users.reduce((acc, user) => {
         if (user.ipAddress) acc[user.ipAddress] = (acc[user.ipAddress] || 0) + 1;
@@ -595,22 +606,38 @@ function UsersTable({ users, loading, pagination, onPageChange, onAction, onSele
             </table>
 
             {/* Pagination */}
-            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                <button
-                    disabled={pagination.page === 1}
-                    onClick={() => onPageChange(pagination.page - 1)}
-                    className="btn secondary"
-                    style={{ padding: '4px 12px', fontSize: '12px' }}
-                >Previous</button>
-                <span style={{ padding: '6px', fontSize: '12px', color: '#888' }}>
-                    Page {pagination.page} of {pagination.pages}
-                </span>
-                <button
-                    disabled={pagination.page >= pagination.pages}
-                    onClick={() => onPageChange(pagination.page + 1)}
-                    className="btn secondary"
-                    style={{ padding: '4px 12px', fontSize: '12px' }}
-                >Next</button>
+            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#888' }}>
+                    <span>Rows per page:</span>
+                    <select
+                        value={limit}
+                        onChange={(e) => onLimitChange(Number(e.target.value))}
+                        style={{ background: '#151619', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px', padding: '2px 4px' }}
+                    >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        disabled={pagination.page === 1}
+                        onClick={() => onPageChange(pagination.page - 1)}
+                        className="btn secondary"
+                        style={{ padding: '4px 12px', fontSize: '12px' }}
+                    >Previous</button>
+                    <span style={{ padding: '6px', fontSize: '12px', color: '#888' }}>
+                        Page {pagination.page} of {pagination.pages}
+                    </span>
+                    <button
+                        disabled={pagination.page >= pagination.pages}
+                        onClick={() => onPageChange(pagination.page + 1)}
+                        className="btn secondary"
+                        style={{ padding: '4px 12px', fontSize: '12px' }}
+                    >Next</button>
+                </div>
             </div>
         </div>
     );
@@ -618,7 +645,8 @@ function UsersTable({ users, loading, pagination, onPageChange, onAction, onSele
 
 // Memoized Sessions Table
 // Memoized Sessions Table
-function SessionsTable({ sessions, loading, pagination, onPageChange, onRefresh, sortConfig, onSort, filters, onFilterChange }) {
+// Memoized Sessions Table
+function SessionsTable({ sessions, loading, pagination, limit, onPageChange, onLimitChange, onRefresh, sortConfig, onSort, filters, onFilterChange }) {
     return (
         <div style={{ background: '#202226', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>
             <div style={{ padding: '16px', display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
@@ -677,10 +705,26 @@ function SessionsTable({ sessions, loading, pagination, onPageChange, onRefresh,
                 </tbody>
             </table>
             {/* Session Pagination */}
-            <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                <button disabled={pagination.page === 0} onClick={() => onPageChange(pagination.page - 1)} className="btn secondary" style={{ padding: '4px 12px', fontSize: '12px' }}>Prev</button>
-                <span style={{ padding: '6px', fontSize: '12px', color: '#888' }}>Page {pagination.page + 1} of {pagination.pages}</span>
-                <button disabled={pagination.page >= pagination.pages - 1} onClick={() => onPageChange(pagination.page + 1)} className="btn secondary" style={{ padding: '4px 12px', fontSize: '12px' }}>Next</button>
+            <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#888' }}>
+                    <span>Rows per page:</span>
+                    <select
+                        value={limit}
+                        onChange={(e) => onLimitChange(Number(e.target.value))}
+                        style={{ background: '#151619', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px', padding: '2px 4px' }}
+                    >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button disabled={pagination.page === 0} onClick={() => onPageChange(pagination.page - 1)} className="btn secondary" style={{ padding: '4px 12px', fontSize: '12px' }}>Prev</button>
+                    <span style={{ padding: '6px', fontSize: '12px', color: '#888' }}>Page {pagination.page + 1} of {pagination.pages}</span>
+                    <button disabled={pagination.page >= pagination.pages - 1} onClick={() => onPageChange(pagination.page + 1)} className="btn secondary" style={{ padding: '4px 12px', fontSize: '12px' }}>Next</button>
+                </div>
             </div>
         </div>
     );
