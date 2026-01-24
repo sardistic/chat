@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Icon } from '@iconify/react';
 import UserDetailModal from "./UserDetailModal";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
@@ -15,7 +15,13 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
     const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 1 });
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
-    const [limit, setLimit] = useState(10);
+    const [limit, setLimit] = useState(10); // 'infinity' for All
+    const isInfinite = limit === 'infinity';
+
+    // Scroll refs for infinite loading
+    const userScrollRef = useRef(null);
+    const sessionScrollRef = useRef(null);
+
 
     // Sessions Tab State
     const [activeTab, setActiveTab] = useState('users'); // 'users', 'sessions'
@@ -70,12 +76,13 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
         }
     }, [isOpen, activeTab, sessionSort, debouncedSessionFilters, limit]);
 
-    const fetchUsers = async (page = 1) => {
+    const fetchUsers = async (page = 1, append = false) => {
         setLoading(true);
         try {
+            const actualLimit = isInfinite ? 50 : limit;
             const params = new URLSearchParams({
                 page: page.toString(),
-                limit: limit.toString(),
+                limit: actualLimit.toString(),
                 search: debouncedSearch,
                 role: roleFilter,
                 sort: sortConfig.key,
@@ -86,7 +93,11 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
             const res = await fetch(`/api/admin/users?${params}`);
             const data = await res.json();
             if (data.users) {
-                setUsers(data.users);
+                if (append) {
+                    setUsers(prev => [...prev, ...data.users]);
+                } else {
+                    setUsers(data.users);
+                }
                 setPagination(data.pagination);
             }
         } catch (error) {
@@ -96,12 +107,13 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
         }
     };
 
-    const fetchSessions = async (page = 0) => {
+    const fetchSessions = async (page = 0, append = false) => {
         setSessionLoading(true);
         try {
+            const actualLimit = isInfinite ? 50 : limit;
             const params = new URLSearchParams({
                 page: page.toString(),
-                limit: limit.toString(),
+                limit: actualLimit.toString(),
                 sort: sessionSort.key,
                 dir: sessionSort.direction,
                 action: debouncedSessionFilters.action,
@@ -111,13 +123,36 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
             const res = await fetch(`/api/admin/sessions?${params}`);
             const data = await res.json();
             if (data.success) {
-                setSessions(data.data);
+                if (append) {
+                    setSessions(prev => [...prev, ...data.data]);
+                } else {
+                    setSessions(data.data);
+                }
                 setSessionPagination(data.pagination);
             }
         } catch (error) {
             console.error("Failed to fetch sessions", error);
         } finally {
             setSessionLoading(false);
+        }
+    };
+
+    // Scroll Handler for Infinite Load
+    const handleScroll = (e, type) => {
+        if (!isInfinite) return;
+        const { scrollTop, scrollHeight, clientHeight } = e.target;
+
+        // Load more when near bottom (100px threshold)
+        if (scrollHeight - scrollTop - clientHeight < 100) {
+            if (type === 'users' && !loading && pagination.page < pagination.pages) {
+                fetchUsers(pagination.page + 1, true);
+            } else if (type === 'sessions' && !sessionLoading && sessionPagination.page < sessionPagination.pages - 1) { // Sessions 0-indexed? check logic
+                // Server sends pages=total/limit? Backend pagination usually 0 or 1 indexed.
+                // fetchSessions checks page starting 0.
+                // Assuming sessionPagination.pages is derived correct.
+                // Let's assume fetchSession is 0-indexed as per default.
+                fetchSessions(sessionPagination.page + 1, true);
+            }
         }
     };
 
@@ -314,15 +349,14 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                 )}
                             </div>
 
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px' }}>
+                            <div
+                                style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px', scrollBehavior: 'smooth' }}
+                                onScroll={(e) => handleScroll(e, activeTab)}
+                            >
                                 {activeTab === 'users' && (
                                     <UsersTable
                                         users={users}
                                         loading={loading}
-                                        pagination={pagination}
-                                        limit={limit}
-                                        onPageChange={(p) => fetchUsers(p)}
-                                        onLimitChange={setLimit}
                                         onAction={handleAction}
                                         onSelect={(id) => setSelectedUserId(id)}
                                         actionLoading={actionLoading}
@@ -341,10 +375,6 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                     <SessionsTable
                                         sessions={sessions}
                                         loading={sessionLoading}
-                                        pagination={sessionPagination}
-                                        limit={limit}
-                                        onPageChange={(p) => fetchSessions(p)}
-                                        onLimitChange={setLimit}
                                         onRefresh={() => fetchSessions(0)}
                                         sortConfig={sessionSort}
                                         onSort={(key) => setSessionSort(prev => ({
@@ -354,6 +384,65 @@ export default function AdminModal({ isOpen, onClose, onlineCount }) {
                                         filters={sessionFilters}
                                         onFilterChange={(key, val) => setSessionFilters(prev => ({ ...prev, [key]: val }))}
                                     />
+                                )}
+                            </div>
+
+                            {/* Fixed Footer */}
+                            <div style={{
+                                padding: '16px 24px',
+                                borderTop: '1px solid rgba(255,255,255,0.08)',
+                                background: '#1c1e21',
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#888' }}>
+                                    <span>Rows per page:</span>
+                                    <select
+                                        value={limit}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setLimit(val === 'infinity' ? 'infinity' : Number(val));
+                                        }}
+                                        style={{ background: '#151619', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px', padding: '4px 8px' }}
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={25}>25</option>
+                                        <option value={50}>50</option>
+                                        <option value={100}>100</option>
+                                        <option value="infinity">All (Infinite)</option>
+                                    </select>
+
+                                    {isInfinite && (
+                                        <span style={{ fontSize: '11px', color: '#6366F1', marginLeft: '6px' }}>
+                                            <Icon icon="fa:bolt" style={{ marginRight: '4px' }} />
+                                            Lazy Loading Active
+                                        </span>
+                                    )}
+                                </div>
+
+                                {!isInfinite && (
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '13px', color: '#888', marginRight: '8px' }}>
+                                            Page {activeTab === 'users' ? pagination.page : sessionPagination.page + 1} of {activeTab === 'users' ? pagination.pages : sessionPagination.pages}
+                                        </span>
+                                        <button
+                                            disabled={activeTab === 'users' ? pagination.page === 1 : sessionPagination.page === 0}
+                                            onClick={() => activeTab === 'users' ? fetchUsers(pagination.page - 1) : fetchSessions(sessionPagination.page - 1)}
+                                            className="btn secondary"
+                                            style={{ padding: '6px 14px', fontSize: '13px' }}
+                                        >Previous</button>
+                                        <button
+                                            disabled={activeTab === 'users' ? pagination.page >= pagination.pages : sessionPagination.page >= sessionPagination.pages - 1}
+                                            onClick={() => activeTab === 'users' ? fetchUsers(pagination.page + 1) : fetchSessions(sessionPagination.page + 1)}
+                                            className="btn secondary"
+                                            style={{ padding: '6px 14px', fontSize: '13px' }}
+                                        >Next</button>
+                                    </div>
+                                )}
+
+                                {isInfinite && (
+                                    <div style={{ fontSize: '13px', color: '#666' }}>
+                                        {activeTab === 'users' ? `Showing ${users.length} of ${pagination.total}` : `Showing ${sessions.length} of ${sessionPagination.total}`} items
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -453,7 +542,8 @@ function SortableHeader({ label, sortKey, currentSort, onSort, filter, onFilterC
 // Memoized Users Table to prevent lag during search typing
 // Memoized Users Table to prevent lag during search typing
 // Memoized Users Table to prevent lag during search typing
-function UsersTable({ users, loading, pagination, limit, onPageChange, onLimitChange, onAction, onSelect, actionLoading, socket, sortConfig, onSort, filters, onFilterChange }) {
+// Memoized Users Table (No internal pagination)
+function UsersTable({ users, loading, onAction, onSelect, actionLoading, socket, sortConfig, onSort, filters, onFilterChange }) {
     // Calculate IP frequencies
     const ipCounts = users.reduce((acc, user) => {
         if (user.ipAddress) acc[user.ipAddress] = (acc[user.ipAddress] || 0) + 1;
@@ -482,7 +572,7 @@ function UsersTable({ users, loading, pagination, limit, onPageChange, onLimitCh
                     </tr>
                 </thead>
                 <tbody>
-                    {loading ? (
+                    {loading && users.length === 0 ? (
                         <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>Loading users...</td></tr>
                     ) : users.length === 0 ? (
                         <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>No users found</td></tr>
@@ -604,41 +694,12 @@ function UsersTable({ users, loading, pagination, limit, onPageChange, onLimitCh
                     )}
                 </tbody>
             </table>
-
-            {/* Pagination */}
-            <div style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#888' }}>
-                    <span>Rows per page:</span>
-                    <select
-                        value={limit}
-                        onChange={(e) => onLimitChange(Number(e.target.value))}
-                        style={{ background: '#151619', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px', padding: '2px 4px' }}
-                    >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                    </select>
+            {/* Loading Indicator for Infinite Scroll */}
+            {loading && users.length > 0 && (
+                <div style={{ padding: '12px', textAlign: 'center', color: '#888', fontSize: '12px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                    Loading more users...
                 </div>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        disabled={pagination.page === 1}
-                        onClick={() => onPageChange(pagination.page - 1)}
-                        className="btn secondary"
-                        style={{ padding: '4px 12px', fontSize: '12px' }}
-                    >Previous</button>
-                    <span style={{ padding: '6px', fontSize: '12px', color: '#888' }}>
-                        Page {pagination.page} of {pagination.pages}
-                    </span>
-                    <button
-                        disabled={pagination.page >= pagination.pages}
-                        onClick={() => onPageChange(pagination.page + 1)}
-                        className="btn secondary"
-                        style={{ padding: '4px 12px', fontSize: '12px' }}
-                    >Next</button>
-                </div>
-            </div>
+            )}
         </div>
     );
 };
@@ -646,7 +707,8 @@ function UsersTable({ users, loading, pagination, limit, onPageChange, onLimitCh
 // Memoized Sessions Table
 // Memoized Sessions Table
 // Memoized Sessions Table
-function SessionsTable({ sessions, loading, pagination, limit, onPageChange, onLimitChange, onRefresh, sortConfig, onSort, filters, onFilterChange }) {
+// Memoized Sessions Table (No internal pagination)
+function SessionsTable({ sessions, loading, onRefresh, sortConfig, onSort, filters, onFilterChange }) {
     return (
         <div style={{ background: '#202226', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>
             <div style={{ padding: '16px', display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
@@ -667,7 +729,7 @@ function SessionsTable({ sessions, loading, pagination, limit, onPageChange, onL
                     </tr>
                 </thead>
                 <tbody>
-                    {loading ? (
+                    {loading && sessions.length === 0 ? (
                         <tr><td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#666' }}>Loading logs...</td></tr>
                     ) : sessions.length === 0 ? (
                         <tr><td colSpan="6" style={{ padding: '30px', textAlign: 'center', color: '#666' }}>No session logs found</td></tr>
@@ -704,28 +766,12 @@ function SessionsTable({ sessions, loading, pagination, limit, onPageChange, onL
                     )}
                 </tbody>
             </table>
-            {/* Session Pagination */}
-            <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#888' }}>
-                    <span>Rows per page:</span>
-                    <select
-                        value={limit}
-                        onChange={(e) => onLimitChange(Number(e.target.value))}
-                        style={{ background: '#151619', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px', padding: '2px 4px' }}
-                    >
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                    </select>
+            {/* Loading Indicator for Infinite Scroll */}
+            {loading && sessions.length > 0 && (
+                <div style={{ padding: '12px', textAlign: 'center', color: '#888', fontSize: '12px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                    Loading more logs...
                 </div>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button disabled={pagination.page === 0} onClick={() => onPageChange(pagination.page - 1)} className="btn secondary" style={{ padding: '4px 12px', fontSize: '12px' }}>Prev</button>
-                    <span style={{ padding: '6px', fontSize: '12px', color: '#888' }}>Page {pagination.page + 1} of {pagination.pages}</span>
-                    <button disabled={pagination.page >= pagination.pages - 1} onClick={() => onPageChange(pagination.page + 1)} className="btn secondary" style={{ padding: '4px 12px', fontSize: '12px' }}>Next</button>
-                </div>
-            </div>
+            )}
         </div>
     );
 }
