@@ -25,6 +25,7 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const { status, data: session } = useSession();
+    const { performanceMode, setPerformanceMode } = useBackground();
 
     // Fetch settings on mount
     useEffect(() => {
