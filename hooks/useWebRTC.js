@@ -15,7 +15,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
 
     const peerManagerRef = useRef(null);
     const localStreamRef = useRef(null);
-    const hasJoinedRoom = useRef(false);
+    const joinedSocketId = useRef(null);
     const userRef = useRef(user);
 
     // NOTE: initializeMedia removed - getUserMedia is now called directly in startBroadcast
@@ -187,16 +187,6 @@ export function useWebRTC(roomId, user, autoStart = true) {
         setIsDeafened(prev => {
             const newState = !prev;
             broadcastStatus({ isDeafened: newState });
-
-            // Logic to mute INCOMING audio? 
-            // The PeerManager usually handles streams.
-            // But we can mute the AUDIO ELEMENTS in VideoGrid effectively by the flag.
-            // Or we should iterate peers and mute them here?
-            // For now, we rely on VideoGrid checking `isDeafened` prop or this hook state if passed down?
-            // Actually, `useWebRTC` doesn't control the audio elements directly, VideoGrid does.
-            // So broadcasting the state is enough if VideoGrid uses it for UI. 
-            // BUT for actual functionality, VideoGrid should mute the <video> or <audio> tags.
-
             return newState;
         });
     }, [broadcastStatus]);
@@ -212,10 +202,12 @@ export function useWebRTC(roomId, user, autoStart = true) {
             setLocalStream(null);
         }
         setPeers(new Map());
-        if (socket) {
+
+        // Only emit leave if we actually joined (prevents ghost leaves)
+        if (socket && joinedSocketId.current) {
             socket.emit('leave-room', roomId);
         }
-        hasJoinedRoom.current = false;
+        joinedSocketId.current = null;
     }, [socket, roomId]);
 
     // Update user Ref
@@ -225,10 +217,11 @@ export function useWebRTC(roomId, user, autoStart = true) {
 
     // Main Socket Logic
     useEffect(() => {
-        if (!socket || !isConnected || !roomId || !userRef.current || hasJoinedRoom.current) return;
+        // Only join if we haven't joined WITH THIS SOCKET ID yet
+        if (!socket || !isConnected || !roomId || !userRef.current || joinedSocketId.current === socket.id) return;
 
         const currentUser = userRef.current;
-        console.log('🚀 Joining room:', roomId, 'as', currentUser.name);
+        console.log('🚀 Joining room:', roomId, 'as', currentUser.name, '(Socket:', socket.id, ')');
 
         // --- Handlers ---
 
@@ -352,7 +345,7 @@ export function useWebRTC(roomId, user, autoStart = true) {
             isDeafened: true
         };
         socket.emit('join-room', { roomId, user: userWithState, ircConfig });
-        hasJoinedRoom.current = true;
+        joinedSocketId.current = socket.id;
 
         // Request streams from existing broadcasters
         setTimeout(() => {
