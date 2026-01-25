@@ -1417,7 +1417,12 @@ app.prepare().then(async () => {
       // --- Smart Bundling: Unified Traffic (Join/Leave) ---
       let activeBundle = getBundle(roomId, 'traffic');
       let bundleId;
-      const userMeta = { name: user.name, action: 'joined', timestamp: Date.now() };
+      const userMeta = {
+        name: user.name,
+        avatar: user.image || user.avatarUrl, // Pass avatar
+        action: 'joined',
+        timestamp: Date.now()
+      };
 
       if (activeBundle) {
         bundleId = activeBundle.id;
@@ -1584,7 +1589,12 @@ app.prepare().then(async () => {
       // System Message: Leave (Unified Traffic Bundling)
       const activeBundle = getBundle(roomId, 'traffic');
       let bundleId;
-      const userMeta = { name: userName, action: 'left', timestamp: Date.now() };
+      const userMeta = {
+        name: userName,
+        avatar: socket.data.user?.image || socket.data.user?.avatarUrl, // Pass avatar
+        action: 'left',
+        timestamp: Date.now()
+      };
 
       if (activeBundle) {
         bundleId = activeBundle.id;

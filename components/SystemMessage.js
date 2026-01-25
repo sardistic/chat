@@ -257,7 +257,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
         // Count for overflow indicator using AGGREGATED lengths
         const joinerOverflow = Math.max(0, joiners.length - maxAvatarsCollapsed);
         const leaversOverflow = Math.max(0, leavers.length - maxAvatarsCollapsed);
-        const hasMore = joinerOverflow > 0 || leaversOverflow > 0 || joiners.length + leavers.length > 3;
+        // Always allow expansion to see full details (timestamps, full names)
+        const hasMore = joiners.length > 0 || leavers.length > 0;
 
         return (
             <motion.div
