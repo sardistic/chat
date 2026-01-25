@@ -1414,34 +1414,8 @@ app.prepare().then(async () => {
       socket.to(roomId).emit("user-connected", { socketId: socket.id, user }); // Keep compatibility
 
       // System Message: Join
-      // System Message: Join (Smart Bundling)
-      // System Message: Join (Smart Bundling)
-      let activeBundle = getBundle(roomId, 'join');
-
-      // Attempt rehydration from history (Fix for server restarts/refresh creating duplicates)
-      if (!activeBundle && messageHistory[roomId] && messageHistory[roomId].length > 0) {
-        const lastMsg = messageHistory[roomId][messageHistory[roomId].length - 1];
-        if (lastMsg.systemType === 'join-leave') {
-          const logTime = new Date(lastMsg.timestamp).getTime();
-          if (Date.now() - logTime < 120000) { // 2 minute window for rehydration
-            console.log(`[SmartBundle] Rehydrating join bundle ${lastMsg.id} from history`);
-            const rawUsers = lastMsg.metadata?.users || [];
-            // Deduplicate rehydrated users by name just in case
-            const cleanUsers = [];
-            const seenNames = new Set();
-            rawUsers.forEach(u => {
-              if (u && u.name && !seenNames.has(u.name)) {
-                cleanUsers.push(u);
-                seenNames.add(u.name);
-              }
-            });
-            setBundle(roomId, 'join', lastMsg.id, cleanUsers);
-            activeBundle = getBundle(roomId, 'join');
-          }
-        }
-      }
       // --- Smart Bundling: Unified Traffic (Join/Leave) ---
-      const activeBundle = getBundle(roomId, 'traffic');
+      let activeBundle = getBundle(roomId, 'traffic');
       let bundleId;
       const userMeta = { name: user.name, action: 'joined', timestamp: Date.now() };
 
