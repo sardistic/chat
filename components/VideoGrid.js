@@ -748,15 +748,7 @@ export default function VideoGrid({
         return () => window.removeEventListener('restoreHiddenCamera', handleRestore);
     }, [handleShowTile]);
 
-    // Background Selection State
-    const [activeBackground, setActiveBackground] = useState('none');
 
-    const BACKGROUNDS = {
-        cyberpunk: { name: 'Cyberpunk', url: '/backgrounds/cyberpunk.png' },
-        forest: { name: 'Cozy Forest', url: '/backgrounds/forest.png' },
-        space: { name: 'Deep Space', url: '/backgrounds/space.png' },
-        desert: { name: 'Desert Sunset', url: '/backgrounds/desert.png' }
-    };
 
     // Process chat-driven reactions
     useEffect(() => {
@@ -1005,59 +997,10 @@ export default function VideoGrid({
                     height={layout.height}
                     isMusicPlaying={tubeState?.isPlaying}
                     isMobile={isMobile}
-                    customBackground={activeBackground !== 'none' ? BACKGROUNDS[activeBackground].url : null}
+
                 />
 
-                {/* Background Selector UI */}
-                <div style={{
-                    position: 'absolute',
-                    bottom: '20px',
-                    left: '20px',
-                    zIndex: 100,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    alignItems: 'flex-start'
-                }}>
-                    <div className="glass-panel" style={{
-                        padding: '8px',
-                        borderRadius: '12px',
-                        background: 'rgba(0,0,0,0.6)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        display: 'flex',
-                        gap: '8px'
-                    }}>
-                        <button
-                            onClick={() => setActiveBackground('none')}
-                            style={{
-                                width: '32px', height: '32px', borderRadius: '8px',
-                                border: activeBackground === 'none' ? '2px solid white' : '1px solid rgba(255,255,255,0.2)',
-                                background: 'transparent',
-                                color: 'white',
-                                cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}
-                            title="None"
-                        >
-                            <Icon icon="mdi:close" />
-                        </button>
-                        {Object.entries(BACKGROUNDS).map(([key, bg]) => (
-                            <button
-                                key={key}
-                                onClick={() => setActiveBackground(key)}
-                                style={{
-                                    width: '32px', height: '32px', borderRadius: '8px',
-                                    border: activeBackground === key ? '2px solid #a855f7' : '1px solid rgba(255,255,255,0.2)',
-                                    background: `url(${bg.url}) center/cover`,
-                                    cursor: 'pointer',
-                                    transition: 'transform 0.2s'
-                                }}
-                                title={bg.name}
-                            />
-                        ))}
-                    </div>
-                </div>
+
 
                 {/* Remote Peer Tiles */}
                 {peerArray.map(([peerId, peerData]) => {

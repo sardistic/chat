@@ -186,7 +186,16 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 initial={performanceMode ? { opacity: 1, scale: 1 } : { scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 title={`${u.name || 'User'} ${u.count > 1 ? `(x${u.count})` : ''} • ${new Date(u.timestamp || timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                style={{
+                    position: 'relative',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    width: isExpanded ? '72px' : 'auto', // Fixed width when expanded to reserve name space
+                    display: isExpanded ? 'flex' : 'block',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    margin: isExpanded ? '0 4px' : '0'
+                }}
                 onClick={(e) => {
                     e.stopPropagation();
                     onUserClick({ name: u.name, avatar: u.avatar || u.image, color: u.color }, e);
@@ -236,25 +245,23 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     )}
                 </div>
 
-                {/* Name tooltip on expanded view */}
+                {/* Name tooltip on expanded view - NOW STATIC LAYOUT */}
                 {isExpanded && (
                     <div style={{
-                        position: 'absolute',
-                        bottom: '-16px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        fontSize: '9px',
+                        marginTop: '4px',
+                        fontSize: '10px', // Slightly larger
                         color: isLeaver ? '#666' : '#10b981',
                         whiteSpace: 'nowrap',
-                        maxWidth: '80px',
+                        width: '100%',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        textAlign: 'center'
+                        textAlign: 'center',
+                        lineHeight: '1.2'
                     }}>
-                        {u.name?.slice(0, 8)}
-                        <span style={{ opacity: 0.5, marginLeft: '2px' }}>
+                        {u.name}
+                        <div style={{ fontSize: '9px', opacity: 0.5 }}>
                             {new Date(u.timestamp || timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        </div>
                     </div>
                 )}
             </motion.div>
@@ -380,7 +387,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                                         {joiners.length} Joined
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', paddingBottom: '20px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingBottom: '20px' }}>
                                     {joiners.map((u, i) => renderAvatar(u, i, false))}
                                 </div>
                             </div>
@@ -395,7 +402,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                                         {leavers.length} Left
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '28px', paddingBottom: '20px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingBottom: '20px' }}>
                                     {leavers.map((u, i) => renderAvatar(u, i, true))}
                                 </div>
                             </div>
