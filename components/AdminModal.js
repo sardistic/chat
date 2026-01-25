@@ -553,7 +553,7 @@ function UsersTable({ users, loading, onAction, onSelect, actionLoading, socket,
     return (
         <div style={{
             background: '#202226', borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden'
+            border: '1px solid rgba(255,255,255,0.03)'
         }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                 <thead>
@@ -568,7 +568,7 @@ function UsersTable({ users, loading, onAction, onSelect, actionLoading, socket,
                         <SortableHeader label="Status" sortKey="isBanned" currentSort={sortConfig} onSort={onSort}
                             filter={filters.status} onFilterChange={(val) => onFilterChange('status', val)} />
                         <SortableHeader label="Last Seen" sortKey="lastSeen" currentSort={sortConfig} onSort={onSort} />
-                        <th style={{ padding: '12px 16px', fontWeight: '500', textAlign: 'right' }}>Actions</th>
+                        <th style={{ padding: '12px 16px', fontWeight: '500', textAlign: 'right', position: 'sticky', top: 0, zIndex: 10, background: '#202226', boxShadow: '0 1px 0 rgba(255,255,255,0.1)' }}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -710,7 +710,7 @@ function UsersTable({ users, loading, onAction, onSelect, actionLoading, socket,
 // Memoized Sessions Table (No internal pagination)
 function SessionsTable({ sessions, loading, onRefresh, sortConfig, onSort, filters, onFilterChange }) {
     return (
-        <div style={{ background: '#202226', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)', overflow: 'hidden' }}>
+        <div style={{ background: '#202226', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
             <div style={{ padding: '16px', display: 'flex', justifyContent: 'flex-end', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                 <button className="btn primary" onClick={onRefresh} style={{ padding: '6px 16px', fontSize: '13px' }}>Refresh Log</button>
             </div>
@@ -725,7 +725,7 @@ function SessionsTable({ sessions, loading, onRefresh, sortConfig, onSort, filte
                         <SortableHeader label="Room" sortKey="roomId" currentSort={sortConfig} onSort={onSort}
                             filter={filters.roomId} onFilterChange={(val) => onFilterChange('roomId', val)} />
                         <SortableHeader label="IP / Device" sortKey="ipAddress" currentSort={sortConfig} onSort={onSort} />
-                        <th style={{ padding: '12px 16px' }}>Meta</th>
+                        <th style={{ padding: '12px 16px', position: 'sticky', top: 0, zIndex: 10, background: '#202226', boxShadow: '0 1px 0 rgba(255,255,255,0.1)' }}>Meta</th>
                     </tr>
                 </thead>
                 <tbody>
