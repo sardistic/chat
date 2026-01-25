@@ -19,6 +19,8 @@ const BackgroundContext = createContext({
     setBackgroundType: () => { },
     dotGridVersion: 'v3',
     setDotGridVersion: () => { },
+    performanceMode: false,
+    setPerformanceMode: () => { }
 });
 
 export function useBackground() {
@@ -29,6 +31,7 @@ export function useBackground() {
 export function BackgroundProvider({ children }) {
     const [backgroundType, setBackgroundType] = useState(BACKGROUND_TYPES.GRID);
     const [dotGridVersion, setDotGridVersion] = useState('v3');
+    const [performanceMode, setPerformanceMode] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     // Load from localStorage on mount
@@ -40,6 +43,13 @@ export function BackgroundProvider({ children }) {
         const savedVersion = localStorage.getItem('dotGridVersion');
         if (savedVersion) setDotGridVersion(savedVersion);
 
+        const savedPerf = localStorage.getItem('performanceMode');
+        if (savedPerf === 'true') {
+            setPerformanceMode(true);
+            // Force static if perf mode was saved as on
+            setBackgroundType(BACKGROUND_TYPES.STATIC);
+        }
+
         setMounted(true);
     }, []);
 
@@ -48,11 +58,31 @@ export function BackgroundProvider({ children }) {
         if (mounted) {
             localStorage.setItem('backgroundPreference', backgroundType);
             localStorage.setItem('dotGridVersion', dotGridVersion);
+            localStorage.setItem('performanceMode', performanceMode);
         }
-    }, [backgroundType, dotGridVersion, mounted]);
+    }, [backgroundType, dotGridVersion, performanceMode, mounted]);
+
+    // Enforce static background when perf mode is enabled
+    const handleSetPerformanceMode = (enabled) => {
+        setPerformanceMode(enabled);
+        if (enabled) {
+            setBackgroundType(BACKGROUND_TYPES.STATIC);
+        } else {
+            // Optional: Restore previous? For now just stay static until user changes it.
+            // Or default back to STARMAP for a "wow" re-enable?
+            // Let's leave it manual to avoid jarring shifts.
+        }
+    };
 
     return (
-        <BackgroundContext.Provider value={{ backgroundType, setBackgroundType, dotGridVersion, setDotGridVersion }}>
+        <BackgroundContext.Provider value={{
+            backgroundType,
+            setBackgroundType,
+            dotGridVersion,
+            setDotGridVersion,
+            performanceMode,
+            setPerformanceMode: handleSetPerformanceMode
+        }}>
             {children}
         </BackgroundContext.Provider>
     );

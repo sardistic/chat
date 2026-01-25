@@ -118,7 +118,8 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
     const BackgroundToggle = () => {
         const {
             backgroundType, setBackgroundType,
-            dotGridVersion, setDotGridVersion
+            dotGridVersion, setDotGridVersion,
+            performanceMode, setPerformanceMode
         } = useBackground();
         return (
             <>
@@ -401,10 +402,54 @@ export default function SettingsModal({ isOpen, onClose, user, onSaveSuccess }) 
                         </div>
                     </section>
 
-                    {/* Background Style */}
+                    {/* Display & Performance */}
                     <section>
-                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Background Style</h3>
-                        <BackgroundToggle />
+                        <h3 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '12px' }}>Display & Performance</h3>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div>
+                                    <div style={{ fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Icon icon="mdi:lightning-bolt" style={{ color: '#f59e0b' }} />
+                                        Performance Mode
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '4px' }}>
+                                        Disables complex animations and sets a static background
+                                    </div>
+                                </div>
+                                <div style={{ position: 'relative', width: '40px', height: '24px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={performanceMode}
+                                        onChange={e => setPerformanceMode(e.target.checked)}
+                                        style={{ opacity: 0, width: 0, height: 0 }}
+                                    />
+                                    <div style={{
+                                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                        background: performanceMode ? '#10b981' : 'rgba(255,255,255,0.1)',
+                                        borderRadius: '24px', transition: '0.2s'
+                                    }} />
+                                    <div style={{
+                                        position: 'absolute', top: '2px', left: performanceMode ? '18px' : '2px',
+                                        width: '20px', height: '20px', background: 'white',
+                                        borderRadius: '50%', transition: '0.2s',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                    }} />
+                                </div>
+                            </label>
+                        </div>
+
+                        {!performanceMode && (
+                            <>
+                                <h4 style={{ fontSize: '11px', color: '#666', marginBottom: '8px', textTransform: 'uppercase' }}>Background Style</h4>
+                                <BackgroundToggle />
+                            </>
+                        )}
+                        {performanceMode && (
+                            <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic', padding: '8px', textAlign: 'center' }}>
+                                Background selection is disabled in Performance Mode
+                            </div>
+                        )}
                     </section>
 
                     {/* Audio Settings */}

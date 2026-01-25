@@ -12,6 +12,7 @@ import EmojiPicker from './EmojiPicker';
 import GifPicker from './GifPicker';
 import { Icon } from '@iconify/react';
 import MessageReactions from './MessageReactions';
+import { useBackground } from './Background';
 
 // NEW: Aggressively consolidate system deployment messages so only the latest one is visible
 // This pulls older logs (even if separated by chat) into the most recent log's entry
@@ -155,6 +156,8 @@ export default function ChatPanel({
     const [mentionQuery, setMentionQuery] = useState('');
     const [showMentions, setShowMentions] = useState(false);
     const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
+
+    const { performanceMode } = useBackground();
 
     // Message reactions state: messageId -> { emoji -> { count, users } }
     const [messageReactions, setMessageReactions] = useState({});
@@ -443,7 +446,9 @@ export default function ChatPanel({
         const now = Date.now();
         if (now - keystrokeThrottleRef.current > 100) {
             keystrokeThrottleRef.current = now;
-            triggerDotRipple('keystroke', null, user?.color || '#ffffff', 0.5);
+            if (!performanceMode) {
+                triggerDotRipple('keystroke', null, user?.color || '#ffffff', 0.5);
+            }
         }
 
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -529,15 +534,17 @@ export default function ChatPanel({
                     const lastGroupIndices = {};
                     messageGroups.forEach((g, i) => lastGroupIndices[g.sender] = i);
 
+                    // Consume hook inside the map? No, must be top level.
+                    // Doing it outside.
                     return messageGroups.map((group, groupIndex) => {
                         // Check if this is a System group
                         if (group.sender === 'System') {
                             return (
                                 <motion.div
                                     key={group.messages[0]?.id || `group-${groupIndex}`}
-                                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                                    initial={performanceMode ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 10, scale: 0.98 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                    transition={performanceMode ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 20 }}
                                     style={{ marginBottom: '12px' }}
                                 >
                                     {group.messages.map(msg => (
@@ -549,14 +556,14 @@ export default function ChatPanel({
 
                         const isTypingUser = typingUsers.includes(group.sender);
                         const isMostRecentCallback = lastGroupIndices[group.sender] === groupIndex;
-                        const shouldAnimate = isTypingUser && isMostRecentCallback;
+                        const shouldAnimate = isTypingUser && isMostRecentCallback && !performanceMode; // Disable typing bounce in perf mode
 
                         return (
                             <motion.div
                                 key={group.messages[0]?.id || `group-${groupIndex}`}
-                                initial={{ opacity: 0, x: -10 }}
+                                initial={performanceMode ? { opacity: 1, x: 0 } : { opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                                transition={performanceMode ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 24 }}
                                 className="message-group"
                                 style={{
                                     display: 'flex',

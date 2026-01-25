@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getCookie, setCookie } from 'cookies-next';
 import { Icon } from '@iconify/react';
 import { SocketProvider } from "@/lib/socket";
-import Background from './Background';
+import Background, { useBackground } from './Background';
 import { triggerDotRipple, getTilePosition } from './DotGrid';
 import { getUserColor } from '@/lib/colors';
 import VideoGrid from "@/components/VideoGrid";
@@ -46,6 +46,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const [isRoomSettingsOpen, setIsRoomSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false); // Admin Modal
   const mobileResizeRef = useRef({ isResizing: false });
+  const { performanceMode } = useBackground();
 
   // State initialization with cookie fallback
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -420,7 +421,9 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         senderColor = getUserColor(author);
       }
       const tilePos = author ? getTilePosition(author) : null;
-      triggerDotRipple(rippleType, tilePos, senderColor, 1.0);
+      if (!performanceMode) {
+        triggerDotRipple(rippleType, tilePos, senderColor, 1.0);
+      }
 
       const content = msg.content || msg.text;
 

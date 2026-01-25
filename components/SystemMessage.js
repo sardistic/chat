@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import Convert from 'ansi-to-html';
 import { triggerDotRipple } from './DotGrid';
+import { useBackground } from './Background'; // Import hook
 
 const convert = new Convert({
     fg: '#c9d1d9',
@@ -25,6 +26,7 @@ function formatTime(timestamp) {
 
 export default function SystemMessage({ message, onUserClick = () => { } }) {
     const { systemType, text, metadata, timestamp } = message;
+    const { performanceMode } = useBackground(); // Use hook
 
     // Elapsed timer for active deployments
     const [elapsed, setElapsed] = useState(0);
@@ -65,7 +67,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 {/* Expandable Header for Previous Items */}
                 {previous.length > 0 && (
                     <motion.div
-                        layout
+                        layout={!performanceMode} // Disable layout animation in perf mode
                         onClick={() => setIsExpanded(!isExpanded)}
                         style={{
                             padding: '6px 12px',
@@ -80,9 +82,9 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                             gap: '8px',
                             fontSize: '10px',
                             color: '#888',
-                            transition: 'all 0.2s'
+                            transition: performanceMode ? 'none' : 'all 0.2s'
                         }}
-                        whileHover={{ background: 'rgba(255,255,255,0.05)', color: '#ccc' }}
+                        whileHover={performanceMode ? {} : { background: 'rgba(255,255,255,0.05)', color: '#ccc' }}
                     >
                         <Icon icon={isExpanded ? "mdi:chevron-up" : "mdi:chevron-down"} />
                         <span>
@@ -112,10 +114,11 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     {isExpanded && previous.map((msg, i) => (
                         <motion.div
                             key={msg.id || i}
-                            initial={{ opacity: 0, height: 0 }}
+                            initial={performanceMode ? { opacity: 1, height: 'auto' } : { opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
+                            exit={performanceMode ? { opacity: 0, height: 0 } : { opacity: 0, height: 0 }}
                             style={{ overflow: 'hidden' }}
+                            transition={performanceMode ? { duration: 0 } : {}}
                         >
                             <SystemMessage message={msg} onUserClick={onUserClick} />
                         </motion.div>
@@ -156,6 +159,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
         // Trigger ripple effect when this join/leave event appears
         useEffect(() => {
+            if (performanceMode) return; // SKIP RIPPLE IN PERF MODE
+
             // Small delay to ensure element is mounted
             const timer = setTimeout(() => {
                 if (typeof window !== 'undefined') {
@@ -172,13 +177,13 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 }
             }, 100);
             return () => clearTimeout(timer);
-        }, [joiners.length, leavers.length, timestamp]); // Trigger on updates too
+        }, [joiners.length, leavers.length, timestamp, performanceMode]); // Trigger on updates too
 
         const renderAvatar = (u, i, isLeaver) => (
             <motion.div
                 key={`${u.name}-${i}-${isLeaver ? 'leave' : 'join'}`}
-                layout
-                initial={{ scale: 0, opacity: 0 }}
+                layout={!performanceMode}
+                initial={performanceMode ? { opacity: 1, scale: 1 } : { scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 title={`${u.name || 'User'} ${u.count > 1 ? `(x${u.count})` : ''} • ${new Date(u.timestamp || timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                 style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
@@ -186,7 +191,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     e.stopPropagation();
                     onUserClick({ name: u.name, avatar: u.avatar || u.image, color: u.color }, e);
                 }}
-                whileHover={{ scale: 1.1 }}
+                whileHover={performanceMode ? {} : { scale: 1.1 }}
+                transition={performanceMode ? { duration: 0 } : {}}
             >
                 <div style={{ position: 'relative' }}>
                     <img
@@ -262,8 +268,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
         return (
             <motion.div
-                layout
-                initial={{ opacity: 0, y: 5 }}
+                layout={!performanceMode}
+                initial={performanceMode ? { opacity: 1, y: 0 } : { opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 style={{
                     padding: isExpanded ? '10px 12px' : '6px 10px',
@@ -274,9 +280,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                     margin: '2px 0',
                     border: '1px solid rgba(255,255,255,0.04)',
                     cursor: hasMore ? 'pointer' : 'default',
-                    transition: 'all 0.2s ease'
+                    transition: performanceMode ? 'none' : 'all 0.2s ease'
                 }}
                 onClick={() => hasMore && setIsExpanded(!isExpanded)}
+                transition={performanceMode ? { duration: 0 } : {}}
             >
                 {/* Collapsed View */}
                 {!isExpanded && (
@@ -351,9 +358,10 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 {/* Expanded View */}
                 {isExpanded && (
                     <motion.div
-                        initial={{ opacity: 0 }}
+                        initial={performanceMode ? { opacity: 1 } : { opacity: 0 }}
                         animate={{ opacity: 1 }}
                         style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+                        transition={performanceMode ? { duration: 0 } : {}}
                     >
                         {/* Header with collapse */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -406,8 +414,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             bgColor: 'rgba(245, 158, 11, 0.1)',
             borderColor: 'rgba(245, 158, 11, 0.4)',
             kicker: 'MISSION CONTROL',
-            animation: 'building-progress',
-            showProgress: true
+            animation: performanceMode ? 'none' : 'building-progress',
+            showProgress: !performanceMode
         },
         'deploy-success': {
             icon: 'mdi:check-circle',
@@ -447,7 +455,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             bgColor: 'rgba(34, 197, 94, 0.1)',
             borderColor: 'rgba(34, 197, 94, 0.4)',
             kicker: '▶ ON AIR',
-            animation: 'pulse'
+            animation: performanceMode ? 'none' : 'pulse'
         },
         'tube-stopped': {
             icon: 'mdi:stop-circle',
@@ -517,6 +525,8 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
 
     // Trigger ripple on mount for system events
     useEffect(() => {
+        if (performanceMode) return; // SKIP RIPPLE IN PERF MODE
+
         const ripple = rippleConfig[systemType];
         if (!ripple || style.compact) return; // Skip compact log lines
 
@@ -528,7 +538,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
             }
         }, 100);
         return () => clearTimeout(timer);
-    }, [systemType]);
+    }, [systemType, performanceMode]);
 
     // Compact rendering for build log lines
     if (style.compact) {
@@ -548,7 +558,7 @@ export default function SystemMessage({ message, onUserClick = () => { } }) {
                 paddingLeft: '12px' // Make room for bar
             }}>
                 <div
-                    className={style.color === '#22c55e' ? 'throb-drip-green' : ''}
+                    className={style.color === '#22c55e' && !performanceMode ? 'throb-drip-green' : ''}
                     style={{
                         position: 'absolute',
                         left: 0,
