@@ -1556,9 +1556,18 @@ app.prepare().then(async () => {
       // Get username from room map first, then socket.data as fallback
       const fallback = lastKnownUsers.get(socket.id);
       let userName = socket.data.user?.name || fallback?.user?.name;
+
+      // FIX: If we can't identify the user by name, they never truly joined.
+      // Silent exit to prevent "Anon" spam.
       if (!userName) {
         const fid = socket.data.user?.id || fallback?.user?.id;
-        userName = fid ? `User ${fid.slice(0, 4)}` : `Anon ${socket.id.slice(0, 4)}`;
+        // If we have an ID (DB user), use that. If purely Anon, skip.
+        if (fid) {
+          userName = `User ${fid.slice(0, 4)}`;
+        } else {
+          console.log(`[Session] Ghost socket ${socket.id} left room ${roomId} (silent).`);
+          return;
+        }
       }
       if (room) {
         const u = room.get(socket.id);
@@ -2912,8 +2921,10 @@ app.prepare().then(async () => {
             });
           }
         }
-        socket.to(roomId).emit("user-left", { socketId: socket.id });
-        socket.to(roomId).emit("user-disconnected", socket.id);
+        if (user && user.name) {
+          socket.to(roomId).emit("user-left", { socketId: socket.id });
+          socket.to(roomId).emit("user-disconnected", socket.id);
+        }
 
         // System Message: Disconnect (Smart Bundling)
         if (user) {
