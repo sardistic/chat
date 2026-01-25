@@ -278,6 +278,40 @@ const filterProfanity = (text) => {
   return filtered;
 };
 
+// Helper: Generate traffic message text
+function generateTrafficText(users) {
+  if (!users || users.length === 0) return 'Traffic update';
+
+  const joins = users.filter(u => u.action === 'joined');
+  const leaves = users.filter(u => u.action === 'left');
+
+  // Single User Case
+  if (users.length === 1) {
+    const u = users[0];
+    return u.action === 'joined' ? `${u.name} popped in!` : `💨 ${u.name} floated away...`;
+  }
+
+  // Mixed Traffic
+  if (joins.length > 0 && leaves.length > 0) {
+    // "Traffic: 3 joined, 2 left"
+    // Optional: List names if counts are small? e.g. "A, B joined; C left"
+    // For now, keep it summary style as requested "combined"
+    return `Traffic: ${joins.length} joined, ${leaves.length} left`;
+  }
+
+  // Only Joins
+  if (joins.length > 0) {
+    return `${joins.length} Users visited`;
+  }
+
+  // Only Leaves
+  if (leaves.length > 0) {
+    return `💨 ${leaves.length} Users floated away...`;
+  }
+
+  return 'Traffic update';
+}
+
 // Load History from Database on Start
 async function loadHistoryFromDB() {
   try {
@@ -1143,30 +1177,7 @@ app.prepare().then(async () => {
   };
   await rehydrateDeployments();
 
-  const getBundle = (roomId, type) => {
-    if (!messageBundles.has(roomId)) messageBundles.set(roomId, {});
-    const roomBundles = messageBundles.get(roomId);
 
-    const bundle = roomBundles[type];
-    if (bundle) {
-      const now = Date.now();
-      if (now - bundle.timestamp < 900000) { // 15 minute window
-        return bundle;
-      }
-      // Expired
-      delete roomBundles[type];
-    }
-    return null;
-  };
-
-  const setBundle = (roomId, type, id, users) => {
-    if (!messageBundles.has(roomId)) messageBundles.set(roomId, {});
-    messageBundles.get(roomId)[type] = {
-      id,
-      timestamp: Date.now(),
-      users // Array of user objects
-    };
-  };
 
   const io = new Server(httpServer, {
     path: "/api/socket/io",
@@ -1429,31 +1440,22 @@ app.prepare().then(async () => {
           }
         }
       }
-      let joinMsgId;
-      const userMeta = { ...user, action: 'joined', timestamp: Date.now() };
+      // --- Smart Bundling: Unified Traffic (Join/Leave) ---
+      const activeBundle = getBundle(roomId, 'traffic');
+      let bundleId;
+      const userMeta = { name: user.name, action: 'joined', timestamp: Date.now() };
 
       if (activeBundle) {
-        joinMsgId = activeBundle.id;
-        // Strictly deduplicate by name or ID, and update latest info (avatar/role)
-        const existingIdx = activeBundle.users.findIndex(u => (u.id && u.id === user.id) || u.name === user.name);
+        bundleId = activeBundle.id;
+        activeBundle.users.push(userMeta);
 
-        if (existingIdx !== -1) {
-          // Update existing entry with freshest info
-          activeBundle.users[existingIdx] = { ...activeBundle.users[existingIdx], ...userMeta };
-        } else {
-          activeBundle.users.push(userMeta);
-        }
-
-        const total = activeBundle.users.length;
-        const activeCount = activeBundle.users.filter(u => u.action === 'joined').length;
+        const text = generateTrafficText(activeBundle.users);
 
         const updateMsg = {
-          id: joinMsgId,
+          id: bundleId,
           roomId,
           sender: 'System',
-          text: total === 1 && activeCount === 1
-            ? `${activeBundle.users[0].name} popped in!`
-            : `${total} Users visited (${activeCount} active)`,
+          text,
           type: 'system',
           systemType: 'join-leave',
           metadata: { users: [...activeBundle.users] },
@@ -1461,7 +1463,7 @@ app.prepare().then(async () => {
         };
 
         if (messageHistory[roomId]) {
-          const idx = messageHistory[roomId].findIndex(m => m.id === joinMsgId);
+          const idx = messageHistory[roomId].findIndex(m => m.id === bundleId);
           if (idx !== -1) {
             messageHistory[roomId][idx] = updateMsg;
           }
@@ -1469,16 +1471,14 @@ app.prepare().then(async () => {
         saveMessageToDB(updateMsg);
         io.to(roomId).emit('chat-message-update', updateMsg);
       } else {
-        // Check if user already joined recently (prevent duplicate "popped in" on refresh)
-        // If there's an active bundle, we might want to just update it even if it's "expired" for new users?
-        // Better: Check if THIS user is already in the last join message if it's recent enough to be relevant.
-        // Actually, just expanding the bundle logic is safer.
+        // Check if user already joined recently (debounce)
+        // ... (Debounce logic handled by logUserSession separately)
 
-        joinMsgId = `sys-${Date.now()}`;
+        bundleId = `sys-${Date.now()}`;
         const users = [userMeta];
         const joinMsg = {
           roomId,
-          id: joinMsgId,
+          id: bundleId,
           sender: 'System',
           text: `${user.name || user.displayName || 'A user'} popped in!`,
           type: 'system',
@@ -1486,12 +1486,12 @@ app.prepare().then(async () => {
           metadata: { users },
           timestamp: new Date().toISOString()
         };
-        setBundle(roomId, 'join', joinMsgId, users);
+        setBundle(roomId, 'traffic', bundleId, users);
         storeMessage(roomId, joinMsg);
         io.to(roomId).emit('chat-message', joinMsg);
       }
 
-      socket.data.joinMsgId = joinMsgId;
+      socket.data.joinMsgId = bundleId;
 
       // Create per-user IRC connection via rate-limited queue
       // Each user gets their own IRC connection like KiwiIRC/Twitch
@@ -1607,21 +1607,19 @@ app.prepare().then(async () => {
       socket.to(roomId).emit("user-disconnected", socket.id);
 
       // System Message: Leave
-      // System Message: Leave (Smart Bundling)
-      const activeBundle = getBundle(roomId, 'leave');
-      let leaveMsgId;
+      // System Message: Leave (Unified Traffic Bundling)
+      const activeBundle = getBundle(roomId, 'traffic');
+      let bundleId;
       const userMeta = { name: userName, action: 'left', timestamp: Date.now() };
 
       if (activeBundle) {
-        leaveMsgId = activeBundle.id;
+        bundleId = activeBundle.id;
         activeBundle.users.push(userMeta);
-        const uniqueUsers = activeBundle.users.length;
 
-        let text = `💨 ${uniqueUsers} Users floated away...`;
-        // Optional: List names if small count? "A, B left..." - User asked to match join style "X Users..."
+        const text = generateTrafficText(activeBundle.users);
 
         const updateMsg = {
-          id: leaveMsgId,
+          id: bundleId,
           roomId,
           sender: 'System',
           text,
@@ -1632,7 +1630,7 @@ app.prepare().then(async () => {
         };
 
         if (messageHistory[roomId]) {
-          const idx = messageHistory[roomId].findIndex(m => m.id === leaveMsgId);
+          const idx = messageHistory[roomId].findIndex(m => m.id === bundleId);
           if (idx !== -1) {
             messageHistory[roomId][idx] = updateMsg;
           }
@@ -1640,11 +1638,11 @@ app.prepare().then(async () => {
         saveMessageToDB(updateMsg);
         io.to(roomId).emit('chat-message-update', updateMsg);
       } else {
-        leaveMsgId = `sys-${Date.now()}`;
+        bundleId = `sys-${Date.now()}`;
         const users = [userMeta];
         const leaveMsg = {
           roomId,
-          id: leaveMsgId,
+          id: bundleId,
           sender: 'System',
           text: `💨 ${userName || 'A user'} floated away...`,
           type: 'system',
@@ -1652,7 +1650,7 @@ app.prepare().then(async () => {
           metadata: { users },
           timestamp: new Date().toISOString()
         };
-        setBundle(roomId, 'leave', leaveMsgId, users);
+        setBundle(roomId, 'traffic', bundleId, users);
         storeMessage(roomId, leaveMsg);
         io.to(roomId).emit('chat-message', leaveMsg);
       }
