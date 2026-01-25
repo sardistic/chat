@@ -47,6 +47,11 @@ function MainApp({ user, setUser, onLeaveRoom }) {
   const [isAdminOpen, setIsAdminOpen] = useState(false); // Admin Modal
   const mobileResizeRef = useRef({ isResizing: false });
   const { performanceMode } = useBackground();
+  const perfModeRef = useRef(performanceMode);
+
+  useEffect(() => {
+    perfModeRef.current = performanceMode;
+  }, [performanceMode]);
 
   // State initialization with cookie fallback
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -421,7 +426,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
         senderColor = getUserColor(author);
       }
       const tilePos = author ? getTilePosition(author) : null;
-      if (!performanceMode) {
+      if (!perfModeRef.current) {
         triggerDotRipple(rippleType, tilePos, senderColor, 1.0);
       }
 
