@@ -352,6 +352,28 @@ function MainApp({ user, setUser, onLeaveRoom }) {
       console.warn('[Permissions] API not supported, continuing...');
     }
 
+    // NEW: Check for server-side Cam Ban
+    if (socket) {
+      try {
+        const banStatus = await new Promise((resolve) => {
+          // Timeout to prevent hanging if server doesn't respond
+          const t = setTimeout(() => resolve({ banned: false }), 2000);
+          socket.emit('check-cam-ban', (res) => {
+            clearTimeout(t);
+            resolve(res);
+          });
+        });
+
+        if (banStatus && banStatus.banned) {
+          const min = Math.ceil(banStatus.remainingSeconds / 60);
+          alert(`You are temporarily banned from broadcasting.\n\nTime remaining: ${min} minute(s).`);
+          return;
+        }
+      } catch (e) {
+        console.error("Error checking cam ban:", e);
+      }
+    }
+
     // Now request camera - should show prompt if state was "prompt"
     let stream;
     try {

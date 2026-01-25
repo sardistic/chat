@@ -445,7 +445,7 @@ export default function ProfileModal({
                                                 targetUserName: targetName,
                                                 mute: true
                                             });
-                                            alert('User shadow muted. Their messages will only be visible to mods.');
+                                            // Silent success
                                         }}
                                     >
                                         <Icon icon="fa:eye-slash" width="14" /> Shadow Mute
@@ -472,7 +472,7 @@ export default function ProfileModal({
                                                 targetUserId: targetId,
                                                 targetUserName: targetName
                                             });
-                                            alert('Messages wiped (hidden from non-mods).');
+                                            // Silent success
                                         }}
                                     >
                                         <Icon icon="fa:eraser" width="14" /> Wipe Messages
@@ -487,7 +487,7 @@ export default function ProfileModal({
                                                 targetSocketId: user.socketId,
                                                 banMinutes: 0
                                             });
-                                            alert('User camera disabled.');
+                                            // Silent success
                                         }}
                                     >
                                         <Icon icon="fa:video-camera" width="14" /> Force Cam Down
@@ -505,12 +505,31 @@ export default function ProfileModal({
                                                         targetSocketId: user.socketId,
                                                         banMinutes: mins
                                                     });
-                                                    alert(`Camera disabled for ${mins} minutes.`);
                                                 }}
                                             >
                                                 Cam Ban {mins}m
                                             </button>
                                         ))}
+                                        {/* Custom Duration Button */}
+                                        <button
+                                            className="btn danger"
+                                            style={{ flex: 1, justifyContent: 'center', fontSize: '11px', padding: '6px' }}
+                                            onClick={() => {
+                                                const input = prompt("Enter ban duration in minutes:");
+                                                if (!input) return;
+                                                const mins = parseInt(input, 10);
+                                                if (isNaN(mins) || mins <= 0) {
+                                                    alert("Invalid duration");
+                                                    return;
+                                                }
+                                                socket?.emit('mod-force-cam-down', {
+                                                    targetSocketId: user.socketId,
+                                                    banMinutes: mins
+                                                });
+                                            }}
+                                        >
+                                            Custom
+                                        </button>
                                     </div>
 
                                     <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }} />
@@ -554,6 +573,21 @@ export default function ProfileModal({
                 </div>
             </motion.div >
         </div >
+    );
+}
+
+
+function InfoChip({ label, value, icon, color }) {
+    return (
+        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <Icon icon={icon} width="12" color={color} />
+                {label}
+            </div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                {value}
+            </div>
+        </div>
     );
 }
 
