@@ -352,7 +352,7 @@ body {
   margin-top: 8px;
   width: 220px;
   width: 220px;
-  background: var(--glass-bg-heavy);
+  background: rgba(15, 15, 20, 0.95);
   backdrop-filter: var(--glass-blur-heavy);
   -webkit-backdrop-filter: var(--glass-blur-heavy);
   border: 1px solid var(--glass-border);
