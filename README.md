@@ -1,194 +1,101 @@
-# CamRooms - WebRTC Video Chat with IRC Integration
+# CamRooms - Next-Gen WebRTC & IRC Chat
 
-A modern, Discord-style video chat application with WebRTC peer-to-peer connections and IRC bridge integration.
+A high-fidelity, Discord-inspired video chat application blending WebRTC peer-to-peer streaming with a robust IRC bridge. Built for performance, aesthetics, and community management.
 
-## Features
+## ✨ Features
 
-- 🎥 **WebRTC Video/Audio** - Peer-to-peer video and audio streaming
-- 💬 **Real-time Chat** - Socket.IO powered messaging
-- 🌐 **IRC Bridge** - Connect to GameSurge IRC network
-- 🎨 **Modern UI** - Full Glassmorphism (Tailwind) with smooth animations
-- 🎛️ **Media Controls** - Mute/unmute, video toggle, leave room
-- 👥 **User Presence** - Online status and participant tracking
-- ⌨️ **IRC Commands** - KiwiIRC-style command support
+### 🎥 Core Communications
+- **WebRTC Video/Audio**: Low-latency mesh network for video/audio.
+- **IRC Bridge**: Seamless integration with IRC (e.g., GameSurge) for text chat.
+- **YouTube Sync**: Watch videos together in real-time (synced playback).
+- **Screen Sharing**: Broadcast your screen to the room.
 
-## Quick Start
+### 🛡️ Moderation & Safety (Mission Control)
+- **Role System**: Owner, Admin, Moderator, User, Guest.
+- **Actions**: Kick, Ban, Shadow Mute, Message Wiping.
+- **Camera Control**: Moderators can force-disable cameras or ban broadcasting for specific users.
+- **Safety Tools**: IP tracking, alt-detection, and block lists.
 
-```bash
-# Install dependencies
-npm install
+### 🎨 Immersive UI/UX
+- **Interactive Backgrounds**:
+  - **StarMap**: 3D WebGL galaxy with mouse interaction (Three.js).
+  - **Fluid DotGrid**: Reactive particle systems.
+  - **Performance Mode**: Low-resource static option.
+- **Framer Motion**: Smooth entry/exit animations and draggable windows.
+- **Glassmorphism**: Premium dark UI with blur effects.
+- **Mobile Optimized**: Responsive layout with swipe/drag gestures.
 
-# Start the server
-npm run dev
-```
+### 👤 Identity & Customization
+- **Profiles**: Custom avatars, banners, and bios.
+- **Discord Integration**: Login with Discord to sync avatar and badges.
+- **Room Settings**: Customize room name, icon, and banner.
 
-Open http://localhost:3000 in your browser.
+## 🛠️ Tech Stack
 
-## IRC Commands
+- **Framework**: Next.js 16 (App Router)
+- **UI Library**: React 19
+- **Animations**: Framer Motion, Three.js, Vanta.js
+- **Real-time**: Socket.IO + Redis Adapter
+- **Database**: PostgreSQL (via Prisma ORM)
+- **Styling**: TailwindCSS + CSS Modules
+- **WebRTC**: SimplePeer
+- **IRC**: irc-framework
 
-The chat supports KiwiIRC-style IRC commands:
+## 🚀 Quick Start
 
-### Channel Commands
-- `/join #channel` - Join an IRC channel
-- `/part [#channel]` - Leave current or specified channel
-- `/topic [new topic]` - View or set channel topic
-- `/names [#channel]` - List users in channel
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-### Messaging Commands
-- `/msg nick message` - Send private message to user
-- `/me action` - Send action message (e.g., `/me waves`)
+2. **Environment Setup**
+   Create a `.env` file with:
+   ```env
+   DATABASE_URL="postgresql://..."
+   NEXTAUTH_SECRET="supersecret"
+   DISCORD_CLIENT_ID="..."
+   DISCORD_CLIENT_SECRET="..."
+   IRC_HOST="irc.gamesurge.net"
+   IRC_CHANNEL="#camrooms"
+   ```
 
-### User Commands
-- `/nick newnick` - Change your nickname
-- `/whois nick` - Get information about a user
-- `/quit [message]` - Disconnect from IRC
+3. **Database**
+   ```bash
+   npx prisma db push
+   ```
 
-### Examples
+4. **Run Development Server**
+   ```bash
+   npm run dev
+   ```
 
-```
-/join #camrooms
-/nick MyNewNick
-/me is testing the chat
-/msg SomeUser Hello there!
-/topic Welcome to CamRooms!
-```
+## 🎮 IRC Commands
 
-## IRC Configuration
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `/join` | `/join #channel` | Join an IRC channel |
+| `/nick` | `/nick Name` | Change your display name |
+| `/me` | `/me waves` | Send an action message |
+| `/msg` | `/msg User Hi` | Send private message (IRC only) |
+| `/clear`| `/clear` | Clear local chat history |
+| `/topic`| `/topic New Topic`| Set the channel topic |
 
-By default, the app connects to:
-- **Server**: irc.gamesurge.net
-- **Port**: 6667
-- **Channel**: #camrooms
+## 📂 Architecture
 
-You can customize these via environment variables:
+The application uses a hybrid approach:
+- **Signaling Server**: Socket.IO handles WebRTC handshakes and chat messages.
+- **Mesh Topology**: Video/Audio is P2P (User-to-User).
+- **Persistence**: Prisma/Postgres stores users, rooms, and moderation logs.
+- **IRC Bot**: A server-side bot bridges socket messages to the IRC network.
 
-```bash
-IRC_HOST=irc.gamesurge.net
-IRC_PORT=6667
-IRC_CHANNEL=#camrooms
-IRC_NICK=CamRoomsBot
-```
+## 🤝 Contributing
 
-## Architecture
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Frontend
-- **Next.js 16** - React framework
-- **React 19** - UI library
-- **SimplePeer** - WebRTC wrapper
-- **Socket.IO Client** - Real-time communication
-
-### Backend
-- **Node.js** - Server runtime
-- **Socket.IO** - WebSocket server
-- **irc-framework** - IRC client library
-
-### WebRTC Flow
-
-```
-User A                    Server                    User B
-  |                         |                         |
-  |--- join-room ---------->|                         |
-  |<-- existing-users -------|                         |
-  |                         |<------- join-room ------|
-  |<-- user-joined ---------|--------- user-joined -->|
-  |                         |                         |
-  |--- signal (offer) ------>|                         |
-  |                         |------- signal (offer) -->|
-  |                         |<-- signal (answer) ------|
-  |<-- signal (answer) ------|                         |
-  |                         |                         |
-  |<========= WebRTC P2P Connection ================>|
-```
-
-### IRC Bridge Flow
-
-```
-Web Chat                IRC Bridge              GameSurge IRC
-   |                         |                         |
-   |--- chat-message ------->|                         |
-   |                         |--- PRIVMSG ------------>|
-   |                         |<-- PRIVMSG -------------|
-   |<-- chat-message --------|                         |
-   |                         |                         |
-   |--- /join #test -------->|                         |
-   |                         |--- JOIN #test --------->|
-   |<-- irc-command-result --|                         |
-```
-
-## File Structure
-
-```
-chat/
-├── app/
-│   ├── page.js           # Main application
-│   ├── layout.js         # Root layout
-│   └── globals.css       # Global styles
-├── components/
-│   ├── VideoGrid.js      # Video tile grid
-│   ├── ChatPanel.js      # Chat interface
-│   ├── MediaControls.js  # Audio/video controls
-│   ├── EntryScreen.js    # Join screen
-│   └── Sidebar.js        # User list sidebar
-├── hooks/
-│   ├── useWebRTC.js      # WebRTC hook
-│   └── useChat.js        # Chat hook
-├── lib/
-│   ├── socket.js         # Socket.IO context
-│   ├── webrtc.js         # Peer manager
-│   └── ircBridge.js      # IRC bridge
-└── server.js             # Express + Socket.IO server
-```
-
-## Browser Compatibility
-
-- ✅ Chrome/Edge (Recommended)
-- ✅ Firefox
-- ✅ Safari (macOS/iOS)
-- ⚠️ Opera (Partial support)
-
-## Known Limitations
-
-1. **Mesh Topology**: Works best with 2-8 users. For larger groups, consider implementing an SFU (like Janus).
-2. **STUN Only**: Uses public STUN servers. Add TURN servers for better NAT traversal in production.
-3. **Single Room**: Currently supports one default room. Multi-room support planned.
-
-## Development
-
-### Adding New IRC Commands
-
-Edit `lib/ircBridge.js` and add to the `handleCommand` method:
-
-```javascript
-case 'mycommand':
-  if (args.length > 0) {
-    // Your command logic
-    return { success: true, message: 'Command executed' };
-  }
-  return { success: false, error: 'Usage: /mycommand args' };
-```
-
-### Customizing UI
-
-Edit `app/globals.css` to modify colors, animations, and layout.
-
-## License
+## 📄 License
 
 MIT
-
-## Credits
-
-Built with:
-- [SimplePeer](https://github.com/feross/simple-peer)
-- [Socket.IO](https://socket.io/)
-- [irc-framework](https://github.com/kiwiirc/irc-framework)
-- [Next.js](https://nextjs.org/)
- 
-
-
-## Deployment Status
-![Railway](https://railway.app/badge/github/sardistic/chat)
-> Live updates enabled ✓
-
----
-
-*Test update: 2026-01-16*
