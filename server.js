@@ -1826,7 +1826,28 @@ app.prepare().then(async () => {
 
       const user = socket.data.user;
       const roomId = message.roomId || socket.data.roomId;
+
+      // 1. Payload Protection: Truncate large messages
+      if (message.text && message.text.length > 1000) {
+        message.text = message.text.substring(0, 1000) + '... (truncated)';
+      }
       const text = message.text || '';
+
+      // 2. Rate Limiting (Per Socket)
+      const now = Date.now();
+      const rateKey = socket.id;
+      // Initialize if needed (using socket.data for storage is cleaner than a global map)
+      if (!socket.data.msgTimestamps) socket.data.msgTimestamps = [];
+
+      // Filter old timestamps (Window: 2 seconds)
+      socket.data.msgTimestamps = socket.data.msgTimestamps.filter(t => now - t < 2000);
+
+      if (socket.data.msgTimestamps.length >= 5) {
+        // Soft limit: Just drop or warn
+        socket.emit('system-error', { message: 'You are sending messages too fast! Slow down.' });
+        return;
+      }
+      socket.data.msgTimestamps.push(now);
 
       // 0. Build State Override (Failsafe)
       if (text.toLowerCase() === '/clearbuild' && user && (user.role === 'ADMIN' || user.role === 'OWNER')) {
@@ -2066,6 +2087,10 @@ app.prepare().then(async () => {
       const roomId = payload.roomId || socket.data.roomId || 'general';
       const tubeState = getTubeState(roomId);
       const newState = payload;
+
+      // Security: Truncate potentially large fields
+      if (newState.videoId && newState.videoId.length > 200) newState.videoId = newState.videoId.substring(0, 200);
+      if (newState.title && newState.title.length > 500) newState.title = newState.title.substring(0, 500);
 
       console.log(`[Tube] tube-update received:`, { videoId: newState.videoId, isPlaying: newState.isPlaying, type: newState.type, action: newState.action });
 
