@@ -1,4 +1,4 @@
-# CamRooms - Next-Gen WebRTC & IRC Chat
+# Chat - Next-chat WebRTC & IRC Chat chat
 
 A h͡i͍͇ǵ̠̆h͔ͪ͘-f̯̼͠i͛͂͏d͏̮̌e͠l̩̔͒i͇͉̕tͤyͪ̓͌, Discord-inspired video chat ą͖̈́p̮p̝͇ͭl͐͂̚i̘̍c̬̘a̡̙̐t̸̑i̫̯͢o̹͊n̢̞ blending W͍̋̀e̘͊̾b͂Ȓ̜ͧṮC̶̝̉ p͍ͦ̀e̍̏è̺͡ṛ̣-t͓̒o͑͊-p̷̰ȩ̃ͬe̠̾r͎ streaming with a robust IRC bridge. Built for performance, aesthetics, and c͙o͉͇̿ṁ̫m͗u̵̶ͩn̉͜i̝ͧt̀y͖͇̓ management.
 
