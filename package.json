@@ -1,5 +1,6 @@
 {
   "name": "chat",
+  "description": "A high-fidelity, Discord-inspired video chat application blending WebRTC peer-to-peer streaming with a robust IRC bridge.",
   "version": "0.1.0",
   "private": true,
   "scripts": {
