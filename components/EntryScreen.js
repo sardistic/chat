@@ -523,7 +523,9 @@ const AppHeader = ({
         borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
     }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img src="https://i.imgur.com/MfbxoHW.gif" alt="Logo" style={{ height: '20px' }} />
+            <a href="https://sardistic.com" target="_blank" rel="noopener noreferrer">
+                <img src="https://sardistic.com/wp-content/uploads/2021/09/liquid.gif" alt="Logo" style={{ height: '50px' }} />
+            </a>
             <div style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.7)' }}>
                 <span
                     onClick={() => setSelectedRoom(null)}
