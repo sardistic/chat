@@ -647,13 +647,14 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           {/* Logo / Icon - Removed */}
           {/* Breadcrumbs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
-            <img
-              src="https://i.imgur.com/MfbxoHW.gif"
-              alt="gem"
-              onClick={onLeaveRoom}
-              style={{ height: '20px', marginRight: '4px', cursor: 'pointer' }}
-              title="Return to Browser"
-            />
+            <a href="https://sardistic.com" target="_blank" rel="noopener noreferrer">
+              <img
+                src="https://sardistic.com/wp-content/uploads/2021/09/liquid.gif"
+                alt="Sardistic"
+                style={{ height: '50px', marginRight: '4px', cursor: 'pointer' }}
+                title="Sardistic"
+              />
+            </a>
             <button
               onClick={onLeaveRoom}
               className="text-btn"
