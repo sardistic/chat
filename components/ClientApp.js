@@ -659,6 +659,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
               onClick={onLeaveRoom}
               className="text-btn"
               style={{ color: '#888', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+              title="Return to Chat"
             >
               chat
             </button>

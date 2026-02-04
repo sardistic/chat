@@ -531,7 +531,7 @@ const AppHeader = ({
                     onClick={() => setSelectedRoom(null)}
                     style={{ cursor: 'pointer', color: selectedRoom ? 'rgba(255,255,255,0.7)' : 'white' }}
                 >
-                    Browser
+                    Chat
                 </span>
                 {selectedRoom && (
                     <>
