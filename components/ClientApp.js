@@ -649,7 +649,7 @@ function MainApp({ user, setUser, onLeaveRoom }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
             <a href="https://sardistic.com" target="_blank" rel="noopener noreferrer">
               <img
-                src="https://sardistic.com/wp-content/uploads/2021/09/liquid.gif"
+                src="https://www.sardistic.com/wp-content/uploads/2026/02/liquid_transparent.webp"
                 alt="Sardistic"
                 style={{ height: '50px', marginRight: '4px', cursor: 'pointer' }}
                 title="Sardistic"

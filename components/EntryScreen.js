@@ -524,7 +524,7 @@ const AppHeader = ({
     }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <a href="https://sardistic.com" target="_blank" rel="noopener noreferrer">
-                <img src="https://sardistic.com/wp-content/uploads/2021/09/liquid.gif" alt="Logo" style={{ height: '50px' }} />
+                <img src="https://www.sardistic.com/wp-content/uploads/2026/02/liquid_transparent.webp" alt="Logo" style={{ height: '50px' }} />
             </a>
             <div style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.7)' }}>
                 <span

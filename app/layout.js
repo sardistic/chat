@@ -5,6 +5,9 @@ import { BackgroundProvider } from "@/components/Background";
 export const metadata = {
   title: "Chat",
   description: "Video chat with friends",
+  icons: {
+    icon: 'https://www.sardistic.com/wp-content/uploads/2026/02/liquid_transparent.webp',
+  },
 };
 
 export default function RootLayout({ children }) {
