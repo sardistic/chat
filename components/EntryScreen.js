@@ -350,7 +350,7 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
 
     // Step 2: Identity Selection
     return (
-        <div className="entry-screen">
+        <div className="entry-screen" style={{ flexDirection: 'column' }}>
             <Background zoomLevel={zoomLevel} />
             <AppHeader {...headerProps} />
             <div className="entry-card backdrop-blur-lg backdrop-brightness-125 bg-white/5 border border-white/10">
@@ -496,6 +496,25 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11px', color: 'var(--text-muted)' }}>
                     Joining {selectedRoom.ircChannel || `#camrooms-${selectedRoom.slug}`} on testnet.ergo.chat
                 </div>
+            </div>
+
+            {/* Social Links */}
+            <div className="socials" style={{
+                marginTop: '24px',
+                display: 'flex',
+                gap: '16px',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <a href="https://www.deviantart.com/coldhunter" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }} title="DeviantArt">
+                    <Icon icon="simple-icons:deviantart" width="20" />
+                </a>
+                <a href="https://goodreads.com/sardistic" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }} title="Goodreads">
+                    <Icon icon="simple-icons:goodreads" width="20" />
+                </a>
+                <a href="https://trakt.tv/users/sardistic" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }} title="Trakt.tv">
+                    <Icon icon="simple-icons:trakt" width="20" />
+                </a>
             </div>
         </div>
     );
