@@ -559,6 +559,110 @@ const AppHeader = ({
                     </>
                 )}
             </div>
+
+            {/* Navigation Menu */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                marginLeft: '20px',
+                paddingLeft: '20px',
+                borderLeft: '1px solid rgba(255,255,255,0.08)'
+            }}>
+                <a
+                    href="https://sardistic.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="nav-link-sexy"
+                    style={{
+                        color: 'rgba(255,255,255,0.5)',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: '400',
+                        letterSpacing: '0.5px',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        background: 'transparent',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.color = '#fff';
+                        e.target.style.background = 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(236,72,153,0.15) 100%)';
+                        e.target.style.boxShadow = '0 0 20px rgba(168,85,247,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.color = 'rgba(255,255,255,0.5)';
+                        e.target.style.background = 'transparent';
+                        e.target.style.boxShadow = 'none';
+                    }}
+                >
+                    return
+                </a>
+                <a
+                    href="https://www.sardistic.com/gallery-landing/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="nav-link-sexy"
+                    style={{
+                        color: 'rgba(255,255,255,0.5)',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: '400',
+                        letterSpacing: '0.5px',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        background: 'transparent',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.color = '#fff';
+                        e.target.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(147,51,234,0.15) 100%)';
+                        e.target.style.boxShadow = '0 0 20px rgba(59,130,246,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.color = 'rgba(255,255,255,0.5)';
+                        e.target.style.background = 'transparent';
+                        e.target.style.boxShadow = 'none';
+                    }}
+                >
+                    gallery
+                </a>
+                <a
+                    href="https://audio.sardistic.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="nav-link-sexy"
+                    style={{
+                        color: 'rgba(255,255,255,0.5)',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: '400',
+                        letterSpacing: '0.5px',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        background: 'transparent',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.color = '#fff';
+                        e.target.style.background = 'linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(251,146,60,0.15) 100%)';
+                        e.target.style.boxShadow = '0 0 20px rgba(236,72,153,0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.color = 'rgba(255,255,255,0.5)';
+                        e.target.style.background = 'transparent';
+                        e.target.style.boxShadow = 'none';
+                    }}
+                >
+                    audio
+                </a>
+            </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
