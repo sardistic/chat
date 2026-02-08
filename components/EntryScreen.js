@@ -506,17 +506,14 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
                 justifyContent: 'center',
                 alignItems: 'center'
             }}>
-                <a href="https://goodreads.com/sardistic" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }} title="Goodreads">
-                    <Icon icon="simple-icons:goodreads" width="20" />
-                </a>
                 <a href="https://www.deviantart.com/coldhunter" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }} title="DeviantArt">
                     <Icon icon="simple-icons:deviantart" width="20" />
                 </a>
+                <a href="https://goodreads.com/sardistic" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }} title="Goodreads">
+                    <Icon icon="simple-icons:goodreads" width="20" />
+                </a>
                 <a href="https://trakt.tv/users/sardistic" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }} title="Trakt.tv">
                     <Icon icon="simple-icons:trakt" width="20" />
-                </a>
-                <a href="https://www.instagram.com/sardistic/" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }} title="Instagram">
-                    <Icon icon="simple-icons:instagram" width="20" />
                 </a>
             </div>
         </div>
