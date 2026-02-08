@@ -39,6 +39,26 @@ export const authOptions = {
         maxAge: 30 * 24 * 60 * 60, // 30 days
     },
     callbacks: {
+        async signIn({ user, account, profile }) {
+            // Refresh Discord avatar on every login to prevent stale URLs
+            if (account?.provider === 'discord' && profile) {
+                const freshAvatarUrl = profile.avatar
+                    ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.${profile.avatar.startsWith('a_') ? 'gif' : 'png'}?size=256`
+                    : null;
+
+                if (freshAvatarUrl) {
+                    try {
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: { image: freshAvatarUrl }
+                        });
+                    } catch (e) {
+                        console.error('Failed to update Discord avatar:', e);
+                    }
+                }
+            }
+            return true;
+        },
         async session({ session, user }) {
             // When using database strategy, 'user' object is populated from the DB
             if (session.user) {
