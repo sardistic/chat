@@ -747,7 +747,7 @@ const AppHeader = ({
 
                 {/* Whimsy Dropdown (renamed from "audio") */}
                 <NavDropdown
-                    label="whimsy"
+                    label="I/O"
                     gradient="linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(251,146,60,0.15) 100%)"
                     items={[
                         { label: 'audio', href: 'https://audio.sardistic.com/', icon: 'fa:headphones' },
