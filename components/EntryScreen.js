@@ -520,6 +520,139 @@ export default function EntryScreen({ onJoin, initialRoom = null }) {
     );
 }
 
+// Whimsy dropdown component for nav items
+const NavDropdown = ({ label, items, gradient }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [timeoutId, setTimeoutId] = useState(null);
+
+    const handleMouseEnter = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        setIsOpen(true);
+    };
+
+    const handleMouseLeave = () => {
+        const id = setTimeout(() => setIsOpen(false), 200);
+        setTimeoutId(id);
+    };
+
+    return (
+        <div
+            style={{ position: 'relative' }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+        >
+            <button
+                className="nav-link-sexy"
+                style={{
+                    color: isOpen ? '#fff' : 'rgba(255,255,255,0.5)',
+                    background: isOpen ? gradient : 'transparent',
+                    boxShadow: isOpen ? '0 0 20px rgba(168,85,247,0.2)' : 'none',
+                    border: 'none',
+                    textDecoration: 'none',
+                    fontSize: '13px',
+                    fontWeight: '400',
+                    letterSpacing: '0.5px',
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontFamily: 'inherit'
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#fff';
+                    e.currentTarget.style.background = gradient;
+                    e.currentTarget.style.boxShadow = '0 0 20px rgba(168,85,247,0.2)';
+                }}
+                onMouseLeave={(e) => {
+                    if (!isOpen) {
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.boxShadow = 'none';
+                    }
+                }}
+            >
+                {label}
+                <Icon icon="fa:caret-down" width="8" style={{ opacity: 0.5, transition: 'transform 0.3s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
+            </button>
+
+            {/* Dropdown Panel */}
+            <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                left: '50%',
+                transform: `translateX(-50%) scale(${isOpen ? 1 : 0.95})`,
+                opacity: isOpen ? 1 : 0,
+                pointerEvents: isOpen ? 'auto' : 'none',
+                minWidth: '160px',
+                background: 'rgba(15, 15, 20, 0.95)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '12px',
+                padding: '6px',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)',
+                zIndex: 200
+            }}>
+                {/* Little arrow */}
+                <div style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    left: '50%',
+                    transform: 'translateX(-50%) rotate(45deg)',
+                    width: '8px',
+                    height: '8px',
+                    background: 'rgba(15, 15, 20, 0.95)',
+                    borderTop: '1px solid rgba(255,255,255,0.08)',
+                    borderLeft: '1px solid rgba(255,255,255,0.08)'
+                }} />
+                {items.map((item, i) => (
+                    <a
+                        key={item.label}
+                        href={item.href}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 12px',
+                            color: 'rgba(255,255,255,0.65)',
+                            textDecoration: 'none',
+                            fontSize: '13px',
+                            borderRadius: '8px',
+                            transition: 'all 0.2s ease',
+                            animation: isOpen ? `dropdownItemIn 0.3s ease ${i * 0.05}s both` : 'none',
+                            whiteSpace: 'nowrap'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#fff';
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                            e.currentTarget.style.transform = 'translateX(4px)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.65)';
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.transform = 'translateX(0)';
+                        }}
+                    >
+                        {item.icon && <Icon icon={item.icon} width="14" style={{ opacity: 0.6 }} />}
+                        {item.label}
+                    </a>
+                ))}
+            </div>
+
+            {/* Keyframe animation injected once */}
+            <style>{`
+                @keyframes dropdownItemIn {
+                    from { opacity: 0; transform: translateY(-6px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
+        </div>
+    );
+};
+
 // Extracted AppHeader Component
 const AppHeader = ({
     selectedRoom, setSelectedRoom,
@@ -542,10 +675,8 @@ const AppHeader = ({
         borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
     }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <a href="https://sardistic.com" target="_blank" rel="noopener noreferrer">
-                <img src="https://www.sardistic.com/wp-content/uploads/2026/02/liquid_transparent.webp" alt="Logo" style={{ height: '50px' }} />
-            </a>
-            <div style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.7)' }}>
+            {/* Chat label BEFORE the S logo */}
+            <div style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginRight: '4px' }}>
                 <span
                     onClick={() => setSelectedRoom(null)}
                     style={{ cursor: 'pointer', color: selectedRoom ? 'rgba(255,255,255,0.7)' : 'white' }}
@@ -560,6 +691,10 @@ const AppHeader = ({
                 )}
             </div>
 
+            <a href="https://sardistic.com" target="_blank" rel="noopener noreferrer">
+                <img src="https://www.sardistic.com/wp-content/uploads/2026/02/liquid_transparent.webp" alt="Logo" style={{ height: '50px' }} />
+            </a>
+
             {/* Navigation Menu */}
             <div style={{
                 display: 'flex',
@@ -569,10 +704,9 @@ const AppHeader = ({
                 paddingLeft: '20px',
                 borderLeft: '1px solid rgba(255,255,255,0.08)'
             }}>
+                {/* .com link (renamed from "return") */}
                 <a
                     href="https://sardistic.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="nav-link-sexy"
                     style={{
                         color: 'rgba(255,255,255,0.5)',
@@ -598,70 +732,29 @@ const AppHeader = ({
                         e.target.style.boxShadow = 'none';
                     }}
                 >
-                    return
+                    .com
                 </a>
-                <a
-                    href="https://www.sardistic.com/gallery-landing/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="nav-link-sexy"
-                    style={{
-                        color: 'rgba(255,255,255,0.5)',
-                        textDecoration: 'none',
-                        fontSize: '13px',
-                        fontWeight: '400',
-                        letterSpacing: '0.5px',
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        background: 'transparent',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.target.style.color = '#fff';
-                        e.target.style.background = 'linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(147,51,234,0.15) 100%)';
-                        e.target.style.boxShadow = '0 0 20px rgba(59,130,246,0.2)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.target.style.color = 'rgba(255,255,255,0.5)';
-                        e.target.style.background = 'transparent';
-                        e.target.style.boxShadow = 'none';
-                    }}
-                >
-                    gallery
-                </a>
-                <a
-                    href="https://audio.sardistic.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="nav-link-sexy"
-                    style={{
-                        color: 'rgba(255,255,255,0.5)',
-                        textDecoration: 'none',
-                        fontSize: '13px',
-                        fontWeight: '400',
-                        letterSpacing: '0.5px',
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        background: 'transparent',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.target.style.color = '#fff';
-                        e.target.style.background = 'linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(251,146,60,0.15) 100%)';
-                        e.target.style.boxShadow = '0 0 20px rgba(236,72,153,0.2)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.target.style.color = 'rgba(255,255,255,0.5)';
-                        e.target.style.background = 'transparent';
-                        e.target.style.boxShadow = 'none';
-                    }}
-                >
-                    audio
-                </a>
+
+                {/* Gallery Dropdown */}
+                <NavDropdown
+                    label="gallery"
+                    gradient="linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(147,51,234,0.15) 100%)"
+                    items={[
+                        { label: 'organic', href: 'https://www.sardistic.com/gallery-timeline/', icon: 'fa:leaf' },
+                        { label: 'artificial', href: 'https://www.sardistic.com/ai-timeline/', icon: 'fa:bolt' }
+                    ]}
+                />
+
+                {/* Whimsy Dropdown (renamed from "audio") */}
+                <NavDropdown
+                    label="whimsy"
+                    gradient="linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(251,146,60,0.15) 100%)"
+                    items={[
+                        { label: 'audio', href: 'https://audio.sardistic.com/', icon: 'fa:headphones' },
+                        { label: 'read', href: 'https://read.sardistic.com/', icon: 'fa:book' },
+                        { label: 'write', href: 'https://write.sardistic.com/', icon: 'fa:pencil' }
+                    ]}
+                />
             </div>
         </div>
 
