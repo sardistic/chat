@@ -42,8 +42,8 @@ function StarMapBackgroundComponent({ className = '', zoomLevel = 0 }) {
                     glow: 0, // Light effect when hit by ripple
                     // Ambient drift — each star wanders in gentle curves
                     driftAngle: Math.random() * Math.PI * 2,
-                    driftSpeed: 0.05 + Math.random() * 0.15,  // pixels per frame
-                    driftTurn: (Math.random() - 0.5) * 0.008, // how fast the angle rotates
+                    driftSpeed: 0.15 + Math.random() * 0.35,  // pixels per frame
+                    driftTurn: (Math.random() - 0.5) * 0.02,  // how fast the angle rotates
                 });
             }
             particlesRef.current.forEach(p => {
@@ -129,8 +129,8 @@ function StarMapBackgroundComponent({ className = '', zoomLevel = 0 }) {
 
                 // Ambient drift — slowly rotate the angle and nudge position
                 p.driftAngle += p.driftTurn;
-                p.vx += Math.cos(p.driftAngle) * p.driftSpeed * 0.06;
-                p.vy += Math.sin(p.driftAngle) * p.driftSpeed * 0.06;
+                p.vx += Math.cos(p.driftAngle) * p.driftSpeed * 0.15;
+                p.vy += Math.sin(p.driftAngle) * p.driftSpeed * 0.15;
 
                 // Apply velocity with damping
                 p.x += p.vx;
@@ -139,8 +139,8 @@ function StarMapBackgroundComponent({ className = '', zoomLevel = 0 }) {
                 p.vy *= 0.85;
 
                 // Soft drift back to base so stars don't wander too far
-                p.x += (p.baseX - p.x) * 0.02;
-                p.y += (p.baseY - p.y) * 0.02;
+                p.x += (p.baseX - p.x) * 0.008;
+                p.y += (p.baseY - p.y) * 0.008;
 
                 // Wrap around edges
                 if (p.x < 0) p.x = width;
