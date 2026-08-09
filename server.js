@@ -513,7 +513,7 @@ async function logUserSession(socket, action, user, roomId) {
 
     // 2. Send to Umami (Server-side Event)
     // We fire and forget this to not slow down the request
-    const UMAMI_HOST = 'https://umami-production-d60f.up.railway.app';
+    const UMAMI_HOST = 'https://analytics.sardistic.com';
     const UMAMI_ID = '6e459b3d-02a8-420e-baba-2c583cb7e2ab';
 
     fetch(`${UMAMI_HOST}/api/send`, {

@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
       <head>
         <script
           defer
-          src="https://umami-production-d60f.up.railway.app/script.js"
+          src="https://analytics.sardistic.com/script.js"
           data-website-id="6e459b3d-02a8-420e-baba-2c583cb7e2ab"
         />
       </head>
